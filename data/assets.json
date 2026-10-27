@@ -1,0 +1,11 @@
+{
+  "assets": [
+    {
+      "key": "kitchen_full",
+      "type": "image",
+      "file": "assets/art/kitchen_full.webp",
+      "scale": 1,
+      "preferFallback": false
+    }
+  ]
+}
