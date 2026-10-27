@@ -1,83 +1,94 @@
-# Chef Rush: Style Guide (draft for approval)
+# Chef Rush: Style Guide (v2)
 
 One rule above all: every asset must look like it came from the same hand. If an asset breaks a rule here, fix the asset, not the rule.
 
+Progression is shown as a plain player level ("Lv 7"), never with icons or ratings. See section 9.
+
 ## 1. Canvas and scale
 - Logical canvas: **1280 x 720**, landscape, Phaser `Scale.FIT` with centered letterboxing.
-- Safe area: keep all interactive UI at least 48 px from every edge (phone notches, rounded corners).
-- Minimum tap target: **88 x 88 logical px** (about 9 mm on a mid-range phone).
-- Textures are generated at `2x` (or device pixel ratio, capped at 2) so outlines stay crisp, then cached by key.
+- Backgrounds arrive at 1280 x 714. They are scaled to cover the full 720 height (factor 1.0084) and centered, so nothing is stretched.
+- Safe area: keep interactive UI at least 48 px from every edge (notches, rounded corners).
+- Minimum tap and drop target: **88 x 88 logical px**.
+- All supplied art is a **2x texture**: a 400 px wide file displays 200 logical px wide. Code-made art is baked at 2x as well and cached by key.
 
 ## 2. Outline and shape
-- **Outline width: 6 px at 1x** on every object, character, icon and UI element. No exceptions, no thin lines.
-- Outline color: `#3B2417` (warm dark brown, never pure black).
-- Line joins and caps: round.
-- Corners: rounded. Default radius 16 px for panels, 12 px for buttons, 50% for icons and bubbles.
-- Shapes are simple and chunky: few details, strong silhouettes, readable at 64 px.
+Measured on the supplied art (texture px at 2x, shown here as logical px): burger layers, order bubble and tomato are about 4 px; fryer 3 px; customers and trash can 2 px; coin and fries 1.5 px.
+
+- **Code-made art uses a 4 px outline at 1x** (8 px in the 2x texture). This matches the burger layers and the order bubble, which are the most common shapes on screen.
+- Outline color: `#3B2417` (warm dark brown, never pure black). Round joins and caps.
+- Corners: rounded. Default radius 16 px for panels, 12 px for buttons, 50 percent for icons and bubbles.
+- Simple chunky shapes with strong silhouettes, readable at 64 px.
+- Open question for the art owner: new art should aim for about 8 px of outline in the 2x file (4 px logical) so everything lines up. Existing files that are thinner are listed in `docs/asset-list.md`.
 
 ## 3. Palette (warm, limited)
 | Role | Hex | Use |
 |---|---|---|
-| Outline | `#3B2417` | all outlines, text shadow |
-| Cream | `#FFF3DC` | panels, ticket cards, plates |
-| Butter | `#FFD66B` | coins, highlights, stars |
-| Tomato | `#E8483B` | alerts, ketchup, angry, danger |
-| Orange | `#F58A2E` | primary buttons, fries, fire |
-| Leaf | `#6BBF4E` | success, lettuce, ready ring |
-| Bun | `#D9923B` | buns, wood |
-| Patty | `#7A3E22` | cooked patty (raw `#C8665A`, burnt `#2B1A14`) |
-| Teal | `#2FA7A0` | diner theme accent, secondary buttons |
-| Sky | `#8FD3F4` | drinks, water, info |
-| Steel | `#B9C0C9` | stations, metal, shadows on steel |
+| Outline | `#3B2417` | outlines, text stroke |
+| Cream | `#FFF3DC` | panels, cards, text |
+| Butter | `#FFD66B` | coins, level badge, highlights |
+| Tomato | `#E8483B` | alerts, danger, angry |
+| Orange | `#F58A2E` | primary buttons, fire, XP fill |
+| Leaf | `#6BBF4E` | success, ready ring, patience full |
+| Bun | `#D9923B` | wood, buns |
+| Patty | `#7A3E22` | cooked patty |
+| Teal | `#2FA7A0` | secondary buttons, diner accent |
+| Sky | `#8FD3F4` | drinks, info |
+| Steel | `#B9C0C9` | stations, disabled |
 
-- Taco stand theme swaps the accent to `#E0643C` (terracotta) and `#F2B134` (marigold); the neutrals and outline stay the same.
-- Gradients: at most a 2-stop, 8 to 12 percent lightness shift, top to bottom. Highlight is a small cream-white (`#FFFFFF` at 35 percent) shape on the upper-left.
-- Shadows: soft drop shadow, offset (0, 6 px), blur 10 px, `#3B2417` at 25 percent. Contact shadow under items is a flat ellipse at 20 percent.
+- Gradients: two stops at most, a lightness change of 8 to 12 percent from top to bottom. Highlight is a small cream-white shape (35 percent opacity) at the upper left.
+- Shadows: soft drop shadow, offset (0, 6), blur 10, outline color at 25 percent. Contact shadows under items are a flat ellipse at 20 percent.
 
 ## 4. Typography
-- One font family everywhere: a rounded, friendly display face (proposal: **Fredoka**, SIL OFL, self-hosted, Latin subset, about 20 KB). Needs your approval because it adds a font file.
+- One family everywhere: **Fredoka** (SIL Open Font License, self-hosted, Latin subset, about 16 KB). License text ships in `public/fonts`.
 - Fallback stack: `"Fredoka", "Baloo 2", "Nunito", system-ui, sans-serif`.
 - Sizes (logical px): body 28, labels 24, buttons 36, headings 56, big numbers 72. Never below 24.
-- Text is cream with a 6 px outline-colored stroke and a 3 px drop shadow, so it reads on any background.
+- Light text gets a 4 px outline-colored stroke (6 px at sizes of 36 and above) and a 3 px drop shadow. Text on cream panels uses dark ink with no stroke.
 
-## 5. Ingredients (layered, each its own texture)
-- Standard ingredient footprint: 128 x 128 px canvas at 1x, centered, flat side-on view for the burger stack and top-down for stations.
-- States are separate textures, not tints: patty raw / cooked / burnt, fries raw / cooked / burnt, nuggets raw / cooked / burnt.
-- Burnt always means darker plus visible black spots plus a smoke wisp, never color alone (color-blind safe).
-- Required set (v1): bun top, bun bottom, patty x3, lettuce, tomato, cheese, onion, sauce, fries x3, cup, drink, plate, tray.
+## 5. Supplied art and code-made fallbacks
+The asset loader reads `/data/assets.json`. For every asset id:
+1. If a file exists in `/assets/art`, it is loaded and used.
+2. If not, a builder in `/src/art` draws the asset in code from this guide.
+3. If an asset is marked `preferFallback`, the builder is used even when a file exists.
 
-## 6. Order icons (color-blind safe)
+Supplied now: burger layers, fries, nuggets, pizza, drinks, stations, backgrounds, chef, three customers, logo, coin, order bubble, patience bar frame, trash can, level badge and XP bar frame (SVG).
+Code-made for now: buttons, panels, pills, reputation bar, story cards, customer expressions, additional customers, sauce, ice cream, hot dog.
+Defective files are held back and described in `docs/asset-list.md`.
+
+## 6. Ingredients (layered, each its own asset)
+- Burger layers (bun top, bun bottom, patty, lettuce, tomato, cheese) are 400 px wide in the file, so they stack evenly at 200 logical px. Onion and pickle are 360 px wide and are centered on the stack.
+- States are separate textures, not tints: patty raw, cooked, burnt; fries raw, cooked, burnt; nuggets raw, cooked, burnt; pizza raw and cooked.
+- Burnt always means darker plus visible black spots plus a smoke wisp, never color alone.
+- Layers drop onto the stack with a 4 px overlap so the outlines read as one burger.
+
+## 7. Order icons (color-blind safe)
 - Every order icon pairs a **distinct silhouette with a color**. No two icons share a silhouette.
-- Icons sit in a cream circle with the standard outline. Ready-to-serve items get a small green tick; wrong items get a red cross.
-- Patience is shown by bar fill **and** face expression **and** a shake in the red zone, never color alone.
+- Icons sit in the supplied order bubble. A delivered item gets a green tick; the whole bubble pops out when every item is delivered.
+- Patience is shown by bar fill, by the customer's expression, and by a shake in the red zone, never by color alone.
 
-## 7. Characters
-- Chef plus at least 6 distinct customers (different silhouette, hair, clothing color, accessory).
-- Proportions: big head (about 40 percent of height), small hands, bean-shaped body.
-- Expressions (separate eye and mouth swaps): happy, neutral, impatient, angry. Idle poses: bob, blink every 3 to 5 s.
-- Customer types read at a glance: regular (plain), impatient (sweat drop, tapping foot), VIP (gold star badge, hat), critic (glasses, notepad).
-
-## 8. Environment
-- Layers back to front: wall, wall decor, counter back, stations, counter front, floor.
-- Diner (levels 1 to 10): teal and cream, checker floor, neon sign, stools.
-- Taco stand (levels 11 to 20): terracotta and marigold, striped awning, papel picado, string lights.
-- Stations share a base shape (rounded steel body, 6 px outline) and differ by top equipment and one accent color.
+## 8. Characters
+- The chef plus at least 6 distinct customers (silhouette, hair, clothing color, accessory). Three are supplied; the rest are drawn in code until supplied.
+- Expressions: happy, neutral, impatient, angry. Until expression variants are supplied, expression shows as a small emote bubble above the head plus a posture change.
+- Customer types read at a glance: regular (plain), impatient (sweat drop), VIP (gold badge), critic (glasses and notepad).
 
 ## 9. UI components
-- Primary button: orange fill, cream text, 12 px radius, 6 px bottom "lip" in a darker orange. Pressed state scales to 0.94 and removes the lip.
-- Secondary button: teal. Danger: tomato. Disabled: steel with 60 percent opacity.
-- Panels and popups: cream fill, 16 px radius, outline plus drop shadow, title bar in teal.
-- Progress ring: 12 px thick, outline-colored track, fills orange to green; flashes and bounces at "ready"; turns tomato with smoke at "burning".
-- Patience bar: pill shape, green (above 50 percent), yellow (20 to 50), red (below 20) with shake.
-- Coin: butter circle, inner ring, "C" mark. Star: five-point rounded star; empty star is steel with outline.
+- **Level badge**: the supplied shield, with the number "Lv 7" in Fredoka on top. Always shows the number only.
+- **XP bar**: the supplied pill frame with an orange fill that grows smoothly. No numbers on the bar during play.
+- **Reputation bar**: pill frame, leaf green above 50 percent, butter 20 to 50 percent, tomato below 20 percent.
+- **Patience bar**: the supplied frame with a leaf, butter or tomato fill, shaking in the red zone.
+- Primary button: orange fill, cream text, 12 px radius, 8 px bottom lip in a darker orange. Press drops the face onto the lip. Secondary: teal. Danger: tomato. Disabled: steel at 60 percent.
+- Panels and popups: cream fill, 16 px radius, outline and drop shadow.
+- Progress ring: 12 px thick, fills orange, turns green when ready, pulses red in the danger phase.
+- Story cards: comic-style panel with a thick outline and at most two lines of text.
+- Recipe Book cards: unlocked in full color with cook times; locked as a flat dark silhouette with the unlock level.
+- No star icons anywhere. The coin art is the only exception and is flagged in `docs/asset-list.md`.
 
-## 10. Motion rules (summary, full list lives in the prompt)
+## 10. Motion
 - Easing: `Back.Out` for pops, `Sine.InOut` for bobs, `Quad.Out` for slides.
-- Durations: UI 120 to 200 ms, pops 250 ms, scene transitions 300 ms.
-- Squash and stretch uses volume-preserving scales (e.g. 1.15 x 0.87).
+- Durations: UI 120 to 200 ms, pops 250 ms, scene transitions 300 ms, level-up card 2 to 3 s (skippable, never blocks play).
+- Squash and stretch uses volume-preserving scales (for example 1.15 by 0.87).
 - Every effect has a reduced-motion variant: no shake, no confetti, fades instead of slides.
 
 ## 11. Asset pipeline rules
-- Every asset has a builder function in `/src/art` that returns a cached texture keyed by `name:state:scale`.
-- `/data/assets.json` maps asset keys to optional files in `/assets/art`. If the file exists it is loaded; if not, the builder draws it.
-- Supplied art is checked against this guide on load in dev mode: outline width, palette distance, and size. Mismatches are reported, never silently mixed.
+- Every asset has a builder function that returns a cached texture keyed by `name:state:scale`.
+- Supplied SVGs are rasterized at twice their display size so outlines stay crisp.
+- In development, supplied art is checked against this guide on load (size, outline width, palette). Mismatches are reported, never silently mixed.
