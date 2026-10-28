@@ -3,12 +3,13 @@ import progressionJson from '../../data/progression.json';
 import xpJson from '../../data/xp.json';
 import customersJson from '../../data/customers.json';
 
-export type ItemKind = 'fries' | 'nuggets' | 'burger';
+export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger';
 
 export interface RecipeSettings {
   plateSlots: number;
   sideSlots: number;
   fryVats: number;
+  ovens: number;
   grillBurners: number;
   beginnerMaxLevel: number;
   beginnerBurnBonus: number;

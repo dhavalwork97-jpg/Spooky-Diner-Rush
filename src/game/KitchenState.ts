@@ -18,6 +18,10 @@ export interface Fry {
   t: number;
   phase: CookPhase;
 }
+export interface Oven {
+  t: number;
+  phase: CookPhase;
+}
 export interface Patty {
   side: 1 | 2;
   t: number;
@@ -54,15 +58,17 @@ export interface Customer {
 export type GameEvent =
   | { type: 'fryStart'; vat: number; kind: FriedKind }
   | { type: 'fryPhase'; vat: number; phase: CookPhase }
+  | { type: 'ovenStart'; oven: number }
+  | { type: 'ovenPhase'; oven: number; phase: CookPhase }
   | { type: 'pattyStart'; burner: number }
   | { type: 'pattyPhase'; burner: number; phase: CookPhase }
   | { type: 'pattyFlip'; burner: number }
-  | { type: 'collect'; from: 'fryer'; index: number; slot: number }
+  | { type: 'collect'; from: 'fryer' | 'oven'; index: number; slot: number }
   | { type: 'buildStart'; slot: number }
   | { type: 'layerAdded'; slot: number; layer: string; burner?: number }
   | { type: 'burgerDone'; slot: number }
-  | { type: 'discard'; where: 'vat' | 'burner' | 'slot' | 'build'; index: number; penalty: boolean }
-  | { type: 'burnt'; where: 'vat' | 'burner'; index: number }
+  | { type: 'discard'; where: 'vat' | 'burner' | 'oven' | 'slot' | 'build'; index: number; penalty: boolean }
+  | { type: 'burnt'; where: 'vat' | 'burner' | 'oven'; index: number }
   | { type: 'arrive'; customer: number }
   | { type: 'deliver'; customer: number; slot: number; itemIndex: number }
   | { type: 'wrongDrop'; slot: number; customer: number | null }
@@ -99,6 +105,7 @@ export class KitchenState {
   closed = false;
   vats: (Fry | null)[];
   burners: (Patty | null)[];
+  ovens: (Oven | null)[];
   /** Plates first (burgers), then side slots (fries). */
   slots: Slot[];
   customers: Customer[] = [];
@@ -122,6 +129,7 @@ export class KitchenState {
     const s = cfg.recipes.settings;
     this.vats = Array.from({ length: s.fryVats }, () => null);
     this.burners = Array.from({ length: s.grillBurners }, () => null);
+    this.ovens = Array.from({ length: s.ovens }, () => null);
     this.slots = [
       ...Array.from({ length: s.plateSlots }, (_, i): Slot => ({ index: i, row: 'plate', item: null })),
       ...Array.from({ length: s.sideSlots }, (_, i): Slot => ({ index: s.plateSlots + i, row: 'side', item: null })),
@@ -185,6 +193,17 @@ export class KitchenState {
         if (phase === 'burnt') this.onBurnt('vat', i);
       }
     });
+    const pizza = this.cfg.recipes.items.pizza;
+    this.ovens.forEach((o, i) => {
+      if (!o) return;
+      o.t += dt;
+      const phase = cookPhase(o.t, pizza.readyAfter!, this.burnWindow(pizza.burnWindow));
+      if (phase !== o.phase) {
+        o.phase = phase;
+        this.emit({ type: 'ovenPhase', oven: i, phase });
+        if (phase === 'burnt') this.onBurnt('oven', i);
+      }
+    });
     const burger = this.cfg.recipes.items.burger;
     this.burners.forEach((p, i) => {
       if (!p) return;
@@ -198,7 +217,7 @@ export class KitchenState {
     });
   }
 
-  private onBurnt(where: 'vat' | 'burner', index: number): void {
+  private onBurnt(where: 'vat' | 'burner' | 'oven', index: number): void {
     this.emit({ type: 'burnt', where, index });
     this.addReputation(-this.cfg.recipes.settings.burnReputationPenalty);
   }
@@ -304,6 +323,38 @@ export class KitchenState {
     this.vats[vat] = null;
     slot.item = { id: this.nextId++, kind: v.kind, placed: [], building: false };
     this.emit({ type: 'collect', from: 'fryer', index: vat, slot: slot.index });
+  }
+
+  // ----- oven -----
+
+  /** Put a raw pizza (from the dough bases) into a free oven. */
+  startPizza(): void {
+    if (this.closed) return;
+    const def = this.cfg.recipes.items.pizza;
+    if (this.level < def.unlockLevel) return this.invalid('Pizza unlocks at Lv ' + def.unlockLevel);
+    const i = this.ovens.findIndex((o) => !o);
+    if (i < 0) return this.invalid('The oven is full');
+    this.ovens[i] = { t: 0, phase: 'cooking' };
+    this.emit({ type: 'ovenStart', oven: i });
+  }
+
+  /** Tap the oven: collect a ready pizza onto a plate, or throw away a burnt one. */
+  tapOven(oven = 0): void {
+    if (this.closed) return;
+    const o = this.ovens[oven];
+    if (!o) return this.invalid('Tap the dough first');
+    if (o.phase === 'cooking') return this.invalid('Not ready yet');
+    if (o.phase === 'burnt') {
+      this.ovens[oven] = null;
+      this.discardPenalty();
+      this.emit({ type: 'discard', where: 'oven', index: oven, penalty: true });
+      return;
+    }
+    const slot = this.freeSlot('plate');
+    if (!slot) return this.invalid('No free plate');
+    this.ovens[oven] = null;
+    slot.item = { id: this.nextId++, kind: 'pizza', placed: [], building: false };
+    this.emit({ type: 'collect', from: 'oven', index: oven, slot: slot.index });
   }
 
   // ----- grill -----
@@ -471,6 +522,7 @@ export class KitchenState {
     this.reputation = this.cfg.xp.reputation.reopenTo;
     this.vats = this.vats.map(() => null);
     this.burners = this.burners.map(() => null);
+    this.ovens = this.ovens.map(() => null);
     this.slots.forEach((s) => (s.item = null));
     this.customers = [];
     this.nextArrival = 1;

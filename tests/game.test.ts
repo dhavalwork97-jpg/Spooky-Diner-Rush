@@ -333,3 +333,46 @@ describe('nuggets', () => {
     expect(s.vats[0]?.phase).toBe('burnt');
   });
 });
+
+describe('pizza', () => {
+  const lv5 = () => new KitchenState({ level: 5, xp: 0, coins: 0 }, undefined, 6);
+  it('is locked below Lv 5', () => {
+    const s = new KitchenState({ level: 4, xp: 0, coins: 0 }, undefined, 6);
+    s.startPizza();
+    expect(s.drainEvents()).toEqual([{ type: 'invalid', message: 'Pizza unlocks at Lv 5' }]);
+  });
+  it('bakes in the oven and is collected onto a free plate', () => {
+    const s = lv5();
+    s.startPizza();
+    run(s, 4);
+    s.drainEvents();
+    s.tapOven();
+    expect(s.drainEvents()).toEqual([{ type: 'invalid', message: 'Not ready yet' }]);
+    run(s, 4.5);
+    expect(s.ovens[0]?.phase).toBe('ready');
+    s.tapOven();
+    expect(s.ovens[0]).toBeNull();
+    expect(s.slots[0]).toMatchObject({ row: 'plate', item: { kind: 'pizza', building: false } });
+  });
+  it('asks for dough when the oven is empty and says when it is full', () => {
+    const s = lv5();
+    s.tapOven();
+    expect(s.drainEvents()).toEqual([{ type: 'invalid', message: 'Tap the dough first' }]);
+    s.startPizza();
+    s.drainEvents();
+    s.startPizza();
+    expect(s.drainEvents()).toEqual([{ type: 'invalid', message: 'The oven is full' }]);
+  });
+  it('burns once, costs reputation, and is thrown away with the coin penalty', () => {
+    const s = new KitchenState({ level: 5, xp: 0, coins: 10 }, undefined, 6);
+    const rep = s.reputation;
+    s.startPizza();
+    run(s, 8 + 5 + 0.5); // beginner window at Lv 5 is 7s
+    run(s, 2);
+    expect(s.ovens[0]?.phase).toBe('burnt');
+    expect(s.reputation).toBe(rep - defaultConfig.recipes.settings.burnReputationPenalty);
+    s.tapOven();
+    expect(s.ovens[0]).toBeNull();
+    expect(s.coins).toBe(10 - defaultConfig.recipes.settings.trashPenaltyCoins);
+  });
+});

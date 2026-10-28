@@ -12,6 +12,7 @@ export const SEAT_BOTTOM_Y = 250;
 export const VATS: [number, number][] = [[335, 650], [465, 650]];
 export const BURNERS: [number, number][] = [[1314, 484], [1447, 484]];
 /** Plates on the serving counter (burgers) first, then the two side plates on the left counter (fries). */
+export const OVENS: [number, number][] = [[760, 790]];
 export const SLOTS: [number, number][] = [[980, 452], [1113, 452], [980, 535], [1113, 535], [369, 543], [500, 543]];
 
 export class Layout {

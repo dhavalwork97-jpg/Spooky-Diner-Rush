@@ -190,6 +190,14 @@ export class GameScene extends Phaser.Scene {
       this.state.startFry('nuggets');
       return '';
     });
+    registerStationHandler('dough', () => {
+      this.state.startPizza();
+      return '';
+    });
+    registerStationHandler('oven', () => {
+      this.state.tapOven(0);
+      return '';
+    });
     registerStationHandler('patty_tray', () => {
       this.state.startPatty();
       return '';
@@ -361,7 +369,7 @@ export class GameScene extends Phaser.Scene {
     const slot = this.state.slots[slotIndex];
     if (!slot.item) return null;
     const home = this.slotPos(slotIndex);
-    const v = new ItemView(this, at?.x ?? home.x, at?.y ?? home.y, slot.item.id, slot.item.kind, slotIndex, this.layout.s(slot.item.kind === 'burger' ? 62 : 70));
+    const v = new ItemView(this, at?.x ?? home.x, at?.y ?? home.y, slot.item.id, slot.item.kind, slotIndex, this.layout.s(slot.item.kind === 'burger' ? 62 : slot.item.kind === 'pizza' ? 84 : 70));
     v.home = home;
     this.items.set(slotIndex, v);
     return v;
@@ -386,6 +394,28 @@ export class GameScene extends Phaser.Scene {
         }
         break;
       }
+      case 'ovenStart': {
+        audio.play('pop');
+        // A raw pizza slides from the dough bases into the oven.
+        const from = this.zoneCenter('dough');
+        const to = this.stations.ovenPos(e.oven);
+        if (from && !SaveSystem.reduceMotion()) {
+          this.stations.holdOven(e.oven, 400, this.game.loop.time);
+          const raw = this.add.image(from.x, from.y, 'pizza_raw').setDepth(650);
+          raw.setScale(this.layout.s(190) / raw.width);
+          this.arc(raw, to, 380, 40, () => {
+            raw.destroy();
+            audio.play('drop');
+          });
+        }
+        break;
+      }
+      case 'ovenPhase':
+        if (e.phase === 'ready') {
+          audio.play('ding');
+          this.stations.readyBounce('oven', e.oven);
+        }
+        break;
       case 'pattyStart':
         audio.play('pop');
         break;
@@ -411,7 +441,7 @@ export class GameScene extends Phaser.Scene {
         this.toast.show('Burnt! Tap to throw it away');
         break;
       case 'collect': {
-        const from = e.from === 'fryer' ? this.stations.vatPos(e.index) : this.stations.burnerPos(e.index);
+        const from = e.from === 'fryer' ? this.stations.vatPos(e.index) : this.stations.ovenPos(e.index);
         const v = this.makeItem(e.slot, from);
         if (v) {
           v.showFries();
@@ -597,7 +627,7 @@ export class GameScene extends Phaser.Scene {
     this.hud.update(this.state, dtReal);
     this.updateHint();
 
-    const cooking = this.state.vats.filter((v) => v && v.phase !== 'burnt').length + this.state.burners.filter((b) => b && b.phase !== 'burnt').length;
+    const cooking = this.state.vats.filter((v) => v && v.phase !== 'burnt').length + this.state.burners.filter((b) => b && b.phase !== 'burnt').length + this.state.ovens.filter((o) => o && o.phase !== 'burnt').length;
     audio.setSizzle(this.paused || this.state.closed ? 0 : Math.min(1, cooking / 2));
 
     if (time - this.lastSave > SAVE_EVERY_MS) this.saveNow();

@@ -79,6 +79,28 @@
       "unlocks": [
         "Nuggets"
       ]
+    },
+    {
+      "level": 5,
+      "maxCustomers": 2,
+      "arrivalGap": [
+        4,
+        8
+      ],
+      "orderSize": [
+        1,
+        2
+      ],
+      "patience": 40,
+      "items": [
+        "fries",
+        "burger",
+        "nuggets",
+        "pizza"
+      ],
+      "unlocks": [
+        "Pizza"
+      ]
     }
   ],
   "afterLast": {

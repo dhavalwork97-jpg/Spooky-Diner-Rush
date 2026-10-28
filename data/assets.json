@@ -176,7 +176,7 @@
       "width": 360,
       "height": 274,
       "preferFallback": false,
-      "lazy": true
+      "lazy": false
     },
     {
       "key": "pizza_cooked",
@@ -186,7 +186,7 @@
       "width": 360,
       "height": 275,
       "preferFallback": false,
-      "lazy": true
+      "lazy": false
     },
     {
       "key": "drink_cup",

@@ -127,3 +127,9 @@ Art now used from the zip: kitchen_full, fries, patty, bun, lettuce, tomato, coi
 
 ### Scale mismatch to confirm
 The zip food art is drawn at 2x and larger than the plates in this kitchen, so items are scaled down (about 62 to 70 px wide). The customers are single-pose, so mood shows as a tint and a hop, not a face change. Stock sprites on bins and trays are not overlaid; the kitchen image already shows them.
+
+## Added after review: nuggets and pizza
+- Nuggets (Lv 4, for now): nuggets bin -> fryer vat -> side plate, using the zip raw/cooked/burnt art.
+- Pizza (Lv 5, for now): dough bases -> oven (raw pizza hops in, browns into the cooked pizza) -> plate. The zip has no burnt pizza, so burnt is the cooked art darkened with a tint; replace it if a real burnt pizza is made.
+- Unlock levels are earlier than the brief (nuggets Lv 11, pizza Lv 10) so they can be tried now; they are single numbers in `data/recipes.json` and `data/restaurants.json`.
+- Verified in Chromium: nuggets and pizza each cooked and landed on a plate; 52 tests pass. Pizza toppings (prep station) are not built.

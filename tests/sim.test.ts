@@ -30,13 +30,17 @@ function botStep(s: KitchenState): boolean {
   if (flip >= 0) return (s.tapGrill(flip), true);
   const done = s.burners.findIndex((p) => p && p.side === 2 && isEdible(p.phase));
   if (done >= 0 && next === 'patty') return (s.tapGrill(done), true);
+  const readyOven = s.ovens.findIndex((o) => o && isEdible(o.phase));
+  if (readyOven >= 0 && s.slots.some((sl) => sl.row === 'plate' && !sl.item)) return (s.tapOven(readyOven), true);
+  if (s.ovens.some((o) => o?.phase === 'burnt')) return (s.tapOven(s.ovens.findIndex((o) => o?.phase === 'burnt')), true);
   // 5. start what is still needed beyond what is already in the pipeline
-  const need = (k: 'fries' | 'nuggets' | 'burger') =>
+  const need = (k: 'fries' | 'nuggets' | 'pizza' | 'burger') =>
     s.customers.filter((c) => c.mood === 'waiting').reduce((n, c) => n + c.items.filter((x, i) => x === k && !c.delivered[i]).length, 0);
   const haveOf = (k: 'fries' | 'nuggets') => s.slots.filter((sl) => sl.item?.kind === k).length + s.vats.filter((v) => v?.kind === k).length;
   const haveBurgers = s.slots.filter((sl) => sl.item?.kind === 'burger').length + s.burners.filter(Boolean).length;
   for (const k of ['fries', 'nuggets'] as const) if (need(k) > haveOf(k) && s.vats.some((v) => !v)) return (s.startFry(k), true);
   if (s.level >= 2 && need('burger') > haveBurgers && s.burners.some((p) => !p)) return (s.startPatty(), true);
+  if (need('pizza') > s.slots.filter((sl) => sl.item?.kind === 'pizza').length + s.ovens.filter(Boolean).length && s.ovens.some((o) => !o)) return (s.startPizza(), true);
   const onPlates = s.slots.filter((sl) => sl.row === 'plate' && sl.item).length;
   if (s.level >= 2 && !build && onPlates < need('burger') && s.slots.some((sl) => sl.row === 'plate' && !sl.item)) return (s.tapBuns(), true);
   return false;

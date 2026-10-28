@@ -4,7 +4,7 @@ import { ParticlePool } from '../anim/ParticlePool';
 import { SaveSystem } from '../systems/SaveSystem';
 import { bounce } from '../anim/helpers';
 import { Ring } from './Ring';
-import { BURNERS, Layout, VATS } from './layout';
+import { BURNERS, Layout, OVENS, VATS } from './layout';
 
 /**
  * Fryer and grill visuals. Every frame they read the model (phase and elapsed time)
@@ -30,7 +30,17 @@ interface BurnerView {
   flipping: boolean;
 }
 
+interface OvenView {
+  base: Phaser.GameObjects.Image; // raw pizza
+  top: Phaser.GameObjects.Image; // cooked pizza that fades in as it bakes
+  k: number;
+  ring: Ring;
+  nextSmoke: number;
+  holdUntil: number;
+}
+
 export class StationViews {
+  private ovens: OvenView[] = [];
   private vats: VatView[] = [];
   private burners: BurnerView[] = [];
 
@@ -42,6 +52,16 @@ export class StationViews {
       const fries = scene.add.image(x, y - 4, 'fries_raw').setDepth(500).setVisible(false);
       const k = layout.fit(fries, 110);
       this.vats.push({ fries, k, ring: new Ring(scene, x, y - layout.s(78)), nextBubble: 0, nextSmoke: 0, holdUntil: 0 });
+    });
+    state.ovens.forEach((_, i) => {
+      const [sx, sy] = OVENS[i];
+      const x = layout.x(sx);
+      const y = layout.y(sy);
+      const base = scene.add.image(x, y, 'pizza_raw').setDepth(500).setVisible(false);
+      const top = scene.add.image(x, y, 'pizza_cooked').setDepth(501).setAlpha(0).setVisible(false);
+      const k = layout.fit(base, 190);
+      top.setScale(layout.s(190) / top.width);
+      this.ovens.push({ base, top, k, ring: new Ring(scene, x, y - layout.s(110)), nextSmoke: 0, holdUntil: 0 });
     });
     state.burners.forEach((_, i) => {
       const [sx, sy] = BURNERS[i];
@@ -86,6 +106,28 @@ export class StationViews {
       if ((v.phase === 'warning' || v.phase === 'danger') && now > view.nextSmoke) {
         view.nextSmoke = now + (v.phase === 'danger' ? 150 : 320);
         this.fx.rise(x + (Math.random() - 0.5) * 20, y - 14, v.phase === 'danger' ? 0x3a3a3a : 0xbdbdbd, v.phase === 'danger' ? 0.8 : 0.6, 6, 40, 900, (Math.random() - 0.5) * 18);
+      }
+    });
+
+    const bake = state.cfg.recipes.items.pizza.readyAfter!;
+    state.ovens.forEach((o, i) => {
+      const view = this.ovens[i];
+      if (!o || now < view.holdUntil) {
+        view.base.setVisible(false);
+        view.top.setVisible(false);
+        view.ring.show(null, 0, now);
+        return;
+      }
+      const burnt = o.phase === 'burnt';
+      // browning: the cooked pizza fades in over the raw one while it bakes; burnt is the cooked art darkened
+      view.base.setVisible(!burnt && o.phase === 'cooking');
+      view.top.setVisible(true).setAlpha(burnt ? 1 : Math.min(1, o.t / bake));
+      if (burnt) view.top.setTint(0x3a2a22);
+      else view.top.clearTint();
+      view.ring.show(o.phase, o.t / bake, now);
+      if ((o.phase === 'warning' || o.phase === 'danger') && now > view.nextSmoke) {
+        view.nextSmoke = now + (o.phase === 'danger' ? 140 : 300);
+        this.fx.rise(view.top.x + (Math.random() - 0.5) * 60, view.top.y - 20, o.phase === 'danger' ? 0x333333 : 0xaaaaaa, 0.75, 7, 50, 950, (Math.random() - 0.5) * 20);
       }
     });
 
@@ -158,16 +200,25 @@ export class StationViews {
   }
 
   /** Little hop when something becomes ready. */
-  readyBounce(where: 'vat' | 'burner', index: number): void {
-    const t = where === 'vat' ? this.vats[index]?.fries : this.burners[index]?.base;
+  readyBounce(where: 'vat' | 'burner' | 'oven', index: number): void {
+    const t = where === 'vat' ? this.vats[index]?.fries : where === 'oven' ? this.ovens[index]?.top : this.burners[index]?.base;
     if (t) bounce(this.scene, t, `${where}${index}`, 10, 300);
   }
 
-  burntPuff(where: 'vat' | 'burner', index: number): void {
-    const target = where === 'vat' ? this.vats[index]?.fries : this.burners[index]?.base;
+  burntPuff(where: 'vat' | 'burner' | 'oven', index: number): void {
+    const target = where === 'vat' ? this.vats[index]?.fries : where === 'oven' ? this.ovens[index]?.top : this.burners[index]?.base;
     if (!target) return;
     for (let i = 0; i < 6; i++) this.fx.rise(target.x + (Math.random() - 0.5) * 30, target.y, 0x222222, 0.85, 9, 50, 800, (Math.random() - 0.5) * 30);
     this.scene.cameras.main.shake(SaveSystem.reduceMotion() ? 0 : 120, 0.0025);
+  }
+
+  /** Keep the oven pizza hidden while the raw pizza flies in. */
+  holdOven(oven: number, ms: number, now: number): void {
+    if (this.ovens[oven]) this.ovens[oven].holdUntil = now + ms;
+  }
+
+  ovenPos(i: number): { x: number; y: number } {
+    return { x: this.ovens[i].top.x, y: this.ovens[i].top.y };
   }
 
   /** Where an item leaves from, for fly-to-counter animations. */
@@ -189,7 +240,13 @@ export class StationViews {
       b.ring.destroy();
       b.flipText.destroy();
     });
+    this.ovens.forEach((o) => {
+      o.base.destroy();
+      o.top.destroy();
+      o.ring.destroy();
+    });
     this.vats = [];
     this.burners = [];
+    this.ovens = [];
   }
 }
