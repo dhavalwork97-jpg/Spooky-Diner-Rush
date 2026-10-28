@@ -35,6 +35,28 @@ export class ParticlePool {
     }
   }
 
+  /** A dot that drifts upward and fades: oil bubbles, steam, smoke. */
+  rise(x: number, y: number, color: number, alpha: number, size: number, distance: number, duration: number, drift = 0): void {
+    if (SaveSystem.reduceMotion() || this.active >= this.maxActive) return;
+    const dot = this.free.pop() ?? this.scene.add.circle(0, 0, 4, color).setDepth(1000);
+    dot.setFillStyle(color).setPosition(x, y).setAlpha(alpha).setScale(size / 4).setVisible(true).setActive(true);
+    this.active++;
+    this.scene.tweens.add({
+      targets: dot,
+      x: x + drift,
+      y: y - distance,
+      alpha: 0,
+      scale: (size / 4) * 1.6,
+      duration,
+      ease: 'Sine.Out',
+      onComplete: () => {
+        dot.setVisible(false).setActive(false);
+        this.free.push(dot);
+        this.active--;
+      },
+    });
+  }
+
   destroy(): void {
     for (const d of this.free) d.destroy();
     this.free = [];

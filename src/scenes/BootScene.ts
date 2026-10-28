@@ -3,6 +3,8 @@ import assetsJson from '../../data/assets.json';
 import restaurantsJson from '../../data/restaurants.json';
 import { assertValid, validateAssets, validateRestaurants, type AssetDef, type RestaurantDef } from '../data/validate';
 import { SaveSystem } from '../systems/SaveSystem';
+import { buildAllTextures } from '../art/builders';
+import { defaultConfig } from '../game/config';
 
 export const LOGICAL_WIDTH = 1280;
 export const LOGICAL_HEIGHT = 698;
@@ -39,6 +41,7 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     const restaurants = (restaurantsJson as { restaurants: RestaurantDef[] }).restaurants;
     this.registry.set('restaurants', restaurants);
+    buildAllTextures(this, defaultConfig);
     this.scene.start('Game', { restaurantId: restaurants[0].id });
   }
 }

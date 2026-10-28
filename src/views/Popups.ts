@@ -1,0 +1,168 @@
+import Phaser from 'phaser';
+import { CREAM, INK, MUSTARD, ORANGE } from '../art/builders';
+import { SaveSystem } from '../systems/SaveSystem';
+import { audio } from '../systems/AudioSystem';
+import type { ParticlePool } from '../anim/ParticlePool';
+
+const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
+
+const panel = (scene: Phaser.Scene, w: number, h: number) => {
+  const g = scene.add.graphics();
+  g.fillStyle(0x000000, 0.22).fillRoundedRect(-w / 2 + 4, -h / 2 + 8, w, h, 24);
+  g.fillStyle(CREAM, 1).fillRoundedRect(-w / 2, -h / 2, w, h, 24);
+  g.lineStyle(5, INK, 1).strokeRoundedRect(-w / 2, -h / 2, w, h, 24);
+  return g;
+};
+
+/** Short "invalid action" popup (1.5s, no penalty). One at a time. */
+export class Toast {
+  private box: Phaser.GameObjects.Container;
+  private text: Phaser.GameObjects.Text;
+  private timer?: Phaser.Time.TimerEvent;
+
+  constructor(private scene: Phaser.Scene, x: number, y: number) {
+    this.text = scene.add.text(0, 0, '', { fontFamily: FONT, fontSize: '26px', color: '#2B1B17' }).setOrigin(0.5);
+    this.box = scene.add.container(x, y).setDepth(950).setAlpha(0);
+    this.box.add([panel(scene, 340, 58), this.text]);
+  }
+
+  show(message: string): void {
+    this.text.setText(message);
+    this.box.setAlpha(1).setScale(1);
+    this.scene.tweens.killTweensOf(this.box);
+    if (!SaveSystem.reduceMotion()) {
+      this.box.setScale(0.85);
+      this.scene.tweens.add({ targets: this.box, scale: 1, duration: 160, ease: 'Back.Out' });
+    }
+    this.timer?.remove();
+    this.timer = this.scene.time.delayedCall(1500, () => {
+      this.scene.tweens.add({ targets: this.box, alpha: 0, duration: SaveSystem.reduceMotion() ? 0 : 200 });
+    });
+  }
+
+  get visible(): boolean {
+    return this.box.alpha > 0.01;
+  }
+  get message(): string {
+    return this.text.text;
+  }
+}
+
+/** Level-up card with unlock lines. 2 to 3 seconds, tap to skip, never blocks play. */
+export class LevelUpCard {
+  private box: Phaser.GameObjects.Container;
+  private title: Phaser.GameObjects.Text;
+  private lines: Phaser.GameObjects.Text;
+  private timer?: Phaser.Time.TimerEvent;
+  private queue: { level: number; coins: number; unlocks: string[] }[] = [];
+  private showing = false;
+
+  constructor(private scene: Phaser.Scene, private fx: ParticlePool, x: number, y: number) {
+    this.title = scene.add
+      .text(0, -52, '', { fontFamily: FONT, fontSize: '56px', color: '#F28C28', stroke: '#2B1B17', strokeThickness: 8 })
+      .setOrigin(0.5);
+    this.lines = scene.add.text(0, 30, '', { fontFamily: FONT, fontSize: '28px', color: '#2B1B17', align: 'center' }).setOrigin(0.5);
+    this.box = scene.add.container(x, y).setDepth(960).setAlpha(0).setVisible(false);
+    const p = panel(scene, 420, 210);
+    this.box.add([p, this.title, this.lines]);
+    this.box.setSize(420, 210).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.hide());
+  }
+
+  show(level: number, coins: number, unlocks: string[]): void {
+    this.queue.push({ level, coins, unlocks });
+    if (!this.showing) this.next();
+  }
+
+  private next(): void {
+    const item = this.queue.shift();
+    if (!item) {
+      this.showing = false;
+      return;
+    }
+    this.showing = true;
+    this.title.setText(`Lv ${item.level}!`);
+    const unlockLines = item.unlocks.map((u) => `New: ${u}`);
+    this.lines.setText([...unlockLines, `+${item.coins} coins`].join('\n'));
+    this.box.setVisible(true).setAlpha(1).setScale(1);
+    this.scene.tweens.killTweensOf(this.box);
+    audio.play('levelUp');
+    if (!SaveSystem.reduceMotion()) {
+      this.box.setScale(0.4);
+      this.scene.tweens.add({ targets: this.box, scale: 1, duration: 320, ease: 'Back.Out' });
+      this.fx.burst(this.box.x, this.box.y - 40, MUSTARD, 14, 120, 700);
+      this.fx.burst(this.box.x, this.box.y - 40, ORANGE, 10, 90, 600);
+    }
+    this.timer?.remove();
+    this.timer = this.scene.time.delayedCall(2600, () => this.hide());
+  }
+
+  private hide(): void {
+    this.timer?.remove();
+    this.scene.tweens.killTweensOf(this.box);
+    this.scene.tweens.add({
+      targets: this.box,
+      alpha: 0,
+      duration: SaveSystem.reduceMotion() ? 0 : 180,
+      onComplete: () => {
+        this.box.setVisible(false);
+        this.next();
+      },
+    });
+  }
+
+  get isShowing(): boolean {
+    return this.box.visible && this.box.alpha > 0.01;
+  }
+}
+
+/** Full-screen overlay used for "Closed" (with a Reopen button) and "Paused". */
+export class Overlay {
+  private root: Phaser.GameObjects.Container;
+  private title: Phaser.GameObjects.Text;
+  private sub: Phaser.GameObjects.Text;
+  private button: Phaser.GameObjects.Container;
+  private buttonText: Phaser.GameObjects.Text;
+  private onPress: (() => void) | null = null;
+
+  constructor(private scene: Phaser.Scene, w: number, h: number) {
+    const dim = scene.add.rectangle(w / 2, h / 2, w, h, 0x1a0f0c, 0.72).setInteractive();
+    this.title = scene.add
+      .text(w / 2, h / 2 - 110, '', { fontFamily: FONT, fontSize: '72px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 10 })
+      .setOrigin(0.5);
+    this.sub = scene.add.text(w / 2, h / 2 - 40, '', { fontFamily: FONT, fontSize: '28px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5, align: 'center' }).setOrigin(0.5);
+    const g = scene.add.graphics();
+    g.fillStyle(0x000000, 0.25).fillRoundedRect(-150, -38, 300, 92, 20);
+    g.fillStyle(0xc4661a, 1).fillRoundedRect(-150, -44, 300, 92, 20);
+    g.fillStyle(ORANGE, 1).fillRoundedRect(-150, -48, 300, 88, 20);
+    g.lineStyle(5, INK, 1).strokeRoundedRect(-150, -48, 300, 88, 20);
+    this.buttonText = scene.add.text(0, -4, '', { fontFamily: FONT, fontSize: '40px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 6 }).setOrigin(0.5);
+    this.button = scene.add.container(w / 2, h / 2 + 70, [g, this.buttonText]).setSize(300, 92).setInteractive({ useHandCursor: true });
+    this.button.on('pointerdown', () => {
+      this.button.setScale(0.94);
+    });
+    this.button.on('pointerup', () => {
+      this.button.setScale(1);
+      audio.play('click');
+      this.onPress?.();
+    });
+    this.button.on('pointerout', () => this.button.setScale(1));
+    this.root = scene.add.container(0, 0, [dim, this.title, this.sub, this.button]).setDepth(1500).setVisible(false);
+  }
+
+  show(title: string, sub: string, buttonLabel: string, onPress: () => void): void {
+    this.title.setText(title);
+    this.sub.setText(sub);
+    this.buttonText.setText(buttonLabel);
+    this.onPress = onPress;
+    this.root.setVisible(true).setAlpha(0);
+    this.scene.tweens.add({ targets: this.root, alpha: 1, duration: SaveSystem.reduceMotion() ? 0 : 250 });
+  }
+
+  hide(): void {
+    this.root.setVisible(false);
+  }
+
+  get visible(): boolean {
+    return this.root.visible;
+  }
+}

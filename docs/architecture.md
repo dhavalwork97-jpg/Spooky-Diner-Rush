@@ -20,3 +20,11 @@ Phaser 3+ (installed: Phaser 4), TypeScript, Vite, Vitest. No other runtime libr
 - Gameplay state lives in systems. Animations read state and never decide it.
 - Animations are keyed through `AnimGuard`, so repeated taps restart instead of stacking. Reduced motion comes from the save setting, falling back to the OS preference.
 - Station gameplay plugs in with `registerStationHandler(stationType, handler)`.
+
+## Gameplay model (Milestone 2)
+- `src/game/KitchenState.ts` owns fryer vats, grill burners, counter plates, customers, XP, coins and reputation. `update(dt)` advances time; actions are method calls (`tapFryer`, `tapGrill`, `tapBuns`, `tapTrash`, `serve`). It emits events (`GameEvent`) that views drain each frame.
+- `src/game/cook.ts` holds the phase rules. `src/game/tutorial.ts` computes the next hint from state and never changes it.
+- `src/views/*` are read-only views: `StationViews` (fryer and grill), `ItemView` (plate items, draggable), `CustomerView`, `Hud`, `Popups`, `TutorialHand`, `Ring`.
+- `src/art/builders.ts` draws every non-supplied texture in code and caches it by key.
+- `src/systems/AudioSystem.ts` synthesizes all sound; the context unlocks on the first pointer event.
+- Because the model has no Phaser code, it runs in tests and bot simulations without a browser.

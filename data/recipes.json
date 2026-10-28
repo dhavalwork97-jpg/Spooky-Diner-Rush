@@ -1,0 +1,15 @@
+{
+  "settings": {
+    "counterSlots": 4,
+    "fryVats": 2,
+    "grillBurners": 2,
+    "beginnerMaxLevel": 5,
+    "beginnerBurnBonus": 2,
+    "trashPenaltyCoins": 2,
+    "burnReputationPenalty": 8
+  },
+  "items": {
+    "fries": { "name": "Fries", "unlockLevel": 1, "price": 12, "xp": 20, "readyAfter": 5, "burnWindow": 4 },
+    "burger": { "name": "Burger", "unlockLevel": 2, "price": 26, "xp": 35, "sideSeconds": 4, "burnWindow": 4 }
+  }
+}

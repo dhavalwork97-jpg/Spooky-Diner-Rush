@@ -31,7 +31,7 @@
         {
           "id": "topping_bins",
           "station": "toppings",
-          "unlockLevel": 1,
+          "unlockLevel": 8,
           "x": 0.1854,
           "y": 0.4395,
           "width": 0.163,
@@ -49,7 +49,7 @@
         {
           "id": "prep_station",
           "station": "prep",
-          "unlockLevel": 1,
+          "unlockLevel": 10,
           "x": 0.3502,
           "y": 0.4374,
           "width": 0.0942,
@@ -112,7 +112,7 @@
         {
           "id": "chiller",
           "station": "chiller",
-          "unlockLevel": 1,
+          "unlockLevel": 20,
           "x": 0.7634,
           "y": 0.7073,
           "width": 0.1913,

@@ -1,0 +1,11 @@
+{
+  "types": { "regular": { "patienceMult": 1, "tipMult": 1, "weight": 1 } },
+  "looks": [
+    { "id": "c1", "skin": "#F2C6A0", "hair": "#4A2C1A", "shirt": "#E8483B" },
+    { "id": "c2", "skin": "#C98E63", "hair": "#1F1410", "shirt": "#2FA7A0" },
+    { "id": "c3", "skin": "#8D5A3B", "hair": "#2B1B17", "shirt": "#F6C445" },
+    { "id": "c4", "skin": "#FBD9B5", "hair": "#D9923B", "shirt": "#6B8FD4" },
+    { "id": "c5", "skin": "#E3A878", "hair": "#7A3E22", "shirt": "#6BBF4E" },
+    { "id": "c6", "skin": "#B97A52", "hair": "#EDEDED", "shirt": "#B06AD0" }
+  ]
+}

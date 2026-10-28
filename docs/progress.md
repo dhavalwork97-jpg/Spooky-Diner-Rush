@@ -1,6 +1,50 @@
 # Chef Rush: Progress
 
-## Milestone 1: Foundation (in review)
+## Milestone 2: Vertical slice (in review)
+
+Lv 1 to 3 is playable start to finish: fries, burgers, drag-and-drop serving, tutorial hand, XP and level-ups, reputation and the Closed screen, animations, and synthesized audio.
+
+### How the code is split
+- `src/game/*` is the whole game model (no Phaser): cook phases, orders, patience, XP, coins, reputation, closing, tutorial hints. 41 unit tests cover it, plus a bot simulation.
+- `src/views/*` and `GameScene` only read that model and play effects from its events. Animations never decide cooked, burnt, served or ready.
+- All numbers come from `data/recipes.json`, `progression.json`, `xp.json`, `customers.json`, and are checked at load.
+
+### Implemented and verified in the real game (Chromium, 1280x720, mouse)
+- Fryer: two independent vats, progress ring, green tick when ready, warning and danger rings (exclamation shape, not color alone), burnt fries with black spots, smoke, "Not ready yet" on an early tap, discard with a coin penalty. Verified by script and screenshots.
+- Grill: patty cooks, FLIP prompt, flip hop with squash and stretch, second side, collect onto a waiting bun. Verified by script and screenshots.
+- Burger assembly: bun drops onto a counter plate, patty and top bun drop on, squish. Verified by script and screenshots.
+- Customers: arrival slide and card pop, order card with patience strip and ticks, expression changes (neutral, impatient, angry, happy), leave animation, Closed overlay when reputation empties. Verified.
+- Drag and drop: drag with highlight on the customer under the pointer, snap back on a wrong or empty drop, tap-to-serve. Verified with mouse and with real touch events at 844x390 and 1024x768.
+- Rewards: coins fly to the coin counter and count up, XP bar fills smoothly, level badge pops, level-up card with unlocks. Verified.
+- Reduced motion (saved setting): shake, particles and loops are skipped; a burger was built with no errors. Verified once.
+- Pause when the tab loses focus, and save at level-up and every 15 s. Level-up save verified in localStorage.
+
+### Not verified
+- Audio is synthesized with WebAudio and runs without errors, but nobody has listened to it, so mix and loudness are untested.
+- Real phones: only emulated touch in desktop Chromium. No real frame rate measurement (the headless browser ran about 30 fps in software rendering).
+- The 30-minute memory soak was run on the model only (30 simulated minutes, no growing state), not in the browser.
+- The pause overlay (tab blur) and the mute button were not exercised.
+- Oil bubbles and steam particles are small; they were seen in motion only indirectly.
+
+### Balance probe (bot simulation, 5 seeds)
+A bot that acts every 0.7 s with no mistakes reaches Lv 2 at about 34 s and Lv 3 at about 75 s, and never closes. A human will be slower, so the first level-up lands near the first minute. XP uses the brief's formula, 100 + 40 x level. A bot that never acts closes the shop. Real tuning comes with the Milestone 5 simulation.
+
+### Differences from the brief (please confirm)
+- No dedicated assembly area exists in the artwork, so burgers are built on the four counter plates. Tap the buns, then collect the finished patty from the grill; the patty lands on the waiting bun.
+- A patty cannot be removed before it is done (the player gets "Not ready yet"). The brief said under-cooked patties are rejected by customers; this is simpler and gives the same result.
+- Items cannot be dragged out of the fryer or off the grill yet. Tap collects them onto a plate, then they are dragged to a customer.
+- Not started (later milestones): combo meter and Rush tag, events, upgrades and Shop, the chef, story cards, restaurants, debug panel (only `?debug&level=N&speed=N` and a `window.__chefRush` test hook exist).
+- Past Lv 3 the game keeps running with slowly shrinking patience (floor 30 s) but no new content yet.
+- Fredoka is still not bundled; the fallback font stack is used.
+
+### Known issues
+- Phone text is small: HUD labels are 18 logical px, about 10 CSS px on an 844 px wide phone. Needs a bigger HUD scale on small screens.
+- Seat 4 (far left) would overlap its neighbor's order card. It only matters at 4 customers (Lv 13+).
+- Order icons, customers and food are code-drawn placeholders in the style guide until real art is supplied.
+
+---
+
+## Milestone 1: Foundation (PR #3)
 
 ### Done
 - Repo audit: the repo held only a README and an initial commit. Everything is new.

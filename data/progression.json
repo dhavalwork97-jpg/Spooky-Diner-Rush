@@ -1,0 +1,8 @@
+{
+  "levels": [
+    { "level": 1, "maxCustomers": 1, "arrivalGap": [3, 6], "orderSize": [1, 1], "patience": 45, "items": ["fries"], "unlocks": ["Fries"] },
+    { "level": 2, "maxCustomers": 1, "arrivalGap": [3, 6], "orderSize": [1, 1], "patience": 45, "items": ["fries", "burger"], "unlocks": ["Burger"] },
+    { "level": 3, "maxCustomers": 2, "arrivalGap": [4, 8], "orderSize": [1, 2], "patience": 42, "items": ["fries", "burger"], "unlocks": ["Two customers at once"] }
+  ],
+  "afterLast": { "patienceStepPerLevel": -0.5, "patienceFloor": 30 }
+}
