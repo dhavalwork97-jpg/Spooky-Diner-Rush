@@ -365,7 +365,23 @@ export class GameScene extends Phaser.Scene {
 
   private handle(e: GameEvent): void {
     switch (e.type) {
-      case 'fryStart':
+      case 'fryStart': {
+        audio.play('pop');
+        // Raw fries hop from the bin into the vat, then cook there.
+        const bin = this.zoneCenter('fries_bin');
+        const to = this.stations.vatPos(e.vat);
+        if (bin && !SaveSystem.reduceMotion()) {
+          this.stations.holdVat(e.vat, 380, this.game.loop.time);
+          const raw = this.add.image(bin.x, bin.y, 'fries_raw').setDepth(650);
+          raw.setScale(this.layout.s(110) / raw.width);
+          this.arc(raw, to, 360, 50, () => {
+            raw.destroy();
+            this.fx.burst(to.x, to.y, 0xfff1b8, 6, 30, 350);
+            audio.play('drop');
+          });
+        }
+        break;
+      }
       case 'pattyStart':
         audio.play('pop');
         break;

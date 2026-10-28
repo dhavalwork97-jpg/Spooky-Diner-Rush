@@ -17,6 +17,7 @@ interface VatView {
   ring: Ring;
   nextBubble: number;
   nextSmoke: number;
+  holdUntil: number; // raw fries are still flying in from the bin
 }
 interface BurnerView {
   base: Phaser.GameObjects.Image;
@@ -40,7 +41,7 @@ export class StationViews {
       const y = layout.y(sy);
       const fries = scene.add.image(x, y - 4, 'fries_raw').setDepth(500).setVisible(false);
       const k = layout.fit(fries, 110);
-      this.vats.push({ fries, k, ring: new Ring(scene, x, y - layout.s(78)), nextBubble: 0, nextSmoke: 0 });
+      this.vats.push({ fries, k, ring: new Ring(scene, x, y - layout.s(78)), nextBubble: 0, nextSmoke: 0, holdUntil: 0 });
     });
     state.burners.forEach((_, i) => {
       const [sx, sy] = BURNERS[i];
@@ -66,6 +67,10 @@ export class StationViews {
       if (!v) {
         view.fries.setVisible(false);
         view.ring.show(null, 0, now);
+        return;
+      }
+      if (now < view.holdUntil) {
+        view.fries.setVisible(false);
         return;
       }
       view.fries.setVisible(true).setTexture(v.phase === 'cooking' ? 'fries_raw' : v.phase === 'burnt' ? 'fries_burnt' : 'fries_cooked');
@@ -117,6 +122,11 @@ export class StationViews {
         this.fx.rise(x + (Math.random() - 0.5) * 24, y - 12, p.phase === 'danger' ? 0x333333 : 0xaaaaaa, 0.75, 6, 44, 950, (Math.random() - 0.5) * 20);
       }
     });
+  }
+
+  /** Keep a vat's fries hidden while the raw fries fly in from the bin. */
+  holdVat(vat: number, ms: number, now: number): void {
+    if (this.vats[vat]) this.vats[vat].holdUntil = now + ms;
   }
 
   /** Squash-and-stretch hop when the patty is flipped. */
