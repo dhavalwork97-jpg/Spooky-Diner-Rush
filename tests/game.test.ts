@@ -55,7 +55,7 @@ describe('fryer', () => {
   it('asks for the fries bin when an empty vat is tapped', () => {
     const s = new KitchenState(undefined, undefined, 1);
     s.tapFryer(0);
-    expect(s.drainEvents()).toEqual([{ type: 'invalid', message: 'Tap the fries bin first' }]);
+    expect(s.drainEvents()).toEqual([{ type: 'invalid', message: 'Tap the fries or nuggets bin first' }]);
   });
   it('says the fryer is full when both vats are busy', () => {
     const s = new KitchenState(undefined, undefined, 1);
@@ -306,5 +306,30 @@ describe('tutorial hint', () => {
     expect(nextHint(s)).toEqual({ kind: 'vat', vat: 0 });
     s.tapFryer(0);
     expect(nextHint(s)).toMatchObject({ kind: 'drag', slot: 4 });
+  });
+});
+
+describe('nuggets', () => {
+  const lv4 = () => new KitchenState({ level: 4, xp: 0, coins: 0 }, undefined, 4);
+  it('is locked below Lv 4', () => {
+    const s = new KitchenState({ level: 3, xp: 0, coins: 0 }, undefined, 4);
+    s.startFry('nuggets');
+    expect(s.drainEvents()).toEqual([{ type: 'invalid', message: 'Nuggets unlock at Lv 4' }]);
+  });
+  it('fries in the same vats and lands on a side plate as nuggets', () => {
+    const s = lv4();
+    s.startFry('fries');
+    s.startFry('nuggets');
+    expect(s.vats.map((v) => v?.kind)).toEqual(['fries', 'nuggets']);
+    run(s, 6.2); // nuggets take 6s, fries 5s
+    expect(s.vats[1]?.phase).toBe('ready');
+    s.tapFryer(1);
+    expect(s.slots[4].item?.kind).toBe('nuggets');
+  });
+  it('burns after their own window', () => {
+    const s = lv4();
+    s.startFry('nuggets');
+    run(s, 6 + 6 + 0.5);
+    expect(s.vats[0]?.phase).toBe('burnt');
   });
 });

@@ -186,6 +186,10 @@ export class GameScene extends Phaser.Scene {
       this.state.startFry();
       return '';
     });
+    registerStationHandler('nuggets_bin', () => {
+      this.state.startFry('nuggets');
+      return '';
+    });
     registerStationHandler('patty_tray', () => {
       this.state.startPatty();
       return '';
@@ -357,7 +361,7 @@ export class GameScene extends Phaser.Scene {
     const slot = this.state.slots[slotIndex];
     if (!slot.item) return null;
     const home = this.slotPos(slotIndex);
-    const v = new ItemView(this, at?.x ?? home.x, at?.y ?? home.y, slot.item.id, slot.item.kind, slotIndex, this.layout.s(slot.item.kind === 'fries' ? 70 : 62));
+    const v = new ItemView(this, at?.x ?? home.x, at?.y ?? home.y, slot.item.id, slot.item.kind, slotIndex, this.layout.s(slot.item.kind === 'burger' ? 62 : 70));
     v.home = home;
     this.items.set(slotIndex, v);
     return v;
@@ -367,13 +371,13 @@ export class GameScene extends Phaser.Scene {
     switch (e.type) {
       case 'fryStart': {
         audio.play('pop');
-        // Raw fries hop from the bin into the vat, then cook there.
-        const bin = this.zoneCenter('fries_bin');
+        // Raw fries or nuggets hop from the bin into the vat, then cook there.
+        const bin = this.zoneCenter(e.kind === 'nuggets' ? 'nuggets_bin' : 'fries_bin');
         const to = this.stations.vatPos(e.vat);
         if (bin && !SaveSystem.reduceMotion()) {
           this.stations.holdVat(e.vat, 380, this.game.loop.time);
-          const raw = this.add.image(bin.x, bin.y, 'fries_raw').setDepth(650);
-          raw.setScale(this.layout.s(110) / raw.width);
+          const raw = this.add.image(bin.x, bin.y, `${e.kind}_raw`).setDepth(650);
+          raw.setScale(this.layout.s(e.kind === 'nuggets' ? 80 : 110) / raw.width);
           this.arc(raw, to, 360, 50, () => {
             raw.destroy();
             this.fx.burst(to.x, to.y, 0xfff1b8, 6, 30, 350);
@@ -586,7 +590,7 @@ export class GameScene extends Phaser.Scene {
       const v = this.items.get(slot.index);
       if (slot.item && !v) {
         const nv = this.makeItem(slot.index);
-        if (nv) slot.item.kind === 'fries' ? nv.showFries() : nv.syncLayers(slot.item.placed, slot.item.building, false);
+        if (nv) slot.item.kind !== 'burger' ? nv.showFries() : nv.syncLayers(slot.item.placed, slot.item.building, false);
       } else if (!slot.item && v && !v.leaving) this.removeItem(slot.index, false);
     }
     this.stations.update(this.state, time);

@@ -58,7 +58,7 @@ export class CustomerView {
     c.items.forEach((k, i) => {
       const ix = (i - (n - 1) / 2) * gap;
       this.iconXs.push(ix);
-      const icon = scene.add.image(ix, -bg.displayHeight * 0.5, k === 'fries' ? 'fries_cooked' : 'bun_top');
+      const icon = scene.add.image(ix, -bg.displayHeight * 0.5, k === 'burger' ? 'bun_top' : `${k}_cooked`);
       icon.setScale(iconW / icon.width);
       this.bubble.add(icon);
     });

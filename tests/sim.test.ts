@@ -31,11 +31,11 @@ function botStep(s: KitchenState): boolean {
   const done = s.burners.findIndex((p) => p && p.side === 2 && isEdible(p.phase));
   if (done >= 0 && next === 'patty') return (s.tapGrill(done), true);
   // 5. start what is still needed beyond what is already in the pipeline
-  const need = (k: 'fries' | 'burger') =>
+  const need = (k: 'fries' | 'nuggets' | 'burger') =>
     s.customers.filter((c) => c.mood === 'waiting').reduce((n, c) => n + c.items.filter((x, i) => x === k && !c.delivered[i]).length, 0);
-  const haveFries = s.slots.filter((sl) => sl.item?.kind === 'fries').length + s.vats.filter(Boolean).length;
+  const haveOf = (k: 'fries' | 'nuggets') => s.slots.filter((sl) => sl.item?.kind === k).length + s.vats.filter((v) => v?.kind === k).length;
   const haveBurgers = s.slots.filter((sl) => sl.item?.kind === 'burger').length + s.burners.filter(Boolean).length;
-  if (need('fries') > haveFries && s.vats.some((v) => !v)) return (s.startFry(), true);
+  for (const k of ['fries', 'nuggets'] as const) if (need(k) > haveOf(k) && s.vats.some((v) => !v)) return (s.startFry(k), true);
   if (s.level >= 2 && need('burger') > haveBurgers && s.burners.some((p) => !p)) return (s.startPatty(), true);
   const onPlates = s.slots.filter((sl) => sl.row === 'plate' && sl.item).length;
   if (s.level >= 2 && !build && onPlates < need('burger') && s.slots.some((sl) => sl.row === 'plate' && !sl.item)) return (s.tapBuns(), true);

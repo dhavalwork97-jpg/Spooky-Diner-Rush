@@ -61,8 +61,7 @@ export class StationViews {
   }
 
   update(state: KitchenState, now: number): void {
-    const readyAfterFry = state.cfg.recipes.items.fries.readyAfter!;
-    state.vats.forEach((v, i) => {
+        state.vats.forEach((v, i) => {
       const view = this.vats[i];
       if (!v) {
         view.fries.setVisible(false);
@@ -73,9 +72,9 @@ export class StationViews {
         view.fries.setVisible(false);
         return;
       }
-      view.fries.setVisible(true).setTexture(v.phase === 'cooking' ? 'fries_raw' : v.phase === 'burnt' ? 'fries_burnt' : 'fries_cooked');
-      view.fries.setScale(this.layout.s(110) / view.fries.width);
-      view.ring.show(v.phase, v.t / readyAfterFry, now);
+      view.fries.setVisible(true).setTexture(`${v.kind}_${v.phase === 'cooking' ? 'raw' : v.phase === 'burnt' ? 'burnt' : 'cooked'}`);
+      view.fries.setScale(this.layout.s(v.kind === 'nuggets' ? 80 : 110) / view.fries.width);
+      view.ring.show(v.phase, v.t / state.cfg.recipes.items[v.kind].readyAfter!, now);
       const x = view.fries.x;
       const y = view.fries.y;
       // oil bubbles while frying

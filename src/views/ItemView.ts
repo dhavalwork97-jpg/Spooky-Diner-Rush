@@ -50,8 +50,9 @@ export class ItemView extends Phaser.GameObjects.Container {
     return im;
   }
 
+  /** Cooked fries or nuggets. */
   showFries(): void {
-    this.art.add(this.img('fries_cooked', -this.itemW * 0.05));
+    this.art.add(this.img(`${this.kind}_cooked`, -this.itemW * 0.05));
     this.markReady(true);
   }
 

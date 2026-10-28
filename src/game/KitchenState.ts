@@ -1,5 +1,5 @@
 import { burnWindowFor, cookPhase, isEdible, type CookPhase } from './cook';
-import { defaultConfig, levelDef, xpForLevel, type GameConfig, type ItemKind } from './config';
+import { defaultConfig, levelDef, xpForLevel, type FriedKind, type GameConfig, type ItemKind } from './config';
 import { makeRng, randInt, randRange, type Rng } from './rng';
 
 /**
@@ -14,6 +14,7 @@ import { makeRng, randInt, randRange, type Rng } from './rng';
  */
 
 export interface Fry {
+  kind: FriedKind;
   t: number;
   phase: CookPhase;
 }
@@ -51,7 +52,7 @@ export interface Customer {
 }
 
 export type GameEvent =
-  | { type: 'fryStart'; vat: number }
+  | { type: 'fryStart'; vat: number; kind: FriedKind }
   | { type: 'fryPhase'; vat: number; phase: CookPhase }
   | { type: 'pattyStart'; burner: number }
   | { type: 'pattyPhase'; burner: number; phase: CookPhase }
@@ -173,9 +174,9 @@ export class KitchenState {
   }
 
   private updateCooking(dt: number): void {
-    const fry = this.cfg.recipes.items.fries;
     this.vats.forEach((v, i) => {
       if (!v) return;
+      const fry = this.cfg.recipes.items[v.kind];
       v.t += dt;
       const phase = cookPhase(v.t, fry.readyAfter!, this.burnWindow(fry.burnWindow));
       if (phase !== v.phase) {
@@ -275,22 +276,22 @@ export class KitchenState {
 
   // ----- fryer -----
 
-  /** Start fries in a free vat (the fries bin, or an empty vat that was tapped). */
-  startFry(vat?: number): void {
+  /** Put raw fries or nuggets from their bin into a free vat. */
+  startFry(kind: FriedKind = 'fries'): void {
     if (this.closed) return;
-    const fry = this.cfg.recipes.items.fries;
-    if (this.level < fry.unlockLevel) return this.invalid('Fries unlock at Lv ' + fry.unlockLevel);
-    const i = vat !== undefined && !this.vats[vat] ? vat : this.vats.findIndex((v) => !v);
+    const def = this.cfg.recipes.items[kind];
+    if (this.level < def.unlockLevel) return this.invalid(`${def.name} unlock at Lv ${def.unlockLevel}`);
+    const i = this.vats.findIndex((v) => !v);
     if (i < 0) return this.invalid('The fryer is full');
-    this.vats[i] = { t: 0, phase: 'cooking' };
-    this.emit({ type: 'fryStart', vat: i });
+    this.vats[i] = { kind, t: 0, phase: 'cooking' };
+    this.emit({ type: 'fryStart', vat: i, kind });
   }
 
   /** Tap a vat: start fries if empty, otherwise collect or discard. */
   tapFryer(vat: number): void {
     if (this.closed) return;
     const v = this.vats[vat];
-    if (!v) return this.invalid('Tap the fries bin first');
+    if (!v) return this.invalid('Tap the fries or nuggets bin first');
     if (v.phase === 'cooking') return this.invalid('Not ready yet');
     if (v.phase === 'burnt') {
       this.vats[vat] = null;
@@ -301,7 +302,7 @@ export class KitchenState {
     const slot = this.freeSlot('side');
     if (!slot) return this.invalid('The plate is full');
     this.vats[vat] = null;
-    slot.item = { id: this.nextId++, kind: 'fries', placed: [], building: false };
+    slot.item = { id: this.nextId++, kind: v.kind, placed: [], building: false };
     this.emit({ type: 'collect', from: 'fryer', index: vat, slot: slot.index });
   }
 

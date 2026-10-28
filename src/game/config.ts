@@ -3,7 +3,7 @@ import progressionJson from '../../data/progression.json';
 import xpJson from '../../data/xp.json';
 import customersJson from '../../data/customers.json';
 
-export type ItemKind = 'fries' | 'burger';
+export type ItemKind = 'fries' | 'nuggets' | 'burger';
 
 export interface RecipeSettings {
   plateSlots: number;
@@ -74,3 +74,6 @@ export function levelDef(cfg: GameConfig, level: number): LevelDef {
 }
 
 export const xpForLevel = (cfg: GameConfig, level: number): number => cfg.xp.base + cfg.xp.perLevel * level;
+
+/** Items that cook in a fryer vat. */
+export type FriedKind = 'fries' | 'nuggets';
