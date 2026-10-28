@@ -74,7 +74,7 @@ export class LevelUpCard {
   }
 
   private next(): void {
-    const item = this.queue.shift();
+    const item = this.queue.splice(0, 1)[0];
     if (!item) {
       this.showing = false;
       return;

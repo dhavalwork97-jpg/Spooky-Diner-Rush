@@ -22,7 +22,7 @@ export class ItemView extends Phaser.GameObjects.Container {
   private shadow: Phaser.GameObjects.Ellipse;
   private art: Phaser.GameObjects.Container;
   private bob?: Phaser.Tweens.Tween;
-  private stage = 0; // burger layers placed: 1 bun, 2 patty, 3 top bun
+  private layers = 0; // burger layers placed: 1 bun, 2 patty, 3 top bun
 
   constructor(scene: Phaser.Scene, x: number, y: number, itemId: number, kind: ItemKind, slotIndex: number) {
     super(scene, x, y);
@@ -49,18 +49,18 @@ export class ItemView extends Phaser.GameObjects.Container {
 
   // ----- burger assembly: each layer drops on with a small bounce -----
   addBun(): void {
-    this.stage = 1;
+    this.layers = 1;
     this.drop(this.scene.add.image(0, 12, 'bun_bottom').setScale(S), 12, 'bun');
   }
 
   /** Patty lands, then the top bun, then a squish. Calls done when finished. */
   finishBurger(done?: () => void): void {
-    this.stage = 2;
+    this.layers = 2;
     this.drop(this.scene.add.image(0, 0, 'patty_cooked').setScale(S), 0, 'patty');
     const delay = SaveSystem.reduceMotion() ? 0 : 260;
     this.scene.time.delayedCall(delay, () => {
       if (!this.scene || !this.active) return;
-      this.stage = 3;
+      this.layers = 3;
       this.drop(this.scene.add.image(0, -14, 'bun_top').setScale(S), -14, 'bun');
       this.scene.time.delayedCall(delay, () => {
         if (!this.scene || !this.active) return;
@@ -78,7 +78,7 @@ export class ItemView extends Phaser.GameObjects.Container {
       this.scene.add.image(0, 0, 'patty_cooked').setScale(S),
       this.scene.add.image(0, -14, 'bun_top').setScale(S),
     ]);
-    this.stage = 3;
+    this.layers = 3;
     this.markReady(false);
   }
 
@@ -119,8 +119,8 @@ export class ItemView extends Phaser.GameObjects.Container {
     this.shadow.setAlpha(on ? 0.4 : 0.2).setY(on ? 34 : 24);
   }
 
-  get stageCount(): number {
-    return this.stage;
+  get layerCount(): number {
+    return this.layers;
   }
 
   override destroy(fromScene?: boolean): void {
