@@ -7,7 +7,7 @@ import { isEdible } from '../src/game/cook';
  * It is the first balance probe: how long levels take and whether play is manageable.
  */
 function botStep(s: KitchenState): boolean {
-  // 1. serve anything ready that a customer wants
+  // 1. serve anything finished that a customer wants
   for (const slot of s.slots) {
     const it = slot.item;
     if (!it || it.building) continue;
@@ -21,32 +21,24 @@ function botStep(s: KitchenState): boolean {
   if (burntBurner >= 0) return (s.tapGrill(burntBurner), true);
   // 3. collect ready fries
   const readyVat = s.vats.findIndex((v) => v && isEdible(v.phase));
-  if (readyVat >= 0 && s.slots.some((sl) => !sl.item)) return (s.tapFryer(readyVat), true);
-  // 4. burgers: finish a patty onto a waiting bun, flip, or place buns
-  const building = s.slots.some((sl) => sl.item?.building);
-  const burnerReady = s.burners.findIndex((p) => p && isEdible(p.phase));
-  if (burnerReady >= 0) {
-    if (s.burners[burnerReady]!.side === 1) return (s.tapGrill(burnerReady), true);
-    if (building) return (s.tapGrill(burnerReady), true);
-  }
-  // 5. what is still needed beyond what is already in the pipeline?
+  if (readyVat >= 0 && s.slots.some((sl) => sl.row === 'side' && !sl.item)) return (s.tapFryer(readyVat), true);
+  // 4. burger building: toppings, patties, flips
+  const build = s.buildingSlots()[0]?.item;
+  const next = build ? s.layers[build.placed.length] : undefined;
+  if (next === 'lettuce' || next === 'tomato') return (s.tapTopping(next), true);
+  const flip = s.burners.findIndex((p) => p && p.side === 1 && isEdible(p.phase));
+  if (flip >= 0) return (s.tapGrill(flip), true);
+  const done = s.burners.findIndex((p) => p && p.side === 2 && isEdible(p.phase));
+  if (done >= 0 && next === 'patty') return (s.tapGrill(done), true);
+  // 5. start what is still needed beyond what is already in the pipeline
   const need = (k: 'fries' | 'burger') =>
     s.customers.filter((c) => c.mood === 'waiting').reduce((n, c) => n + c.items.filter((x, i) => x === k && !c.delivered[i]).length, 0);
   const haveFries = s.slots.filter((sl) => sl.item?.kind === 'fries').length + s.vats.filter(Boolean).length;
   const haveBurgers = s.slots.filter((sl) => sl.item?.kind === 'burger').length + s.burners.filter(Boolean).length;
-  if (need('fries') > haveFries) {
-    const free = s.vats.findIndex((v) => !v);
-    if (free >= 0) return (s.tapFryer(free), true);
-  }
-  if (need('burger') > haveBurgers) {
-    const free = s.burners.findIndex((p) => !p);
-    if (free >= 0) return (s.tapGrill(free), true);
-  }
-  const burgersNeedingBun = s.slots.filter((sl) => sl.item?.kind === 'burger').length + s.burners.filter(Boolean).length;
-  if (s.level >= 2 && need('burger') > 0 && !building && burgersNeedingBun > 0 && s.slots.some((sl) => !sl.item)) {
-    const onCounter = s.slots.filter((sl) => sl.item?.kind === 'burger').length;
-    if (onCounter < need('burger')) return (s.tapBuns(), true);
-  }
+  if (need('fries') > haveFries && s.vats.some((v) => !v)) return (s.startFry(), true);
+  if (s.level >= 2 && need('burger') > haveBurgers && s.burners.some((p) => !p)) return (s.startPatty(), true);
+  const onPlates = s.slots.filter((sl) => sl.row === 'plate' && sl.item).length;
+  if (s.level >= 2 && !build && onPlates < need('burger') && s.slots.some((sl) => sl.row === 'plate' && !sl.item)) return (s.tapBuns(), true);
   return false;
 }
 
@@ -100,7 +92,7 @@ describe('bot simulation (first balance probe)', () => {
     const r = play(7, 0.7, 1800 * 1, 3);
     expect(r.s.customers.length).toBeLessThanOrEqual(4);
     expect(r.s.events.length).toBe(0);
-    expect(r.s.slots.length).toBe(4);
+    expect(r.s.slots.length).toBe(6);
     expect(r.s.vats.length).toBe(2);
   });
 });

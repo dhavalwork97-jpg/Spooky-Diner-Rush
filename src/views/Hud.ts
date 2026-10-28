@@ -30,7 +30,8 @@ export class Hud {
       .text(118, 84, 'Reputation', { fontFamily: FONT, fontSize: '18px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 4 })
       .setOrigin(0, 0.5)
       .setDepth(D + 2);
-    this.coinIcon = scene.add.image(1158, 44, 'coin').setScale(0.75).setDepth(D + 2);
+    this.coinIcon = scene.add.image(1158, 44, 'coin').setDepth(D + 2);
+    this.coinIcon.setScale(44 / this.coinIcon.width);
     this.coinText = scene.add
       .text(1184, 44, String(state.coins), { fontFamily: FONT, fontSize: '28px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 })
       .setOrigin(0, 0.5)

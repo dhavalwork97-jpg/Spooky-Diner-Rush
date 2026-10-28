@@ -3,9 +3,12 @@ import { isEdible } from './cook';
 
 /** Where the pointer hand should point next. Read-only: it never changes gameplay. */
 export type Hint =
-  | { kind: 'fryer'; vat: number }
+  | { kind: 'fries_bin' }
+  | { kind: 'vat'; vat: number }
+  | { kind: 'patty_tray' }
   | { kind: 'grill'; burner: number }
   | { kind: 'buns' }
+  | { kind: 'topping'; layer: 'lettuce' | 'tomato' }
   | { kind: 'drag'; slot: number; customer: number }
   | null;
 
@@ -15,7 +18,7 @@ export function tutorialActive(s: KitchenState): boolean {
 
 export function nextHint(s: KitchenState): Hint {
   if (s.closed || !tutorialActive(s)) return null;
-  // 1. Anything ready on the counter that a customer wants: drag it.
+  // 1. Anything finished on the counter that a customer wants: drag it.
   for (const slot of s.slots) {
     const it = slot.item;
     if (!it || it.building) continue;
@@ -28,16 +31,22 @@ export function nextHint(s: KitchenState): Hint {
   const need = c.items.find((k, i) => !c.delivered[i]);
   if (need === 'fries') {
     const ready = s.vats.findIndex((v) => v && isEdible(v.phase));
-    if (ready >= 0) return { kind: 'fryer', vat: ready };
+    if (ready >= 0) return { kind: 'vat', vat: ready };
     if (s.vats.some((v) => v)) return null; // wait for it to cook
-    return { kind: 'fryer', vat: 0 };
+    return { kind: 'fries_bin' };
   }
   if (need === 'burger') {
-    const building = s.slots.some((sl) => sl.item?.building);
-    const patty = s.burners.findIndex((p) => p && isEdible(p.phase));
-    if (patty >= 0) return building ? { kind: 'grill', burner: patty } : { kind: 'buns' };
-    if (s.burners.some((p) => p)) return building ? null : { kind: 'buns' };
-    return { kind: 'grill', burner: 0 };
+    const build = s.buildingSlots()[0]?.item;
+    const nextLayer = build ? s.layers[build.placed.length] : undefined;
+    const pattyReady = s.burners.findIndex((p) => p && p.side === 2 && isEdible(p.phase));
+    const pattyFlip = s.burners.findIndex((p) => p && p.side === 1 && isEdible(p.phase));
+    const cooking = s.burners.some((p) => p);
+    if (pattyFlip >= 0) return { kind: 'grill', burner: pattyFlip };
+    if (pattyReady >= 0) return build && nextLayer === 'patty' ? { kind: 'grill', burner: pattyReady } : { kind: 'buns' };
+    if (build && (nextLayer === 'lettuce' || nextLayer === 'tomato')) return { kind: 'topping', layer: nextLayer };
+    if (!cooking && !(build && nextLayer !== 'patty')) return { kind: 'patty_tray' };
+    if (!build) return { kind: 'buns' };
+    return null; // patty still cooking: wait
   }
   return null;
 }

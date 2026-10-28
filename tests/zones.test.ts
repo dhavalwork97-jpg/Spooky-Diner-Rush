@@ -42,7 +42,7 @@ describe('zone to station mapping', () => {
     }
   });
   it('maps the key stations', () => {
-    const c = center('fryer');
+    const c = center('fryer_vats');
     expect(hitTestZone(zones, c.x, c.y)?.station).toBe('fryer');
     const g = center('grill');
     expect(hitTestZone(zones, g.x, g.y)?.station).toBe('grill');

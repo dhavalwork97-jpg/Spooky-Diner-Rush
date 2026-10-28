@@ -7,11 +7,12 @@ import type { BackgroundPlacement } from '../kitchen/zones';
 export const SRC_W = 1699;
 export const SRC_H = 926;
 
-export const SEATS_X = [893, 570, 1220, 388];
+export const SEATS_X = [893, 570, 1220, 1368];
 export const SEAT_BOTTOM_Y = 250;
-export const VATS: [number, number][] = [[1095, 690], [1205, 690]];
-export const BURNERS: [number, number][] = [[1308, 485], [1430, 485], [1308, 550], [1445, 550]];
-export const SLOTS: [number, number][] = [[980, 452], [1113, 452], [980, 535], [1113, 535]];
+export const VATS: [number, number][] = [[335, 650], [465, 650]];
+export const BURNERS: [number, number][] = [[1314, 484], [1447, 484]];
+/** Plates on the serving counter (burgers) first, then the two side plates on the left counter (fries). */
+export const SLOTS: [number, number][] = [[980, 452], [1113, 452], [980, 535], [1113, 535], [369, 543], [500, 543]];
 
 export class Layout {
   constructor(readonly bg: BackgroundPlacement) {}
@@ -23,6 +24,12 @@ export class Layout {
   }
   y(sy: number): number {
     return this.bg.y + sy * (this.bg.height / SRC_H);
+  }
+  /** Scale an image so it is `srcWidth` source pixels wide. Returns the scale used. */
+  fit(img: { width: number; setScale(x: number): unknown }, srcWidth: number): number {
+    const k = this.s(srcWidth) / img.width;
+    img.setScale(k);
+    return k;
   }
   /** Source-image distance to logical distance. */
   s(len: number): number {

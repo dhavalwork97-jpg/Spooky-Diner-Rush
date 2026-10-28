@@ -68,20 +68,23 @@ Normalized 0..1 rectangles, converted at runtime. Mapping to the artwork:
 
 | Zone id | Station type | Artwork | Unlock |
 |---|---|---|---|
-| fryer | fryer | basket fryer, two baskets | Lv 1 |
-| grill | grill | four-burner grill top | Lv 1 |
-| serving_counter | assembly | four plates | Lv 1 |
+| fryer_vats | fryer | yellow unit, two top baskets | Lv 1 |
+| fries_bin | fries_bin | yellow unit, right lower bin | Lv 1 |
+| nuggets_bin | nuggets_bin | yellow unit, left lower bin | Lv 11 |
+| side_plate, side_tray | side_plate | left counter plate and red tray (fries land here) | Lv 1 |
+| lettuce_tray, tomato_tray | lettuce, tomato | left counter trays | Lv 2 |
+| prep_station | prep | bowl and mold tray | Lv 10 |
+| dough_bases | dough | two dough bases | Lv 10 |
+| serving_counter | assembly | four plates (burgers and drag-to-serve) | Lv 1 |
+| grill | grill | four-burner grill top (two burners used) | Lv 1 |
+| bun_basket | buns | basket unit | Lv 2 |
+| patty_tray | patty_tray | steel unit, far right | Lv 2 |
+| pizza_oven | oven | center oven | Lv 10 |
 | drink_dispenser | drinks | red dispenser | Lv 6 |
 | ice_cream_machine | ice_cream | soft-serve machine | Lv 12 |
-| pizza_oven | oven | center oven | Lv 10 |
-| dough_bases | dough | two dough bases | Lv 10 |
-| topping_bins | toppings | left orange counter bins | Lv 1 |
-| ingredient_bins | ingredients | yellow two-bin unit | Lv 1 |
-| prep_station | prep | bowl and mold tray | Lv 1 |
 | trash_bin | trash | trash can | Lv 1 |
-| chiller | chiller | steel unit, far right | Lv 1 |
 
-Assumptions to confirm: the artwork has no dedicated burger assembly area or bun, lettuce and tomato trays, so the plate counter is used for assembly and serving. The yellow two-bin unit and the steel chiller have no assigned role yet.
+Station roles were re-mapped from the reference video: the yellow unit is the fryer (top baskets) with the fries and nuggets bins under it, the basket unit holds buns, and the steel unit holds raw patties.
 
 ### Verified (real game in Chromium, mouse and touch)
 - Production build loads with no console errors and 12 zones.
@@ -103,3 +106,24 @@ Assumptions to confirm: the artwork has no dedicated burger assembly area or bun
 
 ### Next
 - Milestone 2: vertical slice (fries, burger, drag-and-drop serving, tutorial, XP, Closed screen, audio), plus the first station animations (fryer, grill, assembly, customer arrival, serving, rewards).
+
+
+## Milestone 2 re-map (reference video flow, your zip art)
+
+Flow now: fries bin -> vat (cooks, then warning, burns) -> tap vat -> side plate. Burger: tap buns -> tap patty tray (patty goes on the grill) -> flip when ready -> tap to put the patty on the burger -> lettuce tray -> tomato tray -> top bun closes it automatically. Drag or tap-tap a finished item to the customer. Continuous service, XP "Lv N", reputation and Closed/Reopen unchanged.
+
+Art now used from the zip: kitchen_full, fries, patty, bun, lettuce, tomato, coin, three customers, order bubble, patience frame. Not used yet (marked lazy in `data/assets.json`): cheese, onion, pickle, nuggets, pizza, drinks, chef, logo, bg_taco.
+
+### Verified in a real browser (Chromium, headless)
+- Full burger build via real clicks: bun, patty, flip, patty on burger, lettuce, tomato, top bun, with the zip art stacked on the plate.
+- Fries to a side plate and served to a customer: mouse drag at 1280x698, tap-tap at 844x390 touch. Both paid coins and XP.
+- No console or page errors. Typecheck clean, 45 unit tests pass (incl. bot simulation reaching Lv 3), production build succeeds.
+
+### Not verified
+- Tutorial hand positions for the burger steps were seen once (drag step) but not each step.
+- Reduced motion, audio output and real-device performance remain unexercised.
+- Fredoka is still not bundled.
+- Phone landscape (844x390) touch targets under 88 css px: lettuce, tomato, both side plates, fryer_vats (45 high), nuggets_bin, fries_bin, prep_station, dough_bases, serving_counter, trash_bin. At 1280 wide: lettuce, tomato, side plates, fryer_vats (81 high) and trash_bin.
+
+### Scale mismatch to confirm
+The zip food art is drawn at 2x and larger than the plates in this kitchen, so items are scaled down (about 62 to 70 px wide). The customers are single-pose, so mood shows as a tint and a hop, not a face change. Stock sprites on bins and trays are not overlaid; the kitchen image already shows them.

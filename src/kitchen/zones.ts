@@ -2,31 +2,39 @@
 
 export type StationType =
   | 'fryer'
+  | 'fries_bin'
+  | 'nuggets_bin'
   | 'grill'
+  | 'patty_tray'
+  | 'buns'
+  | 'lettuce'
+  | 'tomato'
+  | 'side_plate'
   | 'assembly'
   | 'drinks'
   | 'ice_cream'
   | 'oven'
-  | 'toppings'
   | 'dough'
   | 'prep'
-  | 'ingredients'
-  | 'trash'
-  | 'chiller';
+  | 'trash';
 
 export const STATION_TYPES: readonly StationType[] = [
   'fryer',
+  'fries_bin',
+  'nuggets_bin',
   'grill',
+  'patty_tray',
+  'buns',
+  'lettuce',
+  'tomato',
+  'side_plate',
   'assembly',
   'drinks',
   'ice_cream',
   'oven',
-  'toppings',
   'dough',
   'prep',
-  'ingredients',
   'trash',
-  'chiller',
 ];
 
 /** Normalized rectangle, 0..1 relative to the background image. */

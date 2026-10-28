@@ -24,17 +24,21 @@ export function clearStationHandlers(): void {
 
 export const STATION_LABELS: Record<StationType, string> = {
   fryer: 'Fryer',
+  fries_bin: 'Fries',
+  nuggets_bin: 'Nuggets',
   grill: 'Grill',
-  assembly: 'Assembly',
+  patty_tray: 'Patties',
+  buns: 'Buns',
+  lettuce: 'Lettuce',
+  tomato: 'Tomato',
+  side_plate: 'Plate',
+  assembly: 'Plates',
   drinks: 'Drinks',
   ice_cream: 'Ice cream',
   oven: 'Pizza oven',
-  toppings: 'Toppings',
   dough: 'Dough',
-  prep: 'Prep',
-  ingredients: 'Ingredients',
+  prep: 'Toppings',
   trash: 'Trash',
-  chiller: 'Chiller',
 };
 
 /** Called by the scene on a tap. Returns the label text to show. */

@@ -13,6 +13,7 @@ import { BURNERS, Layout, VATS } from './layout';
 
 interface VatView {
   fries: Phaser.GameObjects.Image;
+  k: number;
   ring: Ring;
   nextBubble: number;
   nextSmoke: number;
@@ -20,6 +21,7 @@ interface VatView {
 interface BurnerView {
   base: Phaser.GameObjects.Image;
   top: Phaser.GameObjects.Image; // cooked overlay that fades in as the side browns
+  k: number;
   ring: Ring;
   flipText: Phaser.GameObjects.Text;
   nextSteam: number;
@@ -36,21 +38,24 @@ export class StationViews {
       const [sx, sy] = VATS[i];
       const x = layout.x(sx);
       const y = layout.y(sy);
-      const fries = scene.add.image(x, y - 4, 'fries_raw').setScale(0.4).setDepth(500).setVisible(false);
-      this.vats.push({ fries, ring: new Ring(scene, x, y - layout.s(78)), nextBubble: 0, nextSmoke: 0 });
+      const fries = scene.add.image(x, y - 4, 'fries_raw').setDepth(500).setVisible(false);
+      const k = layout.fit(fries, 110);
+      this.vats.push({ fries, k, ring: new Ring(scene, x, y - layout.s(78)), nextBubble: 0, nextSmoke: 0 });
     });
     state.burners.forEach((_, i) => {
       const [sx, sy] = BURNERS[i];
       const x = layout.x(sx);
       const y = layout.y(sy);
-      const base = scene.add.image(x, y, 'patty_raw').setScale(0.42).setDepth(500).setVisible(false);
-      const top = scene.add.image(x, y, 'patty_cooked').setScale(0.42).setDepth(501).setAlpha(0).setVisible(false);
+      const base = scene.add.image(x, y, 'patty_raw').setDepth(500).setVisible(false);
+      const top = scene.add.image(x, y, 'patty_cooked').setDepth(501).setAlpha(0).setVisible(false);
+      const k = layout.fit(base, 120);
+      top.setScale(k);
       const flipText = scene.add
         .text(x, y - layout.s(72) - 26, 'FLIP', { fontFamily: 'Fredoka, "Baloo 2", system-ui, sans-serif', fontSize: '20px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 })
         .setOrigin(0.5)
         .setDepth(602)
         .setVisible(false);
-      this.burners.push({ base, top, ring: new Ring(scene, x, y - layout.s(62)), flipText, nextSteam: 0, nextSmoke: 0, flipping: false });
+      this.burners.push({ base, top, k, ring: new Ring(scene, x, y - layout.s(62)), flipText, nextSteam: 0, nextSmoke: 0, flipping: false });
     });
   }
 
@@ -64,6 +69,7 @@ export class StationViews {
         return;
       }
       view.fries.setVisible(true).setTexture(v.phase === 'cooking' ? 'fries_raw' : v.phase === 'burnt' ? 'fries_burnt' : 'fries_cooked');
+      view.fries.setScale(this.layout.s(110) / view.fries.width);
       view.ring.show(v.phase, v.t / readyAfterFry, now);
       const x = view.fries.x;
       const y = view.fries.y;
@@ -119,6 +125,7 @@ export class StationViews {
     if (!v) return;
     v.flipping = true;
     const y = v.base.y;
+    const k = v.k;
     const reduce = SaveSystem.reduceMotion();
     const targets = [v.base, v.top];
     if (reduce) {
@@ -128,14 +135,14 @@ export class StationViews {
     this.scene.tweens.add({
       targets,
       y: y - 34,
-      scaleX: 0.42 * 0.8,
-      scaleY: 0.42 * 1.25,
+      scaleX: k * 0.8,
+      scaleY: k * 1.25,
       duration: 160,
       ease: 'Quad.Out',
       yoyo: true,
-      onYoyo: () => targets.forEach((t) => t.setScale(0.42 * 1.2, 0.42 * 0.8)),
+      onYoyo: () => targets.forEach((t) => t.setScale(k * 1.2, k * 0.8)),
       onComplete: () => {
-        targets.forEach((t) => t.setPosition(t.x, y).setScale(0.42));
+        targets.forEach((t) => t.setPosition(t.x, y).setScale(k));
         v.flipping = false;
       },
     });

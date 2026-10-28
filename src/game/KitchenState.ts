@@ -5,6 +5,12 @@ import { makeRng, randInt, randRange, type Rng } from './rng';
 /**
  * All gameplay state lives here. It has no Phaser code and no animation code:
  * views read this state and play effects from the events it emits.
+ *
+ * Kitchen flow (mirrors the reference video):
+ * - Fries: tap the fries bin (or an empty vat), they fry in a vat, tap the vat to put them on a side plate.
+ * - Burger: tap the buns (a bun lands on a plate), tap the patty tray (a patty goes on the grill),
+ *   flip it, tap it to put it on the burger, then add lettuce and tomato. The top bun closes it.
+ * - Serve: drag a finished item to the customer who ordered it.
  */
 
 export interface Fry {
@@ -19,10 +25,15 @@ export interface Patty {
 export interface SlotItem {
   id: number;
   kind: ItemKind;
-  building: boolean; // a burger waiting for its patty
+  /** Burger layers placed so far (names from the recipe). Empty for fries. */
+  placed: string[];
+  /** True while a burger is still waiting for layers. */
+  building: boolean;
 }
+export type SlotRow = 'plate' | 'side';
 export interface Slot {
   index: number;
+  row: SlotRow;
   item: SlotItem | null;
 }
 export interface Customer {
@@ -45,9 +56,10 @@ export type GameEvent =
   | { type: 'pattyStart'; burner: number }
   | { type: 'pattyPhase'; burner: number; phase: CookPhase }
   | { type: 'pattyFlip'; burner: number }
-  | { type: 'collect'; from: 'fryer' | 'grill'; index: number; slot: number }
+  | { type: 'collect'; from: 'fryer'; index: number; slot: number }
   | { type: 'buildStart'; slot: number }
-  | { type: 'burgerDone'; slot: number; burner: number }
+  | { type: 'layerAdded'; slot: number; layer: string; burner?: number }
+  | { type: 'burgerDone'; slot: number }
   | { type: 'discard'; where: 'vat' | 'burner' | 'slot' | 'build'; index: number; penalty: boolean }
   | { type: 'burnt'; where: 'vat' | 'burner'; index: number }
   | { type: 'arrive'; customer: number }
@@ -69,6 +81,13 @@ export interface SaveSlice {
 
 const LEAVE_DELAY = 0.9;
 const ARRIVE_GRACE = 0.7;
+const LAYER_LABEL: Record<string, string> = {
+  bun_bottom: 'the bun',
+  patty: 'a patty',
+  lettuce: 'lettuce',
+  tomato: 'tomato',
+  bun_top: 'the top bun',
+};
 
 export class KitchenState {
   readonly cfg: GameConfig;
@@ -79,6 +98,7 @@ export class KitchenState {
   closed = false;
   vats: (Fry | null)[];
   burners: (Patty | null)[];
+  /** Plates first (burgers), then side slots (fries). */
   slots: Slot[];
   customers: Customer[] = [];
   events: GameEvent[] = [];
@@ -101,7 +121,10 @@ export class KitchenState {
     const s = cfg.recipes.settings;
     this.vats = Array.from({ length: s.fryVats }, () => null);
     this.burners = Array.from({ length: s.grillBurners }, () => null);
-    this.slots = Array.from({ length: s.counterSlots }, (_, index) => ({ index, item: null }));
+    this.slots = [
+      ...Array.from({ length: s.plateSlots }, (_, i): Slot => ({ index: i, row: 'plate', item: null })),
+      ...Array.from({ length: s.sideSlots }, (_, i): Slot => ({ index: s.plateSlots + i, row: 'side', item: null })),
+    ];
   }
 
   get xpNeeded(): number {
@@ -109,6 +132,9 @@ export class KitchenState {
   }
   get levelInfo() {
     return levelDef(this.cfg, this.level);
+  }
+  get layers(): string[] {
+    return this.cfg.recipes.items.burger.layers ?? [];
   }
   drainEvents(): GameEvent[] {
     const e = this.events;
@@ -126,8 +152,15 @@ export class KitchenState {
   private invalid(message: string) {
     this.emit({ type: 'invalid', message });
   }
-  private freeSlot(): Slot | undefined {
-    return this.slots.find((s) => s.item === null);
+  private freeSlot(row: SlotRow): Slot | undefined {
+    return this.slots.find((s) => s.row === row && s.item === null);
+  }
+  private nextLayer(item: SlotItem): string | undefined {
+    return this.layers[item.placed.length];
+  }
+  /** Burgers that still need layers, oldest first. */
+  buildingSlots(): Slot[] {
+    return this.slots.filter((s) => s.item?.building);
   }
 
   // ----- time -----
@@ -226,7 +259,7 @@ export class KitchenState {
     const c: Customer = {
       id: this.nextId++,
       seat,
-      look: randInt(this.rng, 0, this.cfg.customers.looks.length - 1),
+      look: randInt(this.rng, 0, 2), // three supplied customer looks for now
       items,
       delivered: items.map(() => false),
       price,
@@ -242,16 +275,22 @@ export class KitchenState {
 
   // ----- fryer -----
 
+  /** Start fries in a free vat (the fries bin, or an empty vat that was tapped). */
+  startFry(vat?: number): void {
+    if (this.closed) return;
+    const fry = this.cfg.recipes.items.fries;
+    if (this.level < fry.unlockLevel) return this.invalid('Fries unlock at Lv ' + fry.unlockLevel);
+    const i = vat !== undefined && !this.vats[vat] ? vat : this.vats.findIndex((v) => !v);
+    if (i < 0) return this.invalid('The fryer is full');
+    this.vats[i] = { t: 0, phase: 'cooking' };
+    this.emit({ type: 'fryStart', vat: i });
+  }
+
+  /** Tap a vat: start fries if empty, otherwise collect or discard. */
   tapFryer(vat: number): void {
     if (this.closed) return;
     const v = this.vats[vat];
-    const fry = this.cfg.recipes.items.fries;
-    if (!v) {
-      if (this.level < fry.unlockLevel) return this.invalid('Fries unlock at Lv ' + fry.unlockLevel);
-      this.vats[vat] = { t: 0, phase: 'cooking' };
-      this.emit({ type: 'fryStart', vat });
-      return;
-    }
+    if (!v) return this.invalid('Tap the fries bin first');
     if (v.phase === 'cooking') return this.invalid('Not ready yet');
     if (v.phase === 'burnt') {
       this.vats[vat] = null;
@@ -259,25 +298,31 @@ export class KitchenState {
       this.emit({ type: 'discard', where: 'vat', index: vat, penalty: true });
       return;
     }
-    const slot = this.freeSlot();
-    if (!slot) return this.invalid('Counter is full');
+    const slot = this.freeSlot('side');
+    if (!slot) return this.invalid('The plate is full');
     this.vats[vat] = null;
-    slot.item = { id: this.nextId++, kind: 'fries', building: false };
+    slot.item = { id: this.nextId++, kind: 'fries', placed: [], building: false };
     this.emit({ type: 'collect', from: 'fryer', index: vat, slot: slot.index });
   }
 
-  // ----- grill and assembly -----
+  // ----- grill -----
 
+  /** Put a raw patty from the tray on a free burner. */
+  startPatty(burner?: number): void {
+    if (this.closed) return;
+    const def = this.cfg.recipes.items.burger;
+    if (this.level < def.unlockLevel) return this.invalid('Burgers unlock at Lv ' + def.unlockLevel);
+    const i = burner !== undefined && !this.burners[burner] ? burner : this.burners.findIndex((p) => !p);
+    if (i < 0) return this.invalid('The grill is full');
+    this.burners[i] = { side: 1, t: 0, phase: 'cooking' };
+    this.emit({ type: 'pattyStart', burner: i });
+  }
+
+  /** Tap a burner: start a patty if empty, flip it, or put the finished patty on a burger. */
   tapGrill(burner: number): void {
     if (this.closed) return;
-    const burgerDef = this.cfg.recipes.items.burger;
     const p = this.burners[burner];
-    if (!p) {
-      if (this.level < burgerDef.unlockLevel) return this.invalid('Burgers unlock at Lv ' + burgerDef.unlockLevel);
-      this.burners[burner] = { side: 1, t: 0, phase: 'cooking' };
-      this.emit({ type: 'pattyStart', burner });
-      return;
-    }
+    if (!p) return this.invalid('Tap the patties first');
     if (p.phase === 'cooking') return this.invalid('Not ready yet');
     if (p.phase === 'burnt') {
       this.burners[burner] = null;
@@ -293,26 +338,57 @@ export class KitchenState {
       return;
     }
     // Second side is done: the patty goes onto a burger that is waiting for it.
-    const build = this.slots.find((s) => s.item?.building);
-    if (!build) return this.invalid('Tap the buns first');
+    const build = this.buildingSlots().find((s) => this.nextLayer(s.item!) === 'patty');
+    if (!build) {
+      return this.invalid(this.buildingSlots().length === 0 ? 'Tap the buns first' : this.waitingMessage());
+    }
     this.burners[burner] = null;
-    build.item!.building = false;
-    this.emit({ type: 'burgerDone', slot: build.index, burner });
+    this.addLayer(build, 'patty', burner);
   }
+
+  // ----- assembly -----
 
   tapBuns(): void {
     if (this.closed) return;
     if (this.level < this.cfg.recipes.items.burger.unlockLevel) return this.invalid('Burgers unlock at Lv 2');
-    const slot = this.freeSlot();
-    if (!slot) return this.invalid('Counter is full');
-    slot.item = { id: this.nextId++, kind: 'burger', building: true };
+    const slot = this.freeSlot('plate');
+    if (!slot) return this.invalid('No free plate');
+    slot.item = { id: this.nextId++, kind: 'burger', placed: ['bun_bottom'], building: true };
     this.emit({ type: 'buildStart', slot: slot.index });
+  }
+
+  tapTopping(layer: 'lettuce' | 'tomato'): void {
+    if (this.closed) return;
+    if (this.level < this.cfg.recipes.items.burger.unlockLevel) return this.invalid('Burgers unlock at Lv 2');
+    const builds = this.buildingSlots();
+    if (builds.length === 0) return this.invalid('Tap the buns first');
+    const build = builds.find((s) => this.nextLayer(s.item!) === layer);
+    if (!build) return this.invalid(this.waitingMessage());
+    this.addLayer(build, layer);
+  }
+
+  /** What the oldest unfinished burger is waiting for, for the "wrong order" popup. */
+  private waitingMessage(): string {
+    const first = this.buildingSlots()[0]?.item;
+    const next = first ? this.nextLayer(first) : undefined;
+    return next ? `Add ${LAYER_LABEL[next] ?? next} first` : 'Nothing to add';
+  }
+
+  private addLayer(slot: Slot, layer: string, burner?: number): void {
+    const item = slot.item!;
+    item.placed.push(layer);
+    this.emit({ type: 'layerAdded', slot: slot.index, layer, burner });
+    // The top bun closes the burger as soon as everything under it is in place.
+    if (this.nextLayer(item) === 'bun_top') {
+      item.placed.push('bun_top');
+      item.building = false;
+      this.emit({ type: 'burgerDone', slot: slot.index });
+    }
   }
 
   tapTrash(slotIndex?: number): void {
     if (this.closed) return;
-    const target =
-      slotIndex !== undefined ? this.slots[slotIndex] : this.slots.find((s) => s.item?.building && s.item);
+    const target = slotIndex !== undefined ? this.slots[slotIndex] : this.buildingSlots()[0];
     if (!target || !target.item) return this.invalid('Nothing to throw away');
     const wasBuilding = target.item.building;
     target.item = null;

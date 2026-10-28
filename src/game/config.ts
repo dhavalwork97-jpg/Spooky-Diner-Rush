@@ -6,7 +6,8 @@ import customersJson from '../../data/customers.json';
 export type ItemKind = 'fries' | 'burger';
 
 export interface RecipeSettings {
-  counterSlots: number;
+  plateSlots: number;
+  sideSlots: number;
   fryVats: number;
   grillBurners: number;
   beginnerMaxLevel: number;
@@ -22,6 +23,7 @@ export interface ItemDef {
   readyAfter?: number;
   sideSeconds?: number;
   burnWindow: number;
+  layers?: string[];
 }
 export interface LevelDef {
   level: number;

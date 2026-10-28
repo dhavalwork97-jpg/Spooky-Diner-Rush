@@ -182,10 +182,27 @@ export class GameScene extends Phaser.Scene {
       this.state.tapGrill(this.nearest(BURNERS, this.state.burners.length, pt));
       return '';
     });
-    registerStationHandler('ingredients', () => {
+    registerStationHandler('fries_bin', () => {
+      this.state.startFry();
+      return '';
+    });
+    registerStationHandler('patty_tray', () => {
+      this.state.startPatty();
+      return '';
+    });
+    registerStationHandler('buns', () => {
       this.state.tapBuns();
       return '';
     });
+    registerStationHandler('lettuce', () => {
+      this.state.tapTopping('lettuce');
+      return '';
+    });
+    registerStationHandler('tomato', () => {
+      this.state.tapTopping('tomato');
+      return '';
+    });
+    registerStationHandler('side_plate', () => '');
     registerStationHandler('trash', () => {
       const slot = this.selectedSlot ?? undefined;
       this.setSelectedSlot(null);
@@ -340,7 +357,7 @@ export class GameScene extends Phaser.Scene {
     const slot = this.state.slots[slotIndex];
     if (!slot.item) return null;
     const home = this.slotPos(slotIndex);
-    const v = new ItemView(this, at?.x ?? home.x, at?.y ?? home.y, slot.item.id, slot.item.kind, slotIndex);
+    const v = new ItemView(this, at?.x ?? home.x, at?.y ?? home.y, slot.item.id, slot.item.kind, slotIndex, this.layout.s(slot.item.kind === 'fries' ? 70 : 62));
     v.home = home;
     this.items.set(slotIndex, v);
     return v;
@@ -389,11 +406,13 @@ export class GameScene extends Phaser.Scene {
       }
       case 'buildStart': {
         const v = this.makeItem(e.slot);
-        v?.addBun();
+        v?.syncLayers(this.state.slots[e.slot].item?.placed ?? [], true, true);
         break;
       }
+      case 'layerAdded':
       case 'burgerDone': {
-        this.items.get(e.slot)?.finishBurger();
+        const it = this.state.slots[e.slot].item;
+        if (it) this.items.get(e.slot)?.syncLayers(it.placed, it.building, true);
         break;
       }
       case 'discard':
@@ -499,7 +518,8 @@ export class GameScene extends Phaser.Scene {
     const target = { x: this.hud.coinIcon.x, y: this.hud.coinIcon.y };
     for (let i = 0; i < count; i++) {
       this.time.delayedCall(SaveSystem.reduceMotion() ? 0 : i * 70, () => {
-        const coin = this.add.image(from.x, from.y, 'coin').setScale(0.5).setDepth(1000);
+        const coin = this.add.image(from.x, from.y, 'coin').setDepth(1000);
+        coin.setScale(30 / coin.width);
         this.arc(coin, target, 480, 70, () => {
           coin.destroy();
           if (i === count - 1) pop(this, this.hud.coinIcon, 'coinicon', 1.25, 180);
@@ -550,7 +570,7 @@ export class GameScene extends Phaser.Scene {
       const v = this.items.get(slot.index);
       if (slot.item && !v) {
         const nv = this.makeItem(slot.index);
-        if (nv) slot.item.kind === 'fries' ? nv.showFries() : slot.item.building ? nv.addBun() : nv.showBurgerComplete();
+        if (nv) slot.item.kind === 'fries' ? nv.showFries() : nv.syncLayers(slot.item.placed, slot.item.building, false);
       } else if (!slot.item && v && !v.leaving) this.removeItem(slot.index, false);
     }
     this.stations.update(this.state, time);
@@ -563,24 +583,35 @@ export class GameScene extends Phaser.Scene {
     if (time - this.lastSave > SAVE_EVERY_MS) this.saveNow();
   }
 
+  private zoneCenter(station: string): { x: number; y: number } | null {
+    const z = this.views.find((v) => v.zone.station === station);
+    return z ? { x: z.rect.x + z.rect.width / 2, y: z.rect.y + z.rect.height / 2 } : null;
+  }
+
   private updateHint(): void {
     const hint = this.paused || this.overlay.visible ? null : nextHint(this.state);
     if (!hint) return this.hand.hide();
     const off = { x: 6, y: 8 };
-    if (hint.kind === 'fryer') {
-      const p = this.stations.vatPos(hint.vat);
-      this.hand.point(`fryer${hint.vat}:${this.state.vats[hint.vat]?.phase ?? 'empty'}`, { x: p.x + off.x, y: p.y + off.y });
-    } else if (hint.kind === 'grill') {
-      const p = this.stations.burnerPos(hint.burner);
-      this.hand.point(`grill${hint.burner}:${this.state.burners[hint.burner]?.phase ?? 'empty'}`, { x: p.x + off.x, y: p.y + off.y });
-    } else if (hint.kind === 'buns') {
-      const z = this.views.find((v) => v.zone.station === 'ingredients');
-      if (z) this.hand.point('buns', { x: z.rect.x + z.rect.width / 2, y: z.rect.y + z.rect.height / 2 });
-    } else {
-      const from = this.slotPos(hint.slot);
-      const cv = this.custViews.get(hint.customer);
-      if (cv) this.hand.point(`drag${hint.slot}-${hint.customer}`, { x: from.x, y: from.y }, cv.center);
-      else this.hand.hide();
+    const tap = (key: string, p: { x: number; y: number } | null) => (p ? this.hand.point(key, { x: p.x + off.x, y: p.y + off.y }) : this.hand.hide());
+    switch (hint.kind) {
+      case 'fries_bin':
+        return tap('fries_bin', this.zoneCenter('fries_bin'));
+      case 'vat':
+        return tap(`vat${hint.vat}:${this.state.vats[hint.vat]?.phase ?? 'empty'}`, this.stations.vatPos(hint.vat));
+      case 'grill':
+        return tap(`grill${hint.burner}:${this.state.burners[hint.burner]?.phase ?? 'empty'}:${this.state.burners[hint.burner]?.side ?? 0}`, this.stations.burnerPos(hint.burner));
+      case 'patty_tray':
+        return tap('patty_tray', this.zoneCenter('patty_tray'));
+      case 'buns':
+        return tap('buns', this.zoneCenter('buns'));
+      case 'topping':
+        return tap(`topping:${hint.layer}`, this.zoneCenter(hint.layer));
+      case 'drag': {
+        const from = this.slotPos(hint.slot);
+        const cv = this.custViews.get(hint.customer);
+        if (cv) this.hand.point(`drag${hint.slot}-${hint.customer}`, { x: from.x, y: from.y }, cv.center);
+        else this.hand.hide();
+      }
     }
   }
 

@@ -34,7 +34,9 @@ export class BootScene extends Phaser.Scene {
     // Art is loaded from the manifest. A missing file is reported, never silently replaced.
     this.load.on('loaderror', (file: Phaser.Loader.File) => console.error(`Missing asset: ${file.key} (${file.url})`));
     for (const a of (assetsJson as { assets: AssetDef[] }).assets) {
-      this.load.image(a.key, a.file);
+      if (a.lazy) continue; // lazy art is loaded when its station unlocks (later milestones)
+      if (a.type === 'svg') this.load.svg(a.key, a.file, { width: a.width ?? 128, height: a.height ?? 128 });
+      else this.load.image(a.key, a.file);
     }
   }
 
