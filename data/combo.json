@@ -1,0 +1,10 @@
+{
+  "maxCombo": 8,
+  "multiplierPerStep": 0.1,
+  "maxMultiplier": 1.5,
+  "comboReputationFrom": 3,
+  "comboReputationGain": 1,
+  "rush": { "patienceFraction": 0.75, "tipMultiplier": 2, "bonusXp": 10 },
+  "wrongItemPatiencePenalty": 0.08,
+  "streak": { "servesNeeded": 10, "bonusXp": 40 }
+}

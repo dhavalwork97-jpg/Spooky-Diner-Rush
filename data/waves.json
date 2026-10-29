@@ -1,0 +1,8 @@
+{
+  "phases": [
+    { "name": "calm", "seconds": 30, "gapMult": 1.3 },
+    { "name": "build", "seconds": 35, "gapMult": 1.0 },
+    { "name": "rush", "seconds": 25, "gapMult": 0.7 },
+    { "name": "calm", "seconds": 20, "gapMult": 1.2 }
+  ]
+}

@@ -13,7 +13,8 @@ export type Hint =
   | null;
 
 export function tutorialActive(s: KitchenState): boolean {
-  return s.served < 3 || (s.level >= 2 && s.burgersServed < 1);
+  // Only while the player is learning: fries at Lv 1, the first burger at Lv 2. Never at higher levels.
+  return (s.level === 1 && s.served < 3) || (s.level === 2 && s.burgersServed < 1);
 }
 
 export function nextHint(s: KitchenState): Hint {

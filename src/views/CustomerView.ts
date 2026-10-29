@@ -5,9 +5,14 @@ import { SaveSystem } from '../systems/SaveSystem';
 import { SEATS_X, SEAT_BOTTOM_Y, Layout } from './layout';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
-const BODY_H = 124;
-const BUBBLE_W = 104;
+const BODY_H = 112;
+const BUBBLE_W = 96;
 const BAR_W = 100;
+const TYPE_CHIPS: Record<string, { label: string; color: number; text: string }> = {
+  vip: { label: 'VIP', color: 0xf6c445, text: '#2B1B17' },
+  impatient: { label: 'Hurry', color: 0xf28c28, text: '#2B1B17' },
+  critic: { label: 'Critic', color: 0x1f2a44, text: '#FFF4DC' },
+};
 
 /**
  * One customer: a supplied character, a speech bubble with the order, a patience bar and the
@@ -30,6 +35,7 @@ export class CustomerView {
   private bobTween?: Phaser.Tweens.Tween;
   private leaving = false;
   private iconXs: number[] = [];
+  private rushTag: Phaser.GameObjects.Container;
 
   constructor(private scene: Phaser.Scene, layout: Layout, c: Customer) {
     this.id = c.id;
@@ -64,6 +70,23 @@ export class CustomerView {
     });
     this.ticks = scene.add.graphics();
     this.bubble.add(this.ticks);
+
+    // small red "Rush" tag while the customer is still fresh, and a chip for special customer types
+    const tagY = -bg.displayHeight + 4;
+    const tagBg = scene.add.graphics();
+    tagBg.fillStyle(0xd9382b, 1).fillRoundedRect(-27, -10, 54, 20, 8).lineStyle(2, INK, 1).strokeRoundedRect(-27, -10, 54, 20, 8);
+    const tagText = scene.add.text(0, 0, 'Rush', { fontFamily: FONT, fontSize: '15px', color: '#FFF4DC' }).setOrigin(0.5);
+    this.rushTag = scene.add.container(-24, tagY, [tagBg, tagText]);
+    this.bubble.add(this.rushTag);
+    if (c.type !== 'regular') {
+      const chip = TYPE_CHIPS[c.type];
+      if (chip) {
+        const chipBg = scene.add.graphics();
+        chipBg.fillStyle(chip.color, 1).fillRoundedRect(-33, -10, 66, 20, 8).lineStyle(2, INK, 1).strokeRoundedRect(-33, -10, 66, 20, 8);
+        const chipText = scene.add.text(0, 0, chip.label, { fontFamily: FONT, fontSize: '15px', color: chip.text }).setOrigin(0.5);
+        this.bubble.add(scene.add.container(30, tagY, [chipBg, chipText]));
+      }
+    }
 
     // patience bar and price on the floor
     const barBottom = bottom + 14;
@@ -136,7 +159,8 @@ export class CustomerView {
     }
   }
 
-  update(c: Customer, now: number): void {
+  update(c: Customer, now: number, rush = false): void {
+    this.rushTag.setVisible(rush);
     const frac = c.patience / c.patienceMax;
     this.drawBar(frac);
     this.drawTicks(c);
@@ -146,6 +170,12 @@ export class CustomerView {
     else this.setMood('normal');
     const shaking = c.mood === 'waiting' && frac < 0.25 && !SaveSystem.reduceMotion();
     this.bubble.x = this.bubbleBaseX + (shaking ? Math.sin(now / 35) * 2.5 : 0);
+  }
+
+  /** Wrong item dropped on this customer: a quick shake. */
+  shake(): void {
+    if (SaveSystem.reduceMotion()) return;
+    this.scene.tweens.add({ targets: this.body, x: this.x + 6, duration: 50, yoyo: true, repeat: 3, onComplete: () => this.body.setX(this.x) });
   }
 
   leave(done: () => void): void {
