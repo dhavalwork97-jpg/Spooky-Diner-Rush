@@ -10,6 +10,7 @@ import careerJson from '../../data/career.json';
 import chefJson from '../../data/chef.json';
 import storyJson from '../../data/story.json';
 import decorJson from '../../data/decor.json';
+import recipebookJson from '../../data/recipebook.json';
 
 export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger';
 
@@ -145,6 +146,7 @@ export interface GameConfig {
   chef: ChefConfig;
   story: { cards: StoryCardDef[] };
   decor: { items: DecorDef[] };
+  recipebook: { entries: { id: string; steps: string[] }[] };
 }
 
 export const defaultConfig: GameConfig = {
@@ -160,6 +162,7 @@ export const defaultConfig: GameConfig = {
   chef: chefJson as unknown as GameConfig['chef'],
   story: storyJson as unknown as GameConfig['story'],
   decor: decorJson as unknown as GameConfig['decor'],
+  recipebook: recipebookJson as unknown as GameConfig['recipebook'],
 };
 
 /** Progression entry for a level. Past the last entry, patience slowly tightens down to a floor. */

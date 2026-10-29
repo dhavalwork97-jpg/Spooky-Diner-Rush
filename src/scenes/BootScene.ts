@@ -6,7 +6,8 @@ import careerJson from '../../data/career.json';
 import chefJson from '../../data/chef.json';
 import storyJson from '../../data/story.json';
 import decorJson from '../../data/decor.json';
-import { assertValid, validateAssets, validateRestaurants, validateUpgrades, validateCareer, validateChef, validateStory, validateDecor, type AssetDef, type RestaurantDef } from '../data/validate';
+import recipebookJson from '../../data/recipebook.json';
+import { assertValid, validateAssets, validateRestaurants, validateUpgrades, validateCareer, validateChef, validateStory, validateDecor, validateRecipeBook, type AssetDef, type RestaurantDef } from '../data/validate';
 import { SaveSystem } from '../systems/SaveSystem';
 import { buildAllTextures } from '../art/builders';
 import { defaultConfig } from '../game/config';
@@ -28,6 +29,7 @@ export class BootScene extends Phaser.Scene {
     assertValid('chef.json', validateChef(chefJson));
     assertValid('story.json', validateStory(storyJson));
     assertValid('decor.json', validateDecor(decorJson));
+    assertValid('recipebook.json', validateRecipeBook(recipebookJson, Object.keys(defaultConfig.recipes.items)));
     SaveSystem.load();
 
     const w = LOGICAL_WIDTH;

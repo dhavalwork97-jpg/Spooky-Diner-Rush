@@ -210,6 +210,27 @@ export function validateDecor(data: unknown): string[] {
   return errors;
 }
 
+/** recipebook.json: one entry for each menu item id, no extras, each with 1 to 5 short steps. */
+export function validateRecipeBook(data: unknown, itemIds: string[]): string[] {
+  const errors: string[] = [];
+  const list = (data as { entries?: unknown })?.entries;
+  if (!Array.isArray(list)) return ['recipebook.json: "entries" must be an array'];
+  const seen = new Set<string>();
+  (list as { id?: unknown; steps?: unknown }[]).forEach((e, i) => {
+    const id = isStr(e.id) ? e.id : `#${i + 1}`;
+    if (!isStr(e.id)) errors.push(`recipe ${id}: missing id`);
+    else if (seen.has(e.id)) errors.push(`recipe ${id}: duplicate id`);
+    else {
+      seen.add(e.id);
+      if (!itemIds.includes(e.id)) errors.push(`recipe ${id}: not a menu item`);
+    }
+    if (!Array.isArray(e.steps) || e.steps.length < 1 || e.steps.length > 5) errors.push(`recipe ${id}: needs 1 to 5 steps`);
+    else for (const st of e.steps) if (!isStr(st) || st.length > 80) errors.push(`recipe ${id}: a step is empty or over 80 characters`);
+  });
+  for (const id of itemIds) if (!seen.has(id)) errors.push(`recipe ${id}: missing from recipebook.json`);
+  return errors;
+}
+
 export function assertValid(name: string, errors: string[]): void {
   if (errors.length > 0) throw new Error(`${name} failed validation:\n- ${errors.join('\n- ')}`);
 }

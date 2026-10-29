@@ -148,6 +148,7 @@ export class GameScene extends Phaser.Scene {
     this.input.on('dragend', this.onDragEnd, this);
     this.input.keyboard?.on('keydown-Z', () => this.setShowAll(!this.showAll));
     this.input.keyboard?.on('keydown-B', this.openShop, this);
+    this.input.keyboard?.on('keydown-R', this.openRecipeBook, this);
     this.setShowAll(params.has('zones'));
 
     this.game.events.on(Phaser.Core.Events.BLUR, this.onBlur, this);
@@ -175,6 +176,7 @@ export class GameScene extends Phaser.Scene {
       story: () => this.storyCard.id,
       decor: () => [...this.decorViews.keys()],
       openShop: () => this.openShop(),
+      openRecipeBook: () => this.openRecipeBook(),
       chefSay: (trigger: string) => this.sayChef(this.chefTalk.say(trigger, this.state.clock)),
       slotPos: (i: number) => ({ x: this.layout.x(SLOTS[i][0]), y: this.layout.y(SLOTS[i][1]) }),
       vatPos: (i: number) => this.stations.vatPos(i),
@@ -648,8 +650,17 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** Open the Shop over the game. The game scene is paused until the Shop closes. */
+  /** Open the Shop over the game. The game scene is paused until it closes. */
   openShop(): void {
+    this.openPanel('Shop');
+  }
+
+  /** Open the Recipe Book over the game (read-only). */
+  openRecipeBook(): void {
+    this.openPanel('RecipeBook');
+  }
+
+  private openPanel(key: 'Shop' | 'RecipeBook'): void {
     if (this.paused || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing) return;
     this.setSelectedSlot(null);
     this.chef.hide();
@@ -663,7 +674,7 @@ export class GameScene extends Phaser.Scene {
         this.scene.resume();
       },
     };
-    this.scene.launch('Shop', data);
+    this.scene.launch(key, data);
     this.scene.pause();
   }
 
@@ -843,6 +854,7 @@ export class GameScene extends Phaser.Scene {
   private cleanup(): void {
     this.saveNow();
     this.input.keyboard?.off('keydown-B', this.openShop, this);
+    this.input.keyboard?.off('keydown-R', this.openRecipeBook, this);
     this.input.off('pointerdown', this.onPointerDown, this);
     this.input.off('dragstart', this.onDragStart, this);
     this.input.off('drag', this.onDrag, this);
