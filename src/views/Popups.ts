@@ -54,7 +54,7 @@ export class LevelUpCard {
   private title: Phaser.GameObjects.Text;
   private lines: Phaser.GameObjects.Text;
   private timer?: Phaser.Time.TimerEvent;
-  private queue: { level: number; coins: number; unlocks: string[] }[] = [];
+  private queue: { level: number; coins: number; unlocks: string[]; title?: string }[] = [];
   private showing = false;
 
   constructor(private scene: Phaser.Scene, private fx: ParticlePool, x: number, y: number) {
@@ -68,8 +68,9 @@ export class LevelUpCard {
     this.box.setSize(420, 210).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.hide());
   }
 
-  show(level: number, coins: number, unlocks: string[]): void {
-    this.queue.push({ level, coins, unlocks });
+  /** `title` is the new career title when this level crosses into one. */
+  show(level: number, coins: number, unlocks: string[], title?: string): void {
+    this.queue.push({ level, coins, unlocks, title });
     if (!this.showing) this.next();
   }
 
@@ -82,7 +83,8 @@ export class LevelUpCard {
     this.showing = true;
     this.title.setText(`Lv ${item.level}!`);
     const unlockLines = item.unlocks.map((u) => `New: ${u}`);
-    this.lines.setText([...unlockLines, `+${item.coins} coins`].join('\n'));
+    const titleLine = item.title ? [`New title: ${item.title}`] : [];
+    this.lines.setText([...titleLine, ...unlockLines, `+${item.coins} coins`].join('\n'));
     this.box.setVisible(true).setAlpha(1).setScale(1);
     this.scene.tweens.killTweensOf(this.box);
     audio.play('levelUp');

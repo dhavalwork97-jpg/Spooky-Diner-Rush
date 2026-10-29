@@ -6,6 +6,7 @@ import { animGuard, fade, pop, shake } from '../anim/helpers';
 import { ParticlePool } from '../anim/ParticlePool';
 import { SaveSystem } from '../systems/SaveSystem';
 import { modsFor } from '../game/shop';
+import { titleEarnedAt } from '../game/career';
 import { audio } from '../systems/AudioSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
@@ -571,7 +572,7 @@ export class GameScene extends Phaser.Scene {
       }
       case 'levelUp':
         this.hud.badgePop();
-        this.levelUpCard.show(e.level, e.coins, e.unlocks);
+        this.levelUpCard.show(e.level, e.coins, e.unlocks, titleEarnedAt(this.state.cfg, e.level)?.title);
         this.saveNow();
         break;
       case 'closed':

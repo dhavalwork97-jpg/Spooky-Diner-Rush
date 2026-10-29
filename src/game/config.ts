@@ -6,6 +6,7 @@ import comboJson from '../../data/combo.json';
 import wavesJson from '../../data/waves.json';
 import eventsJson from '../../data/events.json';
 import upgradesJson from '../../data/upgrades.json';
+import careerJson from '../../data/career.json';
 
 export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger';
 
@@ -74,6 +75,10 @@ export interface UpgradeDef {
   unlockLevel: number;
   tiers: UpgradeTier[];
 }
+export interface CareerTitle {
+  minLevel: number;
+  title: string;
+}
 export interface GameConfig {
   recipes: { settings: RecipeSettings; items: Record<ItemKind, ItemDef> };
   progression: { levels: LevelDef[]; afterLast: { patienceStepPerLevel: number; patienceFloor: number } };
@@ -100,6 +105,7 @@ export interface GameConfig {
   waves: { phases: { name: string; seconds: number; gapMult: number }[] };
   events: { firstAfter: number; gap: [number, number]; events: EventDef[] };
   upgrades: { upgrades: UpgradeDef[] };
+  career: { titles: CareerTitle[] };
 }
 
 export const defaultConfig: GameConfig = {
@@ -111,6 +117,7 @@ export const defaultConfig: GameConfig = {
   waves: wavesJson as unknown as GameConfig['waves'],
   events: eventsJson as unknown as GameConfig['events'],
   upgrades: upgradesJson as unknown as GameConfig['upgrades'],
+  career: careerJson as unknown as GameConfig['career'],
 };
 
 /** Progression entry for a level. Past the last entry, patience slowly tightens down to a floor. */

@@ -127,6 +127,24 @@ export function validateUpgrades(data: unknown): string[] {
   return errors;
 }
 
+/** career.json: first band starts at Lv 1, bands rise, titles are non-empty and short. */
+export function validateCareer(data: unknown): string[] {
+  const errors: string[] = [];
+  const list = (data as { titles?: unknown })?.titles;
+  if (!Array.isArray(list) || list.length === 0) return ['career.json: "titles" must be a non-empty array'];
+  let last = 0;
+  (list as { minLevel?: unknown; title?: unknown }[]).forEach((t, i) => {
+    if (!isNum(t.minLevel) || !Number.isInteger(t.minLevel) || t.minLevel < 1) errors.push(`title ${i + 1}: minLevel must be a whole number >= 1`);
+    else {
+      if (i === 0 && t.minLevel !== 1) errors.push('title 1: the first band must start at Lv 1');
+      if (t.minLevel <= last) errors.push(`title ${i + 1}: minLevel must rise`);
+      last = t.minLevel;
+    }
+    if (!isStr(t.title) || t.title.length > 24) errors.push(`title ${i + 1}: title must be 1 to 24 characters`);
+  });
+  return errors;
+}
+
 export function assertValid(name: string, errors: string[]): void {
   if (errors.length > 0) throw new Error(`${name} failed validation:\n- ${errors.join('\n- ')}`);
 }

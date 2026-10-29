@@ -88,7 +88,7 @@ Scope (from the Milestone 3 hand-off): shop and upgrades, decor, RecipeBook, Res
 Steps (mark each `[x]` when committed and pushed; the exact stopping point goes under "In progress"):
 - [x] 1. Save v2 (done, 9 tests in `tests/save.test.ts`): extend `SaveData` in `src/systems/SaveSystem.ts` with `owned` (upgrade id -> tier), `decor` (owned and placed ids), `seenStory` (ids), `lastRestaurant`. `parseSave` stays tolerant and old v1 saves load with defaults. Tests in `tests/zones.test.ts` style (new file `tests/save.test.ts`).
 - [x] 2. Shop model (done, 12 tests in `tests/shop.test.ts`): `data/upgrades.json` (fryer, grill and oven speed, patience, tips; 3 tiers each, cost and value per tier, `unlockLevel`) and `src/game/shop.ts` (pure: `canBuy`, `buy`, `modsFor(owned)`). `GameScene` applies `modsFor` to `KitchenState.mods` at start and after a purchase. Add typings to `GameConfig` in `config.ts`. Tests: cost, level gate, insufficient coins, mods match tiers, no change at tier 0.
-- [ ] 3. Career titles: `data/career.json` (title per level band, no banned words) and `src/game/career.ts` (`titleForLevel`). Show the title on the level-up card and in the Shop header. Tests for band edges.
+- [x] 3. Career titles (done, 8 tests in `tests/career.test.ts`; Shop header still to show it in Step 6): `data/career.json` (title per level band, no banned words) and `src/game/career.ts` (`titleForLevel`). Show the title on the level-up card and in the Shop header. Tests for band edges.
 - [ ] 4. Chef speech bubbles: `data/chef.json` (lines per trigger: first serve, combo, burn, event start, level-up, idle tip) and `src/game/chef.ts` (pure picker with cooldown and no repeat). `src/views/ChefBubble.ts` shows the lazy `chef` art with a bubble, fed by `GameEvent`s; skipped or instant when reduced motion. Tests for cooldown and no-repeat.
 - [ ] 5. Story cards: `data/story.json` (card per level milestone) and a `StoryCard` popup in `src/views/Popups.ts`; model paused while it shows; `seenStory` saved so each card shows once. Tests for the "which card is due" function.
 - [ ] 6. Shop scene: new `src/scenes/ShopScene.ts` (upgrades tab, decor tab, coin balance, buy buttons at least 88 css px) opened from a HUD button; the game pauses while open and resumes on close; saves after each purchase. Register the scene in `main.ts`.
@@ -105,17 +105,19 @@ Assumptions to confirm with the owner: upgrade tiers and prices; decor is cosmet
 - Step 0 done: "Project notes for a newcomer" written and pushed. Plan written and pushed (b7fe37c).
 - Step 1 done (3d5408e): `SaveData` is version 2 in `src/systems/SaveSystem.ts` (new fields `owned`, `decor`, `seenStory`, `lastRestaurant`; v1 saves load with defaults). `GameScene` only writes level, xp and coins into `SaveSystem.data`, so the new fields survive its saves.
 - Step 2 done: `data/upgrades.json` (5 upgrades x 3 tiers: fryer_speed, grill_speed, oven_speed, patience, tips; `value` is the resulting multiplier, not an increment), `UpgradeDef`/`ModKey` types and `upgrades` in `GameConfig`/`defaultConfig` (`src/game/config.ts`), pure `src/game/shop.ts` (`canBuy`, `buy`, `modsFor`, `tierOf`, `nextTier`, `NO_MODS`), `validateUpgrades` in `src/data/validate.ts` (called in `BootScene.preload`), and `GameScene.create` sets `this.state.mods = modsFor(...)` from `save.owned` right after the model is built. `npm test`: 98 pass (77 old unchanged). Typecheck and build clean.
-- Stopped at: Step 2 committed and pushed. Next action: Step 3 (career titles). Create `data/career.json` (title per level band), `src/game/career.ts` (`titleForLevel`), add types and a `career` entry to `GameConfig`/`defaultConfig` in `src/game/config.ts`, `tests/career.test.ts`. Showing the title on the level-up card (`LevelUpCard` in `src/views/Popups.ts`) can wait until the Shop scene (Step 6) if it is cleaner there; note the choice here.
+- Step 3 done: `data/career.json` (8 bands: Fry Cook Lv 1, Line Cook 3, Grill Cook 6, Sous Chef 10, Head Chef 15, Kitchen Boss 20, Master Chef 30, Legend of the Line 40), `CareerTitle` and `career` in `GameConfig`, pure `src/game/career.ts` (`titleForLevel`, `nextTitle`, `titleEarnedAt`), `validateCareer` (called in `BootScene.preload`). The level-up card (`LevelUpCard.show` in `src/views/Popups.ts`) takes an optional 4th arg `title` and prints "New title: X" when `GameScene` (case `'levelUp'`) finds `titleEarnedAt(...)`. The model and its events were not changed. `npm test`: 106 pass (77 old unchanged). Typecheck and build clean.
+- Risk to check in the browser (Step 11): the level-up card is 210 px tall; with a title line plus two unlock lines the text may touch the "Lv N!" heading.
+- Stopped at: Step 3 committed and pushed. Next action: Step 4 (chef speech bubbles). Create `data/chef.json` (lines per trigger), add `chef` to `GameConfig`/`defaultConfig` in `src/game/config.ts`, pure `src/game/chef.ts` (`ChefTalk` class: `pick(trigger, now)` with per-trigger cooldown and no immediate repeat, seeded rng from `src/game/rng.ts`), `tests/chef.test.ts`. The view (`src/views/ChefBubble.ts`, uses lazy asset `chef`, so mark it non-lazy or load it on demand in `BootScene`/`assets.json`) comes after the pure part is committed.
 - Note for Step 6: after a purchase the scene must set `state.mods = modsFor(...)` again and write `SaveSystem.data.owned` / `.coins`, then `SaveSystem.save()`. Purchases must go through `buy()`; the model's `coins` is what the HUD shows.
 
 ## Next steps (ordered)
-1. Do Milestone 4 steps 3 to 11 above in order, committing and pushing after each.
+1. Do Milestone 4 steps 4 to 11 above in order, committing and pushing after each.
 2. Confirm PR #5 (Milestone 3) with the owner; do not touch Milestone 3 code.
 3. Check the unverified items below.
 
 ## Decisions & constraints
 - Failure modes should stay user-friendly (no punishing wrong-item serves).
-- Keep tests passing (98 currently; the original 77 must stay unchanged).
+- Keep tests passing (106 currently; the original 77 must stay unchanged).
 - Milestone 3 is done; do not change it.
 
 ## Not verified yet
