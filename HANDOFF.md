@@ -82,16 +82,33 @@ Run from the repo root. Node and npm only; no other tooling.
 - Verified: 77 unit tests pass (21 new); bot reaches Lv 10 in 8-9 min; browser check of banner, combo meter, Rush tag, chips, floating text; 5 game minutes at 10x speed with no errors.
 - Milestone 4 session start (2026-10-29): cloned repo, checked out `milestone-4` at `cc5713c`, ran `npm ci`, `npm test` (77 pass), `npm run typecheck` (clean) and `npm run build` (ok) to confirm the baseline. Wrote the newcomer notes above.
 
+## Milestone 4 plan
+Scope (from the Milestone 3 hand-off): shop and upgrades, decor, RecipeBook, RestaurantSelect, career titles, story cards, chef's speech bubbles. The original brief is not in the repo, so every number below is a first pass in JSON for the owner to tune. Rules: model code stays Phaser-free and unit-tested; all numbers in `data/`; Milestone 3 behavior and its 77 tests stay unchanged; wording rule ("Lv N" only, never shift/stage/stars); honor reduced motion; one commit and push per step; update this file after each step.
+
+Steps (mark each `[x]` when committed and pushed; the exact stopping point goes under "In progress"):
+- [ ] 1. Save v2: extend `SaveData` in `src/systems/SaveSystem.ts` with `owned` (upgrade id -> tier), `decor` (owned and placed ids), `seenStory` (ids), `lastRestaurant`. `parseSave` stays tolerant and old v1 saves load with defaults. Tests in `tests/zones.test.ts` style (new file `tests/save.test.ts`).
+- [ ] 2. Shop model: `data/upgrades.json` (fryer, grill and oven speed, patience, tips; 3 tiers each, cost and value per tier, `unlockLevel`) and `src/game/shop.ts` (pure: `canBuy`, `buy`, `modsFor(owned)`). `GameScene` applies `modsFor` to `KitchenState.mods` at start and after a purchase. Add typings to `GameConfig` in `config.ts`. Tests: cost, level gate, insufficient coins, mods match tiers, no change at tier 0.
+- [ ] 3. Career titles: `data/career.json` (title per level band, no banned words) and `src/game/career.ts` (`titleForLevel`). Show the title on the level-up card and in the Shop header. Tests for band edges.
+- [ ] 4. Chef speech bubbles: `data/chef.json` (lines per trigger: first serve, combo, burn, event start, level-up, idle tip) and `src/game/chef.ts` (pure picker with cooldown and no repeat). `src/views/ChefBubble.ts` shows the lazy `chef` art with a bubble, fed by `GameEvent`s; skipped or instant when reduced motion. Tests for cooldown and no-repeat.
+- [ ] 5. Story cards: `data/story.json` (card per level milestone) and a `StoryCard` popup in `src/views/Popups.ts`; model paused while it shows; `seenStory` saved so each card shows once. Tests for the "which card is due" function.
+- [ ] 6. Shop scene: new `src/scenes/ShopScene.ts` (upgrades tab, decor tab, coin balance, buy buttons at least 88 css px) opened from a HUD button; the game pauses while open and resumes on close; saves after each purchase. Register the scene in `main.ts`.
+- [ ] 7. Decor: `data/decor.json` and code-drawn decor sprites in `src/art/builders.ts` (cosmetic only, placed in empty wall and counter-top areas that do not overlap tap zones; add a test that decor rects do not overlap zones). Bought in the Shop, drawn by `GameScene`.
+- [ ] 8. RecipeBook scene: `src/scenes/RecipeBookScene.ts` reads `recipes.json` and `progression.json` (price, XP, steps, locked entries show "Lv N").
+- [ ] 9. RestaurantSelect scene: `src/scenes/RestaurantSelectScene.ts` lists `restaurants.json`. Only `burger_diner` has mapped zones, so other entries (the `bg_taco` art exists) are shown locked as "Coming soon" through a new `playable` flag in `restaurants.json` plus validator and test support. Pick passes `restaurantId` to `Game`.
+- [ ] 10. HUD entry points for Shop, RecipeBook and Restaurants (button row that does not cover any tap zone), then docs: `docs/progress.md` (Milestone 4 section with a Not-verified list), `docs/architecture.md`, README.
+- [ ] 11. Verification: `npm test`, `npm run typecheck`, `npm run build`; browser run at 1280x720 and 844x390 touch (buy an upgrade and see the effect, open each scene, story card once, chef bubble, reduced motion); report what was and was not seen. Open the Milestone 4 PR (base: `milestone-3-core-systems` because PR #5 is unmerged; confirm with the owner).
+
+Assumptions to confirm with the owner: upgrade tiers and prices; decor is cosmetic only; Taco restaurant is locked, not playable; PR base branch; the start flow stays Boot -> Game (menus reached from the HUD).
+
 ## In progress (exact stopping point)
 - **Milestone 4 is the active task** (branch `milestone-4`).
-- Step 0 done: "Project notes for a newcomer" written (this file).
-- Stopped at: nothing in `src/` has been edited. Next is writing the Milestone 4 plan into this file (section "Milestone 4 plan"), before any code.
+- Step 0 done: "Project notes for a newcomer" written and pushed (b52492c). Plan above written.
+- Stopped at: plan committed; nothing in `src/` edited yet. Next action: Step 1 (Save v2) in `src/systems/SaveSystem.ts`, function `parseSave`, plus new `tests/save.test.ts`.
 
 ## Next steps (ordered)
-1. Write the Milestone 4 plan into HANDOFF.md, commit, push.
-2. Milestone 4: shop and upgrades, decor, RecipeBook, RestaurantSelect, career titles, story cards, chef's speech bubbles (steps to be listed in the plan).
-3. Merge or confirm PR #5 with the owner when ready (do not touch Milestone 3 code).
-4. Check the unverified items below.
+1. Do Milestone 4 steps 1 to 11 above in order, committing and pushing after each.
+2. Confirm PR #5 (Milestone 3) with the owner; do not touch Milestone 3 code.
+3. Check the unverified items below.
 
 ## Decisions & constraints
 - Failure modes should stay user-friendly (no punishing wrong-item serves).
