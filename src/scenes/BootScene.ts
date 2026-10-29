@@ -1,10 +1,18 @@
 import Phaser from 'phaser';
 import assetsJson from '../../data/assets.json';
 import restaurantsJson from '../../data/restaurants.json';
-import { assertValid, validateAssets, validateRestaurants, type AssetDef, type RestaurantDef } from '../data/validate';
+import upgradesJson from '../../data/upgrades.json';
+import careerJson from '../../data/career.json';
+import chefJson from '../../data/chef.json';
+import storyJson from '../../data/story.json';
+import decorJson from '../../data/decor.json';
+import recipebookJson from '../../data/recipebook.json';
+import restaurantMenuJson from '../../data/restaurant_menu.json';
+import { assertValid, validateAssets, validateRestaurants, validateUpgrades, validateCareer, validateChef, validateStory, validateDecor, validateRecipeBook, validateRestaurantMenu, type AssetDef, type RestaurantDef } from '../data/validate';
 import { SaveSystem } from '../systems/SaveSystem';
 import { buildAllTextures } from '../art/builders';
 import { defaultConfig } from '../game/config';
+import { pickStartRestaurant } from '../game/restaurants';
 
 export const LOGICAL_WIDTH = 1280;
 export const LOGICAL_HEIGHT = 698;
@@ -18,6 +26,13 @@ export class BootScene extends Phaser.Scene {
     // Data is validated before anything is loaded, so bad JSON fails loudly and early.
     assertValid('assets.json', validateAssets(assetsJson));
     assertValid('restaurants.json', validateRestaurants(restaurantsJson));
+    assertValid('upgrades.json', validateUpgrades(upgradesJson));
+    assertValid('career.json', validateCareer(careerJson));
+    assertValid('chef.json', validateChef(chefJson));
+    assertValid('story.json', validateStory(storyJson));
+    assertValid('decor.json', validateDecor(decorJson));
+    assertValid('restaurant_menu.json', validateRestaurantMenu(restaurantMenuJson, (restaurantsJson as { restaurants: { id: string }[] }).restaurants.map((r) => r.id)));
+    assertValid('recipebook.json', validateRecipeBook(recipebookJson, Object.keys(defaultConfig.recipes.items)));
     SaveSystem.load();
 
     const w = LOGICAL_WIDTH;
@@ -44,6 +59,7 @@ export class BootScene extends Phaser.Scene {
     const restaurants = (restaurantsJson as { restaurants: RestaurantDef[] }).restaurants;
     this.registry.set('restaurants', restaurants);
     buildAllTextures(this, defaultConfig);
-    this.scene.start('Game', { restaurantId: restaurants[0].id });
+    const start = pickStartRestaurant(restaurants, SaveSystem.data.lastRestaurant, SaveSystem.data.level);
+    this.scene.start('Game', { restaurantId: start });
   }
 }

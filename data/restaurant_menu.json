@@ -1,0 +1,6 @@
+{
+  "comingSoon": [
+    { "id": "taco_truck", "name": "Taco Truck", "unlockLevel": 10 },
+    { "id": "pizza_place", "name": "Pizza Place", "unlockLevel": 20 }
+  ]
+}

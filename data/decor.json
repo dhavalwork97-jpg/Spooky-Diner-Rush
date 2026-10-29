@@ -1,0 +1,7 @@
+{
+  "items": [
+    { "id": "clock", "name": "Wall clock", "description": "A big friendly clock on the wall.", "cost": 80, "unlockLevel": 2, "x": 1338, "y": 70, "width": 66, "height": 66 },
+    { "id": "bunting", "name": "Party bunting", "description": "Colorful flags over the windows.", "cost": 120, "unlockLevel": 3, "x": 400, "y": 2, "width": 940, "height": 40 },
+    { "id": "runner", "name": "Floor runner", "description": "A cozy red runner for the dining floor.", "cost": 150, "unlockLevel": 4, "x": 420, "y": 352, "width": 1000, "height": 34 }
+  ]
+}

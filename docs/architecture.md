@@ -28,3 +28,11 @@ Phaser 3+ (installed: Phaser 4), TypeScript, Vite, Vitest. No other runtime libr
 - `src/art/builders.ts` draws every non-supplied texture in code and caches it by key.
 - `src/systems/AudioSystem.ts` synthesizes all sound; the context unlocks on the first pointer event.
 - Because the model has no Phaser code, it runs in tests and bot simulations without a browser.
+
+## Shop and progression (Milestone 4)
+- Scenes: `Boot`, `Game`, and three panels launched over the paused game, `Shop`, `RecipeBook` and `RestaurantSelect`. `GameScene.openPanel(key)` pauses `Game` and resumes it from the panel's `onClose` callback; panels get the live `KitchenState` through launch data, never through globals.
+- Pure modules (no Phaser, unit-tested): `shop.ts` (`buy`, `canBuy`, `modsFor`, `buyLabel`), `decor.ts`, `career.ts`, `chef.ts` (`ChefTalk`), `story.ts`, `recipebook.ts`, `restaurants.ts`. Views only draw what these return.
+- Upgrades work by setting `KitchenState.mods`, the hooks added in Milestone 3. The model does not know the Shop exists.
+- Save v2 (`SaveSystem.ts`): `owned`, `decor`, `seenStory`, `lastRestaurant` are cleaned by `parseSave`, so old or corrupt saves still load.
+- Every new data file has a validator in `src/data/validate.ts`, called in `BootScene.preload`, so bad data fails early with a readable list.
+- Free screen areas (no tap zone): the cream strip right of the grill (chef), the band right of the seats under the mute button (menu buttons), the wall right of the window, the strip above the window, and the dining floor (decor). Tests keep decor and menu buttons off the zones.
