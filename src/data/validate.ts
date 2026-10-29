@@ -87,6 +87,46 @@ export function validateAssets(data: unknown): string[] {
   return errors;
 }
 
+const MOD_KEYS = ['fryerSpeed', 'grillSpeed', 'ovenSpeed', 'patience', 'tips'];
+
+/** upgrades.json: unique ids, known mod, at least one tier, cost > 0 and rising, value > 0 and rising. */
+export function validateUpgrades(data: unknown): string[] {
+  const errors: string[] = [];
+  const list = (data as { upgrades?: unknown })?.upgrades;
+  if (!Array.isArray(list) || list.length === 0) return ['upgrades.json: "upgrades" must be a non-empty array'];
+  const ids = new Set<string>();
+  for (const u of list as Record<string, unknown>[]) {
+    const id = isStr(u.id) ? u.id : '(no id)';
+    if (!isStr(u.id)) errors.push('upgrade without id');
+    else if (ids.has(u.id)) errors.push(`upgrade ${id}: duplicate id`);
+    else ids.add(u.id);
+    if (!isStr(u.name)) errors.push(`upgrade ${id}: missing name`);
+    if (!isStr(u.description)) errors.push(`upgrade ${id}: missing description`);
+    if (typeof u.mod !== 'string' || !MOD_KEYS.includes(u.mod)) errors.push(`upgrade ${id}: unknown mod`);
+    if (!isNum(u.unlockLevel) || u.unlockLevel < 1) errors.push(`upgrade ${id}: unlockLevel must be >= 1`);
+    const tiers = u.tiers;
+    if (!Array.isArray(tiers) || tiers.length === 0) {
+      errors.push(`upgrade ${id}: needs at least one tier`);
+      continue;
+    }
+    let lastCost = 0;
+    let lastValue = 0;
+    tiers.forEach((t: { cost?: unknown; value?: unknown }, i: number) => {
+      if (!isNum(t.cost) || t.cost <= 0) errors.push(`upgrade ${id} tier ${i + 1}: cost must be > 0`);
+      else {
+        if (t.cost <= lastCost) errors.push(`upgrade ${id} tier ${i + 1}: cost must rise`);
+        lastCost = t.cost;
+      }
+      if (!isNum(t.value) || t.value <= 0) errors.push(`upgrade ${id} tier ${i + 1}: value must be > 0`);
+      else {
+        if (t.value <= lastValue) errors.push(`upgrade ${id} tier ${i + 1}: value must rise`);
+        lastValue = t.value;
+      }
+    });
+  }
+  return errors;
+}
+
 export function assertValid(name: string, errors: string[]): void {
   if (errors.length > 0) throw new Error(`${name} failed validation:\n- ${errors.join('\n- ')}`);
 }

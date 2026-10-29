@@ -5,6 +5,7 @@ import customersJson from '../../data/customers.json';
 import comboJson from '../../data/combo.json';
 import wavesJson from '../../data/waves.json';
 import eventsJson from '../../data/events.json';
+import upgradesJson from '../../data/upgrades.json';
 
 export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger';
 
@@ -58,6 +59,21 @@ export interface EventDef {
   ovenSpeed?: number;
   spawnType?: string;
 }
+/** Which `KitchenState.mods` field an upgrade sets. */
+export type ModKey = 'fryerSpeed' | 'grillSpeed' | 'ovenSpeed' | 'patience' | 'tips';
+export interface UpgradeTier {
+  cost: number;
+  /** The multiplier the mod has once this tier is bought (not an increment). */
+  value: number;
+}
+export interface UpgradeDef {
+  id: string;
+  name: string;
+  description: string;
+  mod: ModKey;
+  unlockLevel: number;
+  tiers: UpgradeTier[];
+}
 export interface GameConfig {
   recipes: { settings: RecipeSettings; items: Record<ItemKind, ItemDef> };
   progression: { levels: LevelDef[]; afterLast: { patienceStepPerLevel: number; patienceFloor: number } };
@@ -83,6 +99,7 @@ export interface GameConfig {
   };
   waves: { phases: { name: string; seconds: number; gapMult: number }[] };
   events: { firstAfter: number; gap: [number, number]; events: EventDef[] };
+  upgrades: { upgrades: UpgradeDef[] };
 }
 
 export const defaultConfig: GameConfig = {
@@ -93,6 +110,7 @@ export const defaultConfig: GameConfig = {
   combo: comboJson as unknown as GameConfig['combo'],
   waves: wavesJson as unknown as GameConfig['waves'],
   events: eventsJson as unknown as GameConfig['events'],
+  upgrades: upgradesJson as unknown as GameConfig['upgrades'],
 };
 
 /** Progression entry for a level. Past the last entry, patience slowly tightens down to a floor. */

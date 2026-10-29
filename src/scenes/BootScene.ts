@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import assetsJson from '../../data/assets.json';
 import restaurantsJson from '../../data/restaurants.json';
-import { assertValid, validateAssets, validateRestaurants, type AssetDef, type RestaurantDef } from '../data/validate';
+import upgradesJson from '../../data/upgrades.json';
+import { assertValid, validateAssets, validateRestaurants, validateUpgrades, type AssetDef, type RestaurantDef } from '../data/validate';
 import { SaveSystem } from '../systems/SaveSystem';
 import { buildAllTextures } from '../art/builders';
 import { defaultConfig } from '../game/config';
@@ -18,6 +19,7 @@ export class BootScene extends Phaser.Scene {
     // Data is validated before anything is loaded, so bad JSON fails loudly and early.
     assertValid('assets.json', validateAssets(assetsJson));
     assertValid('restaurants.json', validateRestaurants(restaurantsJson));
+    assertValid('upgrades.json', validateUpgrades(upgradesJson));
     SaveSystem.load();
 
     const w = LOGICAL_WIDTH;

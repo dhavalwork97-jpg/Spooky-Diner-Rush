@@ -5,6 +5,7 @@ import { handleStationTap, registerStationHandler, clearStationHandlers, type Ta
 import { animGuard, fade, pop, shake } from '../anim/helpers';
 import { ParticlePool } from '../anim/ParticlePool';
 import { SaveSystem } from '../systems/SaveSystem';
+import { modsFor } from '../game/shop';
 import { audio } from '../systems/AudioSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
@@ -87,6 +88,7 @@ export class GameScene extends Phaser.Scene {
     const debug = params.has('debug');
     const save = SaveSystem.data;
     this.state = new KitchenState({ level: save.level, xp: save.xp, coins: save.coins });
+    this.state.mods = modsFor(this.state.cfg.upgrades.upgrades, save.owned);
     if (debug) {
       const lv = Number(params.get('level'));
       if (lv >= 1) {
