@@ -86,7 +86,7 @@ Run from the repo root. Node and npm only; no other tooling.
 Scope (from the Milestone 3 hand-off): shop and upgrades, decor, RecipeBook, RestaurantSelect, career titles, story cards, chef's speech bubbles. The original brief is not in the repo, so every number below is a first pass in JSON for the owner to tune. Rules: model code stays Phaser-free and unit-tested; all numbers in `data/`; Milestone 3 behavior and its 77 tests stay unchanged; wording rule ("Lv N" only, never shift/stage/stars); honor reduced motion; one commit and push per step; update this file after each step.
 
 Steps (mark each `[x]` when committed and pushed; the exact stopping point goes under "In progress"):
-- [ ] 1. Save v2: extend `SaveData` in `src/systems/SaveSystem.ts` with `owned` (upgrade id -> tier), `decor` (owned and placed ids), `seenStory` (ids), `lastRestaurant`. `parseSave` stays tolerant and old v1 saves load with defaults. Tests in `tests/zones.test.ts` style (new file `tests/save.test.ts`).
+- [x] 1. Save v2 (done, 9 tests in `tests/save.test.ts`): extend `SaveData` in `src/systems/SaveSystem.ts` with `owned` (upgrade id -> tier), `decor` (owned and placed ids), `seenStory` (ids), `lastRestaurant`. `parseSave` stays tolerant and old v1 saves load with defaults. Tests in `tests/zones.test.ts` style (new file `tests/save.test.ts`).
 - [ ] 2. Shop model: `data/upgrades.json` (fryer, grill and oven speed, patience, tips; 3 tiers each, cost and value per tier, `unlockLevel`) and `src/game/shop.ts` (pure: `canBuy`, `buy`, `modsFor(owned)`). `GameScene` applies `modsFor` to `KitchenState.mods` at start and after a purchase. Add typings to `GameConfig` in `config.ts`. Tests: cost, level gate, insufficient coins, mods match tiers, no change at tier 0.
 - [ ] 3. Career titles: `data/career.json` (title per level band, no banned words) and `src/game/career.ts` (`titleForLevel`). Show the title on the level-up card and in the Shop header. Tests for band edges.
 - [ ] 4. Chef speech bubbles: `data/chef.json` (lines per trigger: first serve, combo, burn, event start, level-up, idle tip) and `src/game/chef.ts` (pure picker with cooldown and no repeat). `src/views/ChefBubble.ts` shows the lazy `chef` art with a bubble, fed by `GameEvent`s; skipped or instant when reduced motion. Tests for cooldown and no-repeat.
@@ -102,17 +102,18 @@ Assumptions to confirm with the owner: upgrade tiers and prices; decor is cosmet
 
 ## In progress (exact stopping point)
 - **Milestone 4 is the active task** (branch `milestone-4`).
-- Step 0 done: "Project notes for a newcomer" written and pushed (b52492c). Plan above written.
-- Stopped at: plan committed; nothing in `src/` edited yet. Next action: Step 1 (Save v2) in `src/systems/SaveSystem.ts`, function `parseSave`, plus new `tests/save.test.ts`.
+- Step 0 done: "Project notes for a newcomer" written and pushed. Plan written and pushed (b7fe37c).
+- Step 1 done: `SaveData` is now version 2 in `src/systems/SaveSystem.ts` (new fields `owned`, `decor`, `seenStory`, `lastRestaurant`; `parseSave` cleans each with `cleanOwned` / `cleanIds`; v1 saves load with defaults). `GameScene` was not changed; it only writes level, xp and coins into `SaveSystem.data`, so the new fields survive its saves. `npm test`: 86 pass (77 old unchanged plus 9 new). Typecheck clean.
+- Stopped at: Step 1 committed and pushed. Next action: Step 2 (Shop model). Create `data/upgrades.json`, add `UpgradeDef` types and an `upgrades` entry to `GameConfig`/`defaultConfig` in `src/game/config.ts`, create `src/game/shop.ts` (`canBuy`, `buy`, `modsFor`) and `tests/shop.test.ts`. Then apply `modsFor` in `GameScene.create` (where `KitchenState` is built).
 
 ## Next steps (ordered)
-1. Do Milestone 4 steps 1 to 11 above in order, committing and pushing after each.
+1. Do Milestone 4 steps 2 to 11 above in order, committing and pushing after each.
 2. Confirm PR #5 (Milestone 3) with the owner; do not touch Milestone 3 code.
 3. Check the unverified items below.
 
 ## Decisions & constraints
 - Failure modes should stay user-friendly (no punishing wrong-item serves).
-- Keep tests passing (77 currently).
+- Keep tests passing (86 currently; the original 77 must stay unchanged).
 - Milestone 3 is done; do not change it.
 
 ## Not verified yet

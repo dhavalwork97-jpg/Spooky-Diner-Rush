@@ -1,10 +1,19 @@
 import { CrazyGames } from '../sdk/crazygames';
 
 export interface SaveData {
-  version: 1;
+  /** 2 since Milestone 4. Version 1 saves load fine and get the new fields from defaults. */
+  version: 2;
   level: number;
   xp: number;
   coins: number;
+  /** Shop upgrades: upgrade id -> tier bought (0 or missing means none). */
+  owned: Record<string, number>;
+  /** Decor ids the player has bought. */
+  decor: string[];
+  /** Story card ids already shown, so each shows once. */
+  seenStory: string[];
+  /** Last restaurant played (see data/restaurants.json). */
+  lastRestaurant: string;
   settings: { reduceMotion: boolean | null; musicVolume: number; sfxVolume: number; muted: boolean };
 }
 
@@ -12,10 +21,14 @@ const KEY = 'chef-rush-save';
 
 export function defaultSave(): SaveData {
   return {
-    version: 1,
+    version: 2,
     level: 1,
     xp: 0,
     coins: 0,
+    owned: {},
+    decor: [],
+    seenStory: [],
+    lastRestaurant: 'burger_diner',
     settings: { reduceMotion: null, musicVolume: 0.6, sfxVolume: 0.8, muted: false },
   };
 }
@@ -39,6 +52,32 @@ function write(key: string, value: string): void {
   }
 }
 
+const MAX_LIST = 200;
+
+/** Keep only short non-empty strings, without repeats, and cap the length. */
+function cleanIds(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  const out: string[] = [];
+  for (const x of v) {
+    if (typeof x === 'string' && x.length > 0 && x.length <= 64 && !out.includes(x)) out.push(x);
+    if (out.length >= MAX_LIST) break;
+  }
+  return out;
+}
+
+/** Keep only id -> whole-number tier (1 to 99) pairs. */
+function cleanOwned(v: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+  for (const [k, t] of Object.entries(v as Record<string, unknown>)) {
+    if (k.length === 0 || k.length > 64 || typeof t !== 'number' || !Number.isFinite(t)) continue;
+    const tier = Math.floor(t);
+    if (tier >= 1 && tier <= 99) out[k] = tier;
+    if (Object.keys(out).length >= MAX_LIST) break;
+  }
+  return out;
+}
+
 /** Merge unknown input over defaults so old or corrupt saves never crash the game. */
 export function parseSave(raw: string | null): SaveData {
   const base = defaultSave();
@@ -47,10 +86,17 @@ export function parseSave(raw: string | null): SaveData {
     const p = JSON.parse(raw) as Partial<SaveData>;
     const num = (v: unknown, d: number, min = 0) => (typeof v === 'number' && Number.isFinite(v) && v >= min ? v : d);
     return {
-      version: 1,
+      version: 2,
       level: Math.max(1, Math.floor(num(p.level, base.level, 1))),
       xp: num(p.xp, base.xp),
       coins: Math.floor(num(p.coins, base.coins)),
+      owned: cleanOwned(p.owned),
+      decor: cleanIds(p.decor),
+      seenStory: cleanIds(p.seenStory),
+      lastRestaurant:
+        typeof p.lastRestaurant === 'string' && p.lastRestaurant.length > 0 && p.lastRestaurant.length <= 64
+          ? p.lastRestaurant
+          : base.lastRestaurant,
       settings: {
         reduceMotion: typeof p.settings?.reduceMotion === 'boolean' ? p.settings.reduceMotion : null,
         musicVolume: Math.min(1, num(p.settings?.musicVolume, base.settings.musicVolume)),
