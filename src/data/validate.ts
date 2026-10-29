@@ -145,6 +145,28 @@ export function validateCareer(data: unknown): string[] {
   return errors;
 }
 
+const CHEF_TRIGGERS = ['first_serve', 'rush', 'combo', 'burn', 'angry', 'event', 'level_up', 'idle'];
+
+/** chef.json: numbers >= 0, every known trigger present with short non-empty lines. */
+export function validateChef(data: unknown): string[] {
+  const errors: string[] = [];
+  const d = data as { cooldown?: unknown; triggerCooldown?: unknown; hold?: unknown; triggers?: Record<string, { lines?: unknown }> };
+  for (const k of ['cooldown', 'triggerCooldown', 'hold'] as const) {
+    if (!isNum(d?.[k]) || (d[k] as number) < 0) errors.push(`chef.json: ${k} must be a number >= 0`);
+  }
+  if (!d?.triggers || typeof d.triggers !== 'object') return [...errors, 'chef.json: "triggers" must be an object'];
+  for (const id of CHEF_TRIGGERS) if (!d.triggers[id]) errors.push(`chef.json: missing trigger ${id}`);
+  for (const [id, t] of Object.entries(d.triggers)) {
+    if (!CHEF_TRIGGERS.includes(id)) errors.push(`chef.json: unknown trigger ${id}`);
+    if (!Array.isArray(t?.lines) || t.lines.length === 0) {
+      errors.push(`chef.json: ${id} needs at least one line`);
+      continue;
+    }
+    for (const l of t.lines) if (!isStr(l) || l.length > 60) errors.push(`chef.json: ${id} has a line that is empty or over 60 characters`);
+  }
+  return errors;
+}
+
 export function assertValid(name: string, errors: string[]): void {
   if (errors.length > 0) throw new Error(`${name} failed validation:\n- ${errors.join('\n- ')}`);
 }

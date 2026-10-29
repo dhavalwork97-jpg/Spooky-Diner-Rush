@@ -1,0 +1,15 @@
+{
+  "cooldown": 8,
+  "triggerCooldown": 25,
+  "hold": 3.5,
+  "triggers": {
+    "first_serve": { "once": true, "lines": ["Nice! Your first order!", "That's how it's done!"] },
+    "rush": { "lines": ["Rush! Double tip!", "Quick hands, chef!", "They loved that speed!"] },
+    "combo": { "lines": ["Combo going! Keep it up!", "You're on a roll!", "Don't stop now!"] },
+    "burn": { "lines": ["Oops, a little too crispy.", "Watch the timer, chef!", "Happens to everyone. Next one!"] },
+    "angry": { "lines": ["Don't worry, the next one is yours!", "Breathe. You've got this.", "Quicker next time, chef!"] },
+    "event": { "lines": ["Something is coming up!", "Heads up, chef!", "Here we go!"] },
+    "level_up": { "priority": true, "lines": ["New level! Great work!", "Look at you go, chef!", "The kitchen is proud of you!"] },
+    "idle": { "lines": ["Tip: serve fast for bigger tips.", "Tip: the shop has faster gear.", "Tip: a quick serve builds a combo."] }
+  }
+}

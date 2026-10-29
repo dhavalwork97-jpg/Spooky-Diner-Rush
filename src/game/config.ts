@@ -7,6 +7,7 @@ import wavesJson from '../../data/waves.json';
 import eventsJson from '../../data/events.json';
 import upgradesJson from '../../data/upgrades.json';
 import careerJson from '../../data/career.json';
+import chefJson from '../../data/chef.json';
 
 export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger';
 
@@ -79,6 +80,21 @@ export interface CareerTitle {
   minLevel: number;
   title: string;
 }
+export interface ChefTrigger {
+  lines: string[];
+  once?: boolean;
+  /** Skips the global cooldown and the trigger's own cooldown. */
+  priority?: boolean;
+}
+export interface ChefConfig {
+  /** Seconds between any two bubbles. */
+  cooldown: number;
+  /** Seconds before the same trigger can speak again. */
+  triggerCooldown: number;
+  /** Seconds a bubble stays up. */
+  hold: number;
+  triggers: Record<string, ChefTrigger>;
+}
 export interface GameConfig {
   recipes: { settings: RecipeSettings; items: Record<ItemKind, ItemDef> };
   progression: { levels: LevelDef[]; afterLast: { patienceStepPerLevel: number; patienceFloor: number } };
@@ -106,6 +122,7 @@ export interface GameConfig {
   events: { firstAfter: number; gap: [number, number]; events: EventDef[] };
   upgrades: { upgrades: UpgradeDef[] };
   career: { titles: CareerTitle[] };
+  chef: ChefConfig;
 }
 
 export const defaultConfig: GameConfig = {
@@ -118,6 +135,7 @@ export const defaultConfig: GameConfig = {
   events: eventsJson as unknown as GameConfig['events'],
   upgrades: upgradesJson as unknown as GameConfig['upgrades'],
   career: careerJson as unknown as GameConfig['career'],
+  chef: chefJson as unknown as GameConfig['chef'],
 };
 
 /** Progression entry for a level. Past the last entry, patience slowly tightens down to a floor. */
