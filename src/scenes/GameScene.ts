@@ -13,6 +13,7 @@ import { MUSTARD } from '../art/builders';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 import { BURNERS, Layout, SLOTS, SRC_H, SRC_W, VATS } from '../views/layout';
 import { StationViews } from '../views/StationViews';
+import { StockViews } from '../views/StockViews';
 import { ItemView } from '../views/ItemView';
 import { CustomerView } from '../views/CustomerView';
 import { Hud } from '../views/Hud';
@@ -45,6 +46,7 @@ export class GameScene extends Phaser.Scene {
 
   private state!: KitchenState;
   private stations!: StationViews;
+  private stock!: StockViews;
   private hud!: Hud;
   private toast!: Toast;
   private levelUpCard!: LevelUpCard;
@@ -94,6 +96,7 @@ export class GameScene extends Phaser.Scene {
 
     this.fx = new ParticlePool(this, 140);
     this.buildZones();
+    this.stock = new StockViews(this, this.layout, this.state.level);
     this.stations = new StationViews(this, this.layout, this.fx, this.state);
     this.hud = new Hud(this, this.state);
     this.toast = new Toast(this, LOGICAL_WIDTH / 2, 300);
@@ -244,6 +247,7 @@ export class GameScene extends Phaser.Scene {
     this.selectedId = zone.id;
     audio.play('tap');
     const text = handleStationTap(zone, this.state.level, pt);
+    this.stock.tap(zone.station);
     const { x, y, width, height } = view.rect;
 
     // Tap feedback: an overlay outline that fades, never part of the background.
@@ -416,9 +420,23 @@ export class GameScene extends Phaser.Scene {
           this.stations.readyBounce('oven', e.oven);
         }
         break;
-      case 'pattyStart':
+      case 'pattyStart': {
         audio.play('pop');
+        // A raw patty hops from the tray onto the grill.
+        const tray = this.zoneCenter('patty_tray');
+        const to = this.stations.burnerPos(e.burner);
+        if (tray && !SaveSystem.reduceMotion()) {
+          this.stations.holdBurner(e.burner, 360, this.game.loop.time);
+          const raw = this.add.image(tray.x, tray.y, 'patty_raw').setDepth(650);
+          raw.setScale(this.layout.s(120) / raw.width);
+          this.arc(raw, to, 340, 50, () => {
+            raw.destroy();
+            this.fx.burst(to.x, to.y, 0xffffff, 5, 26, 300);
+            audio.play('drop');
+          });
+        }
         break;
+      }
       case 'fryPhase':
         if (e.phase === 'ready') {
           audio.play('ding');
@@ -623,6 +641,7 @@ export class GameScene extends Phaser.Scene {
         if (nv) slot.item.kind !== 'burger' ? nv.showFries() : nv.syncLayers(slot.item.placed, slot.item.building, false);
       } else if (!slot.item && v && !v.leaving) this.removeItem(slot.index, false);
     }
+    this.stock.update(this.state.level);
     this.stations.update(this.state, time);
     this.hud.update(this.state, dtReal);
     this.updateHint();
@@ -697,6 +716,7 @@ export class GameScene extends Phaser.Scene {
     this.game.events.off(Phaser.Core.Events.BLUR, this.onBlur, this);
     animGuard.cancelAll();
     this.stations.destroy();
+    this.stock.destroy();
     this.hand.destroy();
     this.fx.destroy();
     this.items.clear();

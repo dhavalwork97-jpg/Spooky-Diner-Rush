@@ -133,3 +133,9 @@ The zip food art is drawn at 2x and larger than the plates in this kitchen, so i
 - Pizza (Lv 5, for now): dough bases -> oven (raw pizza hops in, browns into the cooked pizza) -> plate. The zip has no burnt pizza, so burnt is the cooked art darkened with a tint; replace it if a real burnt pizza is made.
 - Unlock levels are earlier than the brief (nuggets Lv 11, pizza Lv 10) so they can be tried now; they are single numbers in `data/recipes.json` and `data/restaurants.json`.
 - Verified in Chromium: nuggets and pizza each cooked and landed on a plate; 52 tests pass. Pizza toppings (prep station) are not built.
+
+## Added after comparing phone recordings with the reference video
+- Stock sprites on the bins and trays (raw fries, nuggets, buns, raw patties, lettuce, tomato) appear when each station unlocks; they squash when tapped.
+- Fries and nuggets sit in the oil: translucent oil layer, rippling surface, bubbles that rise and pop (denser while raw), jiggle, and fries turning golden as they cook. Raw patties also hop from the tray onto the grill.
+- Verified in stills only (Chromium); motion feel not judged on a phone. 52 tests pass.
+- Seen in the recordings: on a portrait phone the game fills only about a third of the screen, so a "rotate to landscape" prompt is needed (planned for the polish milestone).

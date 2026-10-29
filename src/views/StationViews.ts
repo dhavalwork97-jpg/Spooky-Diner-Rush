@@ -18,6 +18,8 @@ interface VatView {
   nextBubble: number;
   nextSmoke: number;
   holdUntil: number; // raw fries are still flying in from the bin
+  oil: Phaser.GameObjects.Graphics; // translucent oil over the lower part of the food, with a rippling surface
+  ripples: { x: number; at: number }[];
 }
 interface BurnerView {
   base: Phaser.GameObjects.Image;
@@ -28,6 +30,7 @@ interface BurnerView {
   nextSteam: number;
   nextSmoke: number;
   flipping: boolean;
+  holdUntil: number;
 }
 
 interface OvenView {
@@ -51,7 +54,8 @@ export class StationViews {
       const y = layout.y(sy);
       const fries = scene.add.image(x, y - 4, 'fries_raw').setDepth(500).setVisible(false);
       const k = layout.fit(fries, 110);
-      this.vats.push({ fries, k, ring: new Ring(scene, x, y - layout.s(78)), nextBubble: 0, nextSmoke: 0, holdUntil: 0 });
+      const oil = scene.add.graphics().setDepth(502);
+      this.vats.push({ fries, k, ring: new Ring(scene, x, y - layout.s(78)), nextBubble: 0, nextSmoke: 0, holdUntil: 0, oil, ripples: [] });
     });
     state.ovens.forEach((_, i) => {
       const [sx, sy] = OVENS[i];
@@ -76,36 +80,69 @@ export class StationViews {
         .setOrigin(0.5)
         .setDepth(602)
         .setVisible(false);
-      this.burners.push({ base, top, k, ring: new Ring(scene, x, y - layout.s(62)), flipText, nextSteam: 0, nextSmoke: 0, flipping: false });
+      this.burners.push({ base, top, k, ring: new Ring(scene, x, y - layout.s(62)), flipText, nextSteam: 0, nextSmoke: 0, flipping: false, holdUntil: 0 });
     });
   }
 
   update(state: KitchenState, now: number): void {
         state.vats.forEach((v, i) => {
       const view = this.vats[i];
-      if (!v) {
+      if (!v || now < view.holdUntil) {
         view.fries.setVisible(false);
+        view.oil.clear();
+        view.ripples.length = 0;
         view.ring.show(null, 0, now);
         return;
       }
-      if (now < view.holdUntil) {
-        view.fries.setVisible(false);
-        return;
-      }
-      view.fries.setVisible(true).setTexture(`${v.kind}_${v.phase === 'cooking' ? 'raw' : v.phase === 'burnt' ? 'burnt' : 'cooked'}`);
+      // Fries are shown in the vat as the raw sticks turning golden (the boxed cooked art is for the plate).
+      const tex = v.kind === 'nuggets' ? (v.phase === 'cooking' ? 'nuggets_raw' : v.phase === 'burnt' ? 'nuggets_burnt' : 'nuggets_cooked') : v.phase === 'burnt' ? 'fries_burnt' : 'fries_raw';
+      view.fries.setVisible(true).setTexture(tex);
       view.fries.setScale(this.layout.s(v.kind === 'nuggets' ? 80 : 110) / view.fries.width);
+      if (v.kind === 'fries') {
+        const tints: Record<string, number> = { cooking: 0xffffff, ready: 0xffd45e, warning: 0xe3a23a, danger: 0xb06a28, burnt: 0xffffff };
+        view.fries.setTint(tints[v.phase]);
+      } else view.fries.clearTint();
       view.ring.show(v.phase, v.t / state.cfg.recipes.items[v.kind].readyAfter!, now);
+
       const x = view.fries.x;
-      const y = view.fries.y;
-      // oil bubbles while frying
-      if (v.phase !== 'burnt' && now > view.nextBubble) {
-        view.nextBubble = now + 160 + Math.random() * 140;
-        this.fx.rise(x + (Math.random() - 0.5) * this.layout.s(70), y + 6, 0xfff1b8, 0.8, 3 + Math.random() * 2, 18, 520, (Math.random() - 0.5) * 8);
+      const w = view.fries.displayWidth;
+      const h = view.fries.displayHeight;
+      const reduce = SaveSystem.reduceMotion();
+      // food floats and jiggles in the oil
+      if (!reduce) view.fries.setAngle(Math.sin(now / 190 + i * 2) * 2.2);
+      // oil layer over the lower part of the food, so it reads as submerged
+      const top = view.fries.y - h * 0.08;
+      const bottom = view.fries.y + h * 0.5 + 6;
+      const g = view.oil;
+      g.clear();
+      g.fillStyle(0xf2b630, 0.42).fillRoundedRect(x - w / 2 - 6, top, w + 12, bottom - top, 8);
+      g.lineStyle(3, 0xfff3b0, 0.9).beginPath();
+      for (let px = -w / 2 - 6; px <= w / 2 + 6; px += 6) {
+        const wy = top + (reduce ? 0 : Math.sin(now / 150 + px / 9 + i) * 1.8);
+        if (px === -w / 2 - 6) g.moveTo(x + px, wy);
+        else g.lineTo(x + px, wy);
+      }
+      g.strokePath();
+      // surface ripples where bubbles pop
+      view.ripples = view.ripples.filter((r) => now - r.at < 420);
+      for (const r of view.ripples) {
+        const t = (now - r.at) / 420;
+        if (t < 0) continue;
+        g.lineStyle(2, 0xfff8d0, 0.8 * (1 - t)).strokeEllipse(r.x, top, 6 + t * 16, 3 + t * 5);
+      }
+      // boiling: bubbles rise from the food and pop at the surface; denser while raw, calmer once golden
+      if (!reduce && v.phase !== 'burnt' && now > view.nextBubble) {
+        const boil = v.phase === 'cooking' ? 70 : 140;
+        view.nextBubble = now + boil + Math.random() * boil;
+        const bx = x + (Math.random() - 0.5) * w * 0.8;
+        const rise = Math.max(8, view.fries.y + h * 0.3 - top);
+        this.fx.rise(bx, view.fries.y + h * 0.3, 0xfff6c8, 0.95, 2 + Math.random() * 2.5, rise, 460, (Math.random() - 0.5) * 6);
+        view.ripples.push({ x: bx, at: now + 460 });
       }
       // smoke gets heavier from warning to danger
       if ((v.phase === 'warning' || v.phase === 'danger') && now > view.nextSmoke) {
         view.nextSmoke = now + (v.phase === 'danger' ? 150 : 320);
-        this.fx.rise(x + (Math.random() - 0.5) * 20, y - 14, v.phase === 'danger' ? 0x3a3a3a : 0xbdbdbd, v.phase === 'danger' ? 0.8 : 0.6, 6, 40, 900, (Math.random() - 0.5) * 18);
+        this.fx.rise(x + (Math.random() - 0.5) * 20, view.fries.y - h * 0.3, v.phase === 'danger' ? 0x3a3a3a : 0xbdbdbd, v.phase === 'danger' ? 0.8 : 0.6, 6, 40, 900, (Math.random() - 0.5) * 18);
       }
     });
 
@@ -134,7 +171,7 @@ export class StationViews {
     const side = state.cfg.recipes.items.burger.sideSeconds!;
     state.burners.forEach((p, i) => {
       const view = this.burners[i];
-      if (!p) {
+      if (!p || now < view.holdUntil) {
         view.base.setVisible(false);
         view.top.setVisible(false);
         view.ring.show(null, 0, now);
@@ -217,6 +254,10 @@ export class StationViews {
     if (this.ovens[oven]) this.ovens[oven].holdUntil = now + ms;
   }
 
+  holdBurner(burner: number, ms: number, now: number): void {
+    if (this.burners[burner]) this.burners[burner].holdUntil = now + ms;
+  }
+
   ovenPos(i: number): { x: number; y: number } {
     return { x: this.ovens[i].top.x, y: this.ovens[i].top.y };
   }
@@ -232,6 +273,7 @@ export class StationViews {
   destroy(): void {
     this.vats.forEach((v) => {
       v.fries.destroy();
+      v.oil.destroy();
       v.ring.destroy();
     });
     this.burners.forEach((b) => {
