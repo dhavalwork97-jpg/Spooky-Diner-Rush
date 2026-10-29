@@ -121,3 +121,15 @@ describe('upgrades change the model', () => {
     expect(plus / wait(NO_MODS)).toBeCloseTo(U.find((u) => u.id === 'patience')!.tiers[2].value, 5);
   });
 });
+
+describe('buyLabel', () => {
+  it('says what the button should show', async () => {
+    const { buyLabel } = await import('../src/game/shop');
+    const t0 = fryer.tiers[0].cost;
+    expect(buyLabel(U, {}, 'fryer_speed', 10, t0)).toEqual({ text: `Buy ${t0}`, enabled: true });
+    expect(buyLabel(U, {}, 'fryer_speed', 10, t0 - 1)).toEqual({ text: `${t0} coins`, enabled: false });
+    expect(buyLabel(U, {}, 'fryer_speed', 1, 999)).toEqual({ text: `Lv ${fryer.unlockLevel}`, enabled: false });
+    expect(buyLabel(U, { fryer_speed: fryer.tiers.length }, 'fryer_speed', 10, 9999)).toEqual({ text: 'Max', enabled: false });
+    expect(buyLabel(U, {}, 'nope', 10, 99).enabled).toBe(false);
+  });
+});

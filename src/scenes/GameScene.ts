@@ -9,6 +9,7 @@ import { modsFor } from '../game/shop';
 import { titleEarnedAt } from '../game/career';
 import { ChefTalk } from '../game/chef';
 import { dueStory, seenAfter } from '../game/story';
+import type { ShopData } from './ShopScene';
 import { makeRng } from '../game/rng';
 import { ChefBubble } from '../views/ChefBubble';
 import { audio } from '../systems/AudioSystem';
@@ -142,6 +143,7 @@ export class GameScene extends Phaser.Scene {
     this.input.on('drag', this.onDrag, this);
     this.input.on('dragend', this.onDragEnd, this);
     this.input.keyboard?.on('keydown-Z', () => this.setShowAll(!this.showAll));
+    this.input.keyboard?.on('keydown-B', this.openShop, this);
     this.setShowAll(params.has('zones'));
 
     this.game.events.on(Phaser.Core.Events.BLUR, this.onBlur, this);
@@ -167,6 +169,7 @@ export class GameScene extends Phaser.Scene {
       levelCardVisible: () => this.levelUpCard.isShowing,
       chef: () => this.chef.text,
       story: () => this.storyCard.id,
+      openShop: () => this.openShop(),
       chefSay: (trigger: string) => this.sayChef(this.chefTalk.say(trigger, this.state.clock)),
       slotPos: (i: number) => ({ x: this.layout.x(SLOTS[i][0]), y: this.layout.y(SLOTS[i][1]) }),
       vatPos: (i: number) => this.stations.vatPos(i),
@@ -630,6 +633,18 @@ export class GameScene extends Phaser.Scene {
     this.storyCard.show(card, () => this.chef.setChefVisible(true));
   }
 
+  /** Open the Shop over the game. The game scene is paused until the Shop closes. */
+  openShop(): void {
+    if (this.paused || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing) return;
+    this.setSelectedSlot(null);
+    this.chef.hide();
+    this.hand.hide();
+    audio.setSizzle(0);
+    this.saveNow();
+    this.scene.launch('Shop', { state: this.state, onClose: () => this.scene.resume() } satisfies ShopData);
+    this.scene.pause();
+  }
+
   private sayChef(line: { text: string; hold: number } | null): void {
     if (!line || this.paused || this.state.closed || this.storyCard.isShowing) return;
     this.chef.show(line.text, line.hold);
@@ -805,6 +820,7 @@ export class GameScene extends Phaser.Scene {
 
   private cleanup(): void {
     this.saveNow();
+    this.input.keyboard?.off('keydown-B', this.openShop, this);
     this.input.off('pointerdown', this.onPointerDown, this);
     this.input.off('dragstart', this.onDragStart, this);
     this.input.off('drag', this.onDrag, this);

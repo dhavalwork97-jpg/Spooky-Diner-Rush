@@ -58,3 +58,25 @@ export function modsFor(upgrades: UpgradeDef[], owned: Owned): Mods {
   }
   return mods;
 }
+
+export interface BuyLabel {
+  text: string;
+  enabled: boolean;
+}
+
+/** What a Buy button says and whether it can be pressed. Level gates use "Lv N" only. */
+export function buyLabel(upgrades: UpgradeDef[], owned: Owned, id: string, level: number, coins: number): BuyLabel {
+  const def = find(upgrades, id);
+  const check = canBuy(upgrades, owned, id, level, coins);
+  if (check.ok) return { text: `Buy ${check.cost}`, enabled: true };
+  switch (check.reason) {
+    case 'maxed':
+      return { text: 'Max', enabled: false };
+    case 'locked':
+      return { text: `Lv ${def?.unlockLevel ?? '?'}`, enabled: false };
+    case 'coins':
+      return { text: `${check.cost} coins`, enabled: false };
+    default:
+      return { text: '-', enabled: false };
+  }
+}
