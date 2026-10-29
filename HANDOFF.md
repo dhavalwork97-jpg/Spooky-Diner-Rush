@@ -115,16 +115,11 @@ Assumptions to confirm with the owner: upgrade tiers and prices; decor is cosmet
 ### Milestone 4 scope now on main
 Save v2 with backward-compatible v1 parsing; five upgrades with three tiers; persistent modifiers; cosmetic decor; career titles; chef speech bubbles; one-time story cards; Recipe Book; restaurant selection (only `burger_diner` is playable); HUD buttons. Details and the explicit not-verified list are in `docs/progress.md`.
 
-### Exact next task: Milestone 5 — gameplay balance and polish
+### Exact next task: Milestone 5 — content
 Start from the latest `main`, inspect the current repository and docs first, and avoid rebuilding existing systems. Priorities:
-1. Run `npm ci`, `npm test`, `npm run typecheck`, and `npm run build` from a clean checkout; report actual results before edits.
-2. Add deterministic bot/simulation probes for coins, upgrade purchase pacing, XP/level progression, recipe unlocks, customer patience, and end-of-session outcomes. Use multiple seeds and compare early/mid progression.
-3. Tune upgrade prices and modifier values using simulation evidence; specifically test whether top-tier fryer/grill/oven multipliers make play too easy. Keep all balance numbers in `data/` where practical.
-4. Validate human pacing and fun through a short, repeatable playtest plan; do not present bot timings as human results.
-5. Address mobile readability and touch-target limitations without overlapping kitchen interaction zones or customers. Check 844x390 emulation, but explicitly note that this is not a real-phone test.
-6. Check sound mix/loudness and the remaining event/animation visuals; document what was actually heard/seen.
-7. Preserve the architecture: `src/game/*` stays Phaser-free; views and animations never decide game outcomes; honor reduced motion; preserve save compatibility; do not weaken wording checks or regress the existing Milestone 3 tests.
-8. Update `docs/progress.md`, `docs/architecture.md` if needed, and this `HANDOFF.md` with completed work, test outputs, unverified items, exact commit/branch, and next action. Use a focused feature branch and PR for the milestone; do not merge until checks and review are satisfactory.
+1.Lv 11–20 and the after-Lv 20 scaling.
+2.Balance simulation for the later levels.
+3. Update `docs/progress.md`, `docs/architecture.md` if needed, and this `HANDOFF.md` with completed work, test outputs, unverified items, exact commit/branch, and next action. Use a focused feature branch and PR for the milestone; do not merge until checks and review are satisfactory.
 
 ### Known limitations carried forward
 - Balance and upgrade prices are first-pass values; they have not been tuned against a bot simulation.
