@@ -1,0 +1,12 @@
+{
+  "titles": [
+    { "minLevel": 1, "title": "Fry Cook" },
+    { "minLevel": 3, "title": "Line Cook" },
+    { "minLevel": 6, "title": "Grill Cook" },
+    { "minLevel": 10, "title": "Sous Chef" },
+    { "minLevel": 15, "title": "Head Chef" },
+    { "minLevel": 20, "title": "Kitchen Boss" },
+    { "minLevel": 30, "title": "Master Chef" },
+    { "minLevel": 40, "title": "Legend of the Line" }
+  ]
+}

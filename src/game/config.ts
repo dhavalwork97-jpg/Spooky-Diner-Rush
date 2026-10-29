@@ -5,6 +5,13 @@ import customersJson from '../../data/customers.json';
 import comboJson from '../../data/combo.json';
 import wavesJson from '../../data/waves.json';
 import eventsJson from '../../data/events.json';
+import upgradesJson from '../../data/upgrades.json';
+import careerJson from '../../data/career.json';
+import chefJson from '../../data/chef.json';
+import storyJson from '../../data/story.json';
+import decorJson from '../../data/decor.json';
+import recipebookJson from '../../data/recipebook.json';
+import restaurantMenuJson from '../../data/restaurant_menu.json';
 
 export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger';
 
@@ -58,6 +65,58 @@ export interface EventDef {
   ovenSpeed?: number;
   spawnType?: string;
 }
+/** Which `KitchenState.mods` field an upgrade sets. */
+export type ModKey = 'fryerSpeed' | 'grillSpeed' | 'ovenSpeed' | 'patience' | 'tips';
+export interface UpgradeTier {
+  cost: number;
+  /** The multiplier the mod has once this tier is bought (not an increment). */
+  value: number;
+}
+export interface UpgradeDef {
+  id: string;
+  name: string;
+  description: string;
+  mod: ModKey;
+  unlockLevel: number;
+  tiers: UpgradeTier[];
+}
+export interface CareerTitle {
+  minLevel: number;
+  title: string;
+}
+export interface ChefTrigger {
+  lines: string[];
+  once?: boolean;
+  /** Skips the global cooldown and the trigger's own cooldown. */
+  priority?: boolean;
+}
+export interface ChefConfig {
+  /** Seconds between any two bubbles. */
+  cooldown: number;
+  /** Seconds before the same trigger can speak again. */
+  triggerCooldown: number;
+  /** Seconds a bubble stays up. */
+  hold: number;
+  triggers: Record<string, ChefTrigger>;
+}
+export interface StoryCardDef {
+  id: string;
+  level: number;
+  title: string;
+  text: string;
+}
+export interface DecorDef {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  unlockLevel: number;
+  /** Position and size in source-image pixels (the kitchen art is 1699 x 926). */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 export interface GameConfig {
   recipes: { settings: RecipeSettings; items: Record<ItemKind, ItemDef> };
   progression: { levels: LevelDef[]; afterLast: { patienceStepPerLevel: number; patienceFloor: number } };
@@ -83,6 +142,13 @@ export interface GameConfig {
   };
   waves: { phases: { name: string; seconds: number; gapMult: number }[] };
   events: { firstAfter: number; gap: [number, number]; events: EventDef[] };
+  upgrades: { upgrades: UpgradeDef[] };
+  career: { titles: CareerTitle[] };
+  chef: ChefConfig;
+  story: { cards: StoryCardDef[] };
+  decor: { items: DecorDef[] };
+  recipebook: { entries: { id: string; steps: string[] }[] };
+  restaurantMenu: { comingSoon: { id: string; name: string; unlockLevel: number }[] };
 }
 
 export const defaultConfig: GameConfig = {
@@ -93,6 +159,13 @@ export const defaultConfig: GameConfig = {
   combo: comboJson as unknown as GameConfig['combo'],
   waves: wavesJson as unknown as GameConfig['waves'],
   events: eventsJson as unknown as GameConfig['events'],
+  upgrades: upgradesJson as unknown as GameConfig['upgrades'],
+  career: careerJson as unknown as GameConfig['career'],
+  chef: chefJson as unknown as GameConfig['chef'],
+  story: storyJson as unknown as GameConfig['story'],
+  decor: decorJson as unknown as GameConfig['decor'],
+  recipebook: recipebookJson as unknown as GameConfig['recipebook'],
+  restaurantMenu: restaurantMenuJson as unknown as GameConfig['restaurantMenu'],
 };
 
 /** Progression entry for a level. Past the last entry, patience slowly tightens down to a floor. */

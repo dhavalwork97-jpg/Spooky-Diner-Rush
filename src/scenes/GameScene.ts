@@ -5,6 +5,16 @@ import { handleStationTap, registerStationHandler, clearStationHandlers, type Ta
 import { animGuard, fade, pop, shake } from '../anim/helpers';
 import { ParticlePool } from '../anim/ParticlePool';
 import { SaveSystem } from '../systems/SaveSystem';
+import { modsFor } from '../game/shop';
+import { titleEarnedAt } from '../game/career';
+import { ChefTalk } from '../game/chef';
+import { dueStory, seenAfter } from '../game/story';
+import type { RestaurantSelectData } from './RestaurantSelectScene';
+import { ownedDecor } from '../game/decor';
+import { decorKey } from '../art/builders';
+import { makeRng } from '../game/rng';
+import { ChefBubble } from '../views/ChefBubble';
+import { MenuButtons, type MenuKind } from '../views/MenuButtons';
 import { audio } from '../systems/AudioSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
@@ -17,11 +27,13 @@ import { StockViews } from '../views/StockViews';
 import { ItemView } from '../views/ItemView';
 import { CustomerView } from '../views/CustomerView';
 import { Hud } from '../views/Hud';
-import { EventBanner, LevelUpCard, Overlay, Toast } from '../views/Popups';
+import { EventBanner, LevelUpCard, Overlay, Toast, StoryCard } from '../views/Popups';
 import { TutorialHand } from '../views/TutorialHand';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 const SAVE_EVERY_MS = 15000;
+/** Model seconds of quiet before the chef offers an idle tip. */
+const CHEF_IDLE_AFTER = 45;
 /** Extra reach (fraction of the kitchen image) for taps that miss every zone. */
 const TOUCH_SLOP = 0.025;
 
@@ -55,6 +67,13 @@ export class GameScene extends Phaser.Scene {
   private levelUpCard!: LevelUpCard;
   private overlay!: Overlay;
   private hand!: TutorialHand;
+  private decorViews = new Map<string, Phaser.GameObjects.Image>();
+  private menuButtons!: MenuButtons;
+  private storyCard!: StoryCard;
+  private chef!: ChefBubble;
+  private chefTalk!: ChefTalk;
+  /** Model clock when the chef last spoke, for the idle tip. */
+  private chefLastAt = 0;
   private muteBtn!: Phaser.GameObjects.Container;
   private muteLine!: Phaser.GameObjects.Graphics;
 
@@ -87,6 +106,7 @@ export class GameScene extends Phaser.Scene {
     const debug = params.has('debug');
     const save = SaveSystem.data;
     this.state = new KitchenState({ level: save.level, xp: save.xp, coins: save.coins });
+    this.state.mods = modsFor(this.state.cfg.upgrades.upgrades, save.owned);
     if (debug) {
       const lv = Number(params.get('level'));
       if (lv >= 1) {
@@ -97,6 +117,7 @@ export class GameScene extends Phaser.Scene {
       if (sp > 0) this.speed = Math.min(20, sp);
     }
 
+    this.syncDecor();
     this.fx = new ParticlePool(this, 140);
     this.buildZones();
     this.stock = new StockViews(this, this.layout, this.state.level);
@@ -107,7 +128,11 @@ export class GameScene extends Phaser.Scene {
     this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330);
     this.overlay = new Overlay(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.hand = new TutorialHand(this);
+    this.storyCard = new StoryCard(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+    this.chef = new ChefBubble(this, this.layout);
+    this.chefTalk = new ChefTalk(this.state.cfg.chef, makeRng(Date.now()));
     this.buildMuteButton();
+    this.menuButtons = new MenuButtons(this, (k: MenuKind) => (k === 'shop' ? this.openShop() : k === 'book' ? this.openRecipeBook() : this.openRestaurants()));
 
     this.highlight = this.add.graphics().setDepth(900).setAlpha(0);
     this.label = this.add
@@ -125,6 +150,9 @@ export class GameScene extends Phaser.Scene {
     this.input.on('drag', this.onDrag, this);
     this.input.on('dragend', this.onDragEnd, this);
     this.input.keyboard?.on('keydown-Z', () => this.setShowAll(!this.showAll));
+    this.input.keyboard?.on('keydown-B', this.openShop, this);
+    this.input.keyboard?.on('keydown-R', this.openRecipeBook, this);
+    this.input.keyboard?.on('keydown-T', this.openRestaurants, this);
     this.setShowAll(params.has('zones'));
 
     this.game.events.on(Phaser.Core.Events.BLUR, this.onBlur, this);
@@ -148,6 +176,14 @@ export class GameScene extends Phaser.Scene {
       },
       spawn: (type: string) => this.state.spawnCustomer(type),
       levelCardVisible: () => this.levelUpCard.isShowing,
+      chef: () => this.chef.text,
+      story: () => this.storyCard.id,
+      decor: () => [...this.decorViews.keys()],
+      menuButtons: () => this.menuButtons.positions(),
+      openShop: () => this.openShop(),
+      openRecipeBook: () => this.openRecipeBook(),
+      openRestaurants: () => this.openRestaurants(),
+      chefSay: (trigger: string) => this.sayChef(this.chefTalk.say(trigger, this.state.clock)),
       slotPos: (i: number) => ({ x: this.layout.x(SLOTS[i][0]), y: this.layout.y(SLOTS[i][1]) }),
       vatPos: (i: number) => this.stations.vatPos(i),
       burnerPos: (i: number) => this.stations.burnerPos(i),
@@ -390,6 +426,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handle(e: GameEvent): void {
+    this.sayChef(this.chefTalk.onEvent(e, this.state.clock));
     switch (e.type) {
       case 'fryStart': {
         audio.play('pop');
@@ -569,7 +606,7 @@ export class GameScene extends Phaser.Scene {
       }
       case 'levelUp':
         this.hud.badgePop();
-        this.levelUpCard.show(e.level, e.coins, e.unlocks);
+        this.levelUpCard.show(e.level, e.coins, e.unlocks, titleEarnedAt(this.state.cfg, e.level)?.title);
         this.saveNow();
         break;
       case 'closed':
@@ -594,6 +631,70 @@ export class GameScene extends Phaser.Scene {
         audio.play('wrong');
         break;
     }
+  }
+
+  /** Show the story card due at this level, once. Waits for the level-up card, overlays and pauses. */
+  private maybeShowStory(): void {
+    if (this.paused || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing) return;
+    const card = dueStory(this.state.cfg, this.state.level, SaveSystem.data.seenStory);
+    if (!card) return;
+    SaveSystem.data.seenStory = seenAfter(this.state.cfg, SaveSystem.data.seenStory, card);
+    this.saveNow();
+    this.chef.hide();
+    this.chef.setChefVisible(false);
+    this.setSelectedSlot(null);
+    this.storyCard.show(card, () => this.chef.setChefVisible(true));
+  }
+
+  /** Draw owned decor. Cosmetic images sit above the background and below customers (depth 100). */
+  private syncDecor(): void {
+    for (const d of ownedDecor(this.state.cfg.decor.items, SaveSystem.data.decor)) {
+      if (this.decorViews.has(d.id)) continue;
+      const img = this.add.image(this.layout.x(d.x), this.layout.y(d.y), decorKey(d.id)).setOrigin(0, 0).setDepth(100).setName(`decor_${d.id}`);
+      this.layout.fit(img, d.width);
+      this.decorViews.set(d.id, img);
+    }
+  }
+
+  /** Open the Shop over the game. The game scene is paused until it closes. */
+  openShop(): void {
+    this.openPanel('Shop');
+  }
+
+  /** Open the Recipe Book over the game (read-only). */
+  openRecipeBook(): void {
+    this.openPanel('RecipeBook');
+  }
+
+  /** Open the restaurant list. Picking another open restaurant restarts this scene in it. */
+  openRestaurants(): void {
+    this.openPanel('RestaurantSelect');
+  }
+
+  private openPanel(key: 'Shop' | 'RecipeBook' | 'RestaurantSelect'): void {
+    if (this.paused || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing) return;
+    this.setSelectedSlot(null);
+    this.chef.hide();
+    this.hand.hide();
+    audio.setSizzle(0);
+    this.saveNow();
+    const data: RestaurantSelectData = {
+      state: this.state,
+      current: this.restaurant.id,
+      onClose: () => {
+        this.syncDecor();
+        this.scene.resume();
+      },
+      onPick: (id: string) => this.scene.start('Game', { restaurantId: id }),
+    };
+    this.scene.launch(key, data);
+    this.scene.pause();
+  }
+
+  private sayChef(line: { text: string; hold: number } | null): void {
+    if (!line || this.paused || this.state.closed || this.storyCard.isShowing) return;
+    this.chef.show(line.text, line.hold);
+    this.chefLastAt = this.state.clock;
   }
 
   private addCustomer(id: number): void {
@@ -671,7 +772,7 @@ export class GameScene extends Phaser.Scene {
   override update(time: number, delta: number): void {
     const dtReal = Math.min(delta / 1000, 0.1);
     const portrait = window.innerWidth < 900 && window.innerHeight > window.innerWidth * 1.1;
-    if (!this.paused && !portrait) {
+    if (!this.paused && !portrait && !this.storyCard.isShowing) {
       const dt = dtReal * this.speed;
       // run the model in small steps so a speed-up never skips a phase
       const steps = Math.max(1, Math.ceil(dt / 0.05));
@@ -696,6 +797,11 @@ export class GameScene extends Phaser.Scene {
     this.hud.update(this.state, dtReal);
     if (this.state.event) this.banner.update(this.state.event.remaining);
     this.updateHint();
+    this.maybeShowStory();
+    if (!this.paused && !this.state.closed && this.state.clock - this.chefLastAt > CHEF_IDLE_AFTER) {
+      this.chefLastAt = this.state.clock;
+      this.sayChef(this.chefTalk.say('idle', this.state.clock));
+    }
 
     const cooking = this.state.vats.filter((v) => v && v.phase !== 'burnt').length + this.state.burners.filter((b) => b && b.phase !== 'burnt').length + this.state.ovens.filter((o) => o && o.phase !== 'burnt').length;
     audio.setSizzle(this.paused || this.state.closed ? 0 : Math.min(1, cooking / 2));
@@ -709,7 +815,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateHint(): void {
-    const hint = this.paused || this.overlay.visible ? null : nextHint(this.state);
+    const hint = this.paused || this.overlay.visible || this.storyCard.isShowing ? null : nextHint(this.state);
     if (!hint) return this.hand.hide();
     const off = { x: 6, y: 8 };
     const tap = (key: string, p: { x: number; y: number } | null) => (p ? this.hand.point(key, { x: p.x + off.x, y: p.y + off.y }) : this.hand.hide());
@@ -760,6 +866,9 @@ export class GameScene extends Phaser.Scene {
 
   private cleanup(): void {
     this.saveNow();
+    this.input.keyboard?.off('keydown-B', this.openShop, this);
+    this.input.keyboard?.off('keydown-R', this.openRecipeBook, this);
+    this.input.keyboard?.off('keydown-T', this.openRestaurants, this);
     this.input.off('pointerdown', this.onPointerDown, this);
     this.input.off('dragstart', this.onDragStart, this);
     this.input.off('drag', this.onDrag, this);
@@ -769,6 +878,7 @@ export class GameScene extends Phaser.Scene {
     this.stations.destroy();
     this.stock.destroy();
     this.hand.destroy();
+    this.storyCard.destroy();
     this.fx.destroy();
     this.items.clear();
     this.custViews.clear();

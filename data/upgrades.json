@@ -1,0 +1,64 @@
+{
+  "upgrades": [
+    {
+      "id": "fryer_speed",
+      "name": "Fast fryer",
+      "description": "Fries and nuggets cook faster.",
+      "mod": "fryerSpeed",
+      "unlockLevel": 2,
+      "tiers": [
+        { "cost": 60, "value": 1.15 },
+        { "cost": 140, "value": 1.3 },
+        { "cost": 300, "value": 1.5 }
+      ]
+    },
+    {
+      "id": "grill_speed",
+      "name": "Hot grill",
+      "description": "Patties cook faster.",
+      "mod": "grillSpeed",
+      "unlockLevel": 3,
+      "tiers": [
+        { "cost": 80, "value": 1.15 },
+        { "cost": 170, "value": 1.3 },
+        { "cost": 340, "value": 1.5 }
+      ]
+    },
+    {
+      "id": "oven_speed",
+      "name": "Fast oven",
+      "description": "Pizzas bake faster.",
+      "mod": "ovenSpeed",
+      "unlockLevel": 5,
+      "tiers": [
+        { "cost": 120, "value": 1.15 },
+        { "cost": 240, "value": 1.3 },
+        { "cost": 420, "value": 1.5 }
+      ]
+    },
+    {
+      "id": "patience",
+      "name": "Cozy seats",
+      "description": "Customers wait longer.",
+      "mod": "patience",
+      "unlockLevel": 4,
+      "tiers": [
+        { "cost": 100, "value": 1.1 },
+        { "cost": 220, "value": 1.2 },
+        { "cost": 400, "value": 1.3 }
+      ]
+    },
+    {
+      "id": "tips",
+      "name": "Tip jar",
+      "description": "Fast serves earn bigger tips.",
+      "mod": "tips",
+      "unlockLevel": 3,
+      "tiers": [
+        { "cost": 90, "value": 1.25 },
+        { "cost": 200, "value": 1.5 },
+        { "cost": 380, "value": 2 }
+      ]
+    }
+  ]
+}

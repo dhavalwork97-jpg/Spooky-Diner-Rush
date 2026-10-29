@@ -32,6 +32,59 @@ const line = (g: Phaser.GameObjects.Graphics) => g.lineStyle(OUT, INK, 1);
 export function buildAllTextures(scene: Phaser.Scene, cfg: GameConfig): void {
   buildFood(scene);
   buildUi(scene);
+  buildDecor(scene, cfg);
+}
+
+/** Texture key for a decor item. */
+export const decorKey = (id: string): string => `decor_${id}`;
+
+/** Decor is drawn at its source-pixel size (see data/decor.json). Unknown ids get a plain panel. */
+function buildDecor(scene: Phaser.Scene, cfg: GameConfig): void {
+  for (const d of cfg.decor.items) {
+    const w = Math.round(d.width);
+    const h = Math.round(d.height);
+    make(scene, decorKey(d.id), w, h, (g) => {
+      if (d.id === 'clock') {
+        const r = Math.min(w, h) / 2 - 4;
+        g.fillStyle(0x000000, 0.2).fillCircle(w / 2 + 2, h / 2 + 4, r);
+        g.fillStyle(CREAM, 1).fillCircle(w / 2, h / 2, r);
+        g.lineStyle(5, INK, 1).strokeCircle(w / 2, h / 2, r);
+        g.lineStyle(4, ORANGE, 1).strokeCircle(w / 2, h / 2, r - 5);
+        g.lineStyle(3, INK, 1);
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * Math.PI * 2;
+          g.lineBetween(w / 2 + Math.cos(a) * (r - 11), h / 2 + Math.sin(a) * (r - 11), w / 2 + Math.cos(a) * (r - 6), h / 2 + Math.sin(a) * (r - 6));
+        }
+        g.lineStyle(5, INK, 1).lineBetween(w / 2, h / 2, w / 2, h / 2 - r * 0.55);
+        g.lineStyle(4, TOMATO, 1).lineBetween(w / 2, h / 2, w / 2 + r * 0.45, h / 2 + r * 0.1);
+        g.fillStyle(INK, 1).fillCircle(w / 2, h / 2, 4);
+      } else if (d.id === 'bunting') {
+        const colors = [TOMATO, MUSTARD, LEAF, ORANGE, 0x2ba6a0];
+        const flags = Math.floor(w / 62);
+        const step = w / flags;
+        // string sags in the middle
+        const sag = (x: number) => 6 + Math.sin((x / w) * Math.PI) * 6;
+        g.lineStyle(3, INK, 1);
+        for (let x = 0; x < w - 4; x += 4) g.lineBetween(x, sag(x), x + 4, sag(x + 4));
+        for (let i = 0; i < flags; i++) {
+          const cx = step * (i + 0.5);
+          const top = sag(cx);
+          g.fillStyle(colors[i % colors.length], 1).fillTriangle(cx - 22, top, cx + 22, top, cx, top + 28);
+          g.lineStyle(3, INK, 1).strokeTriangle(cx - 22, top, cx + 22, top, cx, top + 28);
+        }
+      } else if (d.id === 'runner') {
+        g.fillStyle(0x000000, 0.18).fillRoundedRect(2, 5, w - 4, h - 6, 10);
+        g.fillStyle(TOMATO, 1).fillRoundedRect(0, 0, w - 4, h - 8, 10);
+        g.lineStyle(4, INK, 1).strokeRoundedRect(0, 0, w - 4, h - 8, 10);
+        g.lineStyle(3, MUSTARD, 1).strokeRoundedRect(8, 7, w - 20, h - 22, 6);
+        g.fillStyle(MUSTARD, 1);
+        for (let x = 40; x < w - 40; x += 60) g.fillRect(x, h / 2 - 6, 10, 6);
+      } else {
+        g.fillStyle(CREAM, 1).fillRoundedRect(0, 0, w, h, 8);
+        g.lineStyle(4, INK, 1).strokeRoundedRect(0, 0, w, h, 8);
+      }
+    });
+  }
 }
 
 function buildFood(scene: Phaser.Scene): void {
