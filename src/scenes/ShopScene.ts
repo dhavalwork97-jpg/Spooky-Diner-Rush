@@ -3,6 +3,7 @@ import { CREAM, INK, LEAF, ORANGE } from '../art/builders';
 import type { KitchenState } from '../game/KitchenState';
 import { titleForLevel } from '../game/career';
 import { buy, buyLabel, modsFor, tierOf } from '../game/shop';
+import { buyDecor, decorLabel } from '../game/decor';
 import { SaveSystem } from '../systems/SaveSystem';
 import { audio } from '../systems/AudioSystem';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
@@ -32,6 +33,7 @@ export class ShopScene extends Phaser.Scene {
   private titleText!: Phaser.GameObjects.Text;
   private note!: Phaser.GameObjects.Text;
   private closing = false;
+  private tab: 'upgrades' | 'decor' = 'upgrades';
 
   constructor() {
     super('Shop');
@@ -41,6 +43,7 @@ export class ShopScene extends Phaser.Scene {
     this.state = data.state;
     this.onClose = data.onClose;
     this.closing = false;
+    this.tab = 'upgrades';
     this.rows = [];
   }
 
@@ -96,24 +99,64 @@ export class ShopScene extends Phaser.Scene {
     return c;
   }
 
-  /** Rebuild the rows and the header from the model. */
+  /** Rebuild the tabs, rows and header from the model. */
   private refresh(): void {
     for (const o of this.rows) o.destroy();
     this.rows = [];
     const s = this.state;
-    const ups = s.cfg.upgrades.upgrades;
-    const owned = SaveSystem.data.owned;
     const x0 = (LOGICAL_WIDTH - PANEL_W) / 2;
     this.titleText.setText(`Lv ${s.level}  ·  ${titleForLevel(s.cfg, s.level).title}`);
     this.coinText.setText(String(s.coins));
 
+    (['upgrades', 'decor'] as const).forEach((t, i) => {
+      const on = this.tab === t;
+      const label = t === 'upgrades' ? 'Upgrades' : 'Decor';
+      this.rows.push(this.makeButton(x0 + 300 + i * 170, 52, label, 160, 60, on ? ORANGE : 0x9aa7b5, () => {
+        if (this.tab !== t) {
+          this.tab = t;
+          this.refresh();
+        }
+      }));
+    });
+
+    if (this.tab === 'upgrades') this.drawUpgradeRows(x0);
+    else this.drawDecorRows(x0);
+  }
+
+  private rowBase(i: number, x0: number): { y: number; g: Phaser.GameObjects.Graphics } {
+    const y = ROW_TOP + i * ROW_H;
+    const g = this.add.graphics();
+    g.fillStyle(i % 2 ? 0xf3e3bd : 0xfaedd0, 1).fillRoundedRect(x0 + 20, y, PANEL_W - 40, ROW_H - 8, 16);
+    g.lineStyle(3, INK, 0.6).strokeRoundedRect(x0 + 20, y, PANEL_W - 40, ROW_H - 8, 16);
+    return { y, g };
+  }
+
+  private drawDecorRows(x0: number): void {
+    const s = this.state;
+    const items = s.cfg.decor.items;
+    const owned = SaveSystem.data.decor;
+    items.forEach((d, i) => {
+      const { y, g } = this.rowBase(i, x0);
+      const label = decorLabel(items, owned, d.id, s.level, s.coins);
+      const name = this.add.text(x0 + 40, y + 12, d.name, { fontFamily: FONT, fontSize: '30px', color: '#2B1B17' });
+      const desc = this.add.text(x0 + 40, y + 48, d.description, { fontFamily: FONT, fontSize: '20px', color: '#5a463e' });
+      const mark = owned.includes(d.id) ? this.add.text(x0 + 600, y + 40, 'On display', { fontFamily: FONT, fontSize: '26px', color: '#2B1B17' }).setOrigin(0, 0.5) : null;
+      const btn = this.makeButton(x0 + PANEL_W - 20 - 24 - BTN_W / 2, y + (ROW_H - 8) / 2, label.text, BTN_W, BTN_H, ORANGE, () => this.tryBuyDecor(d.id), label.enabled);
+      this.rows.push(g, name, desc, btn);
+      if (mark) this.rows.push(mark);
+    });
+    const hint = this.add.text(LOGICAL_WIDTH / 2, ROW_TOP + items.length * ROW_H + 18, 'Decor is just for looks. It never changes the game.', { fontFamily: FONT, fontSize: '22px', color: '#5a463e' }).setOrigin(0.5);
+    this.rows.push(hint);
+  }
+
+  private drawUpgradeRows(x0: number): void {
+    const s = this.state;
+    const ups = s.cfg.upgrades.upgrades;
+    const owned = SaveSystem.data.owned;
     ups.forEach((u, i) => {
-      const y = ROW_TOP + i * ROW_H;
+      const { y, g } = this.rowBase(i, x0);
       const tier = tierOf(ups, owned, u.id);
       const label = buyLabel(ups, owned, u.id, s.level, s.coins);
-      const g = this.add.graphics();
-      g.fillStyle(i % 2 ? 0xf3e3bd : 0xfaedd0, 1).fillRoundedRect(x0 + 20, y, PANEL_W - 40, ROW_H - 8, 16);
-      g.lineStyle(3, INK, 0.6).strokeRoundedRect(x0 + 20, y, PANEL_W - 40, ROW_H - 8, 16);
       // tier pips: filled when owned (shape and color, not color alone)
       u.tiers.forEach((_, ti) => {
         const px = x0 + 390 + ti * 30;
@@ -131,6 +174,23 @@ export class ShopScene extends Phaser.Scene {
       const btn = this.makeButton(x0 + PANEL_W - 20 - 24 - BTN_W / 2, y + (ROW_H - 8) / 2, label.text, BTN_W, BTN_H, ORANGE, () => this.tryBuy(u.id), label.enabled);
       this.rows.push(g, name, desc, effect, btn);
     });
+  }
+
+  private tryBuyDecor(id: string): void {
+    const s = this.state;
+    const items = s.cfg.decor.items;
+    const r = buyDecor(items, SaveSystem.data.decor, id, s.level, s.coins);
+    if (!r.ok) {
+      this.flash('Cannot buy that right now');
+      return;
+    }
+    s.coins = r.coins;
+    SaveSystem.data.decor = r.decor;
+    SaveSystem.data.coins = r.coins;
+    SaveSystem.save();
+    audio.play('levelUp');
+    this.flash(`${items.find((d) => d.id === id)?.name ?? id} is up!`);
+    this.refresh();
   }
 
   private tryBuy(id: string): void {

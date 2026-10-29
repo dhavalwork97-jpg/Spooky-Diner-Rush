@@ -9,6 +9,7 @@ import upgradesJson from '../../data/upgrades.json';
 import careerJson from '../../data/career.json';
 import chefJson from '../../data/chef.json';
 import storyJson from '../../data/story.json';
+import decorJson from '../../data/decor.json';
 
 export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger';
 
@@ -102,6 +103,18 @@ export interface StoryCardDef {
   title: string;
   text: string;
 }
+export interface DecorDef {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  unlockLevel: number;
+  /** Position and size in source-image pixels (the kitchen art is 1699 x 926). */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 export interface GameConfig {
   recipes: { settings: RecipeSettings; items: Record<ItemKind, ItemDef> };
   progression: { levels: LevelDef[]; afterLast: { patienceStepPerLevel: number; patienceFloor: number } };
@@ -131,6 +144,7 @@ export interface GameConfig {
   career: { titles: CareerTitle[] };
   chef: ChefConfig;
   story: { cards: StoryCardDef[] };
+  decor: { items: DecorDef[] };
 }
 
 export const defaultConfig: GameConfig = {
@@ -145,6 +159,7 @@ export const defaultConfig: GameConfig = {
   career: careerJson as unknown as GameConfig['career'],
   chef: chefJson as unknown as GameConfig['chef'],
   story: storyJson as unknown as GameConfig['story'],
+  decor: decorJson as unknown as GameConfig['decor'],
 };
 
 /** Progression entry for a level. Past the last entry, patience slowly tightens down to a floor. */

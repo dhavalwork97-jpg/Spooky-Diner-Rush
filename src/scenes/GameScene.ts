@@ -10,6 +10,8 @@ import { titleEarnedAt } from '../game/career';
 import { ChefTalk } from '../game/chef';
 import { dueStory, seenAfter } from '../game/story';
 import type { ShopData } from './ShopScene';
+import { ownedDecor } from '../game/decor';
+import { decorKey } from '../art/builders';
 import { makeRng } from '../game/rng';
 import { ChefBubble } from '../views/ChefBubble';
 import { audio } from '../systems/AudioSystem';
@@ -64,6 +66,7 @@ export class GameScene extends Phaser.Scene {
   private levelUpCard!: LevelUpCard;
   private overlay!: Overlay;
   private hand!: TutorialHand;
+  private decorViews = new Map<string, Phaser.GameObjects.Image>();
   private storyCard!: StoryCard;
   private chef!: ChefBubble;
   private chefTalk!: ChefTalk;
@@ -112,6 +115,7 @@ export class GameScene extends Phaser.Scene {
       if (sp > 0) this.speed = Math.min(20, sp);
     }
 
+    this.syncDecor();
     this.fx = new ParticlePool(this, 140);
     this.buildZones();
     this.stock = new StockViews(this, this.layout, this.state.level);
@@ -169,6 +173,7 @@ export class GameScene extends Phaser.Scene {
       levelCardVisible: () => this.levelUpCard.isShowing,
       chef: () => this.chef.text,
       story: () => this.storyCard.id,
+      decor: () => [...this.decorViews.keys()],
       openShop: () => this.openShop(),
       chefSay: (trigger: string) => this.sayChef(this.chefTalk.say(trigger, this.state.clock)),
       slotPos: (i: number) => ({ x: this.layout.x(SLOTS[i][0]), y: this.layout.y(SLOTS[i][1]) }),
@@ -633,6 +638,16 @@ export class GameScene extends Phaser.Scene {
     this.storyCard.show(card, () => this.chef.setChefVisible(true));
   }
 
+  /** Draw owned decor. Cosmetic images sit above the background and below customers (depth 100). */
+  private syncDecor(): void {
+    for (const d of ownedDecor(this.state.cfg.decor.items, SaveSystem.data.decor)) {
+      if (this.decorViews.has(d.id)) continue;
+      const img = this.add.image(this.layout.x(d.x), this.layout.y(d.y), decorKey(d.id)).setOrigin(0, 0).setDepth(100).setName(`decor_${d.id}`);
+      this.layout.fit(img, d.width);
+      this.decorViews.set(d.id, img);
+    }
+  }
+
   /** Open the Shop over the game. The game scene is paused until the Shop closes. */
   openShop(): void {
     if (this.paused || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing) return;
@@ -641,7 +656,14 @@ export class GameScene extends Phaser.Scene {
     this.hand.hide();
     audio.setSizzle(0);
     this.saveNow();
-    this.scene.launch('Shop', { state: this.state, onClose: () => this.scene.resume() } satisfies ShopData);
+    const data: ShopData = {
+      state: this.state,
+      onClose: () => {
+        this.syncDecor();
+        this.scene.resume();
+      },
+    };
+    this.scene.launch('Shop', data);
     this.scene.pause();
   }
 
