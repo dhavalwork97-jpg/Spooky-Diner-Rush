@@ -11,9 +11,12 @@ export interface RestaurantDef {
 
 export interface AssetDef {
   key: string;
-  type: 'image';
+  type: 'image' | 'svg';
   file: string;
   scale: number;
+  width?: number;
+  height?: number;
+  lazy?: boolean;
   preferFallback: boolean;
 }
 
@@ -77,7 +80,7 @@ export function validateAssets(data: unknown): string[] {
     if (!isStr(a.key)) errors.push('asset without key');
     else if (keys.has(a.key)) errors.push(`asset ${a.key}: duplicate key`);
     else keys.add(a.key);
-    if (a.type !== 'image') errors.push(`asset ${a.key}: unsupported type`);
+    if (a.type !== 'image' && a.type !== 'svg') errors.push(`asset ${a.key}: unsupported type`);
     if (!isStr(a.file)) errors.push(`asset ${a.key}: missing file`);
     if (!isNum(a.scale) || a.scale <= 0) errors.push(`asset ${a.key}: scale must be > 0`);
   }

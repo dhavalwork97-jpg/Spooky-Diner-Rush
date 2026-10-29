@@ -7,10 +7,18 @@
 <style>
   html, body { margin: 0; height: 100%; background: #2B1B17; overflow: hidden; touch-action: none; }
   #game { width: 100vw; height: 100vh; }
+  #rotate { display: none; position: fixed; inset: 0; z-index: 10; background: #2B1B17; color: #FFF4DC;
+    font: 600 24px/1.3 Fredoka, "Baloo 2", system-ui, sans-serif; text-align: center;
+    align-items: center; justify-content: center; flex-direction: column; gap: 16px; padding: 24px; }
+  #rotate .phone { width: 56px; height: 96px; border: 5px solid #F28C28; border-radius: 12px; animation: turn 1.8s ease-in-out infinite; }
+  @keyframes turn { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+  @media (prefers-reduced-motion: reduce) { #rotate .phone { animation: none; transform: rotate(-90deg); } }
+  @media (max-width: 899px) and (orientation: portrait) { #rotate { display: flex; } }
 </style>
 </head>
 <body>
 <div id="game"></div>
+<div id="rotate"><div class="phone"></div><div>Turn your phone sideways to play</div></div>
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

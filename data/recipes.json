@@ -1,0 +1,54 @@
+{
+  "settings": {
+    "plateSlots": 4,
+    "sideSlots": 2,
+    "fryVats": 2,
+    "grillBurners": 2,
+    "beginnerMaxLevel": 5,
+    "beginnerBurnBonus": 2,
+    "trashPenaltyCoins": 2,
+    "burnReputationPenalty": 8,
+    "ovens": 1
+  },
+  "items": {
+    "fries": {
+      "name": "Fries",
+      "unlockLevel": 1,
+      "price": 12,
+      "xp": 20,
+      "readyAfter": 5,
+      "burnWindow": 4
+    },
+    "burger": {
+      "name": "Burger",
+      "unlockLevel": 2,
+      "price": 30,
+      "xp": 40,
+      "sideSeconds": 4,
+      "burnWindow": 4,
+      "layers": [
+        "bun_bottom",
+        "patty",
+        "lettuce",
+        "tomato",
+        "bun_top"
+      ]
+    },
+    "nuggets": {
+      "name": "Nuggets",
+      "unlockLevel": 4,
+      "price": 18,
+      "xp": 25,
+      "readyAfter": 6,
+      "burnWindow": 4
+    },
+    "pizza": {
+      "name": "Pizza",
+      "unlockLevel": 5,
+      "price": 40,
+      "xp": 45,
+      "readyAfter": 8,
+      "burnWindow": 5
+    }
+  }
+}

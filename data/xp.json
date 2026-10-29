@@ -1,0 +1,9 @@
+{
+  "base": 100,
+  "perLevel": 40,
+  "speedBonusXp": 10,
+  "speedBonusPatienceFraction": 0.5,
+  "levelUpCoins": { "base": 20, "perLevel": 5 },
+  "tipFraction": 0.25,
+  "reputation": { "start": 100, "angryLeave": 15, "serveGain": 3, "reopenTo": 55 }
+}

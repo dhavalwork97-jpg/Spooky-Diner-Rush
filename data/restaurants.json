@@ -29,27 +29,72 @@
           "height": 0.446
         },
         {
-          "id": "topping_bins",
-          "station": "toppings",
-          "unlockLevel": 1,
+          "id": "lettuce_tray",
+          "station": "lettuce",
+          "unlockLevel": 2,
           "x": 0.1854,
           "y": 0.4395,
-          "width": 0.163,
-          "height": 0.1998
+          "width": 0.0824,
+          "height": 0.1004
         },
         {
-          "id": "ingredient_bins",
-          "station": "ingredients",
+          "id": "tomato_tray",
+          "station": "tomato",
+          "unlockLevel": 2,
+          "x": 0.269,
+          "y": 0.4395,
+          "width": 0.0795,
+          "height": 0.1004
+        },
+        {
+          "id": "side_plate",
+          "station": "side_plate",
+          "unlockLevel": 1,
+          "x": 0.1854,
+          "y": 0.5432,
+          "width": 0.0736,
+          "height": 0.0961
+        },
+        {
+          "id": "side_tray",
+          "station": "side_plate",
+          "unlockLevel": 1,
+          "x": 0.2619,
+          "y": 0.5432,
+          "width": 0.0865,
+          "height": 0.0961
+        },
+        {
+          "id": "fryer_vats",
+          "station": "fryer",
           "unlockLevel": 1,
           "x": 0.1324,
           "y": 0.6479,
           "width": 0.1883,
-          "height": 0.3326
+          "height": 0.1166
+        },
+        {
+          "id": "nuggets_bin",
+          "station": "nuggets_bin",
+          "unlockLevel": 4,
+          "x": 0.1324,
+          "y": 0.7689,
+          "width": 0.0871,
+          "height": 0.2117
+        },
+        {
+          "id": "fries_bin",
+          "station": "fries_bin",
+          "unlockLevel": 1,
+          "x": 0.2207,
+          "y": 0.7689,
+          "width": 0.1001,
+          "height": 0.2117
         },
         {
           "id": "prep_station",
           "station": "prep",
-          "unlockLevel": 1,
+          "unlockLevel": 10,
           "x": 0.3502,
           "y": 0.4374,
           "width": 0.0942,
@@ -58,7 +103,7 @@
         {
           "id": "dough_bases",
           "station": "dough",
-          "unlockLevel": 10,
+          "unlockLevel": 5,
           "x": 0.4456,
           "y": 0.4449,
           "width": 0.0912,
@@ -76,7 +121,7 @@
         {
           "id": "pizza_oven",
           "station": "oven",
-          "unlockLevel": 10,
+          "unlockLevel": 5,
           "x": 0.3473,
           "y": 0.6479,
           "width": 0.2001,
@@ -92,9 +137,9 @@
           "height": 0.1922
         },
         {
-          "id": "fryer",
-          "station": "fryer",
-          "unlockLevel": 1,
+          "id": "bun_basket",
+          "station": "buns",
+          "unlockLevel": 2,
           "x": 0.5992,
           "y": 0.6771,
           "width": 0.1601,
@@ -110,9 +155,9 @@
           "height": 0.2484
         },
         {
-          "id": "chiller",
-          "station": "chiller",
-          "unlockLevel": 1,
+          "id": "patty_tray",
+          "station": "patty_tray",
+          "unlockLevel": 2,
           "x": 0.7634,
           "y": 0.7073,
           "width": 0.1913,

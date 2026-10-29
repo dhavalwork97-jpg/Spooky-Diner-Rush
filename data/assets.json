@@ -5,7 +5,318 @@
       "type": "image",
       "file": "assets/art/kitchen_full.webp",
       "scale": 1,
-      "preferFallback": false
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "fries_raw",
+      "type": "image",
+      "file": "assets/art/fries_raw.webp",
+      "scale": 0.5,
+      "width": 360,
+      "height": 178,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "fries_cooked",
+      "type": "image",
+      "file": "assets/art/fries_cooked.webp",
+      "scale": 0.5,
+      "width": 332,
+      "height": 360,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "fries_burnt",
+      "type": "image",
+      "file": "assets/art/fries_burnt.webp",
+      "scale": 0.5,
+      "width": 360,
+      "height": 178,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "patty_raw",
+      "type": "image",
+      "file": "assets/art/patty_raw.webp",
+      "scale": 0.5,
+      "width": 400,
+      "height": 221,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "patty_cooked",
+      "type": "image",
+      "file": "assets/art/patty_cooked.webp",
+      "scale": 0.5,
+      "width": 400,
+      "height": 220,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "patty_burnt",
+      "type": "image",
+      "file": "assets/art/patty_burnt.webp",
+      "scale": 0.5,
+      "width": 400,
+      "height": 220,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "bun_bottom",
+      "type": "image",
+      "file": "assets/art/bun_bottom.webp",
+      "scale": 0.5,
+      "width": 400,
+      "height": 205,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "bun_top",
+      "type": "image",
+      "file": "assets/art/bun_top.webp",
+      "scale": 0.5,
+      "width": 400,
+      "height": 227,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "lettuce",
+      "type": "image",
+      "file": "assets/art/lettuce.webp",
+      "scale": 0.5,
+      "width": 400,
+      "height": 218,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "tomato",
+      "type": "image",
+      "file": "assets/art/tomato.webp",
+      "scale": 0.5,
+      "width": 400,
+      "height": 224,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "cheese",
+      "type": "image",
+      "file": "assets/art/cheese.webp",
+      "scale": 0.5,
+      "width": 400,
+      "height": 231,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "onion",
+      "type": "image",
+      "file": "assets/art/onion.webp",
+      "scale": 0.5,
+      "width": 360,
+      "height": 199,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "pickle",
+      "type": "image",
+      "file": "assets/art/pickle.webp",
+      "scale": 0.5,
+      "width": 360,
+      "height": 186,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "nuggets_raw",
+      "type": "image",
+      "file": "assets/art/nuggets_raw.webp",
+      "scale": 0.5,
+      "width": 322,
+      "height": 360,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "nuggets_cooked",
+      "type": "image",
+      "file": "assets/art/nuggets_cooked.webp",
+      "scale": 0.5,
+      "width": 322,
+      "height": 360,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "nuggets_burnt",
+      "type": "image",
+      "file": "assets/art/nuggets_burnt.webp",
+      "scale": 0.5,
+      "width": 321,
+      "height": 360,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "pizza_raw",
+      "type": "image",
+      "file": "assets/art/pizza_raw.webp",
+      "scale": 0.5,
+      "width": 360,
+      "height": 274,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "pizza_cooked",
+      "type": "image",
+      "file": "assets/art/pizza_cooked.webp",
+      "scale": 0.5,
+      "width": 360,
+      "height": 275,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "drink_cup",
+      "type": "image",
+      "file": "assets/art/drink_cup.webp",
+      "scale": 0.5,
+      "width": 267,
+      "height": 360,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "drink_soda",
+      "type": "image",
+      "file": "assets/art/drink_soda.webp",
+      "scale": 0.5,
+      "width": 255,
+      "height": 360,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "coin",
+      "type": "image",
+      "file": "assets/art/coin.webp",
+      "scale": 0.5,
+      "width": 160,
+      "height": 160,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "customer_01",
+      "type": "image",
+      "file": "assets/art/customer_01.webp",
+      "scale": 0.5,
+      "width": 305,
+      "height": 520,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "customer_02",
+      "type": "image",
+      "file": "assets/art/customer_02.webp",
+      "scale": 0.5,
+      "width": 273,
+      "height": 520,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "customer_03",
+      "type": "image",
+      "file": "assets/art/customer_03.webp",
+      "scale": 0.5,
+      "width": 251,
+      "height": 520,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "patience_bar_frame",
+      "type": "image",
+      "file": "assets/art/patience_bar_frame.webp",
+      "scale": 0.5,
+      "width": 520,
+      "height": 164,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "order_bubble",
+      "type": "image",
+      "file": "assets/art/order_bubble.webp",
+      "scale": 0.5,
+      "width": 520,
+      "height": 305,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "chef",
+      "type": "image",
+      "file": "assets/art/chef.webp",
+      "scale": 0.5,
+      "width": 554,
+      "height": 640,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "logo_chef_rush",
+      "type": "image",
+      "file": "assets/art/logo_chef_rush.webp",
+      "scale": 0.5,
+      "width": 900,
+      "height": 634,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "bg_taco",
+      "type": "image",
+      "file": "assets/art/bg_taco.webp",
+      "scale": 0.5,
+      "width": 1280,
+      "height": 714,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "level_badge",
+      "type": "svg",
+      "file": "assets/art/level_badge.svg",
+      "scale": 0.5,
+      "width": 128,
+      "height": 128,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "xp_bar_frame",
+      "type": "svg",
+      "file": "assets/art/xp_bar_frame.svg",
+      "scale": 0.5,
+      "width": 400,
+      "height": 48,
+      "preferFallback": false,
+      "lazy": false
     }
   ]
 }
