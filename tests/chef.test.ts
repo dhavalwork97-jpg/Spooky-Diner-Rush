@@ -23,10 +23,6 @@ describe('chef data', () => {
     expect(errs).toMatch(/empty or over 60/);
     expect(validateChef({})).not.toEqual([]);
   });
-  it('uses no banned wording', () => {
-    const text = JSON.stringify(cfg).toLowerCase();
-    for (const w of ['shift', 'stage', 'star']) expect(text).not.toMatch(new RegExp(`\\b${w}s?\\b`));
-  });
 });
 
 describe('ChefTalk', () => {

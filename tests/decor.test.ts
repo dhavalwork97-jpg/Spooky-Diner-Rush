@@ -29,10 +29,6 @@ describe('decor data', () => {
     expect(errs).toMatch(/needs x, y, width and height/);
     expect(validateDecor({})).not.toEqual([]);
   });
-  it('uses no banned wording', () => {
-    const text = JSON.stringify(defaultConfig.decor).toLowerCase();
-    for (const w of ['shift', 'stage', 'star']) expect(text).not.toMatch(new RegExp(`\\b${w}s?\\b`));
-  });
   it('no decor covers a tap zone, and no two decor items overlap', () => {
     const zones = restaurants.restaurants.flatMap((r) => r.zones).map((z) => ({ id: z.id, x: z.x * W, y: z.y * H, width: z.width * W, height: z.height * H }));
     for (const d of D) {

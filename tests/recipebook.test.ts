@@ -19,10 +19,6 @@ describe('recipe book data', () => {
     expect(errs).toMatch(/missing from recipebook/);
     expect(validateRecipeBook({}, ids)).not.toEqual([]);
   });
-  it('uses no banned wording', () => {
-    const text = JSON.stringify(cfg.recipebook).toLowerCase();
-    for (const w of ['shift', 'stage', 'star']) expect(text).not.toMatch(new RegExp(`\\b${w}s?\\b`));
-  });
 });
 
 describe('recipeEntries', () => {

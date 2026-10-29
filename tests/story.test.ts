@@ -24,10 +24,6 @@ describe('story data', () => {
     expect(errs).toMatch(/needs a card for Lv 1/);
     expect(validateStory({})).not.toEqual([]);
   });
-  it('uses no banned wording', () => {
-    const text = JSON.stringify(cfg.story).toLowerCase();
-    for (const w of ['shift', 'stage', 'star']) expect(text).not.toMatch(new RegExp(`\\b${w}s?\\b`));
-  });
 });
 
 describe('dueStory', () => {

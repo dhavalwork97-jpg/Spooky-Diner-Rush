@@ -18,10 +18,6 @@ describe('career data', () => {
     expect(errs).toMatch(/whole number/);
     expect(validateCareer({})).not.toEqual([]);
   });
-  it('uses no banned wording', () => {
-    const text = JSON.stringify(cfg.career).toLowerCase();
-    for (const w of ['shift', 'stage', 'star']) expect(text).not.toMatch(new RegExp(`\\b${w}s?\\b`));
-  });
 });
 
 describe('titleForLevel', () => {

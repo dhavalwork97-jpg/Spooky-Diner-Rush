@@ -14,6 +14,7 @@ import { ownedDecor } from '../game/decor';
 import { decorKey } from '../art/builders';
 import { makeRng } from '../game/rng';
 import { ChefBubble } from '../views/ChefBubble';
+import { MenuButtons, type MenuKind } from '../views/MenuButtons';
 import { audio } from '../systems/AudioSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
@@ -67,6 +68,7 @@ export class GameScene extends Phaser.Scene {
   private overlay!: Overlay;
   private hand!: TutorialHand;
   private decorViews = new Map<string, Phaser.GameObjects.Image>();
+  private menuButtons!: MenuButtons;
   private storyCard!: StoryCard;
   private chef!: ChefBubble;
   private chefTalk!: ChefTalk;
@@ -130,6 +132,7 @@ export class GameScene extends Phaser.Scene {
     this.chef = new ChefBubble(this, this.layout);
     this.chefTalk = new ChefTalk(this.state.cfg.chef, makeRng(Date.now()));
     this.buildMuteButton();
+    this.menuButtons = new MenuButtons(this, (k: MenuKind) => (k === 'shop' ? this.openShop() : k === 'book' ? this.openRecipeBook() : this.openRestaurants()));
 
     this.highlight = this.add.graphics().setDepth(900).setAlpha(0);
     this.label = this.add
@@ -176,6 +179,7 @@ export class GameScene extends Phaser.Scene {
       chef: () => this.chef.text,
       story: () => this.storyCard.id,
       decor: () => [...this.decorViews.keys()],
+      menuButtons: () => this.menuButtons.positions(),
       openShop: () => this.openShop(),
       openRecipeBook: () => this.openRecipeBook(),
       openRestaurants: () => this.openRestaurants(),

@@ -19,10 +19,6 @@ describe('restaurant menu data', () => {
     expect(errs).toMatch(/whole number/);
     expect(validateRestaurantMenu({}, ids)).not.toEqual([]);
   });
-  it('uses no banned wording', () => {
-    const text = JSON.stringify(defaultConfig.restaurantMenu).toLowerCase();
-    for (const w of ['shift', 'stage', 'star']) expect(text).not.toMatch(new RegExp(`\\b${w}s?\\b`));
-  });
 });
 
 describe('restaurantCards', () => {

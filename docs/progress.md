@@ -179,3 +179,37 @@ All numbers live in JSON: `data/combo.json`, `data/events.json`, `data/waves.jso
 ## Deviations to confirm
 - Nuggets (Lv 4) and pizza (Lv 5) are earlier than the brief (Lv 11 and Lv 10), kept from Milestone 2.
 - Impatient, VIP and critic customers are built but not part of Lv 1 to 10, to follow the brief's unlock table.
+
+
+# Milestone 4: shop and progression systems
+
+All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.json`, `data/chef.json`, `data/story.json`, `data/recipebook.json`, `data/restaurant_menu.json`. Each has a validator in `src/data/validate.ts` that runs when the game boots, and the game logic for each is a pure module in `src/game/` with unit tests.
+
+## Built
+- **Save v2:** the save adds `owned` (upgrade tiers), `decor`, `seenStory` and `lastRestaurant`. Old v1 saves load and keep their level, XP and coins.
+- **Shop** (button on the HUD, key B): five upgrades with three tiers each (fast fryer, hot grill, fast oven, cozy seats, tip jar). Buying sets the `mods` hooks Milestone 3 already reads, so no cooking or patience code changed. A **Decor** tab sells three cosmetic items (wall clock, party bunting, floor runner) that never change a number.
+- **Career titles:** eight titles from Fry Cook (Lv 1) to Legend of the Line (Lv 40), shown on the level-up card the moment a new one is earned and in the Shop header.
+- **Chef:** stands in the free strip right of the grill and speaks in a bubble on a first serve, a Rush serve, combo 3 and the max combo, a burn, an angry customer, an event, a level-up and (after a quiet spell) a tip. Global and per-line cooldowns, no line repeats back to back, and the first-serve line only once.
+- **Story cards:** one card per level milestone (Lv 1, 3, 5, 10, 15, 20), shown once, after the level-up card, with the game paused. A returning player at a high level sees only the latest card, not a pile.
+- **Recipe Book** (key R): how to make each menu item, with locked items shown as "Unlocks at Lv N".
+- **Restaurants** (key T): the current restaurant and two "Coming soon" cards. The game starts in the last restaurant played.
+- **HUD buttons** for Shop, Recipe Book and Restaurants sit in a band right of the seats that covers no tap zone (checked by a unit test).
+
+## Verified
+- 150 unit tests pass (77 are the unchanged Milestone 3 tests, checked with `git diff` against `milestone-3-core-systems`: no change to the model, balance data or those four test files; 73 are new, including a scan that keeps the owner's banned progression words out of code, data and docs). Typecheck and production build are clean.
+- Real browser (Chromium, production build, 1280x720 mouse and 844x390 touch): a real click bought an upgrade and a decor item and both survived a reload; the model clock froze while a panel or story card was open and ran again after; story cards showed once and not after reload; a Lv 9 to 10 level-up showed the card with "New title: Sous Chef" and then the story card; each HUD button opened its panel by mouse click and by touch tap; chef lines fired from real events and the idle tip; no page errors.
+- Reduced motion was run for the chef, story card and panels (no fades, nothing stuck).
+
+## Not verified
+- Pacing and prices with a human player. Upgrade costs and values are a first pass; nothing has been balanced against the bot simulation yet (that is the Milestone 5 job).
+- Whether the upgrades make the game too easy. A top-tier fryer, grill and oven are x1.5 each.
+- Buttons on a real phone. The HUD buttons and Shop buttons are 56 to 92 logical px, which is about 37 to 61 css px on an 844 px wide phone, under the 88 css px target. The same limit applies to the kitchen zones.
+- Starting a second restaurant: only `burger_diner` has zones, so the restart path is covered by unit tests only.
+- Sound for the new panels (they reuse existing click and level-up sounds).
+- The HUD buttons with four customers seated (Lv 13+): the nearest button may overlap the far seat by a few pixels.
+- Decor and chef text on a real phone; the decor art is simple placeholder art.
+
+## Deviations to confirm
+- Upgrade tiers, prices, titles, story text, chef lines and the Coming-soon restaurant names are my first drafts; the original brief is not in the repo.
+- "Coming soon" restaurants live in `data/restaurant_menu.json`, not `restaurants.json`, because the restaurant validator requires zones.
+- Decor is cosmetic only and has fixed spots; there is no placement mode.

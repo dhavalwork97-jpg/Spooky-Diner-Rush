@@ -27,10 +27,6 @@ describe('upgrades data', () => {
     expect(errs).toMatch(/at least one tier/);
     expect(validateUpgrades({})).not.toEqual([]);
   });
-  it('uses no banned wording', () => {
-    const text = JSON.stringify(defaultConfig.upgrades).toLowerCase();
-    for (const w of ['shift', 'stage', 'star']) expect(text).not.toMatch(new RegExp(`\\b${w}s?\\b`));
-  });
 });
 
 describe('buying', () => {
