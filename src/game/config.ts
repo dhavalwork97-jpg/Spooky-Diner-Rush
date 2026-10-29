@@ -8,6 +8,7 @@ import eventsJson from '../../data/events.json';
 import upgradesJson from '../../data/upgrades.json';
 import careerJson from '../../data/career.json';
 import chefJson from '../../data/chef.json';
+import storyJson from '../../data/story.json';
 
 export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger';
 
@@ -95,6 +96,12 @@ export interface ChefConfig {
   hold: number;
   triggers: Record<string, ChefTrigger>;
 }
+export interface StoryCardDef {
+  id: string;
+  level: number;
+  title: string;
+  text: string;
+}
 export interface GameConfig {
   recipes: { settings: RecipeSettings; items: Record<ItemKind, ItemDef> };
   progression: { levels: LevelDef[]; afterLast: { patienceStepPerLevel: number; patienceFloor: number } };
@@ -123,6 +130,7 @@ export interface GameConfig {
   upgrades: { upgrades: UpgradeDef[] };
   career: { titles: CareerTitle[] };
   chef: ChefConfig;
+  story: { cards: StoryCardDef[] };
 }
 
 export const defaultConfig: GameConfig = {
@@ -136,6 +144,7 @@ export const defaultConfig: GameConfig = {
   upgrades: upgradesJson as unknown as GameConfig['upgrades'],
   career: careerJson as unknown as GameConfig['career'],
   chef: chefJson as unknown as GameConfig['chef'],
+  story: storyJson as unknown as GameConfig['story'],
 };
 
 /** Progression entry for a level. Past the last entry, patience slowly tightens down to a floor. */

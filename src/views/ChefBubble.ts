@@ -74,6 +74,11 @@ export class ChefBubble {
     this.timer = this.scene.time.delayedCall(holdSec * 1000, () => this.hide());
   }
 
+  /** Show or hide the chef himself (hidden while a story card shows its own chef). */
+  setChefVisible(visible: boolean): void {
+    this.chef.setVisible(visible);
+  }
+
   hide(): void {
     this.timer?.remove();
     this.scene.tweens.killTweensOf(this.box);

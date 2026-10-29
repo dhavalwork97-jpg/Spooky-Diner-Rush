@@ -224,3 +224,98 @@ export class EventBanner {
     g.lineStyle(2, INK, 1).strokeRoundedRect(-w / 2, 6, w, 9, 4);
   }
 }
+
+/** Seconds a story card ignores taps after it opens, so quick kitchen taps do not skip it. */
+const STORY_INPUT_DELAY_MS = 700;
+
+/**
+ * Story card: the chef tells a short story at a level. A full-screen dim blocks the kitchen
+ * (same as the Closed overlay) and the game model is paused while it is up. Close with the
+ * Continue button, or Enter or Space. Read-only view; the scene decides when to show it.
+ */
+export class StoryCard {
+  private root: Phaser.GameObjects.Container;
+  private card: Phaser.GameObjects.Container;
+  private titleText: Phaser.GameObjects.Text;
+  private bodyText: Phaser.GameObjects.Text;
+  private button: Phaser.GameObjects.Container;
+  private ready = false;
+  private readyTimer?: Phaser.Time.TimerEvent;
+  private onClose?: () => void;
+  private cardId = '';
+
+  constructor(private scene: Phaser.Scene, w: number, h: number) {
+    const dim = scene.add.rectangle(w / 2, h / 2, w, h, 0x1a0f0c, 0.6).setInteractive();
+    const chef = scene.add.image(-258, 24, 'chef');
+    chef.setScale(220 / chef.height);
+    this.titleText = scene.add
+      .text(-130, -118, '', { fontFamily: FONT, fontSize: '36px', color: '#F28C28', stroke: '#2B1B17', strokeThickness: 6, wordWrap: { width: 460 } })
+      .setOrigin(0, 0.5);
+    this.bodyText = scene.add
+      .text(-130, -80, '', { fontFamily: FONT, fontSize: '26px', color: '#2B1B17', lineSpacing: 6, wordWrap: { width: 460 } })
+      .setOrigin(0, 0);
+    const g = scene.add.graphics();
+    g.fillStyle(0x000000, 0.25).fillRoundedRect(-120, -34, 240, 88, 20);
+    g.fillStyle(0xc4661a, 1).fillRoundedRect(-120, -40, 240, 88, 20);
+    g.fillStyle(ORANGE, 1).fillRoundedRect(-120, -44, 240, 84, 20);
+    g.lineStyle(5, INK, 1).strokeRoundedRect(-120, -44, 240, 84, 20);
+    const label = scene.add.text(0, -2, 'Continue', { fontFamily: FONT, fontSize: '34px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 6 }).setOrigin(0.5);
+    this.button = scene.add.container(150, 112, [g, label]).setSize(240, 88).setInteractive({ useHandCursor: true });
+    this.button.on('pointerdown', () => this.ready && this.button.setScale(0.94));
+    this.button.on('pointerout', () => this.button.setScale(1));
+    this.button.on('pointerup', () => {
+      this.button.setScale(1);
+      this.close();
+    });
+    this.card = scene.add.container(w / 2, h / 2 - 10, [panel(scene, 700, 320), chef, this.titleText, this.bodyText, this.button]);
+    this.root = scene.add.container(0, 0, [dim, this.card]).setDepth(1450).setVisible(false);
+    scene.input.keyboard?.on('keydown-ENTER', this.onKey, this);
+    scene.input.keyboard?.on('keydown-SPACE', this.onKey, this);
+  }
+
+  show(card: { id: string; title: string; text: string }, onClose?: () => void): void {
+    this.cardId = card.id;
+    this.onClose = onClose;
+    this.titleText.setText(card.title);
+    this.bodyText.setText(card.text);
+    this.ready = false;
+    this.readyTimer?.remove();
+    this.readyTimer = this.scene.time.delayedCall(STORY_INPUT_DELAY_MS, () => (this.ready = true));
+    this.scene.tweens.killTweensOf([this.root, this.card]);
+    this.root.setVisible(true).setAlpha(1);
+    this.card.setScale(1);
+    if (!SaveSystem.reduceMotion()) {
+      this.root.setAlpha(0);
+      this.card.setScale(0.9);
+      this.scene.tweens.add({ targets: this.root, alpha: 1, duration: 220 });
+      this.scene.tweens.add({ targets: this.card, scale: 1, duration: 280, ease: 'Back.Out' });
+    }
+  }
+
+  private onKey(): void {
+    if (this.isShowing) this.close();
+  }
+
+  private close(): void {
+    if (!this.ready || !this.root.visible) return;
+    audio.play('click');
+    this.readyTimer?.remove();
+    this.root.setVisible(false);
+    const cb = this.onClose;
+    this.onClose = undefined;
+    cb?.();
+  }
+
+  destroy(): void {
+    this.scene.input.keyboard?.off('keydown-ENTER', this.onKey, this);
+    this.scene.input.keyboard?.off('keydown-SPACE', this.onKey, this);
+    this.readyTimer?.remove();
+  }
+
+  get isShowing(): boolean {
+    return this.root.visible;
+  }
+  get id(): string {
+    return this.isShowing ? this.cardId : '';
+  }
+}

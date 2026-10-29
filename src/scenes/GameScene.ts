@@ -8,6 +8,7 @@ import { SaveSystem } from '../systems/SaveSystem';
 import { modsFor } from '../game/shop';
 import { titleEarnedAt } from '../game/career';
 import { ChefTalk } from '../game/chef';
+import { dueStory, seenAfter } from '../game/story';
 import { makeRng } from '../game/rng';
 import { ChefBubble } from '../views/ChefBubble';
 import { audio } from '../systems/AudioSystem';
@@ -22,7 +23,7 @@ import { StockViews } from '../views/StockViews';
 import { ItemView } from '../views/ItemView';
 import { CustomerView } from '../views/CustomerView';
 import { Hud } from '../views/Hud';
-import { EventBanner, LevelUpCard, Overlay, Toast } from '../views/Popups';
+import { EventBanner, LevelUpCard, Overlay, Toast, StoryCard } from '../views/Popups';
 import { TutorialHand } from '../views/TutorialHand';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
@@ -62,6 +63,7 @@ export class GameScene extends Phaser.Scene {
   private levelUpCard!: LevelUpCard;
   private overlay!: Overlay;
   private hand!: TutorialHand;
+  private storyCard!: StoryCard;
   private chef!: ChefBubble;
   private chefTalk!: ChefTalk;
   /** Model clock when the chef last spoke, for the idle tip. */
@@ -119,6 +121,7 @@ export class GameScene extends Phaser.Scene {
     this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330);
     this.overlay = new Overlay(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.hand = new TutorialHand(this);
+    this.storyCard = new StoryCard(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.chef = new ChefBubble(this, this.layout);
     this.chefTalk = new ChefTalk(this.state.cfg.chef, makeRng(Date.now()));
     this.buildMuteButton();
@@ -163,6 +166,7 @@ export class GameScene extends Phaser.Scene {
       spawn: (type: string) => this.state.spawnCustomer(type),
       levelCardVisible: () => this.levelUpCard.isShowing,
       chef: () => this.chef.text,
+      story: () => this.storyCard.id,
       chefSay: (trigger: string) => this.sayChef(this.chefTalk.say(trigger, this.state.clock)),
       slotPos: (i: number) => ({ x: this.layout.x(SLOTS[i][0]), y: this.layout.y(SLOTS[i][1]) }),
       vatPos: (i: number) => this.stations.vatPos(i),
@@ -613,8 +617,21 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** Show the story card due at this level, once. Waits for the level-up card, overlays and pauses. */
+  private maybeShowStory(): void {
+    if (this.paused || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing) return;
+    const card = dueStory(this.state.cfg, this.state.level, SaveSystem.data.seenStory);
+    if (!card) return;
+    SaveSystem.data.seenStory = seenAfter(this.state.cfg, SaveSystem.data.seenStory, card);
+    this.saveNow();
+    this.chef.hide();
+    this.chef.setChefVisible(false);
+    this.setSelectedSlot(null);
+    this.storyCard.show(card, () => this.chef.setChefVisible(true));
+  }
+
   private sayChef(line: { text: string; hold: number } | null): void {
-    if (!line || this.paused || this.state.closed) return;
+    if (!line || this.paused || this.state.closed || this.storyCard.isShowing) return;
     this.chef.show(line.text, line.hold);
     this.chefLastAt = this.state.clock;
   }
@@ -694,7 +711,7 @@ export class GameScene extends Phaser.Scene {
   override update(time: number, delta: number): void {
     const dtReal = Math.min(delta / 1000, 0.1);
     const portrait = window.innerWidth < 900 && window.innerHeight > window.innerWidth * 1.1;
-    if (!this.paused && !portrait) {
+    if (!this.paused && !portrait && !this.storyCard.isShowing) {
       const dt = dtReal * this.speed;
       // run the model in small steps so a speed-up never skips a phase
       const steps = Math.max(1, Math.ceil(dt / 0.05));
@@ -719,6 +736,7 @@ export class GameScene extends Phaser.Scene {
     this.hud.update(this.state, dtReal);
     if (this.state.event) this.banner.update(this.state.event.remaining);
     this.updateHint();
+    this.maybeShowStory();
     if (!this.paused && !this.state.closed && this.state.clock - this.chefLastAt > CHEF_IDLE_AFTER) {
       this.chefLastAt = this.state.clock;
       this.sayChef(this.chefTalk.say('idle', this.state.clock));
@@ -736,7 +754,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateHint(): void {
-    const hint = this.paused || this.overlay.visible ? null : nextHint(this.state);
+    const hint = this.paused || this.overlay.visible || this.storyCard.isShowing ? null : nextHint(this.state);
     if (!hint) return this.hand.hide();
     const off = { x: 6, y: 8 };
     const tap = (key: string, p: { x: number; y: number } | null) => (p ? this.hand.point(key, { x: p.x + off.x, y: p.y + off.y }) : this.hand.hide());
@@ -796,6 +814,7 @@ export class GameScene extends Phaser.Scene {
     this.stations.destroy();
     this.stock.destroy();
     this.hand.destroy();
+    this.storyCard.destroy();
     this.fx.destroy();
     this.items.clear();
     this.custViews.clear();

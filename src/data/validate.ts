@@ -167,6 +167,27 @@ export function validateChef(data: unknown): string[] {
   return errors;
 }
 
+/** story.json: unique ids, whole levels >= 1, short title and text, and a card for Lv 1. */
+export function validateStory(data: unknown): string[] {
+  const errors: string[] = [];
+  const list = (data as { cards?: unknown })?.cards;
+  if (!Array.isArray(list) || list.length === 0) return ['story.json: "cards" must be a non-empty array'];
+  const ids = new Set<string>();
+  let hasFirst = false;
+  (list as { id?: unknown; level?: unknown; title?: unknown; text?: unknown }[]).forEach((c, i) => {
+    const id = isStr(c.id) ? c.id : `#${i + 1}`;
+    if (!isStr(c.id) || c.id.length > 64) errors.push(`story card ${id}: id must be 1 to 64 characters`);
+    else if (ids.has(c.id)) errors.push(`story card ${id}: duplicate id`);
+    else ids.add(c.id);
+    if (!isNum(c.level) || !Number.isInteger(c.level) || c.level < 1) errors.push(`story card ${id}: level must be a whole number >= 1`);
+    else if (c.level === 1) hasFirst = true;
+    if (!isStr(c.title) || c.title.length > 28) errors.push(`story card ${id}: title must be 1 to 28 characters`);
+    if (!isStr(c.text) || c.text.length > 160) errors.push(`story card ${id}: text must be 1 to 160 characters`);
+  });
+  if (!hasFirst) errors.push('story.json: needs a card for Lv 1');
+  return errors;
+}
+
 export function assertValid(name: string, errors: string[]): void {
   if (errors.length > 0) throw new Error(`${name} failed validation:\n- ${errors.join('\n- ')}`);
 }
