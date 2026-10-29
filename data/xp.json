@@ -1,6 +1,6 @@
 {
   "base": 100,
-  "perLevel": 40,
+  "perLevel": 80,
   "speedBonusXp": 10,
   "speedBonusPatienceFraction": 0.5,
   "levelUpCoins": { "base": 20, "perLevel": 5 },

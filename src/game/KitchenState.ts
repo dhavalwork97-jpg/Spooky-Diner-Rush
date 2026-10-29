@@ -1,5 +1,5 @@
 import { burnWindowFor, cookPhase, isEdible, type CookPhase } from './cook';
-import { defaultConfig, levelDef, xpForLevel, type FriedKind, type GameConfig, type ItemKind } from './config';
+import { defaultConfig, levelDef, xpForLevel, type EventDef, type FriedKind, type GameConfig, type ItemKind } from './config';
 import { makeRng, randInt, randRange, type Rng } from './rng';
 
 /**
@@ -51,6 +51,7 @@ export interface Customer {
   patience: number;
   patienceMax: number;
   age: number;
+  type: string;
   mood: 'waiting' | 'happy' | 'angry';
   leaveIn: number; // seconds until removal once happy or angry
 }
@@ -71,14 +72,31 @@ export type GameEvent =
   | { type: 'burnt'; where: 'vat' | 'burner' | 'oven'; index: number }
   | { type: 'arrive'; customer: number }
   | { type: 'deliver'; customer: number; slot: number; itemIndex: number }
-  | { type: 'wrongDrop'; slot: number; customer: number | null }
-  | { type: 'orderDone'; customer: number; coins: number; tip: number; xp: number; fast: boolean }
+  | { type: 'wrongDrop'; slot: number; customer: number | null; penalty?: boolean }
+  | { type: 'comboChanged'; combo: number; max: number; broken: boolean }
+  | { type: 'eventStart'; id: string; name: string; duration: number }
+  | { type: 'eventEnd'; id: string }
+  | { type: 'streakBonus'; xp: number }
+  | { type: 'orderDone'; customer: number; coins: number; tip: number; xp: number; fast: boolean; rush: boolean; combo: number; mult: number }
   | { type: 'angryLeave'; customer: number }
   | { type: 'leave'; customer: number }
   | { type: 'levelUp'; level: number; coins: number; unlocks: string[] }
   | { type: 'closed' }
   | { type: 'reopened' }
   | { type: 'invalid'; message: string };
+
+/** Upgrade hooks. The Shop (Milestone 4) changes these; the game already reads them. */
+export interface Mods {
+  fryerSpeed: number;
+  grillSpeed: number;
+  ovenSpeed: number;
+  patience: number;
+  tips: number;
+}
+export interface ActiveEvent {
+  def: EventDef;
+  remaining: number;
+}
 
 export interface SaveSlice {
   level: number;
@@ -114,9 +132,16 @@ export class KitchenState {
   burgersServed = 0;
   /** How many times the player has closed at each level (drives quiet rubber-banding). */
   closesAtLevel = new Map<number, number>();
+  combo = 0;
+  /** Serves in a row with no burn and no angry customer; pays a rare XP bonus. */
+  streak = 0;
+  clock = 0;
+  event: ActiveEvent | null = null;
+  nextEventIn: number;
+  mods: Mods = { fryerSpeed: 1, grillSpeed: 1, ovenSpeed: 1, patience: 1, tips: 1 };
 
   private nextId = 1;
-  private nextArrival = 1; // first customer arrives at about second 1
+  nextArrival = 1; // first customer arrives at about second 1
   private rng: Rng;
 
   constructor(save: SaveSlice = { level: 1, xp: 0, coins: 0 }, cfg: GameConfig = defaultConfig, seed = Date.now()) {
@@ -126,6 +151,7 @@ export class KitchenState {
     this.coins = save.coins;
     this.reputation = cfg.xp.reputation.start;
     this.rng = makeRng(seed);
+    this.nextEventIn = cfg.events.firstAfter;
     const s = cfg.recipes.settings;
     this.vats = Array.from({ length: s.fryVats }, () => null);
     this.burners = Array.from({ length: s.grillBurners }, () => null);
@@ -174,8 +200,30 @@ export class KitchenState {
 
   // ----- time -----
 
+  /** Current wave of play (calm, build, rush, calm), driven by data. */
+  get wave(): { name: string; gapMult: number } {
+    const phases = this.cfg.waves.phases;
+    const cycle = phases.reduce((n, p) => n + p.seconds, 0);
+    let t = this.clock % cycle;
+    for (const p of phases) {
+      if (t < p.seconds) return p;
+      t -= p.seconds;
+    }
+    return phases[0];
+  }
+  get comboMultiplier(): number {
+    const c = this.cfg.combo;
+    return this.combo > 0 ? Math.min(c.maxMultiplier, 1 + c.multiplierPerStep * (this.combo - 1)) : 1;
+  }
+  /** True while a waiting customer is still fast enough to earn the Rush tag. */
+  isRush(c: Customer): boolean {
+    return c.mood === 'waiting' && c.patience / c.patienceMax >= this.cfg.combo.rush.patienceFraction && c.delivered.some((d) => !d);
+  }
+
   update(dt: number): void {
     if (this.closed) return;
+    this.clock += dt;
+    this.updateEvents(dt);
     this.updateCooking(dt);
     this.updateCustomers(dt);
     this.updateArrivals(dt);
@@ -185,7 +233,7 @@ export class KitchenState {
     this.vats.forEach((v, i) => {
       if (!v) return;
       const fry = this.cfg.recipes.items[v.kind];
-      v.t += dt;
+      v.t += dt * this.mods.fryerSpeed;
       const phase = cookPhase(v.t, fry.readyAfter!, this.burnWindow(fry.burnWindow));
       if (phase !== v.phase) {
         v.phase = phase;
@@ -196,7 +244,7 @@ export class KitchenState {
     const pizza = this.cfg.recipes.items.pizza;
     this.ovens.forEach((o, i) => {
       if (!o) return;
-      o.t += dt;
+      o.t += dt * this.mods.ovenSpeed * (this.event?.def.ovenSpeed ?? 1);
       const phase = cookPhase(o.t, pizza.readyAfter!, this.burnWindow(pizza.burnWindow));
       if (phase !== o.phase) {
         o.phase = phase;
@@ -207,7 +255,7 @@ export class KitchenState {
     const burger = this.cfg.recipes.items.burger;
     this.burners.forEach((p, i) => {
       if (!p) return;
-      p.t += dt;
+      p.t += dt * this.mods.grillSpeed;
       const phase = cookPhase(p.t, burger.sideSeconds!, this.burnWindow(burger.burnWindow));
       if (phase !== p.phase) {
         p.phase = phase;
@@ -219,6 +267,7 @@ export class KitchenState {
 
   private onBurnt(where: 'vat' | 'burner' | 'oven', index: number): void {
     this.emit({ type: 'burnt', where, index });
+    this.streak = 0;
     this.addReputation(-this.cfg.recipes.settings.burnReputationPenalty);
   }
 
@@ -232,7 +281,9 @@ export class KitchenState {
           c.mood = 'angry';
           c.leaveIn = LEAVE_DELAY;
           this.emit({ type: 'angryLeave', customer: c.id });
-          this.addReputation(-this.cfg.xp.reputation.angryLeave);
+          this.streak = 0;
+          this.breakCombo();
+          this.addReputation(-this.cfg.xp.reputation.angryLeave * this.cfg.customers.types[c.type].repMult);
           if (this.closed) return;
         }
       } else {
@@ -257,25 +308,39 @@ export class KitchenState {
     this.spawnCustomer();
     // Quiet rubber-banding: after repeated closes at this level, arrivals get slightly slower.
     const slow = 1 + 0.1 * Math.min(this.closesAtLevel.get(this.level) ?? 0, 3);
-    this.nextArrival = randRange(this.rng, info.arrivalGap[0], info.arrivalGap[1]) * slow;
+    const gap = randRange(this.rng, info.arrivalGap[0], info.arrivalGap[1]);
+    this.nextArrival = gap * slow * this.wave.gapMult * (this.event?.def.arrivalMult ?? 1);
   }
 
-  private spawnCustomer(): void {
+  private pickType(): string {
+    const weights = this.levelInfo.types ?? { regular: 1 };
+    const entries = Object.entries(weights).filter(([k, w]) => w > 0 && this.cfg.customers.types[k]);
+    const total = entries.reduce((n, [, w]) => n + w, 0);
+    let r = this.rng() * total;
+    for (const [k, w] of entries) {
+      r -= w;
+      if (r <= 0) return k;
+    }
+    return 'regular';
+  }
+
+  spawnCustomer(forceType?: string): void {
     const info = this.levelInfo;
+    const typeKey = forceType && this.cfg.customers.types[forceType] ? forceType : this.pickType();
+    const type = this.cfg.customers.types[typeKey];
     const used = new Set(this.customers.map((c) => c.seat));
     let seat = 0;
     while (used.has(seat)) seat++;
-    const size = randInt(this.rng, info.orderSize[0], info.orderSize[1]);
+    const size = Math.min(3, randInt(this.rng, info.orderSize[0], info.orderSize[1]) + type.extraItems);
     const items: ItemKind[] = [];
     for (let i = 0; i < size; i++) {
       // The first burger is guaranteed soon after it unlocks so the tutorial can teach it.
       const wantBurger = this.level >= 2 && this.burgersServed === 0 && i === 0;
       items.push(wantBurger ? 'burger' : info.items[randInt(this.rng, 0, info.items.length - 1)]);
     }
-    const price = items.reduce((sum, k) => sum + this.cfg.recipes.items[k].price, 0);
+    const price = Math.round(items.reduce((sum, k) => sum + this.cfg.recipes.items[k].price, 0) * type.payMult);
     const closes = Math.min(this.closesAtLevel.get(this.level) ?? 0, 3);
-    const type = this.cfg.customers.types.regular;
-    const patienceMax = info.patience * type.patienceMult * (1 + 0.1 * closes);
+    const patienceMax = info.patience * type.patienceMult * this.mods.patience * (1 + 0.1 * closes);
     const c: Customer = {
       id: this.nextId++,
       seat,
@@ -286,6 +351,7 @@ export class KitchenState {
       patience: patienceMax,
       patienceMax,
       age: 0,
+      type: typeKey,
       mood: 'waiting',
       leaveIn: 0,
     };
@@ -466,8 +532,9 @@ export class KitchenState {
     }
     const need = c.items.findIndex((k, i) => k === item.kind && !c.delivered[i]);
     if (need < 0) {
-      // Wrong customer: snap back, no penalty.
-      this.emit({ type: 'wrongDrop', slot: slotIndex, customer: c.id });
+      // Wrong item: it snaps back and the customer loses a little patience. No coin or reputation cost.
+      c.patience = Math.max(0, c.patience - c.patienceMax * this.cfg.combo.wrongItemPatiencePenalty);
+      this.emit({ type: 'wrongDrop', slot: slotIndex, customer: c.id, penalty: true });
       return false;
     }
     slot.item = null;
@@ -479,18 +546,77 @@ export class KitchenState {
   }
 
   private completeOrder(c: Customer): void {
+    const cc = this.cfg.combo;
+    const type = this.cfg.customers.types[c.type];
     const frac = c.patience / c.patienceMax;
     const fast = frac >= this.cfg.xp.speedBonusPatienceFraction;
-    const tip = fast ? Math.round(c.price * this.cfg.xp.tipFraction * frac) : 0;
+    const rush = frac >= cc.rush.patienceFraction;
+    // Consecutive fast serves build the combo; a slow serve ends it.
+    if (fast) {
+      this.combo = Math.min(cc.maxCombo, this.combo + 1);
+      this.emit({ type: 'comboChanged', combo: this.combo, max: cc.maxCombo, broken: false });
+    } else this.breakCombo();
+    const mult = this.comboMultiplier;
+    const coinMult = this.event?.def.coinMult ?? 1;
+    const tip = fast ? Math.round(c.price * this.cfg.xp.tipFraction * frac * type.tipMult * (rush ? cc.rush.tipMultiplier : 1) * this.mods.tips) : 0;
+    const coins = Math.round((c.price + tip) * mult * coinMult);
     const baseXp = c.items.reduce((s, k) => s + this.cfg.recipes.items[k].xp, 0);
-    const xp = baseXp + (fast ? this.cfg.xp.speedBonusXp : 0);
+    const xp = Math.round((baseXp + (fast ? this.cfg.xp.speedBonusXp : 0) + (rush ? cc.rush.bonusXp : 0)) * mult);
     c.mood = 'happy';
     c.leaveIn = LEAVE_DELAY;
     this.served++;
-    this.coins += c.price + tip;
-    this.addReputation(this.cfg.xp.reputation.serveGain);
-    this.emit({ type: 'orderDone', customer: c.id, coins: c.price + tip, tip, xp, fast });
+    this.coins += coins;
+    this.addReputation(this.cfg.xp.reputation.serveGain + (this.combo >= cc.comboReputationFrom ? cc.comboReputationGain : 0));
+    this.emit({ type: 'orderDone', customer: c.id, coins, tip, xp, fast, rush, combo: this.combo, mult });
     this.addXp(xp);
+    this.streak++;
+    if (this.streak >= cc.streak.servesNeeded) {
+      this.streak = 0;
+      this.emit({ type: 'streakBonus', xp: cc.streak.bonusXp });
+      this.addXp(cc.streak.bonusXp);
+    }
+  }
+
+  private breakCombo(): void {
+    if (this.combo === 0) return;
+    this.combo = 0;
+    this.emit({ type: 'comboChanged', combo: 0, max: this.cfg.combo.maxCombo, broken: true });
+  }
+
+  // ----- events -----
+
+  private updateEvents(dt: number): void {
+    if (this.event) {
+      this.event.remaining -= dt;
+      if (this.event.remaining <= 0) {
+        this.emit({ type: 'eventEnd', id: this.event.def.id });
+        this.event = null;
+        this.nextEventIn = randRange(this.rng, this.cfg.events.gap[0], this.cfg.events.gap[1]);
+      }
+      return;
+    }
+    this.nextEventIn -= dt;
+    if (this.nextEventIn > 0) return;
+    // Events start at calm moments only: at most one customer waiting.
+    if (this.customers.filter((c) => c.mood === 'waiting').length > 1) {
+      this.nextEventIn = 1;
+      return;
+    }
+    const pool = this.cfg.events.events.filter((e) => e.minLevel <= this.level);
+    if (pool.length === 0) {
+      this.nextEventIn = 10;
+      return;
+    }
+    this.startEvent(pool[randInt(this.rng, 0, pool.length - 1)]);
+  }
+
+  /** Start an event now (also used by the debug hook and tests). */
+  startEvent(def: EventDef): void {
+    this.event = { def, remaining: def.duration };
+    this.emit({ type: 'eventStart', id: def.id, name: def.name, duration: def.duration });
+    if (def.spawnType && this.customers.length < 4 && this.customers.filter((c) => c.mood === 'waiting').length < this.levelInfo.maxCustomers + 1) {
+      this.spawnCustomer(def.spawnType);
+    }
   }
 
   private addXp(amount: number): void {
@@ -526,6 +652,10 @@ export class KitchenState {
     this.slots.forEach((s) => (s.item = null));
     this.customers = [];
     this.nextArrival = 1;
+    this.combo = 0;
+    this.streak = 0;
+    this.event = null;
+    this.nextEventIn = this.cfg.events.firstAfter;
     this.emit({ type: 'reopened' });
   }
 

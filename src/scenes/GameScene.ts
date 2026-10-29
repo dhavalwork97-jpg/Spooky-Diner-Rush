@@ -17,7 +17,7 @@ import { StockViews } from '../views/StockViews';
 import { ItemView } from '../views/ItemView';
 import { CustomerView } from '../views/CustomerView';
 import { Hud } from '../views/Hud';
-import { LevelUpCard, Overlay, Toast } from '../views/Popups';
+import { EventBanner, LevelUpCard, Overlay, Toast } from '../views/Popups';
 import { TutorialHand } from '../views/TutorialHand';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
@@ -51,6 +51,7 @@ export class GameScene extends Phaser.Scene {
   private stock!: StockViews;
   private hud!: Hud;
   private toast!: Toast;
+  private banner!: EventBanner;
   private levelUpCard!: LevelUpCard;
   private overlay!: Overlay;
   private hand!: TutorialHand;
@@ -102,6 +103,7 @@ export class GameScene extends Phaser.Scene {
     this.stations = new StationViews(this, this.layout, this.fx, this.state);
     this.hud = new Hud(this, this.state);
     this.toast = new Toast(this, LOGICAL_WIDTH / 2, 300);
+    this.banner = new EventBanner(this, 551, 42);
     this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330);
     this.overlay = new Overlay(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.hand = new TutorialHand(this);
@@ -139,6 +141,12 @@ export class GameScene extends Phaser.Scene {
       items: () => [...this.items.entries()].map(([slot, v]) => ({ slot, kind: v.kind, x: v.x, y: v.y })),
       customers: () => [...this.custViews.values()].map((v) => ({ id: v.id, ...v.center })),
       overlayVisible: () => this.overlay.visible,
+      banner: () => (this.banner.visible ? this.banner.text : ''),
+      startEvent: (id: string) => {
+        const def = this.state.cfg.events.events.find((e) => e.id === id);
+        if (def) this.state.startEvent(def);
+      },
+      spawn: (type: string) => this.state.spawnCustomer(type),
       levelCardVisible: () => this.levelUpCard.isShowing,
       slotPos: (i: number) => ({ x: this.layout.x(SLOTS[i][0]), y: this.layout.y(SLOTS[i][1]) }),
       vatPos: (i: number) => this.stations.vatPos(i),
@@ -515,11 +523,34 @@ export class GameScene extends Phaser.Scene {
       }
       case 'wrongDrop': {
         this.toast.show('That is not what they ordered');
+        if (e.customer !== null) this.custViews.get(e.customer)?.shake();
         break;
       }
+      case 'comboChanged':
+        this.hud.comboPop(e.combo);
+        if (e.broken) audio.play('wrong');
+        else if (e.combo >= 3) audio.play('ding');
+        break;
+      case 'eventStart':
+        this.banner.show(e.name, e.duration);
+        audio.play('ding');
+        break;
+      case 'eventEnd':
+        this.banner.hide();
+        break;
+      case 'streakBonus':
+        this.toast.show(`Streak bonus +${e.xp} XP`);
+        audio.play('ding');
+        break;
       case 'orderDone': {
         const cv = this.custViews.get(e.customer);
         this.flyCoins(cv?.center ?? { x: 640, y: 150 }, Math.min(6, 2 + Math.floor(e.coins / 10)));
+        if (cv) {
+          const at = { x: cv.center.x + 78, y: cv.center.y - 8 };
+          if (e.rush) this.floatText(at.x, at.y, 'Rush!', '#FF6B5A');
+          if (e.combo >= 2) this.floatText(at.x, at.y - 26, `Combo x${e.combo}`, '#F6C445');
+          if (e.tip > 0) this.floatText(at.x, at.y + 24, `+${e.tip} tip`, '#9BE37A');
+        }
         audio.play('coin');
         this.saveNow();
         break;
@@ -550,6 +581,7 @@ export class GameScene extends Phaser.Scene {
         this.overlay.show('Closed', 'Too many unhappy customers.\nYour level, XP and coins are safe.', 'Reopen', () => this.state.reopen());
         break;
       case 'reopened':
+        this.banner.hide();
         this.items.forEach((v) => v.destroy());
         this.items.clear();
         this.custViews.forEach((c) => c.destroy());
@@ -582,6 +614,21 @@ export class GameScene extends Phaser.Scene {
       this.fx.burst(v.x, v.y, 0x9a9a9a, 6, 30, 350);
       this.tweens.add({ targets: v, scale: 0, alpha: 0, duration: 200, onComplete: () => v.destroy() });
     } else v.destroy();
+  }
+
+  /** Short-lived text that rises and fades (Rush, Combo, tip). */
+  private floatText(x: number, y: number, text: string, color: string): void {
+    const t = this.add
+      .text(x, y, text, { fontFamily: FONT, fontSize: '24px', color, stroke: '#2B1B17', strokeThickness: 5 })
+      .setOrigin(0.5)
+      .setDepth(960);
+    if (SaveSystem.reduceMotion()) {
+      this.time.delayedCall(900, () => t.destroy());
+      return;
+    }
+    t.setScale(0.6);
+    this.tweens.add({ targets: t, scale: 1, duration: 160, ease: 'Back.Out' });
+    this.tweens.add({ targets: t, y: y - 34, alpha: 0, duration: 900, delay: 250, onComplete: () => t.destroy() });
   }
 
   private flyCoins(from: { x: number; y: number }, count: number): void {
@@ -635,7 +682,7 @@ export class GameScene extends Phaser.Scene {
     // keep views in step with the model
     for (const c of this.state.customers) {
       if (!this.custViews.has(c.id) && c.mood !== 'angry' && c.mood !== 'happy') this.addCustomer(c.id);
-      this.custViews.get(c.id)?.update(c, time);
+      this.custViews.get(c.id)?.update(c, time, this.state.isRush(c));
     }
     for (const slot of this.state.slots) {
       const v = this.items.get(slot.index);
@@ -647,6 +694,7 @@ export class GameScene extends Phaser.Scene {
     this.stock.update(this.state.level);
     this.stations.update(this.state, time);
     this.hud.update(this.state, dtReal);
+    if (this.state.event) this.banner.update(this.state.event.remaining);
     this.updateHint();
 
     const cooking = this.state.vats.filter((v) => v && v.phase !== 'burnt').length + this.state.burners.filter((b) => b && b.phase !== 'burnt').length + this.state.ovens.filter((o) => o && o.phase !== 'burnt').length;

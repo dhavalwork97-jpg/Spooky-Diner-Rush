@@ -2,6 +2,9 @@ import recipesJson from '../../data/recipes.json';
 import progressionJson from '../../data/progression.json';
 import xpJson from '../../data/xp.json';
 import customersJson from '../../data/customers.json';
+import comboJson from '../../data/combo.json';
+import wavesJson from '../../data/waves.json';
+import eventsJson from '../../data/events.json';
 
 export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger';
 
@@ -33,7 +36,27 @@ export interface LevelDef {
   orderSize: [number, number];
   patience: number;
   items: ItemKind[];
+  /** Customer type weights. Missing means regular only. */
+  types?: Record<string, number>;
   unlocks: string[];
+}
+export interface CustomerType {
+  name: string;
+  patienceMult: number;
+  payMult: number;
+  tipMult: number;
+  repMult: number;
+  extraItems: number;
+}
+export interface EventDef {
+  id: string;
+  name: string;
+  minLevel: number;
+  duration: number;
+  arrivalMult?: number;
+  coinMult?: number;
+  ovenSpeed?: number;
+  spawnType?: string;
 }
 export interface GameConfig {
   recipes: { settings: RecipeSettings; items: Record<ItemKind, ItemDef> };
@@ -47,10 +70,19 @@ export interface GameConfig {
     tipFraction: number;
     reputation: { start: number; angryLeave: number; serveGain: number; reopenTo: number };
   };
-  customers: {
-    types: Record<string, { patienceMult: number; tipMult: number; weight: number }>;
-    looks: { id: string; skin: string; hair: string; shirt: string }[];
+  customers: { types: Record<string, CustomerType> };
+  combo: {
+    maxCombo: number;
+    multiplierPerStep: number;
+    maxMultiplier: number;
+    comboReputationFrom: number;
+    comboReputationGain: number;
+    rush: { patienceFraction: number; tipMultiplier: number; bonusXp: number };
+    wrongItemPatiencePenalty: number;
+    streak: { servesNeeded: number; bonusXp: number };
   };
+  waves: { phases: { name: string; seconds: number; gapMult: number }[] };
+  events: { firstAfter: number; gap: [number, number]; events: EventDef[] };
 }
 
 export const defaultConfig: GameConfig = {
@@ -58,6 +90,9 @@ export const defaultConfig: GameConfig = {
   progression: progressionJson as unknown as GameConfig['progression'],
   xp: xpJson as unknown as GameConfig['xp'],
   customers: customersJson as unknown as GameConfig['customers'],
+  combo: comboJson as unknown as GameConfig['combo'],
+  waves: wavesJson as unknown as GameConfig['waves'],
+  events: eventsJson as unknown as GameConfig['events'],
 };
 
 /** Progression entry for a level. Past the last entry, patience slowly tightens down to a floor. */

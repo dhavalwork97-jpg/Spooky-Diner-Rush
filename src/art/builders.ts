@@ -32,7 +32,6 @@ const line = (g: Phaser.GameObjects.Graphics) => g.lineStyle(OUT, INK, 1);
 export function buildAllTextures(scene: Phaser.Scene, cfg: GameConfig): void {
   buildFood(scene);
   buildUi(scene);
-  cfg.customers.looks.forEach((look, i) => buildCustomer(scene, i, look));
 }
 
 function buildFood(scene: Phaser.Scene): void {
@@ -127,45 +126,3 @@ function buildUi(scene: Phaser.Scene): void {
   make(scene, 'ring_dot', 8, 8, (g) => g.fillStyle(0xffffff, 1).fillCircle(4, 4, 4));
 }
 
-function buildCustomer(scene: Phaser.Scene, i: number, look: { skin: string; hair: string; shirt: string }): void {
-  const skin = hex(look.skin);
-  const hair = hex(look.hair);
-  const shirt = hex(look.shirt);
-  for (const expr of EXPRESSIONS) {
-    make(scene, `customer_${i}_${expr}`, 200, 220, (g) => {
-      // shoulders and shirt
-      g.fillStyle(shirt, 1).fillRoundedRect(20, 140, 160, 80, { tl: 46, tr: 46, bl: 0, br: 0 });
-      line(g).strokeRoundedRect(20, 140, 160, 80, { tl: 46, tr: 46, bl: 0, br: 0 });
-      // neck and head
-      g.fillStyle(skin, 1).fillRoundedRect(84, 122, 32, 28, 8);
-      g.fillStyle(skin, 1).fillCircle(100, 82, 56);
-      line(g).strokeCircle(100, 82, 56);
-      // hair
-      g.fillStyle(hair, 1).fillRoundedRect(44, 20, 112, 40, { tl: 56, tr: 56, bl: 10, br: 10 });
-      line(g).strokeRoundedRect(44, 20, 112, 40, { tl: 56, tr: 56, bl: 10, br: 10 });
-      // eyes
-      g.fillStyle(0xffffff, 1).fillCircle(78, 86, 12).fillCircle(122, 86, 12);
-      line(g).strokeCircle(78, 86, 12).strokeCircle(122, 86, 12);
-      g.fillStyle(INK, 1).fillCircle(expr === 'angry' ? 80 : 78, 88, 5).fillCircle(expr === 'angry' ? 120 : 122, 88, 5);
-      g.lineStyle(OUT, INK, 1);
-      // brows and mouth by expression
-      if (expr === 'angry') {
-        g.beginPath().moveTo(62, 66).lineTo(92, 76).strokePath();
-        g.beginPath().moveTo(138, 66).lineTo(108, 76).strokePath();
-        g.beginPath().moveTo(84, 118).lineTo(100, 108).lineTo(116, 118).strokePath();
-        g.fillStyle(TOMATO, 0.55).fillCircle(66, 104, 9).fillCircle(134, 104, 9);
-      } else if (expr === 'impatient') {
-        g.beginPath().moveTo(64, 70).lineTo(92, 70).strokePath();
-        g.beginPath().moveTo(108, 70).lineTo(136, 70).strokePath();
-        g.beginPath().moveTo(84, 114).lineTo(116, 114).strokePath();
-        g.fillStyle(0x8fd3f4, 1).fillEllipse(150, 50, 12, 18); // sweat drop
-        g.lineStyle(3, INK, 1).strokeEllipse(150, 50, 12, 18);
-      } else if (expr === 'happy') {
-        g.beginPath().arc(100, 104, 20, 0.15 * Math.PI, 0.85 * Math.PI).strokePath();
-        g.fillStyle(TOMATO, 0.4).fillCircle(64, 104, 9).fillCircle(136, 104, 9);
-      } else {
-        g.beginPath().moveTo(86, 112).lineTo(114, 112).strokePath();
-      }
-    });
-  }
-}

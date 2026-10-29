@@ -100,3 +100,22 @@ describe('bot simulation (first balance probe)', () => {
     expect(r.s.vats.length).toBe(2);
   });
 });
+
+describe('bot simulation to Lv 10 (Milestone 3 balance probe)', () => {
+  it('reports level times and checks pacing', () => {
+    const rows: string[] = [];
+    const results = [1, 2, 3, 4, 5].map((seed) => play(seed, 0.8, 1500));
+    for (const r of results) {
+      const lv = Object.entries(r.levelTimes).map(([l, t]) => `${l}@${t}s`).join(' ');
+      rows.push(`level times: ${lv} | closes ${r.closes} served ${r.s.served}`);
+    }
+    // eslint-disable-next-line no-console
+    console.log('BALANCE\n' + rows.join('\n'));
+    for (const r of results) expect(r.s.level).toBeGreaterThanOrEqual(10);
+    // a fast bot should take minutes, not seconds, to reach Lv 10 (a person is slower still)
+    for (const r of results) expect(r.levelTimes[10]).toBeGreaterThan(300);
+    for (const r of results) expect(r.levelTimes[10]).toBeLessThan(900);
+    const lv2 = results.map((r) => r.levelTimes[2]);
+    expect(Math.max(...lv2)).toBeLessThanOrEqual(90);
+  });
+});

@@ -1,0 +1,10 @@
+{
+  "firstAfter": 75,
+  "gap": [60, 180],
+  "events": [
+    { "id": "lunch_rush", "name": "Lunch rush", "minLevel": 3, "duration": 25, "arrivalMult": 0.6 },
+    { "id": "double_coins", "name": "Double coins", "minLevel": 3, "duration": 30, "coinMult": 2 },
+    { "id": "slow_oven", "name": "Slow oven", "minLevel": 5, "duration": 30, "ovenSpeed": 0.7 },
+    { "id": "vip_visit", "name": "VIP visit", "minLevel": 6, "duration": 40, "spawnType": "vip" }
+  ]
+}

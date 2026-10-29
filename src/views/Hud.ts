@@ -16,6 +16,8 @@ export class Hud {
   private shownLevel: number;
   private coinsShown: number;
   private levelAnim = false;
+  private comboText: Phaser.GameObjects.Text;
+  private comboShown = 0;
 
   constructor(private scene: Phaser.Scene, state: KitchenState) {
     this.g = scene.add.graphics().setDepth(D);
@@ -30,12 +32,25 @@ export class Hud {
       .text(118, 84, 'Reputation', { fontFamily: FONT, fontSize: '18px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 4 })
       .setOrigin(0, 0.5)
       .setDepth(D + 2);
+    this.comboText = scene.add
+      .text(960, 80, '', { fontFamily: FONT, fontSize: '18px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 4 })
+      .setOrigin(0, 0.5)
+      .setDepth(D + 2)
+      .setAlpha(0);
     this.coinIcon = scene.add.image(1158, 44, 'coin').setDepth(D + 2);
     this.coinIcon.setScale(44 / this.coinIcon.width);
     this.coinText = scene.add
       .text(1184, 44, String(state.coins), { fontFamily: FONT, fontSize: '28px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 })
       .setOrigin(0, 0.5)
       .setDepth(D + 2);
+  }
+
+  /** Pop the combo label when it grows. */
+  comboPop(combo: number): void {
+    if (combo > this.comboShown && !SaveSystem.reduceMotion()) {
+      this.scene.tweens.add({ targets: this.comboText, scale: 1.3, duration: 120, yoyo: true, ease: 'Back.Out' });
+    }
+    this.comboShown = combo;
   }
 
   /** Pop the badge when the level changes. */
@@ -81,6 +96,18 @@ export class Hud {
     const rep = state.reputation / 100;
     this.bar(g, 104, 68, 220, 8, 1, 0x000000, 0.0);
     this.bar(g, 104, 96, 220, 14, rep, rep > 0.5 ? LEAF : rep > 0.2 ? MUSTARD : TOMATO);
+    // combo meter: one segment per step, with the current multiplier
+    const comboOn = state.combo > 0;
+    this.comboText.setAlpha(comboOn ? 1 : 0).setText(comboOn ? `Combo x${state.comboMultiplier.toFixed(1)}` : '');
+    if (comboOn) {
+      const max = state.cfg.combo.maxCombo;
+      const segW = 190 / max;
+      for (let i = 0; i < max; i++) {
+        const on = i < state.combo;
+        g.fillStyle(on ? ORANGE : 0x3b2a24, 1).fillRoundedRect(960 + i * segW + 1, 94, segW - 3, 10, 4);
+        g.lineStyle(2, INK, 1).strokeRoundedRect(960 + i * segW + 1, 94, segW - 3, 10, 4);
+      }
+    }
     void this.levelAnim;
   }
 

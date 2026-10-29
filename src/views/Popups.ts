@@ -166,3 +166,59 @@ export class Overlay {
     return this.root.visible;
   }
 }
+
+/** Banner for the running event (lunch rush, double coins...) with a countdown bar. */
+export class EventBanner {
+  private box: Phaser.GameObjects.Container;
+  private title: Phaser.GameObjects.Text;
+  private bar: Phaser.GameObjects.Graphics;
+  private total = 1;
+  private active = false;
+
+  constructor(private scene: Phaser.Scene, x: number, y: number) {
+    this.title = scene.add.text(0, -8, '', { fontFamily: FONT, fontSize: '19px', color: '#2B1B17' }).setOrigin(0.5);
+    this.bar = scene.add.graphics();
+    this.box = scene.add.container(x, y).setDepth(860).setAlpha(0);
+    this.box.add([panel(scene, 146, 50), this.title, this.bar]);
+  }
+
+  show(name: string, duration: number): void {
+    this.total = duration;
+    this.active = true;
+    this.title.setText(name);
+    this.scene.tweens.killTweensOf(this.box);
+    this.box.setAlpha(1).setScale(1);
+    if (!SaveSystem.reduceMotion()) {
+      this.box.setScale(0.7);
+      this.scene.tweens.add({ targets: this.box, scale: 1, duration: 260, ease: 'Back.Out' });
+    }
+    this.draw(duration);
+  }
+
+  update(remaining: number): void {
+    if (this.active) this.draw(remaining);
+  }
+
+  hide(): void {
+    this.active = false;
+    this.scene.tweens.killTweensOf(this.box);
+    this.scene.tweens.add({ targets: this.box, alpha: 0, duration: SaveSystem.reduceMotion() ? 0 : 250 });
+  }
+
+  get visible(): boolean {
+    return this.active;
+  }
+  get text(): string {
+    return this.title.text;
+  }
+
+  private draw(remaining: number): void {
+    const g = this.bar;
+    g.clear();
+    const w = 112;
+    const frac = Math.max(0, Math.min(1, remaining / this.total));
+    g.fillStyle(0x3b2a24, 1).fillRoundedRect(-w / 2, 6, w, 9, 4);
+    g.fillStyle(MUSTARD, 1).fillRoundedRect(-w / 2, 6, Math.max(8, w * frac), 9, 4);
+    g.lineStyle(2, INK, 1).strokeRoundedRect(-w / 2, 6, w, 9, 4);
+  }
+}

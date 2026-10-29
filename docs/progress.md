@@ -146,3 +146,36 @@ The zip food art is drawn at 2x and larger than the plates in this kitchen, so i
 - Tutorial hint order for a burger is unit-tested: buns, patty tray, wait, flip, wait, patty on burger, lettuce/tomato, drag.
 - Reduced motion (browser setting): fries, burger, pizza and nuggets flows ran with no errors.
 - Still not verified: real sound output, real-device performance, Fredoka (not bundled).
+
+# Milestone 3: core systems (Lv 1 to 10)
+
+All numbers live in JSON: `data/combo.json`, `data/events.json`, `data/waves.json`, `data/customers.json`, `data/progression.json` (Lv 1 to 10), `data/xp.json`.
+
+## Built
+- **Combo:** consecutive fast serves (patience still at 50% or more) build a combo up to 8. Coins and XP get a multiplier of +10% per step, capped at x1.5. A slow serve or an angry customer leaving breaks it. At combo 3 and up each serve also refills a little extra reputation. HUD meter at top right.
+- **Rush tag:** a small red tag on the order bubble while the customer's patience is at 75% or more. Serving while it shows doubles the tip and adds 10 XP, with a floating "Rush!" text.
+- **Tips:** only for fast serves; scaled by remaining patience, customer type, Rush and the tips upgrade hook.
+- **Wrong item:** the item snaps back, the customer shakes and loses 8% patience. No coin or reputation cost.
+- **Customer types** (data): regular, impatient (60% patience, double tips), VIP (double pay, one extra item), critic (70% patience, 1.5x reputation loss). Types are chosen by per-level weights in `progression.json`. Lv 1 to 10 are all regular, as the brief puts impatient at Lv 14, VIP at Lv 17 and critic at Lv 19. The VIP visit event and the debug hook bring them in earlier. Small chips on the bubble show the type.
+- **Events** (data): lunch rush, double coins, slow oven, VIP visit. One at a time, first after 75 s, then every 60 to 180 s, only at calm moments (at most one customer waiting), each with a banner and countdown. Each event has a minimum level.
+- **Waves:** calm, build, rush, calm cycle (110 s) scales the arrival gap.
+- **Streak bonus:** 10 serves in a row with no burn and no angry customer pays 40 XP.
+- **Economy hooks:** the model reads `mods` (fryer, grill and oven speed, patience, tips) so the Shop in Milestone 4 only has to set them.
+- **Progression Lv 6 to 10** added. Max customers: 2 until Lv 6, 3 from Lv 7 (not in the same level as a recipe unlock).
+- **Tutorial hand** now runs only at Lv 1 (first 3 serves) and Lv 2 (first burger), so it no longer reappears for returning players.
+- XP formula tuned to 100 + 80 x level from the brief's 100 + 40 x level.
+
+## Verified
+- 77 unit tests pass (21 new for these systems, plus the tutorial hint test and a bot simulation).
+- Bot simulation to Lv 10, 5 seeds: Lv 2 at about 28 s, Lv 10 at about 8 to 9 minutes for a fast bot, roughly 40 to 130 s per level in the middle. A person will be slower, which matches the brief's "1 to 2 minutes early, 3 to 5 later".
+- Real browser (Chromium): VIP visit banner and countdown, combo meter, "Rush!", "Combo x3" and tip floating text, Rush tag and VIP/Critic/Hurry chips on bubbles, no console errors.
+- Soak at 10x speed for about 5 game minutes: an event fired by itself, the Closed screen appeared and Reopen worked, no errors, scene object count stayed flat (83).
+
+## Not verified
+- Feel of combo and event pacing with a human player; numbers are a first pass from the bot only.
+- Wrong-item shake, double coins, slow oven and lunch rush on screen (covered by unit tests only).
+- Sound for the new events (reuses existing sounds), phone performance.
+
+## Deviations to confirm
+- Nuggets (Lv 4) and pizza (Lv 5) are earlier than the brief (Lv 11 and Lv 10), kept from Milestone 2.
+- Impatient, VIP and critic customers are built but not part of Lv 1 to 10, to follow the brief's unlock table.
