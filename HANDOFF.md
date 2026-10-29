@@ -3,6 +3,14 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
+## In progress (2026-10-29, Claude): new kitchen artwork + oven door animation
+Branch `kitchen-art-integration` (from main 11de9b7). Plan, tick as done:
+- [ ] 1. Copy new kitchen (2752x1536) to `public/assets/art/kitchen_full.webp`; update `data/assets.json`, `data/restaurants.json` backgroundSize, `layout.ts` SRC_W/SRC_H, remap all source-pixel coordinates (seats, vats, burners, ovens, slots, stock, decor) and zones.
+- [ ] 2. Stock sprites (StockViews): decide per ingredient if baked into new art; remove duplicates (patch background or hide baked food).
+- [ ] 3. Fryer drop tweens for fries/nuggets (view only; model timers untouched).
+- [ ] 4. Oven door: extract frames from supplied MP4 (opaque, no green screen) into a small spritesheet, drive from model oven state; model timer stays authoritative.
+- [ ] 5. npm test / typecheck / build, browser check, update this file and docs/progress.md.
+
 ## Goal
 Chef Rush: a browser restaurant game (serve customers, fryer/grill/oven, coins, XP, levels) for CrazyGames. Built in milestones, one PR each. **Milestones 3 and 4 are merged into `main`; the next task is Milestone 5: gameplay balance and polish.**
 
