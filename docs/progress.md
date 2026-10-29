@@ -198,7 +198,8 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 ## Verified
 - 150 unit tests pass (77 are the unchanged Milestone 3 tests, checked with `git diff` against `milestone-3-core-systems`: no change to the model, balance data or those four test files; 73 are new, including a scan that keeps the owner's banned progression words out of code, data and docs). Typecheck and production build are clean.
 - Real browser (Chromium, production build, 1280x720 mouse and 844x390 touch): a real click bought an upgrade and a decor item and both survived a reload; the model clock froze while a panel or story card was open and ran again after; story cards showed once and not after reload; a Lv 9 to 10 level-up showed the card with "New title: Sous Chef" and then the story card; each HUD button opened its panel by mouse click and by touch tap; chef lines fired from real events and the idle tip; no page errors.
-- Reduced motion was run for the chef, story card and panels (no fades, nothing stuck).
+- Soak (Chromium, `?debug&speed=10`, normal and reduced motion, about 255 game seconds each): 15 panel opens and closes each, one Closed and Reopen cycle each, no page or console errors. A leak probe of 24 more panel opens left the game scene's object count, texture count and tween count unchanged, and the panels empty when closed.
+- Four customers seated at Lv 15: the HUD buttons stay clear of the far customer, its patience bar and its price.
 
 ## Not verified
 - Pacing and prices with a human player. Upgrade costs and values are a first pass; nothing has been balanced against the bot simulation yet (that is the Milestone 5 job).
@@ -206,7 +207,6 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 - Buttons on a real phone. The HUD buttons and Shop buttons are 56 to 92 logical px, which is about 37 to 61 css px on an 844 px wide phone, under the 88 css px target. The same limit applies to the kitchen zones.
 - Starting a second restaurant: only `burger_diner` has zones, so the restart path is covered by unit tests only.
 - Sound for the new panels (they reuse existing click and level-up sounds).
-- The HUD buttons with four customers seated (Lv 13+): the nearest button may overlap the far seat by a few pixels.
 - Decor and chef text on a real phone; the decor art is simple placeholder art.
 
 ## Deviations to confirm
