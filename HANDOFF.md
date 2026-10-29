@@ -1,10 +1,72 @@
 # HANDOFF
 
-Last saved by: (nobody yet)
-Last saved at: -
+Last saved by: Claude (Sonnet 5.5), session 2026-10-29
+Last saved at: 2026-10-29 11:58 IST
 
 ## Goal
-Chef Rush: a browser restaurant game (serve customers, fryer/grill/oven, coins, XP, levels). Built in milestones; Milestone 3 is done, Milestone 4 (shop and progression systems) is next.
+Chef Rush: a browser restaurant game (serve customers, fryer/grill/oven, coins, XP, levels) for CrazyGames. Built in milestones, one PR each; Milestone 3 is done, **Milestone 4 (shop and progression systems) is the active task** on branch `milestone-4`.
+
+## Project notes for a newcomer
+
+### Run and test commands
+Run from the repo root. Node and npm only; no other tooling.
+- `npm ci` (or `npm install`): install dependencies.
+- `npm run dev`: Vite dev server. URL flags: `?debug&level=N&speed=N` (jump to level N, run the model at N x speed, max 20; flags only apply with `debug`), `?zones` or key Z (outline every tap zone).
+- `npm test`: Vitest, 4 files, 77 tests, about 2 s. Must stay green.
+- `npm run typecheck`: `tsc --noEmit`.
+- `npm run build`: typecheck, then `vite build` into `dist/` (about 1.4 MB JS, mostly Phaser).
+- `python handoff.py resume | save <A> | snap`: the two-account handoff helper (see Gotchas).
+- Browser tests: `window.__chefRush` (set in `GameScene.create`) exposes `state`, `zones()`, `items()`, `customers()`, `startEvent(id)`, `spawn(type)`, `slotPos(i)`, `vatPos(i)`, `burnerPos(i)`, `banner()`, `toast()`, `overlayVisible()`, `levelCardVisible()`. Use it from a headless browser instead of guessing coordinates.
+
+### Folder layout
+- `data/`: all content and balance JSON (below).
+- `src/game/`: the game model, no Phaser. `KitchenState.ts` (673 lines, the whole simulation), `config.ts` (types plus `defaultConfig`, `levelDef`, `xpForLevel`), `cook.ts` (phase rules), `tutorial.ts` (hint chooser, read-only), `rng.ts` (seeded).
+- `src/scenes/`: `BootScene` (validates assets and restaurants JSON, loads art, builds code-drawn textures, starts `Game`), `GameScene` (780 lines: the kitchen, input, wiring model events to views).
+- `src/views/`: read-only views of the model: `StationViews`, `StockViews`, `ItemView`, `CustomerView`, `Hud`, `Popups` (Toast, LevelUpCard, Overlay, EventBanner), `TutorialHand`, `Ring`, `layout.ts` (pixel coordinates of seats, vats, burners, oven, slots on the 1699 x 926 art).
+- `src/kitchen/`: `zones.ts` (pure coordinate math, hit testing, nearest-zone snap), `stationHandlers.ts` (`registerStationHandler(type, fn)`).
+- `src/anim/`: `guard.ts` (one running animation per key), `helpers.ts` (pop, bounce, shake, glow, fade, moveTo), `ParticlePool.ts`.
+- `src/art/builders.ts`: draws every non-supplied texture in code, cached by key; holds the palette constants.
+- `src/systems/`: `SaveSystem` (SDK data first, localStorage fallback, tolerant parse), `AudioSystem` (all sound synthesized with WebAudio).
+- `src/sdk/crazygames.ts`: no-op-safe SDK wrapper. `src/data/validate.ts`: JSON validators.
+- `tests/`: `game.test.ts` (model), `systems.test.ts` (M3 systems), `sim.test.ts` (bot reaches a level), `zones.test.ts` (coordinates, validators, save parsing).
+- `docs/`: `style-guide.md`, `architecture.md`, `progress.md` (per-milestone log with "not verified" lists). `public/assets/art/`: supplied art.
+
+### Key modules and how they fit
+- `KitchenState` owns everything that matters: vats, burners, ovens, plate and side slots, customers, XP, coins, reputation, combo, streak, events, waves. Time moves only through `update(dt)`; the player acts through methods (`tapFryer`, `tapGrill`, `tapBuns`, `tapTopping`, `tapOven`, `tapTrash`, `serve`, `startFry`, `startPizza`, `startPatty`, `spawnCustomer`, `startEvent`, `reopen`). It pushes `GameEvent`s into `events`; views call `drainEvents()` each frame and play effects. Views and animations never decide game outcomes.
+- Because the model has no Phaser code, tests and bot simulations run it with `new KitchenState(save, cfg, seed)` and `update(dt)`.
+- `KitchenState.mods` (`fryerSpeed`, `grillSpeed`, `ovenSpeed`, `patience`, `tips`, all default 1) is the Shop seam: the model already multiplies by them (cook speed in `update`, patience in `spawnCustomer`, tips in `serve`). Milestone 4 only has to set them.
+- `GameScene.create` builds the model from `SaveSystem.data` (level, xp, coins), builds views, registers station handlers, and saves at level-up and every 15 s (`SaveSystem.save`). The save shape is `SaveData` v1 in `SaveSystem.ts`: level, xp, coins, settings. Anything M4 persists (owned upgrades, decor, career) must extend this in `parseSave` with safe defaults so old saves still load.
+- Only two scenes exist (`Boot`, `Game`); `main.ts` lists them. RecipeBook, RestaurantSelect, Shop, Menu and Settings are not built yet.
+
+### Where data and balance numbers live (all in `data/`, none hard-coded in `src/`)
+- `recipes.json`: slots, vats, burners, ovens, burn penalties; per item price, XP, ready time, burn window, unlock level (fries 1, burger 2, nuggets 4, pizza 5).
+- `progression.json`: per level `maxCustomers`, `arrivalGap`, `orderSize`, `patience`, `items`, customer-type weights, `unlocks` text (Lv 1 to 10 defined; `afterLast` tightens patience by 0.5 per level to a floor of 30).
+- `xp.json`: XP curve (100 + 80 x level), speed bonus, level-up coins, tip fraction, reputation (start 100, angry leave 15, serve gain 3, reopen 55).
+- `combo.json` (combo, Rush tag, wrong-item penalty, streak), `events.json` (four events, first after 75 s, 60 to 180 s apart), `waves.json` (110 s cycle), `customers.json` (four types).
+- `restaurants.json`: background, normalized tap zones and unlock levels per station (`burger_diner` only). `assets.json`: art manifest; `lazy: true` entries are not loaded at boot.
+- Each data file is typed in `src/game/config.ts` (`GameConfig`) and read via `defaultConfig`. Add new data files there. Only `assets.json` and `restaurants.json` are validated at boot (`src/data/validate.ts`); the balance JSONs are covered by types and tests only, so add a test when you add a field.
+
+### Conventions
+- Wording rule from the owner: never write "shift", "stage" or "stars" in code, UI, data or docs. The only progression number is shown as "Lv N". (A grep over `src data docs tests README.md index.html` was clean on 2026-10-29; keep it clean.)
+- Gameplay state lives in the model; animation state is separate. Animations go through `AnimGuard` (restart, never stack), use pooled particles, and must honor `SaveSystem.reduceMotion()` (setting first, then the OS preference).
+- The kitchen background is static; interaction is overlays above it. Zones are normalized 0..1 against the art so they work at any size.
+- Style: ink-outlined flat cartoon, palette constants in `src/art/builders.ts` (status colors leaf, mustard, tomato are reserved for state, and state must not rely on color alone). Logical canvas is 1280 x 698, `Scale.FIT`.
+- Failure modes stay friendly: a wrong-item serve costs a little patience, no coins or reputation.
+- Touch targets should be 88 css px or more; known short of that in phone landscape (see `docs/progress.md`).
+- Keep `npm test` and `npm run typecheck` green; add unit tests with every model change. Document each milestone in `docs/progress.md` with a "Not verified" list. State plainly what was and was not checked in a real browser.
+- Commits: small steps, one commit per step. Do not modify Milestone 3 behavior; new work must leave the existing 77 tests passing unchanged.
+
+### Gotchas
+- `.claude/settings.json` has a PostToolUse hook that runs `python handoff.py snap` after every Edit, Write or MultiEdit. In a session with that hook, every file edit makes a local commit named `wip snapshot <time>` and appends to `.handoff_log`. If `git status` shows nothing but your last commit is a `wip snapshot`, that is why. Check `git log -n 10` and the tail of `.handoff_log` at session start.
+- The snapshot only commits locally; it never pushes. Push after each step yourself.
+- The original full build brief (`chef-rush-full-game-prompt-corrected.md`) is not in the repo. The only list of Milestone 4 scope in the repo is the "Next steps" below, so check anything uncertain with the owner.
+- `milestone-4` is branched from `milestone-3-core-systems` (PR #5, targets main, not merged yet), so `main` lacks Milestone 3 and the handoff files. Do not rebase onto or merge `main` without the owner's say.
+- Shallow clones: `git fetch --depth=N origin +refs/heads/<b>:refs/remotes/origin/<b>` is needed to see other branches; a plain fetch only tracks `main`.
+- Branch names are not what you might guess: Milestone 1 lives on `milestone-1-style-guide-draft` (PR #3, the owner chose their own style guide), not `milestone-1-foundation`.
+- GitHub shows the repo as `Chef-Rush` and the clone URL as `chef-rush`; both work.
+- Phaser installed is v4 even though docs say "Phaser 3+". Typescript 7 and Vite 8 are in use.
+- Unit tests do not cover Phaser rendering. Visual claims need a real browser run; say when you did not do one.
+- The fonts fall back to a system stack (Fredoka is not bundled). Customers are single-pose art, so mood shows as tint and hop.
 
 ## Done so far
 - Milestone 3 complete, open as PR #5 (targets main, not yet merged): https://github.com/dhavalwork97-jpg/Chef-Rush/pull/5
@@ -18,18 +80,23 @@ Chef Rush: a browser restaurant game (serve customers, fryer/grill/oven, coins, 
 - Shop hooks: game reads fryer/grill/oven speed, patience and tip modifiers (ready for the M4 shop to set them).
 - XP formula changed to 100 + 80 x level; nuggets at Lv 4, pizza at Lv 5.
 - Verified: 77 unit tests pass (21 new); bot reaches Lv 10 in 8-9 min; browser check of banner, combo meter, Rush tag, chips, floating text; 5 game minutes at 10x speed with no errors.
+- Milestone 4 session start (2026-10-29): cloned repo, checked out `milestone-4` at `cc5713c`, ran `npm ci`, `npm test` (77 pass), `npm run typecheck` (clean) and `npm run build` (ok) to confirm the baseline. Wrote the newcomer notes above.
 
 ## In progress (exact stopping point)
-- Nothing started on Milestone 4. Waiting for the owner's go-ahead.
+- **Milestone 4 is the active task** (branch `milestone-4`).
+- Step 0 done: "Project notes for a newcomer" written (this file).
+- Stopped at: nothing in `src/` has been edited. Next is writing the Milestone 4 plan into this file (section "Milestone 4 plan"), before any code.
 
 ## Next steps (ordered)
-1. Get go-ahead, then merge or confirm PR #5.
-2. Milestone 4: shop and upgrades, decor, RecipeBook, RestaurantSelect, career titles, story cards, chef's speech bubbles.
-3. Check the unverified items below.
+1. Write the Milestone 4 plan into HANDOFF.md, commit, push.
+2. Milestone 4: shop and upgrades, decor, RecipeBook, RestaurantSelect, career titles, story cards, chef's speech bubbles (steps to be listed in the plan).
+3. Merge or confirm PR #5 with the owner when ready (do not touch Milestone 3 code).
+4. Check the unverified items below.
 
 ## Decisions & constraints
 - Failure modes should stay user-friendly (no punishing wrong-item serves).
 - Keep tests passing (77 currently).
+- Milestone 3 is done; do not change it.
 
 ## Not verified yet
 - Pacing with a human player (numbers are from the bot only)
