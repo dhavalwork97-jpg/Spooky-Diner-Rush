@@ -9,7 +9,7 @@ import { modsFor } from '../game/shop';
 import { titleEarnedAt } from '../game/career';
 import { ChefTalk } from '../game/chef';
 import { dueStory, seenAfter } from '../game/story';
-import type { ShopData } from './ShopScene';
+import type { RestaurantSelectData } from './RestaurantSelectScene';
 import { ownedDecor } from '../game/decor';
 import { decorKey } from '../art/builders';
 import { makeRng } from '../game/rng';
@@ -149,6 +149,7 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-Z', () => this.setShowAll(!this.showAll));
     this.input.keyboard?.on('keydown-B', this.openShop, this);
     this.input.keyboard?.on('keydown-R', this.openRecipeBook, this);
+    this.input.keyboard?.on('keydown-T', this.openRestaurants, this);
     this.setShowAll(params.has('zones'));
 
     this.game.events.on(Phaser.Core.Events.BLUR, this.onBlur, this);
@@ -177,6 +178,7 @@ export class GameScene extends Phaser.Scene {
       decor: () => [...this.decorViews.keys()],
       openShop: () => this.openShop(),
       openRecipeBook: () => this.openRecipeBook(),
+      openRestaurants: () => this.openRestaurants(),
       chefSay: (trigger: string) => this.sayChef(this.chefTalk.say(trigger, this.state.clock)),
       slotPos: (i: number) => ({ x: this.layout.x(SLOTS[i][0]), y: this.layout.y(SLOTS[i][1]) }),
       vatPos: (i: number) => this.stations.vatPos(i),
@@ -660,19 +662,26 @@ export class GameScene extends Phaser.Scene {
     this.openPanel('RecipeBook');
   }
 
-  private openPanel(key: 'Shop' | 'RecipeBook'): void {
+  /** Open the restaurant list. Picking another open restaurant restarts this scene in it. */
+  openRestaurants(): void {
+    this.openPanel('RestaurantSelect');
+  }
+
+  private openPanel(key: 'Shop' | 'RecipeBook' | 'RestaurantSelect'): void {
     if (this.paused || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing) return;
     this.setSelectedSlot(null);
     this.chef.hide();
     this.hand.hide();
     audio.setSizzle(0);
     this.saveNow();
-    const data: ShopData = {
+    const data: RestaurantSelectData = {
       state: this.state,
+      current: this.restaurant.id,
       onClose: () => {
         this.syncDecor();
         this.scene.resume();
       },
+      onPick: (id: string) => this.scene.start('Game', { restaurantId: id }),
     };
     this.scene.launch(key, data);
     this.scene.pause();
@@ -855,6 +864,7 @@ export class GameScene extends Phaser.Scene {
     this.saveNow();
     this.input.keyboard?.off('keydown-B', this.openShop, this);
     this.input.keyboard?.off('keydown-R', this.openRecipeBook, this);
+    this.input.keyboard?.off('keydown-T', this.openRestaurants, this);
     this.input.off('pointerdown', this.onPointerDown, this);
     this.input.off('dragstart', this.onDragStart, this);
     this.input.off('drag', this.onDrag, this);

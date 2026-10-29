@@ -231,6 +231,23 @@ export function validateRecipeBook(data: unknown, itemIds: string[]): string[] {
   return errors;
 }
 
+/** restaurant_menu.json: coming-soon entries with unique ids that do not clash with playable restaurants. */
+export function validateRestaurantMenu(data: unknown, playableIds: string[]): string[] {
+  const errors: string[] = [];
+  const list = (data as { comingSoon?: unknown })?.comingSoon;
+  if (!Array.isArray(list)) return ['restaurant_menu.json: "comingSoon" must be an array'];
+  const seen = new Set<string>(playableIds);
+  (list as { id?: unknown; name?: unknown; unlockLevel?: unknown }[]).forEach((r, i) => {
+    const id = isStr(r.id) ? r.id : `#${i + 1}`;
+    if (!isStr(r.id)) errors.push(`coming soon ${id}: missing id`);
+    else if (seen.has(r.id)) errors.push(`coming soon ${id}: id already used`);
+    else seen.add(r.id);
+    if (!isStr(r.name) || r.name.length > 24) errors.push(`coming soon ${id}: name must be 1 to 24 characters`);
+    if (!isNum(r.unlockLevel) || !Number.isInteger(r.unlockLevel) || r.unlockLevel < 1) errors.push(`coming soon ${id}: unlockLevel must be a whole number >= 1`);
+  });
+  return errors;
+}
+
 export function assertValid(name: string, errors: string[]): void {
   if (errors.length > 0) throw new Error(`${name} failed validation:\n- ${errors.join('\n- ')}`);
 }
