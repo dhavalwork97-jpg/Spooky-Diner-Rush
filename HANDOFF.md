@@ -1,10 +1,10 @@
 # HANDOFF
 
-Last saved by: Claude (Sonnet 5.5), session 2026-10-29
-Last saved at: 2026-10-29 11:58 IST
+Last updated: ChatGPT, session 2026-10-29
+Last updated at: 2026-10-29 12:00 IST
 
 ## Goal
-Chef Rush: a browser restaurant game (serve customers, fryer/grill/oven, coins, XP, levels) for CrazyGames. Built in milestones, one PR each; Milestone 3 is done, **Milestone 4 (shop and progression systems) is the active task** on branch `milestone-4`.
+Chef Rush: a browser restaurant game (serve customers, fryer/grill/oven, coins, XP, levels) for CrazyGames. Built in milestones, one PR each. **Milestones 3 and 4 are merged into `main`; the next task is Milestone 5: gameplay balance and polish.**
 
 ## Project notes for a newcomer
 
@@ -12,7 +12,7 @@ Chef Rush: a browser restaurant game (serve customers, fryer/grill/oven, coins, 
 Run from the repo root. Node and npm only; no other tooling.
 - `npm ci` (or `npm install`): install dependencies.
 - `npm run dev`: Vite dev server. URL flags: `?debug&level=N&speed=N` (jump to level N, run the model at N x speed, max 20; flags only apply with `debug`), `?zones` or key Z (outline every tap zone).
-- `npm test`: Vitest, 4 files, 77 tests, about 2 s. Must stay green.
+- `npm test`: Vitest; the current recorded baseline is 150 passing tests (Milestone 4). Run it locally before making changes.
 - `npm run typecheck`: `tsc --noEmit`.
 - `npm run build`: typecheck, then `vite build` into `dist/` (about 1.4 MB JS, mostly Phaser).
 - `python handoff.py resume | save <A> | snap`: the two-account handoff helper (see Gotchas).
@@ -60,7 +60,7 @@ Run from the repo root. Node and npm only; no other tooling.
 - `.claude/settings.json` has a PostToolUse hook that runs `python handoff.py snap` after every Edit, Write or MultiEdit. In a session with that hook, every file edit makes a local commit named `wip snapshot <time>` and appends to `.handoff_log`. If `git status` shows nothing but your last commit is a `wip snapshot`, that is why. Check `git log -n 10` and the tail of `.handoff_log` at session start.
 - The snapshot only commits locally; it never pushes. Push after each step yourself.
 - The original full build brief (`chef-rush-full-game-prompt-corrected.md`) is not in the repo. The only list of Milestone 4 scope in the repo is the "Next steps" below, so check anything uncertain with the owner.
-- `milestone-4` is branched from `milestone-3-core-systems` (PR #5, targets main, not merged yet), so `main` lacks Milestone 3 and the handoff files. Do not rebase onto or merge `main` without the owner's say.
+- Milestone 3 PR #5 and Milestone 4 PR #6 have both been merged into `main`. Do not follow any older instructions below that say these PRs are still open or that `main` lacks Milestone 3.
 - Shallow clones: `git fetch --depth=N origin +refs/heads/<b>:refs/remotes/origin/<b>` is needed to see other branches; a plain fetch only tracks `main`.
 - Branch names are not what you might guess: Milestone 1 lives on `milestone-1-style-guide-draft` (PR #3, the owner chose their own style guide), not `milestone-1-foundation`.
 - GitHub shows the repo as `Chef-Rush` and the clone URL as `chef-rush`; both work.
@@ -101,43 +101,41 @@ Steps (mark each `[x]` when committed and pushed; the exact stopping point goes 
 
 Assumptions to confirm with the owner: upgrade tiers and prices; decor is cosmetic only; Taco restaurant is locked, not playable; PR base branch; the start flow stays Boot -> Game (menus reached from the HUD).
 
-## In progress (exact stopping point)
-- **Milestone 4 is the active task** (branch `milestone-4`).
-- Step 0 done: "Project notes for a newcomer" written and pushed. Plan written and pushed (b7fe37c).
-- Step 1 done (3d5408e): `SaveData` is version 2 in `src/systems/SaveSystem.ts` (new fields `owned`, `decor`, `seenStory`, `lastRestaurant`; v1 saves load with defaults). `GameScene` only writes level, xp and coins into `SaveSystem.data`, so the new fields survive its saves.
-- Step 2 done: `data/upgrades.json` (5 upgrades x 3 tiers: fryer_speed, grill_speed, oven_speed, patience, tips; `value` is the resulting multiplier, not an increment), `UpgradeDef`/`ModKey` types and `upgrades` in `GameConfig`/`defaultConfig` (`src/game/config.ts`), pure `src/game/shop.ts` (`canBuy`, `buy`, `modsFor`, `tierOf`, `nextTier`, `NO_MODS`), `validateUpgrades` in `src/data/validate.ts` (called in `BootScene.preload`), and `GameScene.create` sets `this.state.mods = modsFor(...)` from `save.owned` right after the model is built. `npm test`: 98 pass (77 old unchanged). Typecheck and build clean.
-- Step 3 done: `data/career.json` (8 bands: Fry Cook Lv 1, Line Cook 3, Grill Cook 6, Sous Chef 10, Head Chef 15, Kitchen Boss 20, Master Chef 30, Legend of the Line 40), `CareerTitle` and `career` in `GameConfig`, pure `src/game/career.ts` (`titleForLevel`, `nextTitle`, `titleEarnedAt`), `validateCareer` (called in `BootScene.preload`). The level-up card (`LevelUpCard.show` in `src/views/Popups.ts`) takes an optional 4th arg `title` and prints "New title: X" when `GameScene` (case `'levelUp'`) finds `titleEarnedAt(...)`. The model and its events were not changed. `npm test`: 106 pass (77 old unchanged). Typecheck and build clean.
-- Risk to check in the browser (Step 11): the level-up card is 210 px tall; with a title line plus two unlock lines the text may touch the "Lv N!" heading.
-- Step 4a done (e1ed2cf): `data/chef.json` (cooldown 8 s, per-trigger cooldown 25 s, hold 3.5 s; triggers first_serve (once), rush, combo, burn, angry, event, level_up (priority), idle), `ChefConfig`/`ChefTrigger` and `chef` in `GameConfig`, pure `src/game/chef.ts` (`ChefTalk.onEvent(e, now)` / `ChefTalk.say(trigger, now)`; `now` is model seconds, `state.clock`), `validateChef` (called in `BootScene.preload`).
-- Step 4b done: `src/views/ChefBubble.ts` (chef art 130 source px wide on the cream strip right of the grill, bubble on the floor band above the grill; no input, so taps pass through; no fade when reduced motion). `data/assets.json`: `chef` is no longer lazy. `GameScene`: creates `ChefBubble` and `ChefTalk`, calls `sayChef(chefTalk.onEvent(e, clock))` at the top of `handle(e)`, idle tip after 45 model seconds of quiet (`CHEF_IDLE_AFTER`), no speech while paused or closed. Debug hooks: `__chefRush.chef()` (current text or empty) and `__chefRush.chefSay(trigger)`.
-- Verified for step 4 (Chromium headless, production build via `vite preview`): at 1280x720 and 844x390 touch the chef and bubble sit clear of every zone outline (`?zones`), the longest line wraps to two lines and stays on screen, a real `eventStart` and the idle tip make the chef speak, and the bubble hides after its hold; with reduced motion the same checks pass; no page errors. `npm test`: 119 pass (77 old unchanged). Typecheck and build clean. A 404 for a resource was logged once (most likely the automatic favicon request; `index.html` has no icon; not from this work).
-- Not verified for step 4: wording and timing feel with a human player; real phone text size (bubble text is 22 logical px, about 12 css px on an 844 px phone, same small-text issue as the HUD).
-- Step 5 done: `data/story.json` (6 cards: intro Lv 1, word_spreads 3, pizza_oven 5, sous_chef 10, head_chef 15, kitchen_boss 20), `StoryCardDef`/`story` in `GameConfig`, pure `src/game/story.ts` (`dueStory(cfg, level, seen)` returns the highest-level unseen card reached; `seenAfter` marks it and all lower cards seen, so a returning player sees one card, not a pile), `validateStory` (called in `BootScene.preload`), `StoryCard` in `src/views/Popups.ts` (full-screen dim blocks taps, chef art, Continue button, Enter or Space also close, 700 ms input delay). `GameScene.maybeShowStory()` runs each frame: it waits for the level-up card, overlays, pause and Closed, saves `SaveSystem.data.seenStory`, hides the corner chef while the card shows, and the model does not advance while the card is up. Debug hook: `__chefRush.story()` returns the showing card id or empty.
-- Verified for step 5 (Chromium headless, production build): fresh save shows `intro`; model clock frozen while the card is up; a tap on a kitchen zone through the card selects nothing; Enter closes it; model resumes; `seenStory` saved; no card after reload; `?debug&level=3` shows `word_spreads`; Lv 9 to 10 shows the level-up card first (with "New title: Sous Chef"), then `sous_chef`; the Lv 3 level-up card with title plus one unlock line fits (3 lines); phone 844x390 touch with reduced motion shows the card; no page errors. `npm test`: 129 pass (77 old unchanged). Typecheck and build clean.
-- Not verified for step 5: clicking the Continue button itself with a real mouse or touch (only Enter was used), card text size on a real phone.
-- Step 6 done: `src/scenes/ShopScene.ts` (scene key `Shop`, registered in `src/main.ts`), pure `buyLabel` added to `src/game/shop.ts` (1 new test). `GameScene.openShop()` (key B, also `__chefRush.openShop()`) saves, hides the chef and hand, stops the sizzle, then `scene.launch('Shop', {state, onClose})` and `scene.pause()`; the Shop closes with the Close button, Esc or B and calls `onClose` which resumes the game. Purchases go through `buy()`, then set `state.coins`, `SaveSystem.data.owned`/`coins`, `state.mods = modsFor(...)` and `SaveSystem.save()`. Rows show name, description, tier pips (filled = owned), multiplier now to next, and a Buy / "Lv N" / "N coins" / "Max" button. `openShop()` refuses while paused, Closed, an overlay, a story card or a level-up card is showing.
-- Verified for step 6 (Chromium headless, production build): game scene pauses and the model clock stops while the Shop is open; a real mouse click on Buy took the coins (200 to 140), set `mods.fryerSpeed` 1.15 and saved `owned`; Esc closes and the model runs again; after a page reload the upgrade and coins persist and the next tier shows its price; locked row shows "Lv 5"; 844x390 touch view lays out with no overlap (after moving the tier pips beside the name); no page errors. `npm test`: 130 pass (77 old unchanged). Typecheck and build clean.
-- Not verified for step 6: touch taps on the Buy buttons (only mouse clicks were sent); buttons are 92 logical px tall, about 61 css px on an 844 px wide phone, which is under the 88 css px target (same limit as the kitchen zones, see `docs/progress.md`); the Shop was never opened while an event was running.
-- Step 7 done: `data/decor.json` (3 cosmetic items: clock Lv 2 cost 80, bunting Lv 3 cost 120, runner Lv 4 cost 150; x, y, width, height in source pixels), `DecorDef`/`decor` in `GameConfig`, pure `src/game/decor.ts` (`canBuyDecor`, `buyDecor`, `ownedDecor`, `decorLabel`), `validateDecor` (called in `BootScene.preload`), code-drawn textures `decor_<id>` in `buildDecor` in `src/art/builders.ts` (unknown ids fall back to a plain panel), `GameScene.syncDecor()` (draws owned decor at depth 100, below customers at 299; runs at scene start and after the Shop closes), Decor tab in `ShopScene` (tabs Upgrades / Decor; `tryBuyDecor`). A unit test checks no decor rect overlaps any zone in `data/restaurants.json` or another decor item. Debug hook: `__chefRush.decor()` lists drawn decor ids.
-- Verified for step 7 (Chromium, production build, `?zones` on): real clicks on the Decor tab and three Buy buttons took 350 coins (500 to 150), saved `decor`, drew all three items in the kitchen clear of every zone outline, and they were still there after a reload; no page errors. `npm test`: 137 pass (77 old unchanged). Typecheck and build clean.
-- Not verified for step 7: decor at phone size (844x390; same layout code, just scaled); the bunting may touch the event banner (top centre, depth 860, drawn above it) and order bubbles when 3 or more customers sit (not looked at with customers present); the art is simple code-drawn placeholder art.
-- Step 8 done: `data/recipebook.json` (a few short how-to steps per menu item), `recipebook` in `GameConfig`, pure `src/game/recipebook.ts` (`recipeEntries(cfg, level)`: name, price, xp, unlock level, locked flag, steps; easiest first), `validateRecipeBook(data, itemIds)` (every menu item in `recipes.json` must have an entry; called in `BootScene.preload`), `src/scenes/RecipeBookScene.ts` (scene key `RecipeBook`, registered in `src/main.ts`; locked items show "Unlocks at Lv N" and no steps). `GameScene` now has one shared `openPanel(key)` used by `openShop()` (key B) and `openRecipeBook()` (key R, also `__chefRush.openRecipeBook()`); both pause the game scene and resume it on close. The Recipe Book reuses the `ShopData` type for its launch data.
-- Verified for step 8 (Chromium, production build): key R opens it and pauses the game at 1280x720 and 844x390 touch; Esc closes it and the model runs again; locked rows (Lv 3 save: nuggets, pizza) show "Unlocks at Lv N"; no page errors. `npm test`: 143 pass (77 old unchanged). Typecheck and build clean.
-- Not verified for step 8: the Close button with a real click or touch (only keys were used), and the book at phone size beyond one screenshot (checked by eye only for desktop).
-- Step 9 done: `data/restaurant_menu.json` (`comingSoon`: taco_truck Lv 10, pizza_place Lv 20; kept out of `restaurants.json` because `validateRestaurants` requires zones and the zone tests read that file), `restaurantMenu` in `GameConfig`, pure `src/game/restaurants.ts` (`restaurantCards(playable, soon, level, currentId)` gives open / locked / soon cards, `pickStartRestaurant(playable, lastId, level)`), `validateRestaurantMenu` (called in `BootScene.preload`), `src/scenes/RestaurantSelectScene.ts` (scene key `RestaurantSelect`, key T; Continue button on the current card, Play button on another open card). `BootScene.create` now starts the game in `pickStartRestaurant(..., SaveSystem.data.lastRestaurant, level)`. `GameScene.openRestaurants()` uses the shared `openPanel`; picking another open restaurant calls `scene.start('Game', { restaurantId })` (restart), but only `burger_diner` exists, so that path is covered by unit tests only.
-- Verified for step 9 (Chromium, production build): key T opens it and pauses the game at 1280x720 and 844x390 touch; a real click on Continue closes it, the model runs again and `lastRestaurant` is saved; Taco Truck and Pizza Place show "Coming soon" (no button); no page errors. `npm test`: 152 pass (77 old unchanged). Typecheck and build clean.
-- Not verified for step 9: starting a second restaurant (no second restaurant has zones yet); the `bg_taco` art stays lazy and unused (cards show a "?" panel); touch taps on the buttons.
-- Step 10 done: `src/views/MenuButtons.ts` (three round buttons with code-drawn icons: coins = Shop, book = Recipe Book, shop front = Restaurants; row at logical y 190, x 1244, 1176, 1108, hit area 68 px; created in `GameScene.create` and wired to `openShop`, `openRecipeBook`, `openRestaurants`), `tests/menubuttons.test.ts` (no button overlaps a tap zone). Docs: Milestone 4 section in `docs/progress.md` (built, verified, not verified, deviations), Milestone 4 section in `docs/architecture.md`, key list in `README.md`. Also replaced the per-file banned-word checks with one repo-wide scan (`tests/wording.test.ts`); the three banned words no longer appear anywhere in the repo.
-- Verified for step 10 (Chromium, production build, 1280x720 mouse and 844x390 touch): a real mouse click and a real touch tap on each of the three buttons opened its panel and paused the game; the buttons sit clear of every zone outline (`?zones`) at Lv 13; no page errors. `npm test`: 150 pass; the 77 Milestone 3 tests were checked as unchanged (`git diff` against `origin/milestone-3-core-systems` is empty for the model, balance data and four test files). Typecheck and build clean.
-- Not verified for step 10: the buttons with four customers seated (the nearest button may overlap the far seat by about 10 px); button size on a real phone (68 logical px hit area is about 45 css px at 844 px wide).
-- Step 11 checks done: `npm test` 150 pass (77 Milestone 3 tests verified unchanged), typecheck and build clean; soak at 10x in normal and reduced motion (about 255 game seconds each, 15 panel opens, Closed and Reopen, no errors); leak probe flat after 24 panel opens; four customers at Lv 15 leave the HUD buttons clear. Results are in `docs/progress.md`.
-- Stopped at: all eleven steps are built and pushed except the PR. Next action: open the Milestone 4 pull request with `gh pr create --base milestone-3-core-systems --head milestone-4` (PR #5 for Milestone 3 is not merged; if the owner has merged it, use base `main`). If `gh` cannot create it, tell the owner the branch is ready and give them the text from `docs/progress.md` (Milestone 4 section). After that, wait for the owner's review; do not change Milestone 3 files.
-- Note for Step 6: after a purchase the scene must set `state.mods = modsFor(...)` again and write `SaveSystem.data.owned` / `.coins`, then `SaveSystem.save()`. Purchases must go through `buy()`; the model's `coins` is what the HUD shows.
+## Current status and next handoff (2026-10-29)
 
-## Next steps (ordered)
-1. Open the Milestone 4 PR (see "In progress"), then wait for the owner's review., committing and pushing after each.
-2. Confirm PR #5 (Milestone 3) with the owner; do not touch Milestone 3 code.
-3. Check the unverified items below.
+### Completed and merged
+- **Milestone 3** merged to `main` via PR #5: https://github.com/dhavalwork97-jpg/Chef-Rush/pull/5
+- **Milestone 4** merged to `main` via PR #6: https://github.com/dhavalwork97-jpg/Chef-Rush/pull/6
+- Milestone 4 merge commit: `6e46972dc5ff3e98575e317b61527fb51ac611af`.
+- The merge preserved the Milestone 4 tree and resolved the old branch-history mismatch without dropping Milestone 3.
+- The post-merge Vercel status for the merge commit reported **deployment completed successfully**.
+- Verification recorded for the merged file tree: `npm test` — 150 passing; `npm run typecheck` — passed; `npm run build` — passed; production-preview Chromium checks passed for documented desktop and emulated phone flows. **These commands were not independently rerun during the merge session**; treat those as results recorded in `docs/progress.md`, not as fresh local runs.
+- PR #6 had no review comments or review submissions at merge time.
+
+### Milestone 4 scope now on main
+Save v2 with backward-compatible v1 parsing; five upgrades with three tiers; persistent modifiers; cosmetic decor; career titles; chef speech bubbles; one-time story cards; Recipe Book; restaurant selection (only `burger_diner` is playable); HUD buttons. Details and the explicit not-verified list are in `docs/progress.md`.
+
+### Exact next task: Milestone 5 — gameplay balance and polish
+Start from the latest `main`, inspect the current repository and docs first, and avoid rebuilding existing systems. Priorities:
+1. Run `npm ci`, `npm test`, `npm run typecheck`, and `npm run build` from a clean checkout; report actual results before edits.
+2. Add deterministic bot/simulation probes for coins, upgrade purchase pacing, XP/level progression, recipe unlocks, customer patience, and end-of-session outcomes. Use multiple seeds and compare early/mid progression.
+3. Tune upgrade prices and modifier values using simulation evidence; specifically test whether top-tier fryer/grill/oven multipliers make play too easy. Keep all balance numbers in `data/` where practical.
+4. Validate human pacing and fun through a short, repeatable playtest plan; do not present bot timings as human results.
+5. Address mobile readability and touch-target limitations without overlapping kitchen interaction zones or customers. Check 844x390 emulation, but explicitly note that this is not a real-phone test.
+6. Check sound mix/loudness and the remaining event/animation visuals; document what was actually heard/seen.
+7. Preserve the architecture: `src/game/*` stays Phaser-free; views and animations never decide game outcomes; honor reduced motion; preserve save compatibility; do not weaken wording checks or regress the existing Milestone 3 tests.
+8. Update `docs/progress.md`, `docs/architecture.md` if needed, and this `HANDOFF.md` with completed work, test outputs, unverified items, exact commit/branch, and next action. Use a focused feature branch and PR for the milestone; do not merge until checks and review are satisfactory.
+
+### Known limitations carried forward
+- Balance and upgrade prices are first-pass values; they have not been tuned against a bot simulation.
+- Human-player pacing and upgrade difficulty have not been verified.
+- Real-phone performance and touch usability have not been measured.
+- Sound mix/loudness has not been listened to and evaluated.
+- Some event visuals and animation feel remain unverified.
+- Only `burger_diner` has playable station zones; other restaurant cards are coming soon.
+- Phone touch targets are below the 88 CSS px target in several places; improve carefully without overlapping zones.
+- Fredoka is not bundled; fallback font stack is used. Customers use single-pose art.
+- Do not claim Milestone 5 is complete until its checks are run and documented.
 
 ## Decisions & constraints
 - Failure modes should stay user-friendly (no punishing wrong-item serves).
