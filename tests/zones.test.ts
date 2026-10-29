@@ -108,3 +108,16 @@ describe('save parsing', () => {
     expect(parseSave(JSON.stringify({ level: 7, coins: 40 })).coins).toBe(40);
   });
 });
+
+describe('touch slop', () => {
+  it('lets a tap just outside a zone reach it, but never beats an exact hit', () => {
+    const a: ZoneDef = { id: 'a', station: 'fryer', unlockLevel: 1, x: 0.1, y: 0.1, width: 0.1, height: 0.1 };
+    const b: ZoneDef = { id: 'b', station: 'grill', unlockLevel: 1, x: 0.21, y: 0.1, width: 0.1, height: 0.1 };
+    expect(hitTestZone([a, b], 0.205, 0.15)).toBeNull();
+    expect(hitTestZone([a, b], 0.205, 0.15, 0.02)?.id).toBeDefined();
+    expect(hitTestZone([a, b], 0.215, 0.15, 0.02)?.id).toBe('b');
+  });
+  it('still returns null on empty space', () => {
+    expect(hitTestZone(zones, 0.5, 0.05, 0.025)).toBeNull();
+  });
+});

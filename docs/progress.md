@@ -139,3 +139,10 @@ The zip food art is drawn at 2x and larger than the plates in this kitchen, so i
 - Fries and nuggets sit in the oil: translucent oil layer, rippling surface, bubbles that rise and pop (denser while raw), jiggle, and fries turning golden as they cook. Raw patties also hop from the tray onto the grill.
 - Verified in stills only (Chromium); motion feel not judged on a phone. 52 tests pass.
 - Seen in the recordings: on a portrait phone the game fills only about a third of the screen, so a "rotate to landscape" prompt is needed (planned for the polish milestone).
+
+## Milestone 2 close-out
+- Rotate prompt: portrait phones (under 900 px wide) show "Turn your phone sideways to play" and the game pauses. Checked at 390x844: prompt shown.
+- Touch reach: a tap that misses every zone snaps to the nearest zone within 2.5% of the kitchen image, so small zones (lettuce, tomato, side plates, trash) are easier to hit. Exact hits always win. Checked: a tap 10 logical px above the lettuce tray at 844x390 touch selected it; unit tests cover the rule.
+- Tutorial hint order for a burger is unit-tested: buns, patty tray, wait, flip, wait, patty on burger, lettuce/tomato, drag.
+- Reduced motion (browser setting): fries, burger, pizza and nuggets flows ran with no errors.
+- Still not verified: real sound output, real-device performance, Fredoka (not bundled).

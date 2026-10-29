@@ -44,8 +44,8 @@ export function nextHint(s: KitchenState): Hint {
     if (pattyFlip >= 0) return { kind: 'grill', burner: pattyFlip };
     if (pattyReady >= 0) return build && nextLayer === 'patty' ? { kind: 'grill', burner: pattyReady } : { kind: 'buns' };
     if (build && (nextLayer === 'lettuce' || nextLayer === 'tomato')) return { kind: 'topping', layer: nextLayer };
-    if (!cooking && !(build && nextLayer !== 'patty')) return { kind: 'patty_tray' };
     if (!build) return { kind: 'buns' };
+    if (!cooking && nextLayer === 'patty') return { kind: 'patty_tray' };
     return null; // patty still cooking: wait
   }
   return null;

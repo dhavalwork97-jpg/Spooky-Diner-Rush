@@ -105,20 +105,25 @@ export function rectsOverlap(a: Rect, b: Rect): boolean {
  * If hit areas ever overlap, the zone whose center is closest wins,
  * so one tap can never trigger two stations.
  */
-export function hitTestZone(zones: readonly ZoneDef[], nx: number, ny: number): ZoneDef | null {
-  let best: ZoneDef | null = null;
-  let bestDist = Infinity;
-  for (const z of zones) {
-    if (nx < z.x || nx > z.x + z.width || ny < z.y || ny > z.y + z.height) continue;
-    const cx = z.x + z.width / 2;
-    const cy = z.y + z.height / 2;
-    const d = (nx - cx) * (nx - cx) + (ny - cy) * (ny - cy);
-    if (d < bestDist) {
-      bestDist = d;
-      best = z;
+export function hitTestZone(zones: readonly ZoneDef[], nx: number, ny: number, slop = 0): ZoneDef | null {
+  const pick = (pad: number): ZoneDef | null => {
+    let best: ZoneDef | null = null;
+    let bestDist = Infinity;
+    for (const z of zones) {
+      if (nx < z.x - pad || nx > z.x + z.width + pad || ny < z.y - pad || ny > z.y + z.height + pad) continue;
+      const cx = z.x + z.width / 2;
+      const cy = z.y + z.height / 2;
+      const d = (nx - cx) * (nx - cx) + (ny - cy) * (ny - cy);
+      if (d < bestDist) {
+        bestDist = d;
+        best = z;
+      }
     }
-  }
-  return best;
+    return best;
+  };
+  // An exact hit always wins. Only a tap that misses every zone gets the extra reach (`slop`),
+  // which makes small zones easier to hit with a finger without letting zones steal each other's taps.
+  return pick(0) ?? (slop > 0 ? pick(slop) : null);
 }
 
 /** Zones whose on-screen size is below the touch minimum (in CSS px). */

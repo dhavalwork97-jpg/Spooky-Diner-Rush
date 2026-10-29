@@ -376,3 +376,31 @@ describe('pizza', () => {
     expect(s.coins).toBe(10 - defaultConfig.recipes.settings.trashPenaltyCoins);
   });
 });
+
+describe('tutorial hint: burger', () => {
+  it('walks buns, patty tray, flip, patty on burger, lettuce, tomato, then drag', () => {
+    for (let seed = 1; seed < 300; seed++) {
+      const s = new KitchenState({ level: 2, xp: 0, coins: 0 }, undefined, seed);
+      s.update(1.2);
+      if (s.customers[0]?.items[0] !== 'burger') continue;
+      const kinds: string[] = [];
+      const note = () => {
+        const h = nextHint(s);
+        const k = h ? h.kind : 'wait';
+        if (kinds[kinds.length - 1] !== k) kinds.push(k);
+      };
+      note();
+      s.tapBuns(); note();
+      s.startPatty(); note();
+      run(s, 4.2); note();
+      s.tapGrill(0); note();
+      run(s, 4.2); note();
+      s.tapGrill(0); note();
+      s.tapTopping('lettuce'); note();
+      s.tapTopping('tomato'); note();
+      expect(kinds).toEqual(['buns', 'patty_tray', 'wait', 'grill', 'wait', 'grill', 'topping', 'drag']);
+      return;
+    }
+    throw new Error('no burger customer found');
+  });
+});

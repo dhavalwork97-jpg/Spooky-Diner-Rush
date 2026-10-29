@@ -22,6 +22,8 @@ import { TutorialHand } from '../views/TutorialHand';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 const SAVE_EVERY_MS = 15000;
+/** Extra reach (fraction of the kitchen image) for taps that miss every zone. */
+const TOUCH_SLOP = 0.025;
 
 interface ZoneView {
   zone: ZoneDef;
@@ -231,9 +233,9 @@ export class GameScene extends Phaser.Scene {
   private onPointerDown(pointer: Phaser.Input.Pointer, over: unknown[]): void {
     audio.unlock();
     audio.startMusic();
-    if (over.length > 0 || this.paused) return;
+    if (over.length > 0 || this.paused || (window.innerWidth < 900 && window.innerHeight > window.innerWidth * 1.1)) return;
     const n = logicalToNorm(pointer.worldX, pointer.worldY, this.bg);
-    const zone = hitTestZone(this.restaurant.zones, n.x, n.y);
+    const zone = hitTestZone(this.restaurant.zones, n.x, n.y, TOUCH_SLOP);
     if (!zone) {
       this.setSelectedSlot(null);
       return;
@@ -621,7 +623,8 @@ export class GameScene extends Phaser.Scene {
 
   override update(time: number, delta: number): void {
     const dtReal = Math.min(delta / 1000, 0.1);
-    if (!this.paused) {
+    const portrait = window.innerWidth < 900 && window.innerHeight > window.innerWidth * 1.1;
+    if (!this.paused && !portrait) {
       const dt = dtReal * this.speed;
       // run the model in small steps so a speed-up never skips a phase
       const steps = Math.max(1, Math.ceil(dt / 0.05));
