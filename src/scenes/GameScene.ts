@@ -7,6 +7,9 @@ import { ParticlePool } from '../anim/ParticlePool';
 import { SaveSystem } from '../systems/SaveSystem';
 import { modsFor } from '../game/shop';
 import { titleEarnedAt } from '../game/career';
+import { ChefTalk } from '../game/chef';
+import { makeRng } from '../game/rng';
+import { ChefBubble } from '../views/ChefBubble';
 import { audio } from '../systems/AudioSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
@@ -24,6 +27,8 @@ import { TutorialHand } from '../views/TutorialHand';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 const SAVE_EVERY_MS = 15000;
+/** Model seconds of quiet before the chef offers an idle tip. */
+const CHEF_IDLE_AFTER = 45;
 /** Extra reach (fraction of the kitchen image) for taps that miss every zone. */
 const TOUCH_SLOP = 0.025;
 
@@ -57,6 +62,10 @@ export class GameScene extends Phaser.Scene {
   private levelUpCard!: LevelUpCard;
   private overlay!: Overlay;
   private hand!: TutorialHand;
+  private chef!: ChefBubble;
+  private chefTalk!: ChefTalk;
+  /** Model clock when the chef last spoke, for the idle tip. */
+  private chefLastAt = 0;
   private muteBtn!: Phaser.GameObjects.Container;
   private muteLine!: Phaser.GameObjects.Graphics;
 
@@ -110,6 +119,8 @@ export class GameScene extends Phaser.Scene {
     this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330);
     this.overlay = new Overlay(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.hand = new TutorialHand(this);
+    this.chef = new ChefBubble(this, this.layout);
+    this.chefTalk = new ChefTalk(this.state.cfg.chef, makeRng(Date.now()));
     this.buildMuteButton();
 
     this.highlight = this.add.graphics().setDepth(900).setAlpha(0);
@@ -151,6 +162,8 @@ export class GameScene extends Phaser.Scene {
       },
       spawn: (type: string) => this.state.spawnCustomer(type),
       levelCardVisible: () => this.levelUpCard.isShowing,
+      chef: () => this.chef.text,
+      chefSay: (trigger: string) => this.sayChef(this.chefTalk.say(trigger, this.state.clock)),
       slotPos: (i: number) => ({ x: this.layout.x(SLOTS[i][0]), y: this.layout.y(SLOTS[i][1]) }),
       vatPos: (i: number) => this.stations.vatPos(i),
       burnerPos: (i: number) => this.stations.burnerPos(i),
@@ -393,6 +406,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handle(e: GameEvent): void {
+    this.sayChef(this.chefTalk.onEvent(e, this.state.clock));
     switch (e.type) {
       case 'fryStart': {
         audio.play('pop');
@@ -599,6 +613,12 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private sayChef(line: { text: string; hold: number } | null): void {
+    if (!line || this.paused || this.state.closed) return;
+    this.chef.show(line.text, line.hold);
+    this.chefLastAt = this.state.clock;
+  }
+
   private addCustomer(id: number): void {
     const c = this.state.customers.find((x) => x.id === id);
     if (!c) return;
@@ -699,6 +719,10 @@ export class GameScene extends Phaser.Scene {
     this.hud.update(this.state, dtReal);
     if (this.state.event) this.banner.update(this.state.event.remaining);
     this.updateHint();
+    if (!this.paused && !this.state.closed && this.state.clock - this.chefLastAt > CHEF_IDLE_AFTER) {
+      this.chefLastAt = this.state.clock;
+      this.sayChef(this.chefTalk.say('idle', this.state.clock));
+    }
 
     const cooking = this.state.vats.filter((v) => v && v.phase !== 'burnt').length + this.state.burners.filter((b) => b && b.phase !== 'burnt').length + this.state.ovens.filter((o) => o && o.phase !== 'burnt').length;
     audio.setSizzle(this.paused || this.state.closed ? 0 : Math.min(1, cooking / 2));

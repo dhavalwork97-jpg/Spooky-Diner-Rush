@@ -276,7 +276,7 @@
       "width": 554,
       "height": 640,
       "preferFallback": false,
-      "lazy": true
+      "lazy": false
     },
     {
       "key": "logo_chef_rush",
