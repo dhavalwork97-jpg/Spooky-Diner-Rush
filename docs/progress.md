@@ -1,6 +1,16 @@
+# Current repository status — 2026-10-29
+
+- Milestone 3 PR #5 and Milestone 4 PR #6 are merged into `main`.
+- Milestone 4 merge commit: `6e46972dc5ff3e98575e317b61527fb51ac611af`.
+- Post-merge Vercel deployment for that commit reported success.
+- Milestone 4 verification recorded below: 150 tests passing, typecheck/build clean, and production-preview Chromium checks. These are documented results, not freshly rerun in the merge session.
+- **Next:** Milestone 5 — simulation-led economy/progression balancing, followed by mobile usability, sound, and remaining visual checks. See `HANDOFF.md` for the next-step plan and limitations.
+
+---
+
 # Chef Rush: Progress
 
-## Milestone 2: Vertical slice (in review)
+## Milestone 2: Vertical slice (completed)
 
 Lv 1 to 3 is playable start to finish: fries, burgers, drag-and-drop serving, tutorial hand, XP and level-ups, reputation and the Closed screen, animations, and synthesized audio.
 
