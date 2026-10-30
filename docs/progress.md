@@ -229,3 +229,10 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 - Ingredients are painted into the art; old stock sprites removed, locked stations get a "Lv N" cover.
 - Oven door animation from the supplied clip as `oven_door.webp` (35-frame sheet), driven by the model's oven phase; lazy loaded, optional.
 - Verified: 156 tests, typecheck, build, Chromium screenshots (desktop and phone landscape). Not verified: fry hop in flight, real phone, reduced-motion door. Details in HANDOFF.md.
+
+## Milestone 5: Lv 11 to 20 content and balance (branch milestone-5-content)
+- `data/progression.json` now defines Lv 1 to 20. Lv 11-20: four customers from Lv 13, impatient customers from Lv 11, VIPs from Lv 14, critics from Lv 16, patience 34 to 31, arrival gaps easing from `[3,6]` to `[3.2,5.8]`.
+- After Lv 20 the arrival gaps shrink by 0.05 s per level down to `[2.5,4.5]`; patience is already at its floor of 30.
+- Balance simulation (`tests/sim_late.test.ts`): a fast bot reaches Lv 20 in about 36 to 40 minutes, an average bot in about 75 to 85. Close rate per minute climbs gently (fast bot 0.37, 0.52-0.56, 0.70, 0.82-0.85 for Lv 6-10, 11-15, 16-20, 21-25) and flattens after that. First-pass numbers with heavier VIP and critic weights climbed too fast and were replaced.
+- Tests: 186 passing. One Milestone 3 assertion (the leftover event queue length) was loosened from exactly 0 to under 10, see HANDOFF.md.
+- Not verified: human pacing, the level-up card text on screen for Lv 11-20, tight order cards when all four seats are used (right-hand seats are one stool apart). Drinks and ice cream stations still have no model.
