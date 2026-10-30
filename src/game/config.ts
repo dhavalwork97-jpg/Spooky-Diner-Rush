@@ -111,7 +111,7 @@ export interface DecorDef {
   description: string;
   cost: number;
   unlockLevel: number;
-  /** Position and size in source-image pixels (the kitchen art is 1699 x 926). */
+  /** Position and size in source-image pixels (the kitchen art is 1699 x 948). */
   x: number;
   y: number;
   width: number;

@@ -11,7 +11,9 @@ export interface RestaurantDef {
 
 export interface AssetDef {
   key: string;
-  type: 'image' | 'svg';
+  type: 'image' | 'svg' | 'spritesheet';
+  frameWidth?: number;
+  frameHeight?: number;
   file: string;
   scale: number;
   width?: number;
@@ -80,7 +82,8 @@ export function validateAssets(data: unknown): string[] {
     if (!isStr(a.key)) errors.push('asset without key');
     else if (keys.has(a.key)) errors.push(`asset ${a.key}: duplicate key`);
     else keys.add(a.key);
-    if (a.type !== 'image' && a.type !== 'svg') errors.push(`asset ${a.key}: unsupported type`);
+    if (a.type !== 'image' && a.type !== 'svg' && a.type !== 'spritesheet') errors.push(`asset ${a.key}: unsupported type`);
+    if (a.type === 'spritesheet' && (!isNum(a.frameWidth) || !isNum(a.frameHeight) || a.frameWidth <= 0 || a.frameHeight <= 0)) errors.push(`asset ${a.key}: spritesheet needs frameWidth and frameHeight`);
     if (!isStr(a.file)) errors.push(`asset ${a.key}: missing file`);
     if (!isNum(a.scale) || a.scale <= 0) errors.push(`asset ${a.key}: scale must be > 0`);
   }
@@ -188,7 +191,7 @@ export function validateStory(data: unknown): string[] {
   return errors;
 }
 
-/** decor.json: unique ids, cost > 0, level >= 1, and a rectangle that lies inside the 1699 x 926 art. */
+/** decor.json: unique ids, cost > 0, level >= 1, and a rectangle that lies inside the 1699 x 948 art. */
 export function validateDecor(data: unknown): string[] {
   const errors: string[] = [];
   const list = (data as { items?: unknown })?.items;
@@ -205,7 +208,7 @@ export function validateDecor(data: unknown): string[] {
     if (!isNum(d.unlockLevel) || d.unlockLevel < 1) errors.push(`decor ${id}: unlockLevel must be >= 1`);
     const { x, y, width, height } = d;
     if (!isNum(x) || !isNum(y) || !isNum(width) || !isNum(height) || width <= 0 || height <= 0) errors.push(`decor ${id}: needs x, y, width and height`);
-    else if (x < 0 || y < 0 || x + width > 1699 || y + height > 926) errors.push(`decor ${id}: must lie inside the 1699 x 926 art`);
+    else if (x < 0 || y < 0 || x + width > 1699 || y + height > 948) errors.push(`decor ${id}: must lie inside the 1699 x 948 art`);
   });
   return errors;
 }

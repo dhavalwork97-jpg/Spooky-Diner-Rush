@@ -6,7 +6,7 @@ import { validateDecor } from '../src/data/validate';
 
 const D = defaultConfig.decor.items;
 const W = 1699;
-const H = 926;
+const H = 948;
 type R = { x: number; y: number; width: number; height: number };
 const overlap = (a: R, b: R) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 

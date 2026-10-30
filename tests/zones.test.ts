@@ -12,7 +12,7 @@ const bg = fitBackground(1280, 698, diner.backgroundSize.width, diner.background
 
 describe('coordinate conversion', () => {
   it('fits the background without distortion', () => {
-    expect(bg.width / bg.height).toBeCloseTo(1699 / 926, 5);
+    expect(bg.width / bg.height).toBeCloseTo(diner.backgroundSize.width / diner.backgroundSize.height, 5);
     expect(bg.width).toBeLessThanOrEqual(1280 + 1e-6);
     expect(bg.height).toBeLessThanOrEqual(698 + 1e-6);
   });

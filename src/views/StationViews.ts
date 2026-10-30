@@ -4,7 +4,8 @@ import { ParticlePool } from '../anim/ParticlePool';
 import { SaveSystem } from '../systems/SaveSystem';
 import { bounce } from '../anim/helpers';
 import { Ring } from './Ring';
-import { BURNERS, Layout, OVENS, VATS } from './layout';
+import { BURNERS, Layout, OVENS, OVENS_LIT, VATS } from './layout';
+import { OvenDoor } from './OvenDoor';
 
 /**
  * Fryer and grill visuals. Every frame they read the model (phase and elapsed time)
@@ -37,6 +38,8 @@ interface OvenView {
   base: Phaser.GameObjects.Image; // raw pizza
   top: Phaser.GameObjects.Image; // cooked pizza that fades in as it bakes
   k: number;
+  baseY: number;
+  door: OvenDoor;
   ring: Ring;
   nextSmoke: number;
   holdUntil: number;
@@ -59,13 +62,15 @@ export class StationViews {
     });
     state.ovens.forEach((_, i) => {
       const [sx, sy] = OVENS[i];
+      const [lx, ly] = OVENS_LIT[i];
       const x = layout.x(sx);
       const y = layout.y(sy);
+      // Raw pizza waits on the pulled-out door; the cooked one sits on the baking tray once the door has opened.
       const base = scene.add.image(x, y, 'pizza_raw').setDepth(500).setVisible(false);
-      const top = scene.add.image(x, y, 'pizza_cooked').setDepth(501).setAlpha(0).setVisible(false);
-      const k = layout.fit(base, 190);
-      top.setScale(layout.s(190) / top.width);
-      this.ovens.push({ base, top, k, ring: new Ring(scene, x, y - layout.s(110)), nextSmoke: 0, holdUntil: 0 });
+      const top = scene.add.image(layout.x(lx), layout.y(ly), 'pizza_cooked').setDepth(501).setAlpha(0).setVisible(false);
+      const k = layout.fit(base, 160);
+      top.setScale(layout.s(130) / top.width, (layout.s(130) / top.width) * 0.8);
+      this.ovens.push({ base, top, k, baseY: y, door: new OvenDoor(scene, layout), ring: new Ring(scene, x, y - layout.s(110)), nextSmoke: 0, holdUntil: 0 });
     });
     state.burners.forEach((_, i) => {
       const [sx, sy] = BURNERS[i];
@@ -149,6 +154,8 @@ export class StationViews {
     const bake = state.cfg.recipes.items.pizza.readyAfter!;
     state.ovens.forEach((o, i) => {
       const view = this.ovens[i];
+      // The door only follows the model's phase; it never decides anything.
+      view.door.update(o ? o.phase : null, now, view.holdUntil);
       if (!o || now < view.holdUntil) {
         view.base.setVisible(false);
         view.top.setVisible(false);
@@ -156,9 +163,23 @@ export class StationViews {
         return;
       }
       const burnt = o.phase === 'burnt';
-      // browning: the cooked pizza fades in over the raw one while it bakes; burnt is the cooked art darkened
-      view.base.setVisible(!burnt && o.phase === 'cooking');
-      view.top.setVisible(true).setAlpha(burnt ? 1 : Math.min(1, o.t / bake));
+      if (view.door.ready) {
+        // Door closing: the raw pizza slides in and disappears. Closed: nothing shows. Opening: the cooked pizza appears on the tray.
+        const cp = view.door.closeProgress;
+        const op = view.door.openProgress;
+        if (o.phase === 'cooking') {
+          const a = Math.max(0, 1 - cp * 2.5);
+          view.base.setVisible(a > 0).setAlpha(a).setScale(view.k * (1 - 0.15 * cp)).setY(view.baseY - 16 * cp);
+          view.top.setVisible(false);
+        } else {
+          view.base.setVisible(false);
+          view.top.setVisible(true).setAlpha(Math.max(0, Math.min(1, (op - 0.55) / 0.35)));
+        }
+      } else {
+        // No door art: browning is shown as the cooked pizza fading in over the raw one while it bakes.
+        view.base.setVisible(!burnt && o.phase === 'cooking').setAlpha(1).setScale(view.k).setY(view.baseY);
+        view.top.setVisible(true).setAlpha(burnt ? 1 : Math.min(1, o.t / bake));
+      }
       if (burnt) view.top.setTint(0x3a2a22);
       else view.top.clearTint();
       view.ring.show(o.phase, o.t / bake, now);
@@ -249,6 +270,11 @@ export class StationViews {
     this.scene.cameras.main.shake(SaveSystem.reduceMotion() ? 0 : 120, 0.0025);
   }
 
+  /** Where the raw pizza lands in the oven (on the pulled-out door). */
+  ovenLoadPos(i: number): { x: number; y: number } {
+    return { x: this.ovens[i].base.x, y: this.ovens[i].baseY };
+  }
+
   /** Keep the oven pizza hidden while the raw pizza flies in. */
   holdOven(oven: number, ms: number, now: number): void {
     if (this.ovens[oven]) this.ovens[oven].holdUntil = now + ms;
@@ -283,6 +309,7 @@ export class StationViews {
       b.flipText.destroy();
     });
     this.ovens.forEach((o) => {
+      o.door.destroy();
       o.base.destroy();
       o.top.destroy();
       o.ring.destroy();
