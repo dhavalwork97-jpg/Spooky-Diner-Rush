@@ -270,6 +270,12 @@ export class StationViews {
     this.scene.cameras.main.shake(SaveSystem.reduceMotion() ? 0 : 120, 0.0025);
   }
 
+  /** Debug and tests: the oven door state ('open' | 'closing' | 'closed' | 'opening' | 'lit'), or 'none' without door art. */
+  doorState(i: number): string {
+    const o = this.ovens[i];
+    return o && o.door.ready ? o.door.state : 'none';
+  }
+
   /** Where the raw pizza lands in the oven (on the pulled-out door). */
   ovenLoadPos(i: number): { x: number; y: number } {
     return { x: this.ovens[i].base.x, y: this.ovens[i].baseY };

@@ -223,3 +223,9 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 - Upgrade tiers, prices, titles, story text, chef lines and the Coming-soon restaurant names are my first drafts; the original brief is not in the repo.
 - "Coming soon" restaurants live in `data/restaurant_menu.json`, not `restaurants.json`, because the restaurant validator requires zones.
 - Decor is cosmetic only and has fixed spots; there is no placement mode.
+
+## Kitchen art and oven door (branch kitchen-art-integration)
+- New supplied kitchen art (2752 x 1536) replaces `kitchen_full.webp`; zones and overlay coordinates remapped (layout space 1699 x 948).
+- Ingredients are painted into the art; old stock sprites removed, locked stations get a "Lv N" cover.
+- Oven door animation from the supplied clip as `oven_door.webp` (35-frame sheet), driven by the model's oven phase; lazy loaded, optional.
+- Verified: 156 tests, typecheck, build, Chromium screenshots (desktop and phone landscape). Not verified: fry hop in flight, real phone, reduced-motion door. Details in HANDOFF.md.

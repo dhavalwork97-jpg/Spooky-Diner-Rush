@@ -3,13 +3,26 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
-## In progress (2026-10-29, Claude): new kitchen artwork + oven door animation
-Branch `kitchen-art-integration` (from main 11de9b7). Plan, tick as done:
-- [ ] 1. Copy new kitchen (2752x1536) to `public/assets/art/kitchen_full.webp`; update `data/assets.json`, `data/restaurants.json` backgroundSize, `layout.ts` SRC_W/SRC_H, remap all source-pixel coordinates (seats, vats, burners, ovens, slots, stock, decor) and zones.
-- [ ] 2. Stock sprites (StockViews): decide per ingredient if baked into new art; remove duplicates (patch background or hide baked food).
-- [ ] 3. Fryer drop tweens for fries/nuggets (view only; model timers untouched).
-- [ ] 4. Oven door: extract frames from supplied MP4 (opaque, no green screen) into a small spritesheet, drive from model oven state; model timer stays authoritative.
-- [ ] 5. npm test / typecheck / build, browser check, update this file and docs/progress.md.
+## Kitchen art + oven door integration (2026-10-30, Claude) - branch `kitchen-art-integration`, not merged, no PR yet
+Done (all in the branch, tests/typecheck/build green; see "Verified" below):
+- [x] New kitchen art: `public/assets/art/kitchen_full.webp` is now the supplied 2752x1536 image (old 1699x926 file replaced; same asset key). `data/restaurants.json` backgroundSize 2752x1536 and all 17 tap zones remapped to the new art (measured on a gridded copy). Layout source space is now 1699 x 948 (`SRC_H` 926 -> 948, same width so sprite sizes stay valid); every point in `src/views/layout.ts` re-measured (seats, vats, burners, slots, oven). New constants: `OVENS_LIT` (cooked pizza on the lit tray), `FRY_FROM` (centre of the food painted in each basket).
+- [x] Ingredients: ALL ingredients (raw fries, nuggets, buns, patties, lettuce, tomato, plates) are baked into the background. None needs to move or disappear in this game (supply is unlimited; the model only spawns flying copies and plate items), so nothing was cut out or patched. The old stock sprites (`StockViews` sprites) were removed so nothing is drawn twice. `StockViews` now draws only a dim "Lv N" cover on stations that are still locked (the old art showed locked stock as empty bins); the cover fades when the level unlocks. Tap squash on stock was dropped (the tap outline remains).
+- [x] Fries/nuggets: unchanged model and timers (`startFry`). The hop animation now starts from `FRY_FROM` (the painted pile) into the vat; vat food, oil layer and ring unchanged.
+- [x] Oven door: `oven_door.webp` (1806x1210, 7x5 grid of 258x242 frames, alpha-feathered 7px edges, 107 KB) cut from the supplied MP4 (frames 21-46 of the closing, 92-131 of the opening, every 2nd frame, ~12 fps). The clip is an opaque crop (no green screen) and its first frame matches the art at 0.98 correlation at 2.195x, top-left (974,956) in the 2752x1536 art, so the sprite is only visible while the door moves, is closed, or is lit-open; at rest the static art shows. `src/views/OvenDoor.ts` is a view driven only by the model oven phase (null -> art; cooking -> close after the raw pizza lands, hold closed; ready/warning/danger/burnt -> open and hold lit; collected/discarded -> fade to art). The sheet is lazy: `loadOvenSheet` starts the load after the scene is up; if it is missing or fails, the oven works as before without a door (`doorState()` returns 'none'). Reduced motion skips straight to the end frames. Generated assets: only `oven_door.webp`; the extracted PNG frames and MP4 are not in the repo.
+- [x] Raw pizza lands on the pulled-out door (`OVENS`), slides up and fades as the door closes; the cooked/burnt pizza fades in on the tray (`OVENS_LIT`) during the door opening. Pizza size 160 (raw) and 130 x 0.8 height (cooked, perspective).
+- [x] Other: `validate.ts` accepts `type: "spritesheet"` (needs frameWidth/frameHeight); BootScene can load non-lazy spritesheets; decor clock moved to the gap between window and poster and the runner moved up 16px (decor must not overlap zones); new debug accessor `window.__chefRush.ovenDoor(i)`; `tests/kitchenart.test.ts` (6 tests); decor, zone and validator tests updated for the 948 height and new background size.
+
+### Verified (real Chromium 1280x720 and 844x390 touch via `vite preview`, plus tests)
+- `npm test`: 156 passing (150 before + 6 new). `npm run typecheck`: clean. `npm run build`: ok.
+- Seen in screenshots: new art at correct aspect; zone outlines (`?zones`) line up with all stations; lock covers at Lv 1; seated customers, chef on the right counter; fries on the side plate and bun on a serving plate line up with the plates; fries and nuggets cooking in the vats while the piles stay in the baskets; pizza flow at normal speed: door open at rest -> pizza on door -> closing (pizza fading) -> closed with ring -> opening -> lit with pizza -> collect -> door back to art (door state sequence also logged via `ovenDoor`). Phone landscape screenshot with door closed. No console errors apart from headless WebGL driver notices.
+### Not verified
+- The fry/nugget hop in flight was not caught in a screenshot (headless frame rate); the code path only changed its start point.
+- Burnt-pizza, trash-discard-while-door-opens and tapping the oven mid-opening were exercised only through the state-machine log, not looked at.
+- Real-phone performance; mid-animation resize; reduced-motion path of the door (code only).
+- Video quality: the clip is 258x242, shown at about 1:1 on a 1280 canvas but softer than the art on high-DPI screens; the lit/closed frames were not colour-matched (video is ~6 units darker in blue than the art, hidden by the feathered edge).
+### Limitations / next steps
+- Locked stations show a dim cover; art for locked-state stations was not regenerated. Customers' stool height and the chef position were kept from the old layout and only eyeballed.
+- Next: open a PR for this branch (base `main`), review the door look on a real phone, then continue with Milestone 5 below.
 
 ## Goal
 Chef Rush: a browser restaurant game (serve customers, fryer/grill/oven, coins, XP, levels) for CrazyGames. Built in milestones, one PR each. **Milestones 3 and 4 are merged into `main`; the next task is Milestone 5: gameplay balance and polish.**

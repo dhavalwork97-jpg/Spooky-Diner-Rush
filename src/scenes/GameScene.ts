@@ -180,6 +180,7 @@ export class GameScene extends Phaser.Scene {
       levelCardVisible: () => this.levelUpCard.isShowing,
       chef: () => this.chef.text,
       story: () => this.storyCard.id,
+      ovenDoor: (i = 0) => this.stations.doorState(i),
       decor: () => [...this.decorViews.keys()],
       menuButtons: () => this.menuButtons.positions(),
       openShop: () => this.openShop(),

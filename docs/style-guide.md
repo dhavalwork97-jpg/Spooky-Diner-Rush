@@ -4,12 +4,12 @@ Status: DRAFT for approval. Every asset, UI element, and effect follows this doc
 
 ## 1. Look
 
-Flat cartoon with bold dark outlines, soft drop shadows, subtle gradients and highlights, a warm limited palette, and one rounded friendly font. The supplied kitchen background (`kitchen_full.webp`, 1699 x 926) sets the reference: saturated, glossy, clean edges, warm oranges against cool navy and teal.
+Flat cartoon with bold dark outlines, soft drop shadows, subtle gradients and highlights, a warm limited palette, and one rounded friendly font. The supplied kitchen background (`kitchen_full.webp`, 2752 x 1536) sets the reference: saturated, glossy, clean edges, warm oranges against cool navy and teal.
 
 ## 2. Canvas and scaling
 
 - Logical canvas: 1280 x 698 (matches the kitchen image ratio of about 1.835). Phaser `Scale.FIT`, centered, letterboxed.
-- Background is used as supplied (1699 x 926, treated as roughly 1.33x). No runtime resize, no distortion.
+- Background is used as supplied (2752 x 1536, laid out in a 1699 x 948 space). No runtime resize, no distortion.
 - Supplied sprites are 2x textures: display size is half the file size.
 - Minimum touch target and drop target: 88 x 88 CSS px (not logical px). Zone sizes are checked against the live scale factor.
 
