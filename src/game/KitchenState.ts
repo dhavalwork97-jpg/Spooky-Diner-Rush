@@ -22,6 +22,11 @@ export interface Oven {
   t: number;
   phase: CookPhase;
 }
+/** A cup filling at the dispenser, or a cone swirling in the ice cream machine. */
+export interface Pour {
+  t: number;
+  phase: CookPhase;
+}
 export interface Patty {
   side: 1 | 2;
   t: number;
@@ -61,10 +66,15 @@ export type GameEvent =
   | { type: 'fryPhase'; vat: number; phase: CookPhase }
   | { type: 'ovenStart'; oven: number }
   | { type: 'ovenPhase'; oven: number; phase: CookPhase }
+  | { type: 'drinkStart'; spout: number }
+  | { type: 'drinkPhase'; spout: number; phase: CookPhase }
+  | { type: 'coneStart'; machine: number }
+  | { type: 'conePhase'; machine: number; phase: CookPhase }
+  | { type: 'melted'; machine: number }
   | { type: 'pattyStart'; burner: number }
   | { type: 'pattyPhase'; burner: number; phase: CookPhase }
   | { type: 'pattyFlip'; burner: number }
-  | { type: 'collect'; from: 'fryer' | 'oven'; index: number; slot: number }
+  | { type: 'collect'; from: 'fryer' | 'oven' | 'dispenser' | 'icecream'; index: number; slot: number }
   | { type: 'buildStart'; slot: number }
   | { type: 'layerAdded'; slot: number; layer: string; burner?: number }
   | { type: 'burgerDone'; slot: number }
@@ -124,6 +134,8 @@ export class KitchenState {
   vats: (Fry | null)[];
   burners: (Patty | null)[];
   ovens: (Oven | null)[];
+  spouts: (Pour | null)[];
+  cones: (Pour | null)[];
   /** Plates first (burgers), then side slots (fries). */
   slots: Slot[];
   customers: Customer[] = [];
@@ -156,6 +168,8 @@ export class KitchenState {
     this.vats = Array.from({ length: s.fryVats }, () => null);
     this.burners = Array.from({ length: s.grillBurners }, () => null);
     this.ovens = Array.from({ length: s.ovens }, () => null);
+    this.spouts = Array.from({ length: s.drinkSpouts }, () => null);
+    this.cones = Array.from({ length: s.iceCreamMachines }, () => null);
     this.slots = [
       ...Array.from({ length: s.plateSlots }, (_, i): Slot => ({ index: i, row: 'plate', item: null })),
       ...Array.from({ length: s.sideSlots }, (_, i): Slot => ({ index: s.plateSlots + i, row: 'side', item: null })),
@@ -250,6 +264,32 @@ export class KitchenState {
         o.phase = phase;
         this.emit({ type: 'ovenPhase', oven: i, phase });
         if (phase === 'burnt') this.onBurnt('oven', i);
+      }
+    });
+    // Drinks fill and then wait (they never spoil); a ready cone melts, which costs nothing.
+    const drink = this.cfg.recipes.items.drink;
+    this.spouts.forEach((p, i) => {
+      if (!p) return;
+      p.t += dt;
+      const phase = p.t < drink.readyAfter! ? 'cooking' : 'ready';
+      if (phase !== p.phase) {
+        p.phase = phase;
+        this.emit({ type: 'drinkPhase', spout: i, phase });
+      }
+    });
+    const cone = this.cfg.recipes.items.icecream;
+    this.cones.forEach((p, i) => {
+      if (!p) return;
+      p.t += dt;
+      const phase = cookPhase(p.t, cone.readyAfter!, cone.burnWindow);
+      if (phase === 'burnt') {
+        this.cones[i] = null;
+        this.emit({ type: 'melted', machine: i });
+        return;
+      }
+      if (phase !== p.phase) {
+        p.phase = phase;
+        this.emit({ type: 'conePhase', machine: i, phase });
       }
     });
     const burger = this.cfg.recipes.items.burger;
@@ -421,6 +461,53 @@ export class KitchenState {
     this.ovens[oven] = null;
     slot.item = { id: this.nextId++, kind: 'pizza', placed: [], building: false };
     this.emit({ type: 'collect', from: 'oven', index: oven, slot: slot.index });
+  }
+
+  // ----- drinks and ice cream -----
+
+  /** A drink or cone goes on a free side slot, or on a free plate when the side is full. */
+  private freeServeSlot(): Slot | undefined {
+    return this.freeSlot('side') ?? this.freeSlot('plate');
+  }
+
+  /** Tap the dispenser: collect a full cup if one is waiting, otherwise start filling one. */
+  tapDrinks(): void {
+    if (this.closed) return;
+    const def = this.cfg.recipes.items.drink;
+    if (this.level < def.unlockLevel) return this.invalid(`Drinks unlock at Lv ${def.unlockLevel}`);
+    const full = this.spouts.findIndex((p) => p?.phase === 'ready');
+    if (full >= 0) {
+      const slot = this.freeServeSlot();
+      if (!slot) return this.invalid('The plate is full');
+      this.spouts[full] = null;
+      slot.item = { id: this.nextId++, kind: 'drink', placed: [], building: false };
+      this.emit({ type: 'collect', from: 'dispenser', index: full, slot: slot.index });
+      return;
+    }
+    const i = this.spouts.findIndex((p) => !p);
+    if (i < 0) return this.invalid('Cups are still filling');
+    this.spouts[i] = { t: 0, phase: 'cooking' };
+    this.emit({ type: 'drinkStart', spout: i });
+  }
+
+  /** Tap the machine: collect a ready cone, or start swirling one. */
+  tapIceCream(): void {
+    if (this.closed) return;
+    const def = this.cfg.recipes.items.icecream;
+    if (this.level < def.unlockLevel) return this.invalid(`Ice cream unlocks at Lv ${def.unlockLevel}`);
+    const ready = this.cones.findIndex((p) => p && p.phase !== 'cooking');
+    if (ready >= 0) {
+      const slot = this.freeServeSlot();
+      if (!slot) return this.invalid('The plate is full');
+      this.cones[ready] = null;
+      slot.item = { id: this.nextId++, kind: 'icecream', placed: [], building: false };
+      this.emit({ type: 'collect', from: 'icecream', index: ready, slot: slot.index });
+      return;
+    }
+    const i = this.cones.findIndex((p) => !p);
+    if (i < 0) return this.invalid('The cone is still swirling');
+    this.cones[i] = { t: 0, phase: 'cooking' };
+    this.emit({ type: 'coneStart', machine: i });
   }
 
   // ----- grill -----
@@ -649,6 +736,8 @@ export class KitchenState {
     this.vats = this.vats.map(() => null);
     this.burners = this.burners.map(() => null);
     this.ovens = this.ovens.map(() => null);
+    this.spouts = this.spouts.map(() => null);
+    this.cones = this.cones.map(() => null);
     this.slots.forEach((s) => (s.item = null));
     this.customers = [];
     this.nextArrival = 1;

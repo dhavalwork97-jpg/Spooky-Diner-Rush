@@ -8,7 +8,9 @@
     "beginnerBurnBonus": 2,
     "trashPenaltyCoins": 2,
     "burnReputationPenalty": 8,
-    "ovens": 1
+    "ovens": 1,
+    "drinkSpouts": 2,
+    "iceCreamMachines": 1
   },
   "items": {
     "fries": {
@@ -49,6 +51,22 @@
       "xp": 45,
       "readyAfter": 8,
       "burnWindow": 5
+    },
+    "drink": {
+      "name": "Drink",
+      "unlockLevel": 6,
+      "price": 10,
+      "xp": 12,
+      "readyAfter": 2.5,
+      "burnWindow": 100000
+    },
+    "icecream": {
+      "name": "Ice cream",
+      "unlockLevel": 12,
+      "price": 22,
+      "xp": 28,
+      "readyAfter": 3.5,
+      "burnWindow": 14
     }
   }
 }

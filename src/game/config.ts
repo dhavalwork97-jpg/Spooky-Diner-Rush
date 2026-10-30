@@ -13,7 +13,7 @@ import decorJson from '../../data/decor.json';
 import recipebookJson from '../../data/recipebook.json';
 import restaurantMenuJson from '../../data/restaurant_menu.json';
 
-export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger';
+export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger' | 'drink' | 'icecream';
 
 export interface RecipeSettings {
   plateSlots: number;
@@ -21,6 +21,10 @@ export interface RecipeSettings {
   fryVats: number;
   ovens: number;
   grillBurners: number;
+  /** Cups the drinks dispenser can fill at once. */
+  drinkSpouts: number;
+  /** Cones the ice cream machine can swirl at once. */
+  iceCreamMachines: number;
   beginnerMaxLevel: number;
   beginnerBurnBonus: number;
   trashPenaltyCoins: number;

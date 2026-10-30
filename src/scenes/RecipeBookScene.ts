@@ -12,7 +12,7 @@ const ROW_H = 130;
 const ROW_TOP = 100;
 
 /** Icon texture per menu item (supplied art where it exists, code-drawn otherwise). */
-const ICON: Record<ItemKind, string> = { fries: 'fries_cooked', burger: 'icon_burger', nuggets: 'nuggets_cooked', pizza: 'pizza_cooked' };
+const ICON: Record<ItemKind, string> = { fries: 'fries_cooked', burger: 'icon_burger', nuggets: 'nuggets_cooked', pizza: 'pizza_cooked', drink: 'drink_cooked', icecream: 'icecream_cooked' };
 
 /** The Recipe Book: how each menu item is made, with locked items shown as "Lv N". Read-only. */
 export class RecipeBookScene extends Phaser.Scene {
