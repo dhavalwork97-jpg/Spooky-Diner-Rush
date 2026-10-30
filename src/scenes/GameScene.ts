@@ -826,6 +826,7 @@ export class GameScene extends Phaser.Scene {
       } else if (!slot.item && v && !v.leaving) this.removeItem(slot.index, false);
     }
     this.stock.update(this.state.level);
+    this.stock.updateDough(this.state);
     this.stations.update(this.state, time);
     this.pours.update(this.state, time);
     this.hud.update(this.state, dtReal);
