@@ -13,7 +13,7 @@ import decorJson from '../../data/decor.json';
 import recipebookJson from '../../data/recipebook.json';
 import restaurantMenuJson from '../../data/restaurant_menu.json';
 
-export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger';
+export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger' | 'drink' | 'icecream';
 
 export interface RecipeSettings {
   plateSlots: number;
@@ -21,6 +21,10 @@ export interface RecipeSettings {
   fryVats: number;
   ovens: number;
   grillBurners: number;
+  /** Cups the drinks dispenser can fill at once. */
+  drinkSpouts: number;
+  /** Cones the ice cream machine can swirl at once. */
+  iceCreamMachines: number;
   beginnerMaxLevel: number;
   beginnerBurnBonus: number;
   trashPenaltyCoins: number;
@@ -111,7 +115,7 @@ export interface DecorDef {
   description: string;
   cost: number;
   unlockLevel: number;
-  /** Position and size in source-image pixels (the kitchen art is 1699 x 926). */
+  /** Position and size in source-image pixels (the kitchen art is 1699 x 948). */
   x: number;
   y: number;
   width: number;
@@ -119,7 +123,10 @@ export interface DecorDef {
 }
 export interface GameConfig {
   recipes: { settings: RecipeSettings; items: Record<ItemKind, ItemDef> };
-  progression: { levels: LevelDef[]; afterLast: { patienceStepPerLevel: number; patienceFloor: number } };
+  progression: {
+    levels: LevelDef[];
+    afterLast: { patienceStepPerLevel: number; patienceFloor: number; arrivalGapStepPerLevel?: number; arrivalGapFloor?: [number, number] };
+  };
   xp: {
     base: number;
     perLevel: number;
@@ -168,18 +175,26 @@ export const defaultConfig: GameConfig = {
   restaurantMenu: restaurantMenuJson as unknown as GameConfig['restaurantMenu'],
 };
 
-/** Progression entry for a level. Past the last entry, patience slowly tightens down to a floor. */
+/**
+ * Progression entry for a level. Past the last entry, patience slowly tightens down to a floor and
+ * (when set) the arrival gaps shrink by a step per level down to a floor, so late levels keep
+ * getting busier after patience stops moving. Customer types and order size stay as in the last entry.
+ */
 export function levelDef(cfg: GameConfig, level: number): LevelDef {
   const levels = cfg.progression.levels;
   const exact = levels.find((l) => l.level === level);
   if (exact) return exact;
   const last = levels[levels.length - 1];
   const extra = Math.max(0, level - last.level);
-  const patience = Math.max(
-    cfg.progression.afterLast.patienceFloor,
-    last.patience + extra * cfg.progression.afterLast.patienceStepPerLevel,
-  );
-  return { ...last, level, patience, unlocks: [] };
+  const after = cfg.progression.afterLast;
+  const patience = Math.max(after.patienceFloor, last.patience + extra * after.patienceStepPerLevel);
+  let arrivalGap = last.arrivalGap;
+  if (after.arrivalGapStepPerLevel && after.arrivalGapFloor) {
+    const step = extra * after.arrivalGapStepPerLevel;
+    const [fLo, fHi] = after.arrivalGapFloor;
+    arrivalGap = [Math.max(fLo, last.arrivalGap[0] + step), Math.max(fHi, last.arrivalGap[1] + step)];
+  }
+  return { ...last, level, patience, arrivalGap, unlocks: [] };
 }
 
 export const xpForLevel = (cfg: GameConfig, level: number): number => cfg.xp.base + cfg.xp.perLevel * level;

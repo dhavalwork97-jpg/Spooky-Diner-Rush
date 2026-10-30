@@ -3,6 +3,94 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
+## Milestone 6: drinks (Lv 6) and ice cream (Lv 12) stations (2026-10-30, Claude) - branch `milestone-6-drinks-icecream`, not merged, no PR
+Branched from `milestone-5-content`. NOT merged: the owner asked me to merge `milestone-5-content` into `main` (it contains `kitchen-art-integration`; 6 commits ahead, 0 behind) but the session's permission checker refused every attempt, so the owner must merge it (or open the PR). If that merges first, rebase this branch onto `main` (or open this PR against `main` after it).
+What it does (all numbers in `data/recipes.json`, owner to tune):
+- Drink (`drink`, Lv 6, price 10, xp 12): one spout (`drinkSpouts` 1) fills a cup in 3.5 s. Tap the dispenser to start a cup and tap again to put the full cup on a free side slot (a free plate if both side slots are taken). A full cup never spoils.
+- Ice cream (`icecream`, Lv 12, price 22, xp 28): one machine swirls a cone in 3.5 s; tap to collect. A ready cone melts after 14 s: it is cleared with a "Melted" puff, no coin or reputation cost.
+- Orders: `progression.json` adds `drink` from Lv 6 and `icecream` from Lv 12 (and the unlock text "Drinks" / "Ice cream"). No change to customer counts, gaps, patience or order size.
+- Model: `KitchenState.spouts`, `.cones`, `tapDrinks()`, `tapIceCream()`; events `drinkStart/drinkPhase/coneStart/conePhase/melted`; `collect` has `from: 'dispenser' | 'icecream'`; `reopen()` clears both.
+- Views: `src/views/PourViews.ts` (glass fills in the first painted cup, a scoop grows on the first painted cone, a Ring above each machine), lock covers "Lv 6" / "Lv 12" in `StockViews`, tap handlers in `GameScene`. Positions (`CUP`, `CONE`, `DRINK_RING`, `CONE_RING`) are in `src/views/layout.ts` and tested to sit inside their zones.
+- Art: the cup and cone on plates, in order bubbles and in the RecipeBook are CODE-DRAWN textures `drink_cooked` and `icecream_cooked` (`src/art/builders.ts`). The supplied `drink_cup` / `drink_soda` art (lazy-loaded, never loaded anywhere) is NOT used; there is no ice cream art in the repo. Replace by adding files with those two keys.
+- RecipeBook: two new entries with steps (data/recipebook.json) and icons.
+Steps (all done, one commit each, pushed):
+- [x] 1. Config + model + `tests/drinks.test.ts` (8 tests)
+- [x] 2. Progression data
+- [x] 3. Views and scene wiring (+ layout test)
+- [x] 4. Bot learns drinks and ice cream; late-level simulation rerun
+- [x] 5. Browser check and docs
+### Balance (bot, seeded, same method as Milestone 5; closes per minute)
+| bot | Lv 20 at | Lv 6-10 | Lv 11-15 | Lv 16-20 | Lv 21-25 |
+|---|---|---|---|---|---|
+| fast | 2010-2190 s | 0.21 | 0.40 | 0.56 | 0.55 |
+| average | 3880-4400 s | 0.51 | 0.70 | 0.76 | n/a |
+| casual | Lv 15 at 3900-4500 s | 0.64 | 0.78 | n/a | n/a |
+Before this milestone the fast bot was 0.37 / 0.56 / 0.70 / 0.82, average 0.63 / 0.86 / 0.89 / 0.93: the game got somewhat EASIER, because drinks are a cheap item with no failure mode and they replace one in five orders of burgers or pizza. Station timings (spouts 1-2, fill 3.5-4.5 s, cone 3.5-6 s, melt 10-14 s) were probed and barely moved this, so I kept the simple values. If a harder late game is wanted, tune `data/progression.json` (gaps, patience, type weights), not the stations.
+### Verified
+- `npm test`: 195 passing (186 + 8 drinks + 1 layout). `npm run typecheck` clean. `npm run build` ok.
+- Chromium 1280x720 with real clicks at Lv 12: tapping the dispenser and the machine starts a cup and a cone; the glass fills and the scoop grows with a ring above each; after the wait a second tap puts a drink on one plate and a cone on the other; no page errors. Lv 8 screenshot shows the ice cream "Lv 12" cover over the painted cones.
+### Changed in tests (flagging it)
+- `tests/sim_late.test.ts` "the climb is gradual": the Lv 6-10 anchor of the fast bot is now about 0.2 closes a minute, so its ratio to later brackets is meaningless (a handful of closes). The ratio bounds now use the average bot; the fast bot keeps the monotonic check, the absolute bounds (under 0.8 at Lv 11-15, under 1.0 at Lv 16-20) and the 2x step check. Other bounds unchanged.
+### Not verified
+- Human feel: how drinks and cones play on a phone, whether one spout is annoying, whether 14 s before melting is right.
+- Reduced-motion and the 844x390 touch layout for the new rings and glass (the code uses the same Ring and the same reduced-motion checks as other stations, but I did not look).
+- The Lv 6 cover (only the Lv 12 one was seen), the Lv 6 and Lv 12 level-up cards, and the tutorial hand (no hints for drinks or ice cream).
+- Sound: drinks and cones reuse the existing pop and ding sounds only.
+### Next
+Owner: merge `milestone-5-content` into `main`, then open the Milestone 6 PR. Then: real ice cream art, decide on upgrades for the new stations (the Shop has none), and a human playtest of Lv 6-20.
+
+## Milestone 5 content (2026-10-30, Claude) - branch `milestone-5-content`, not merged, no PR yet
+Branched from `kitchen-art-integration` (unmerged), so the PR base must be `kitchen-art-integration` (or rebase onto `main` once that is merged). The 4-burner change is in all balance numbers below.
+Done:
+- [x] `data/progression.json` Lv 11-20 (was Lv 1-10): up to 4 customers (4 seats; Lv 13), impatient customers from Lv 11, VIPs from Lv 14 (5 percent, up to 10), critics from Lv 16 (5 percent, up to 8), arrival gaps `[3,6]` at Lv 11-12 easing to `[3.2,5.8]` at Lv 20 (a looser gap only in the level that adds the fourth customer), patience 34 -> 31, order size stays `[1,3]` (plate slots are 4). Unlock text announces the new customer types and the fourth seat. First-pass numbers (more VIPs and critics, tighter gaps) were measured and rejected: closes per minute climbed much too fast.
+- [x] After Lv 20: `afterLast` gets `arrivalGapStepPerLevel` -0.05 and `arrivalGapFloor` `[2.5,4.5]` (patience was already on its floor of 30); `levelDef` applies it (optional fields, older data still works). Types and order size stay as at Lv 20.
+- [x] Tests: `tests/progression.test.ts` (data rules, the type mix, scaling after Lv 20, model draws types from the weights), `tests/sim_late.test.ts` (balance simulation, bounds below), `tests/helpers/bot.ts` (copy of the M3 bot plus an upgrade-buying policy and a closes-per-minute helper).
+- [x] CHANGED an existing M3 test (flagging it): `tests/sim.test.ts` "30 minutes of play ... no growing state" asserted `events.length` is exactly 0. `events` is the queue the views drain each frame, and the bot's last action can leave one event in it; the new data moved where the seed-7 run stops, so it failed with 1. Now `toBeLessThan(10)` with a comment. Nothing else in M3 tests changed.
+### Balance numbers (bot, seeded, upgrades bought cheapest first; closes per minute, not per level, because levels get longer)
+| bot | Lv 15 at | Lv 20 at | Lv 6-10 | Lv 11-15 | Lv 16-20 | Lv 21-25 |
+|---|---|---|---|---|---|---|
+| fast (0.8 s per action) | 1140-1290 s | 2170-2420 s | 0.37-0.39 | 0.52-0.56 | 0.70 | 0.82-0.85 |
+| average (1.3 s) | 2180-2800 s | 4460-5090 s | 0.63 | 0.81-0.86 | 0.89 | 0.93 |
+| casual (2.0 s) | 3900-4560 s | not reached in 8000 s | 0.66 | 0.79-0.81 | n/a | n/a |
+Reading: a fast bot reaches Lv 20 in about 36-40 minutes; the close rate rises about 1.4x by Lv 11-15 and 1.9x by Lv 16-20 over Lv 6-10 and then flattens (about 0.8 a minute for the fast bot at Lv 26-30). Upgrades barely change the close rate: the bot is limited by how fast it acts, not by cook speed. By the end of every run the bot owned all 15 upgrade tiers, so shop prices look cheap against income (not retuned; no human data).
+### Verified
+- `npm test`: 186 passing (161 before + 25 new). `npm run typecheck`: clean. `npm run build`: ok.
+- Browser (Chromium 1280x720): Lv 16 with all four customer types seated; no errors.
+### Not verified / limitations
+- Everything above is a bot; human pacing at Lv 11-20 is unknown. The bot buys upgrades greedily and never drags items wrongly, so it is optimistic on some counts and clumsy on others.
+- Seats 2 and 3 (the two on the right) are one stool apart; with four customers their order-card tags touch slightly (still legible). Not changed.
+- Drinks (Lv 6) and ice cream (Lv 12) stations have zones in the art but no model support; not part of this milestone.
+- Level-up card text for Lv 11-20 was only read in data, not seen on screen; story cards exist only for Lv 1, 3, 5, 10, 15, 20.
+### Next
+Open the PR (base decision above), then a human playtest of Lv 11-20, and decide the drinks and ice cream stations.
+
+## Kitchen art + oven door integration (2026-10-30, Claude) - branch `kitchen-art-integration`, not merged, no PR yet
+Done (all in the branch, tests/typecheck/build green; see "Verified" below):
+- [x] New kitchen art: `public/assets/art/kitchen_full.webp` is now the supplied 2752x1536 image (old 1699x926 file replaced; same asset key). `data/restaurants.json` backgroundSize 2752x1536 and all 17 tap zones remapped to the new art (measured on a gridded copy). Layout source space is now 1699 x 948 (`SRC_H` 926 -> 948, same width so sprite sizes stay valid); every point in `src/views/layout.ts` re-measured (seats, vats, burners, slots, oven). New constants: `OVENS_LIT` (cooked pizza on the lit tray), `FRY_FROM` (centre of the food painted in each basket).
+- [x] Ingredients: ALL ingredients (raw fries, nuggets, buns, patties, lettuce, tomato, plates) are baked into the background. None needs to move or disappear in this game (supply is unlimited; the model only spawns flying copies and plate items), so nothing was cut out or patched. The old stock sprites (`StockViews` sprites) were removed so nothing is drawn twice. `StockViews` now draws only a dim "Lv N" cover on stations that are still locked (the old art showed locked stock as empty bins); the cover fades when the level unlocks. Tap squash on stock was dropped (the tap outline remains).
+- [x] Fries/nuggets: unchanged model and timers (`startFry`). The hop animation now starts from `FRY_FROM` (the painted pile) into the vat; vat food, oil layer and ring unchanged.
+- [x] Oven door: `oven_door.webp` (1806x1210, 7x5 grid of 258x242 frames, alpha-feathered 7px edges, 107 KB) cut from the supplied MP4 (frames 21-46 of the closing, 92-131 of the opening, every 2nd frame, ~12 fps). The clip is an opaque crop (no green screen) and its first frame matches the art at 0.98 correlation at 2.195x, top-left (974,956) in the 2752x1536 art, so the sprite is only visible while the door moves, is closed, or is lit-open; at rest the static art shows. `src/views/OvenDoor.ts` is a view driven only by the model oven phase (null -> art; cooking -> close after the raw pizza lands, hold closed; ready/warning/danger/burnt -> open and hold lit; collected/discarded -> fade to art). The sheet is lazy: `loadOvenSheet` starts the load after the scene is up; if it is missing or fails, the oven works as before without a door (`doorState()` returns 'none'). Reduced motion skips straight to the end frames. Generated assets: only `oven_door.webp`; the extracted PNG frames and MP4 are not in the repo.
+- [x] Raw pizza lands on the pulled-out door (`OVENS`), slides up and fades as the door closes; the cooked/burnt pizza fades in on the tray (`OVENS_LIT`) during the door opening. Pizza size 160 (raw) and 130 x 0.8 height (cooked, perspective).
+- [x] Other: `validate.ts` accepts `type: "spritesheet"` (needs frameWidth/frameHeight); BootScene can load non-lazy spritesheets; decor clock moved to the gap between window and poster and the runner moved up 16px (decor must not overlap zones); new debug accessor `window.__chefRush.ovenDoor(i)`; `tests/kitchenart.test.ts` (6 tests); decor, zone and validator tests updated for the 948 height and new background size.
+
+### Follow-up fixes (2026-10-30, after phone testing)
+- Lv 2 covers stayed on screen: `StockViews` restarted the fade tween every frame after a level-up. Now a pure `coverChange(prev, locked)` (`src/game/lockcover.ts`, tested) only acts on a change. Checked in Chromium: Lv 1 -> 2 clears the Lv 2 covers, the Lv 4 nuggets cover stays.
+- Only 2 of 4 grill burners worked: `data/recipes.json` `grillBurners` was 2 (pre-existing balance setting; the art always had 4). Now 4, `BURNERS` has all four spots, bottom-row timer ring and FLIP label sit below the patty (`BURNER_LABEL_BELOW`) so they do not cover the top row. Checked in Chromium: 4 patties cook at once. BALANCE NOTE: four parallel patties makes burgers easier; the sim test still passes but the numbers were not retuned. Set `grillBurners` back to 2 (and keep the extra points) if the owner prefers.
+- Fries/nuggets not centred in the vat: vat points re-measured (`VATS` x 345 / 469), food sizes capped to fit the glass (`VAT_FOOD_W`), and the oil layer now fills the whole glass lid (`VAT_GLASS`) instead of a band sized to the food. Checked by zoomed screenshots (cooking and ready).
+- Tests: 161 passing (+5 on burners, cover logic, glass fit). Typecheck and build ok. Not checked: a real phone, and the fryer food during the burnt state.
+
+### Verified (real Chromium 1280x720 and 844x390 touch via `vite preview`, plus tests)
+- `npm test`: 156 passing (150 before + 6 new). `npm run typecheck`: clean. `npm run build`: ok.
+- Seen in screenshots: new art at correct aspect; zone outlines (`?zones`) line up with all stations; lock covers at Lv 1; seated customers, chef on the right counter; fries on the side plate and bun on a serving plate line up with the plates; fries and nuggets cooking in the vats while the piles stay in the baskets; pizza flow at normal speed: door open at rest -> pizza on door -> closing (pizza fading) -> closed with ring -> opening -> lit with pizza -> collect -> door back to art (door state sequence also logged via `ovenDoor`). Phone landscape screenshot with door closed. No console errors apart from headless WebGL driver notices.
+### Not verified
+- The fry/nugget hop in flight was not caught in a screenshot (headless frame rate); the code path only changed its start point.
+- Burnt-pizza, trash-discard-while-door-opens and tapping the oven mid-opening were exercised only through the state-machine log, not looked at.
+- Real-phone performance; mid-animation resize; reduced-motion path of the door (code only).
+- Video quality: the clip is 258x242, shown at about 1:1 on a 1280 canvas but softer than the art on high-DPI screens; the lit/closed frames were not colour-matched (video is ~6 units darker in blue than the art, hidden by the feathered edge).
+### Limitations / next steps
+- Locked stations show a dim cover; art for locked-state stations was not regenerated. Customers' stool height and the chef position were kept from the old layout and only eyeballed.
+- Next: open a PR for this branch (base `main`), review the door look on a real phone, then continue with Milestone 5 below.
+
 ## Goal
 Chef Rush: a browser restaurant game (serve customers, fryer/grill/oven, coins, XP, levels) for CrazyGames. Built in milestones, one PR each. **Milestones 3 and 4 are merged into `main`; the next task is Milestone 5: gameplay balance and polish.**
 
@@ -115,7 +203,7 @@ Assumptions to confirm with the owner: upgrade tiers and prices; decor is cosmet
 ### Milestone 4 scope now on main
 Save v2 with backward-compatible v1 parsing; five upgrades with three tiers; persistent modifiers; cosmetic decor; career titles; chef speech bubbles; one-time story cards; Recipe Book; restaurant selection (only `burger_diner` is playable); HUD buttons. Details and the explicit not-verified list are in `docs/progress.md`.
 
-### Exact next task: Milestone 5 — content
+### Milestone 5 — content (status: implemented on branch `milestone-5-content`, see the section at the top; original brief below)
 Start from the latest `main`, inspect the current repository and docs first, and avoid rebuilding existing systems. Priorities:
 1.Lv 11–20 and the after-Lv 20 scaling.
 2.Balance simulation for the later levels.

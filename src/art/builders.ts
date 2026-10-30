@@ -118,6 +118,36 @@ function buildFood(scene: Phaser.Scene): void {
   fries('fries_cooked', 0xf6c445, false);
   fries('fries_burnt', 0x4a3320, true);
 
+  // Drink: a lidded cup with a straw. Code-drawn (the supplied cup art is loaded lazily and not used yet).
+  make(scene, 'drink_cooked', 144, 144, (g) => {
+    g.lineStyle(OUT, INK, 1);
+    g.lineStyle(7, INK, 1).lineBetween(84, 6, 92, 44);
+    g.lineStyle(4, TOMATO, 1).lineBetween(84, 6, 92, 44);
+    g.fillStyle(CREAM, 1).fillRoundedRect(30, 38, 84, 12, 5);
+    line(g).strokeRoundedRect(30, 38, 84, 12, 5);
+    g.fillStyle(0x6b3b1f, 1).fillTriangle(36, 50, 108, 50, 98, 134).fillTriangle(36, 50, 98, 134, 46, 134);
+    g.fillStyle(CREAM, 1).fillRect(38, 50, 68, 12);
+    line(g);
+    g.lineBetween(36, 50, 46, 134).lineBetween(108, 50, 98, 134).lineBetween(46, 134, 98, 134);
+    g.fillStyle(TOMATO, 1).fillRoundedRect(52, 82, 40, 26, 6);
+    line(g).strokeRoundedRect(52, 82, 40, 26, 6);
+  });
+
+  // Ice cream: a waffle cone with two scoops.
+  make(scene, 'icecream_cooked', 144, 144, (g) => {
+    g.fillStyle(0xe6b563, 1).fillTriangle(40, 70, 104, 70, 72, 138);
+    line(g).strokeTriangle(40, 70, 104, 70, 72, 138);
+    g.lineStyle(3, 0xa8741f, 1);
+    g.lineBetween(50, 78, 82, 118);
+    g.lineBetween(94, 78, 62, 118);
+    g.fillStyle(0xf7b6c8, 1).fillCircle(72, 56, 30);
+    line(g).strokeCircle(72, 56, 30);
+    g.fillStyle(CREAM, 1).fillCircle(72, 28, 22);
+    line(g).strokeCircle(72, 28, 22);
+    g.fillStyle(TOMATO, 1).fillCircle(72, 8, 7);
+    line(g).strokeCircle(72, 8, 7);
+  });
+
   const patty = (key: string, fill: number, spots: boolean, rawLook = false) =>
     make(scene, key, 160, 76, (g) => {
       g.fillStyle(fill, 1).fillRoundedRect(10, 12, 140, 52, 22);

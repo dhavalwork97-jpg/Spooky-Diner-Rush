@@ -7,7 +7,7 @@ const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 const DEPTH = 640;
 
 /**
- * Where the chef stands, in source-image pixels (1699 x 926). The cream strip right of the
+ * Where the chef stands, in source-image pixels (1699 x 948). The cream strip right of the
  * grill holds no tap zone, and the bubble sits on the floor band above the grill (also no
  * zone), so neither covers a station. Nothing here is interactive: taps pass through.
  */

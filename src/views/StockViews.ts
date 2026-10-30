@@ -1,128 +1,82 @@
 import Phaser from 'phaser';
+import { coverChange } from '../game/lockcover';
 import { SaveSystem } from '../systems/SaveSystem';
 import { Layout } from './layout';
 
 /**
- * Stock sprites drawn on top of the static kitchen so the bins and trays look stocked
- * (raw fries, nuggets, buns, patties, lettuce, tomato). A station's stock appears once it is
- * unlocked and pops in the moment it unlocks. Looks only: the model decides what can be taken.
+ * The new kitchen art already shows every ingredient stocked (fries, nuggets, buns, patties,
+ * lettuce, tomato are painted into the background), so no stock sprites are drawn on top: that
+ * would duplicate the food. What the old stock sprites also told the player was "this station
+ * is not open yet", so a locked station gets a dim "Lv N" cover over its painted food and the
+ * cover fades away the moment the station unlocks. Looks only: the model decides what can be taken.
  */
-interface StockDef {
+interface LockDef {
   station: string;
   unlockLevel: number;
-  /** Source-pixel centre, width and depth-order of each sprite. */
-  sprites: { key: string; x: number; y: number; w: number; angle?: number }[];
+  /** Source-pixel rectangle over the painted food (x, y, width, height). */
+  rect: [number, number, number, number];
 }
 
-const STOCK: StockDef[] = [
-  {
-    station: 'fries_bin',
-    unlockLevel: 1,
-    sprites: [
-      { key: 'fries_raw', x: 438, y: 812, w: 120, angle: -6 },
-      { key: 'fries_raw', x: 482, y: 822, w: 120, angle: 5 },
-    ],
-  },
-  {
-    station: 'nuggets_bin',
-    unlockLevel: 4,
-    sprites: [
-      { key: 'nuggets_raw', x: 275, y: 808, w: 66, angle: -8 },
-      { key: 'nuggets_raw', x: 332, y: 818, w: 66, angle: 10 },
-      { key: 'nuggets_raw', x: 300, y: 836, w: 66, angle: 0 },
-    ],
-  },
-  {
-    station: 'buns',
-    unlockLevel: 2,
-    sprites: [
-      { key: 'bun_top', x: 1095, y: 702, w: 112, angle: -4 },
-      { key: 'bun_top', x: 1195, y: 700, w: 112, angle: 4 },
-      { key: 'bun_top', x: 1145, y: 728, w: 112, angle: 0 },
-    ],
-  },
-  {
-    station: 'patty_tray',
-    unlockLevel: 2,
-    sprites: [
-      { key: 'patty_raw', x: 1380, y: 722, w: 104, angle: -3 },
-      { key: 'patty_raw', x: 1470, y: 722, w: 104, angle: 3 },
-      { key: 'patty_raw', x: 1550, y: 724, w: 104, angle: -2 },
-      { key: 'patty_raw', x: 1465, y: 748, w: 104, angle: 0 },
-    ],
-  },
-  {
-    station: 'lettuce',
-    unlockLevel: 2,
-    sprites: [
-      { key: 'lettuce', x: 372, y: 455, w: 96, angle: -5 },
-      { key: 'lettuce', x: 405, y: 462, w: 96, angle: 6 },
-    ],
-  },
-  {
-    station: 'tomato',
-    unlockLevel: 2,
-    sprites: [
-      { key: 'tomato', x: 505, y: 455, w: 88, angle: -4 },
-      { key: 'tomato', x: 535, y: 462, w: 88, angle: 5 },
-    ],
-  },
+const LOCKS: LockDef[] = [
+  { station: 'fries_bin', unlockLevel: 1, rect: [380, 758, 142, 120] },
+  { station: 'nuggets_bin', unlockLevel: 4, rect: [248, 758, 142, 120] },
+  { station: 'buns', unlockLevel: 2, rect: [1066, 628, 240, 106] },
+  { station: 'patty_tray', unlockLevel: 2, rect: [1356, 668, 210, 108] },
+  { station: 'lettuce', unlockLevel: 2, rect: [330, 394, 132, 100] },
+  { station: 'tomato', unlockLevel: 2, rect: [474, 368, 124, 144] },
+  { station: 'drinks', unlockLevel: 6, rect: [118, 372, 168, 92] },
+  { station: 'ice_cream', unlockLevel: 12, rect: [34, 682, 185, 100] },
 ];
 
-interface Group {
-  def: StockDef;
-  images: Phaser.GameObjects.Image[];
-  shown: boolean;
+interface Cover {
+  def: LockDef;
+  box: Phaser.GameObjects.Container;
+  locked: boolean | null;
 }
 
 export class StockViews {
-  private groups: Group[] = [];
+  private covers: Cover[] = [];
 
   constructor(private scene: Phaser.Scene, layout: Layout, level: number) {
-    for (const def of STOCK) {
-      const images = def.sprites.map((s) => {
-        const im = scene.add.image(layout.x(s.x), layout.y(s.y), s.key).setDepth(250).setAngle(s.angle ?? 0).setVisible(false);
-        im.setData('k', layout.s(s.w) / im.width);
-        im.setScale(im.getData('k') as number);
-        return im;
-      });
-      this.groups.push({ def, images, shown: false });
+    for (const def of LOCKS) {
+      const [sx, sy, sw, sh] = def.rect;
+      const w = layout.s(sw);
+      const h = layout.s(sh);
+      const g = scene.add.graphics();
+      g.fillStyle(0x1f2a44, 0.62).fillRoundedRect(-w / 2, -h / 2, w, h, 14);
+      g.lineStyle(3, 0x2b1b17, 0.8).strokeRoundedRect(-w / 2, -h / 2, w, h, 14);
+      const label = scene.add
+        .text(0, 0, `Lv ${def.unlockLevel}`, { fontFamily: 'Fredoka, "Baloo 2", system-ui, sans-serif', fontSize: '22px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 })
+        .setOrigin(0.5);
+      const box = scene.add.container(layout.x(sx) + w / 2, layout.y(sy) + h / 2, [g, label]).setDepth(250).setVisible(false);
+      this.covers.push({ def, box, locked: null });
     }
     this.update(level, false);
   }
 
-  /** Show the stock of every unlocked station. `animate` pops newly unlocked stock in. */
+  /** Cover every station that is still locked. `animate` fades a newly unlocked cover away. */
   update(level: number, animate = true): void {
-    for (const g of this.groups) {
-      const should = level >= g.def.unlockLevel;
-      if (should === g.shown) continue;
-      g.shown = should;
-      g.images.forEach((im, i) => {
-        im.setVisible(should);
-        if (should && animate && !SaveSystem.reduceMotion()) {
-          const k = im.getData('k') as number;
-          im.setScale(0);
-          this.scene.tweens.add({ targets: im, scale: k, duration: 260, delay: i * 70, ease: 'Back.Out' });
-        }
-      });
-    }
-  }
-
-  /** Small squash when the station is tapped, so taking from the stock feels physical. */
-  tap(station: string): void {
-    if (SaveSystem.reduceMotion()) return;
-    const g = this.groups.find((x) => x.def.station === station);
-    if (!g || !g.shown) return;
-    for (const im of g.images) {
-      const k = im.getData('k') as number;
-      this.scene.tweens.killTweensOf(im);
-      im.setScale(k);
-      this.scene.tweens.add({ targets: im, scaleX: k * 1.12, scaleY: k * 0.9, duration: 90, yoyo: true, ease: 'Quad.Out' });
+    for (const c of this.covers) {
+      const locked = level < c.def.unlockLevel;
+      const change = coverChange(c.locked, locked);
+      if (change === 'none') continue; // never restart a fade that is already running
+      c.locked = locked;
+      this.scene.tweens.killTweensOf(c.box);
+      if (change === 'lock') {
+        c.box.setVisible(true).setAlpha(1);
+      } else if (animate && !SaveSystem.reduceMotion()) {
+        this.scene.tweens.add({ targets: c.box, alpha: 0, duration: 420, onComplete: () => c.box.setVisible(false) });
+      } else {
+        c.box.setVisible(false);
+      }
     }
   }
 
   destroy(): void {
-    for (const g of this.groups) g.images.forEach((im) => im.destroy());
-    this.groups = [];
+    for (const c of this.covers) {
+      this.scene.tweens.killTweensOf(c.box);
+      c.box.destroy();
+    }
+    this.covers = [];
   }
 }

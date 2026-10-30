@@ -317,6 +317,16 @@
       "height": 48,
       "preferFallback": false,
       "lazy": false
+    },
+    {
+      "key": "oven_door",
+      "type": "spritesheet",
+      "file": "assets/art/oven_door.webp",
+      "scale": 1,
+      "frameWidth": 258,
+      "frameHeight": 242,
+      "preferFallback": false,
+      "lazy": true
     }
   ]
 }

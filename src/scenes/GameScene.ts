@@ -21,9 +21,11 @@ import { KitchenState, type GameEvent } from '../game/KitchenState';
 import { nextHint } from '../game/tutorial';
 import { MUSTARD } from '../art/builders';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
-import { BURNERS, Layout, SLOTS, SRC_H, SRC_W, VATS } from '../views/layout';
+import { BURNERS, FRY_FROM, Layout, SLOTS, SRC_H, SRC_W, VAT_FOOD_W, VATS } from '../views/layout';
 import { StationViews } from '../views/StationViews';
 import { StockViews } from '../views/StockViews';
+import { PourViews } from '../views/PourViews';
+import { loadOvenSheet } from '../views/OvenDoor';
 import { ItemView } from '../views/ItemView';
 import { CustomerView } from '../views/CustomerView';
 import { Hud } from '../views/Hud';
@@ -61,6 +63,7 @@ export class GameScene extends Phaser.Scene {
   private state!: KitchenState;
   private stations!: StationViews;
   private stock!: StockViews;
+  private pours!: PourViews;
   private hud!: Hud;
   private toast!: Toast;
   private banner!: EventBanner;
@@ -121,7 +124,9 @@ export class GameScene extends Phaser.Scene {
     this.fx = new ParticlePool(this, 140);
     this.buildZones();
     this.stock = new StockViews(this, this.layout, this.state.level);
+    loadOvenSheet(this); // background load; the oven works without the door art until it arrives
     this.stations = new StationViews(this, this.layout, this.fx, this.state);
+    this.pours = new PourViews(this, this.layout);
     this.hud = new Hud(this, this.state);
     this.toast = new Toast(this, LOGICAL_WIDTH / 2, 300);
     this.banner = new EventBanner(this, 551, 42);
@@ -178,6 +183,7 @@ export class GameScene extends Phaser.Scene {
       levelCardVisible: () => this.levelUpCard.isShowing,
       chef: () => this.chef.text,
       story: () => this.storyCard.id,
+      ovenDoor: (i = 0) => this.stations.doorState(i),
       decor: () => [...this.decorViews.keys()],
       menuButtons: () => this.menuButtons.positions(),
       openShop: () => this.openShop(),
@@ -251,6 +257,14 @@ export class GameScene extends Phaser.Scene {
       this.state.startPatty();
       return '';
     });
+    registerStationHandler('drinks', () => {
+      this.state.tapDrinks();
+      return '';
+    });
+    registerStationHandler('ice_cream', () => {
+      this.state.tapIceCream();
+      return '';
+    });
     registerStationHandler('buns', () => {
       this.state.tapBuns();
       return '';
@@ -293,7 +307,6 @@ export class GameScene extends Phaser.Scene {
     this.selectedId = zone.id;
     audio.play('tap');
     const text = handleStationTap(zone, this.state.level, pt);
-    this.stock.tap(zone.station);
     const { x, y, width, height } = view.rect;
 
     // Tap feedback: an overlay outline that fades, never part of the background.
@@ -431,12 +444,14 @@ export class GameScene extends Phaser.Scene {
       case 'fryStart': {
         audio.play('pop');
         // Raw fries or nuggets hop from the bin into the vat, then cook there.
-        const bin = this.zoneCenter(e.kind === 'nuggets' ? 'nuggets_bin' : 'fries_bin');
+        // The food leaves from the pile painted in the basket, so it starts exactly where the player sees it.
+        const pile = FRY_FROM[e.kind === 'nuggets' ? 'nuggets' : 'fries'];
+        const bin = { x: this.layout.x(pile[0]), y: this.layout.y(pile[1]) };
         const to = this.stations.vatPos(e.vat);
         if (bin && !SaveSystem.reduceMotion()) {
           this.stations.holdVat(e.vat, 380, this.game.loop.time);
           const raw = this.add.image(bin.x, bin.y, `${e.kind}_raw`).setDepth(650);
-          raw.setScale(this.layout.s(e.kind === 'nuggets' ? 80 : 110) / raw.width);
+          raw.setScale(this.layout.s(VAT_FOOD_W[e.kind === 'nuggets' ? 'nuggets' : 'fries']) / raw.width);
           this.arc(raw, to, 360, 50, () => {
             raw.destroy();
             this.fx.burst(to.x, to.y, 0xfff1b8, 6, 30, 350);
@@ -449,16 +464,34 @@ export class GameScene extends Phaser.Scene {
         audio.play('pop');
         // A raw pizza slides from the dough bases into the oven.
         const from = this.zoneCenter('dough');
-        const to = this.stations.ovenPos(e.oven);
+        const to = this.stations.ovenLoadPos(e.oven);
         if (from && !SaveSystem.reduceMotion()) {
           this.stations.holdOven(e.oven, 400, this.game.loop.time);
           const raw = this.add.image(from.x, from.y, 'pizza_raw').setDepth(650);
-          raw.setScale(this.layout.s(190) / raw.width);
+          raw.setScale(this.layout.s(160) / raw.width);
           this.arc(raw, to, 380, 40, () => {
             raw.destroy();
             audio.play('drop');
           });
         }
+        break;
+      }
+      case 'drinkStart':
+      case 'coneStart':
+        audio.play('pop');
+        break;
+      case 'drinkPhase':
+      case 'conePhase':
+        if (e.phase === 'ready') {
+          audio.play('ding');
+          const at = this.pours.ringPos(e.type === 'drinkPhase' ? 'drink' : 'cone');
+          this.fx.burst(at.x, at.y, 0xffffff, 6, 26, 320);
+        }
+        break;
+      case 'melted': {
+        const at = this.pours.conePos();
+        this.fx.burst(at.x, at.y, 0xf7b6c8, 8, 30, 420);
+        this.floatText(at.x, at.y - 24, 'Melted', '#FFF4DC');
         break;
       }
       case 'ovenPhase':
@@ -506,7 +539,7 @@ export class GameScene extends Phaser.Scene {
         this.toast.show('Burnt! Tap to throw it away');
         break;
       case 'collect': {
-        const from = e.from === 'fryer' ? this.stations.vatPos(e.index) : this.stations.ovenPos(e.index);
+        const from = e.from === 'fryer' ? this.stations.vatPos(e.index) : e.from === 'dispenser' ? this.pours.dispenserPos() : e.from === 'icecream' ? this.pours.conePos() : this.stations.ovenPos(e.index);
         const v = this.makeItem(e.slot, from);
         if (v) {
           v.showFries();
@@ -794,6 +827,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.stock.update(this.state.level);
     this.stations.update(this.state, time);
+    this.pours.update(this.state, time);
     this.hud.update(this.state, dtReal);
     if (this.state.event) this.banner.update(this.state.event.remaining);
     this.updateHint();
@@ -877,6 +911,7 @@ export class GameScene extends Phaser.Scene {
     animGuard.cancelAll();
     this.stations.destroy();
     this.stock.destroy();
+    this.pours.destroy();
     this.hand.destroy();
     this.storyCard.destroy();
     this.fx.destroy();

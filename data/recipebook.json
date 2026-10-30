@@ -1,8 +1,52 @@
 {
   "entries": [
-    { "id": "fries", "steps": ["Tap the fries bin to drop fries in a vat.", "Tap the vat when the green tick shows.", "Drag the fries to the customer."] },
-    { "id": "burger", "steps": ["Tap the buns, then the patty tray.", "Flip the patty when asked, then put it on the burger.", "Add lettuce and tomato, then drag it to the customer."] },
-    { "id": "nuggets", "steps": ["Tap the nuggets bin to drop them in a vat.", "Tap the vat when the green tick shows.", "Drag the nuggets to the customer."] },
-    { "id": "pizza", "steps": ["Tap the dough to put a pizza in the oven.", "Tap the oven when it is ready, before it burns.", "Drag the pizza to the customer."] }
+    {
+      "id": "fries",
+      "steps": [
+        "Tap the fries bin to drop fries in a vat.",
+        "Tap the vat when the green tick shows.",
+        "Drag the fries to the customer."
+      ]
+    },
+    {
+      "id": "burger",
+      "steps": [
+        "Tap the buns, then the patty tray.",
+        "Flip the patty when asked, then put it on the burger.",
+        "Add lettuce and tomato, then drag it to the customer."
+      ]
+    },
+    {
+      "id": "nuggets",
+      "steps": [
+        "Tap the nuggets bin to drop them in a vat.",
+        "Tap the vat when the green tick shows.",
+        "Drag the nuggets to the customer."
+      ]
+    },
+    {
+      "id": "pizza",
+      "steps": [
+        "Tap the dough to put a pizza in the oven.",
+        "Tap the oven when it is ready, before it burns.",
+        "Drag the pizza to the customer."
+      ]
+    },
+    {
+      "id": "drink",
+      "steps": [
+        "Tap the drinks dispenser to fill a cup.",
+        "Tap the full cup to put it on a plate.",
+        "Drag the drink to the customer."
+      ]
+    },
+    {
+      "id": "icecream",
+      "steps": [
+        "Tap the ice cream machine to swirl a cone.",
+        "Tap the cone before it melts.",
+        "Drag the ice cream to the customer."
+      ]
+    }
   ]
 }

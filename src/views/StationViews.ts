@@ -4,7 +4,8 @@ import { ParticlePool } from '../anim/ParticlePool';
 import { SaveSystem } from '../systems/SaveSystem';
 import { bounce } from '../anim/helpers';
 import { Ring } from './Ring';
-import { BURNERS, Layout, OVENS, VATS } from './layout';
+import { BURNER_LABEL_BELOW, BURNERS, Layout, OVENS, OVENS_LIT, VAT_FOOD_W, VAT_GLASS, VATS } from './layout';
+import { OvenDoor } from './OvenDoor';
 
 /**
  * Fryer and grill visuals. Every frame they read the model (phase and elapsed time)
@@ -37,6 +38,8 @@ interface OvenView {
   base: Phaser.GameObjects.Image; // raw pizza
   top: Phaser.GameObjects.Image; // cooked pizza that fades in as it bakes
   k: number;
+  baseY: number;
+  door: OvenDoor;
   ring: Ring;
   nextSmoke: number;
   holdUntil: number;
@@ -52,20 +55,22 @@ export class StationViews {
       const [sx, sy] = VATS[i];
       const x = layout.x(sx);
       const y = layout.y(sy);
-      const fries = scene.add.image(x, y - 4, 'fries_raw').setDepth(500).setVisible(false);
-      const k = layout.fit(fries, 110);
+      const fries = scene.add.image(x, y + 1, 'fries_raw').setDepth(500).setVisible(false);
+      const k = layout.fit(fries, VAT_FOOD_W.fries);
       const oil = scene.add.graphics().setDepth(502);
       this.vats.push({ fries, k, ring: new Ring(scene, x, y - layout.s(78)), nextBubble: 0, nextSmoke: 0, holdUntil: 0, oil, ripples: [] });
     });
     state.ovens.forEach((_, i) => {
       const [sx, sy] = OVENS[i];
+      const [lx, ly] = OVENS_LIT[i];
       const x = layout.x(sx);
       const y = layout.y(sy);
+      // Raw pizza waits on the pulled-out door; the cooked one sits on the baking tray once the door has opened.
       const base = scene.add.image(x, y, 'pizza_raw').setDepth(500).setVisible(false);
-      const top = scene.add.image(x, y, 'pizza_cooked').setDepth(501).setAlpha(0).setVisible(false);
-      const k = layout.fit(base, 190);
-      top.setScale(layout.s(190) / top.width);
-      this.ovens.push({ base, top, k, ring: new Ring(scene, x, y - layout.s(110)), nextSmoke: 0, holdUntil: 0 });
+      const top = scene.add.image(layout.x(lx), layout.y(ly), 'pizza_cooked').setDepth(501).setAlpha(0).setVisible(false);
+      const k = layout.fit(base, 160);
+      top.setScale(layout.s(130) / top.width, (layout.s(130) / top.width) * 0.8);
+      this.ovens.push({ base, top, k, baseY: y, door: new OvenDoor(scene, layout), ring: new Ring(scene, x, y - layout.s(110)), nextSmoke: 0, holdUntil: 0 });
     });
     state.burners.forEach((_, i) => {
       const [sx, sy] = BURNERS[i];
@@ -75,12 +80,13 @@ export class StationViews {
       const top = scene.add.image(x, y, 'patty_cooked').setDepth(501).setAlpha(0).setVisible(false);
       const k = layout.fit(base, 120);
       top.setScale(k);
+      const below = BURNER_LABEL_BELOW[i];
       const flipText = scene.add
-        .text(x, y - layout.s(72) - 26, 'FLIP', { fontFamily: 'Fredoka, "Baloo 2", system-ui, sans-serif', fontSize: '20px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 })
+        .text(x, below ? y + layout.s(72) + 26 : y - layout.s(72) - 26, 'FLIP', { fontFamily: 'Fredoka, "Baloo 2", system-ui, sans-serif', fontSize: '20px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 })
         .setOrigin(0.5)
         .setDepth(602)
         .setVisible(false);
-      this.burners.push({ base, top, k, ring: new Ring(scene, x, y - layout.s(62)), flipText, nextSteam: 0, nextSmoke: 0, flipping: false, holdUntil: 0 });
+      this.burners.push({ base, top, k, ring: new Ring(scene, x, below ? y + layout.s(62) : y - layout.s(62)), flipText, nextSteam: 0, nextSmoke: 0, flipping: false, holdUntil: 0 });
     });
   }
 
@@ -97,7 +103,7 @@ export class StationViews {
       // Fries are shown in the vat as the raw sticks turning golden (the boxed cooked art is for the plate).
       const tex = v.kind === 'nuggets' ? (v.phase === 'cooking' ? 'nuggets_raw' : v.phase === 'burnt' ? 'nuggets_burnt' : 'nuggets_cooked') : v.phase === 'burnt' ? 'fries_burnt' : 'fries_raw';
       view.fries.setVisible(true).setTexture(tex);
-      view.fries.setScale(this.layout.s(v.kind === 'nuggets' ? 80 : 110) / view.fries.width);
+      view.fries.setScale(this.layout.s(VAT_FOOD_W[v.kind === 'nuggets' ? 'nuggets' : 'fries']) / view.fries.width);
       if (v.kind === 'fries') {
         const tints: Record<string, number> = { cooking: 0xffffff, ready: 0xffd45e, warning: 0xe3a23a, danger: 0xb06a28, burnt: 0xffffff };
         view.fries.setTint(tints[v.phase]);
@@ -110,17 +116,20 @@ export class StationViews {
       const reduce = SaveSystem.reduceMotion();
       // food floats and jiggles in the oil
       if (!reduce) view.fries.setAngle(Math.sin(now / 190 + i * 2) * 2.2);
-      // oil layer over the lower part of the food, so it reads as submerged
-      const top = view.fries.y - h * 0.08;
-      const bottom = view.fries.y + h * 0.5 + 6;
+      // oil fills the whole glass lid (so the food is clearly inside the vat), with a rippling surface near the top
+      const gw = this.layout.s(VAT_GLASS.halfW * 2);
+      const gx = x - gw / 2;
+      const gTop = this.layout.y(VAT_GLASS.top) + this.layout.s(5);
+      const gBot = this.layout.y(VAT_GLASS.bottom) - this.layout.s(3);
+      const top = gTop + this.layout.s(8);
       const g = view.oil;
       g.clear();
-      g.fillStyle(0xf2b630, 0.42).fillRoundedRect(x - w / 2 - 6, top, w + 12, bottom - top, 8);
+      g.fillStyle(0xf2b630, 0.3).fillRoundedRect(gx, gTop, gw, gBot - gTop, 6);
       g.lineStyle(3, 0xfff3b0, 0.9).beginPath();
-      for (let px = -w / 2 - 6; px <= w / 2 + 6; px += 6) {
-        const wy = top + (reduce ? 0 : Math.sin(now / 150 + px / 9 + i) * 1.8);
-        if (px === -w / 2 - 6) g.moveTo(x + px, wy);
-        else g.lineTo(x + px, wy);
+      for (let px = 0; px <= gw; px += 6) {
+        const wy = top + (reduce ? 0 : Math.sin(now / 150 + px / 9 + i) * 1.4);
+        if (px === 0) g.moveTo(gx + px, wy);
+        else g.lineTo(gx + px, wy);
       }
       g.strokePath();
       // surface ripples where bubbles pop
@@ -134,7 +143,7 @@ export class StationViews {
       if (!reduce && v.phase !== 'burnt' && now > view.nextBubble) {
         const boil = v.phase === 'cooking' ? 70 : 140;
         view.nextBubble = now + boil + Math.random() * boil;
-        const bx = x + (Math.random() - 0.5) * w * 0.8;
+        const bx = x + (Math.random() - 0.5) * Math.min(w, gw) * 0.8;
         const rise = Math.max(8, view.fries.y + h * 0.3 - top);
         this.fx.rise(bx, view.fries.y + h * 0.3, 0xfff6c8, 0.95, 2 + Math.random() * 2.5, rise, 460, (Math.random() - 0.5) * 6);
         view.ripples.push({ x: bx, at: now + 460 });
@@ -149,6 +158,8 @@ export class StationViews {
     const bake = state.cfg.recipes.items.pizza.readyAfter!;
     state.ovens.forEach((o, i) => {
       const view = this.ovens[i];
+      // The door only follows the model's phase; it never decides anything.
+      view.door.update(o ? o.phase : null, now, view.holdUntil);
       if (!o || now < view.holdUntil) {
         view.base.setVisible(false);
         view.top.setVisible(false);
@@ -156,9 +167,23 @@ export class StationViews {
         return;
       }
       const burnt = o.phase === 'burnt';
-      // browning: the cooked pizza fades in over the raw one while it bakes; burnt is the cooked art darkened
-      view.base.setVisible(!burnt && o.phase === 'cooking');
-      view.top.setVisible(true).setAlpha(burnt ? 1 : Math.min(1, o.t / bake));
+      if (view.door.ready) {
+        // Door closing: the raw pizza slides in and disappears. Closed: nothing shows. Opening: the cooked pizza appears on the tray.
+        const cp = view.door.closeProgress;
+        const op = view.door.openProgress;
+        if (o.phase === 'cooking') {
+          const a = Math.max(0, 1 - cp * 2.5);
+          view.base.setVisible(a > 0).setAlpha(a).setScale(view.k * (1 - 0.15 * cp)).setY(view.baseY - 16 * cp);
+          view.top.setVisible(false);
+        } else {
+          view.base.setVisible(false);
+          view.top.setVisible(true).setAlpha(Math.max(0, Math.min(1, (op - 0.55) / 0.35)));
+        }
+      } else {
+        // No door art: browning is shown as the cooked pizza fading in over the raw one while it bakes.
+        view.base.setVisible(!burnt && o.phase === 'cooking').setAlpha(1).setScale(view.k).setY(view.baseY);
+        view.top.setVisible(true).setAlpha(burnt ? 1 : Math.min(1, o.t / bake));
+      }
       if (burnt) view.top.setTint(0x3a2a22);
       else view.top.clearTint();
       view.ring.show(o.phase, o.t / bake, now);
@@ -249,6 +274,17 @@ export class StationViews {
     this.scene.cameras.main.shake(SaveSystem.reduceMotion() ? 0 : 120, 0.0025);
   }
 
+  /** Debug and tests: the oven door state ('open' | 'closing' | 'closed' | 'opening' | 'lit'), or 'none' without door art. */
+  doorState(i: number): string {
+    const o = this.ovens[i];
+    return o && o.door.ready ? o.door.state : 'none';
+  }
+
+  /** Where the raw pizza lands in the oven (on the pulled-out door). */
+  ovenLoadPos(i: number): { x: number; y: number } {
+    return { x: this.ovens[i].base.x, y: this.ovens[i].baseY };
+  }
+
   /** Keep the oven pizza hidden while the raw pizza flies in. */
   holdOven(oven: number, ms: number, now: number): void {
     if (this.ovens[oven]) this.ovens[oven].holdUntil = now + ms;
@@ -283,6 +319,7 @@ export class StationViews {
       b.flipText.destroy();
     });
     this.ovens.forEach((o) => {
+      o.door.destroy();
       o.base.destroy();
       o.top.destroy();
       o.ring.destroy();
