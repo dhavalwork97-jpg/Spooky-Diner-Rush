@@ -25,8 +25,8 @@ export const OVENS: [number, number][] = [[777, 814]];
 export const OVENS_LIT: [number, number][] = [[757, 725]];
 /** Centre of the raw food piled in the fries and nuggets baskets, where the food leaves from. */
 export const FRY_FROM = { fries: [448, 815], nuggets: [308, 815] } as const;
-/** Plates on the serving counter (burgers) first, then the two side plates on the left counter (fries). */
-export const SLOTS: [number, number][] = [[1005, 450], [1141, 450], [1008, 538], [1144, 539], [378, 546], [522, 545]];
+/** Plates on the serving counter (burgers) first, then the two side plates on the left counter (fries), then the two pizza plates (the dough bases). */
+export const SLOTS: [number, number][] = [[1005, 450], [1141, 450], [1008, 538], [1144, 539], [378, 546], [522, 545], [857, 456], [857, 540]];
 
 export class Layout {
   constructor(readonly bg: BackgroundPlacement) {}

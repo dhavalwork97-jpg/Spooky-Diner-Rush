@@ -31,7 +31,7 @@ function botStep(s: KitchenState): boolean {
   const done = s.burners.findIndex((p) => p && p.side === 2 && isEdible(p.phase));
   if (done >= 0 && next === 'patty') return (s.tapGrill(done), true);
   const readyOven = s.ovens.findIndex((o) => o && isEdible(o.phase));
-  if (readyOven >= 0 && s.slots.some((sl) => sl.row === 'plate' && !sl.item)) return (s.tapOven(readyOven), true);
+  if (readyOven >= 0 && s.slots.some((sl) => sl.row === 'pizza' && !sl.item)) return (s.tapOven(readyOven), true);
   if (s.ovens.some((o) => o?.phase === 'burnt')) return (s.tapOven(s.ovens.findIndex((o) => o?.phase === 'burnt')), true);
   // 5. start what is still needed beyond what is already in the pipeline
   const need = (k: 'fries' | 'nuggets' | 'pizza' | 'burger') =>
@@ -98,7 +98,7 @@ describe('bot simulation (first balance probe)', () => {
     // `events` is the queue the views drain each frame; the bot's last action can leave an event in it.
     // The point is that it does not grow, so allow a handful instead of exactly none.
     expect(r.s.events.length).toBeLessThan(10);
-    expect(r.s.slots.length).toBe(6);
+    expect(r.s.slots.length).toBe(8); // 4 plates + 2 side + 2 pizza plates
     expect(r.s.vats.length).toBe(2);
   });
 });

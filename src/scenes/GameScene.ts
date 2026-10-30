@@ -432,7 +432,7 @@ export class GameScene extends Phaser.Scene {
     const slot = this.state.slots[slotIndex];
     if (!slot.item) return null;
     const home = this.slotPos(slotIndex);
-    const v = new ItemView(this, at?.x ?? home.x, at?.y ?? home.y, slot.item.id, slot.item.kind, slotIndex, this.layout.s(slot.item.kind === 'burger' ? 62 : slot.item.kind === 'pizza' ? 84 : 70));
+    const v = new ItemView(this, at?.x ?? home.x, at?.y ?? home.y, slot.item.id, slot.item.kind, slotIndex, this.layout.s(slot.item.kind === 'burger' ? 62 : slot.item.kind === 'pizza' ? 112 : 70));
     v.home = home;
     this.items.set(slotIndex, v);
     return v;

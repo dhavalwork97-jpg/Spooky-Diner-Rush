@@ -35,6 +35,10 @@ describe('new kitchen art layout', () => {
     SLOTS.slice(0, 4).forEach((p) => expect(inside(p, 'serving_counter'), `slot ${p}`).toBe(true));
     expect(inside(SLOTS[4], 'side_plate')).toBe(true);
     expect(inside(SLOTS[5], 'side_tray')).toBe(true);
+    // the two pizza plates are the dough bases
+    expect(inside(SLOTS[6], 'dough_bases')).toBe(true);
+    expect(inside(SLOTS[7], 'dough_bases')).toBe(true);
+    expect(SLOTS.length).toBe(defaultConfig.recipes.settings.plateSlots + defaultConfig.recipes.settings.sideSlots + defaultConfig.recipes.settings.pizzaSlots);
   });
 });
 

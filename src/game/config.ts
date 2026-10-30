@@ -18,6 +18,8 @@ export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger' | 'drink' | 'ice
 export interface RecipeSettings {
   plateSlots: number;
   sideSlots: number;
+  /** Plates that only hold finished pizzas (the two dough bases), so burgers can never block the oven. */
+  pizzaSlots: number;
   fryVats: number;
   ovens: number;
   grillBurners: number;

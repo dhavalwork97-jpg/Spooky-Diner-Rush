@@ -41,7 +41,7 @@ export function botStep(s: KitchenState): boolean {
   const done = s.burners.findIndex((p) => p && p.side === 2 && isEdible(p.phase));
   if (done >= 0 && next === 'patty') return (s.tapGrill(done), true);
   const readyOven = s.ovens.findIndex((o) => o && isEdible(o.phase));
-  if (readyOven >= 0 && s.slots.some((sl) => sl.row === 'plate' && !sl.item)) return (s.tapOven(readyOven), true);
+  if (readyOven >= 0 && s.slots.some((sl) => sl.row === 'pizza' && !sl.item)) return (s.tapOven(readyOven), true);
   if (s.ovens.some((o) => o?.phase === 'burnt')) return (s.tapOven(s.ovens.findIndex((o) => o?.phase === 'burnt')), true);
   // 5. start what is still needed beyond what is already in the pipeline
   const need = (k: 'fries' | 'nuggets' | 'pizza' | 'burger') =>

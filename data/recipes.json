@@ -10,7 +10,8 @@
     "burnReputationPenalty": 8,
     "ovens": 1,
     "drinkSpouts": 1,
-    "iceCreamMachines": 1
+    "iceCreamMachines": 1,
+    "pizzaSlots": 2
   },
   "items": {
     "fries": {
