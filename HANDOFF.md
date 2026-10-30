@@ -1,9 +1,19 @@
 # HANDOFF
 
-Last updated: ChatGPT, session 2026-10-29
-Last updated at: 2026-10-29 12:00 IST
+Last updated: Claude, session 2026-10-30
+Last updated at: 2026-10-30 17:15 IST
 
-## Milestone 6: drinks (Lv 6) and ice cream (Lv 12) stations (2026-10-30, Claude) - branch `milestone-6-drinks-icecream`, not merged, no PR
+## CURRENT STATUS (2026-10-30, after PR #9) - read this first
+- Everything below is MERGED into `main`: PR #9 (https://github.com/dhavalwork97-jpg/Chef-Rush/pull/9), merge commit `316bb38266e71b510130512feed93dfe03f0ee48`. It carried `kitchen-art-integration`, `milestone-5-content` and `milestone-6-drinks-icecream` (the owner reviewed and approved the merge). Where the sections below say "not merged" or "no PR", that was true when they were written and is now OUT OF DATE. The three branches still exist on GitHub and can be deleted.
+- Nothing has been deployed by me. Whether Vercel deployed `main` after the merge was not checked.
+- Checks on the merged head: `npm test` 195 passing (18 files), `npm run typecheck` clean, `npm run build` ok (run on the Milestone 6 branch head `4457dc5`, which is the merged tree).
+- What is in `main` now: new kitchen art with the pizza-oven door animation; 4-burner grill; lock covers ("Lv N"); Lv 1-20 progression with scaling after Lv 20 (four customers from Lv 13, impatient, VIP and critic customers); drinks (Lv 6) and ice cream (Lv 12) stations; bot balance simulation in `tests/sim_late.test.ts`.
+- Two existing tests were changed on purpose (reasons in the sections below): the leftover-event check in `tests/sim.test.ts` and the ratio check in `tests/sim_late.test.ts`.
+- Still open (not done): human playtest of Lv 6-20 on a real phone; real ice cream art (cup and cone are code-drawn placeholders, keys `drink_cooked` and `icecream_cooked`); Shop upgrades for the new stations (none exist); the game is somewhat easier since drinks arrived (tune `data/progression.json`); reduced-motion and 844x390 checks of the new rings; the Lv 6 and Lv 12 level-up cards; tutorial hints for drinks and ice cream.
+- Next task suggestion: ask the owner which of the open items comes first (a Milestone 7 brief is not in the repo).
+- Environment notes: the stop hook "unpushed commits" message is a false alarm in a shallow clone (compare `git ls-remote origin <branch>` with `git rev-parse HEAD`). The session's permission checker blocks merges without an explicit owner review statement.
+
+## Milestone 6: drinks (Lv 6) and ice cream (Lv 12) stations (2026-10-30, Claude) - branch `milestone-6-drinks-icecream`, MERGED in PR #9
 Branched from `milestone-5-content`. NOT merged: the owner asked me to merge `milestone-5-content` into `main` (it contains `kitchen-art-integration`; 6 commits ahead, 0 behind) but the session's permission checker refused every attempt, so the owner must merge it (or open the PR). If that merges first, rebase this branch onto `main` (or open this PR against `main` after it).
 What it does (all numbers in `data/recipes.json`, owner to tune):
 - Drink (`drink`, Lv 6, price 10, xp 12): one spout (`drinkSpouts` 1) fills a cup in 3.5 s. Tap the dispenser to start a cup and tap again to put the full cup on a free side slot (a free plate if both side slots are taken). A full cup never spoils.
@@ -39,7 +49,7 @@ Before this milestone the fast bot was 0.37 / 0.56 / 0.70 / 0.82, average 0.63 /
 ### Next
 Owner: merge `milestone-5-content` into `main`, then open the Milestone 6 PR. Then: real ice cream art, decide on upgrades for the new stations (the Shop has none), and a human playtest of Lv 6-20.
 
-## Milestone 5 content (2026-10-30, Claude) - branch `milestone-5-content`, not merged, no PR yet
+## Milestone 5 content (2026-10-30, Claude) - branch `milestone-5-content`, MERGED in PR #9
 Branched from `kitchen-art-integration` (unmerged), so the PR base must be `kitchen-art-integration` (or rebase onto `main` once that is merged). The 4-burner change is in all balance numbers below.
 Done:
 - [x] `data/progression.json` Lv 11-20 (was Lv 1-10): up to 4 customers (4 seats; Lv 13), impatient customers from Lv 11, VIPs from Lv 14 (5 percent, up to 10), critics from Lv 16 (5 percent, up to 8), arrival gaps `[3,6]` at Lv 11-12 easing to `[3.2,5.8]` at Lv 20 (a looser gap only in the level that adds the fourth customer), patience 34 -> 31, order size stays `[1,3]` (plate slots are 4). Unlock text announces the new customer types and the fourth seat. First-pass numbers (more VIPs and critics, tighter gaps) were measured and rejected: closes per minute climbed much too fast.
@@ -64,7 +74,7 @@ Reading: a fast bot reaches Lv 20 in about 36-40 minutes; the close rate rises a
 ### Next
 Open the PR (base decision above), then a human playtest of Lv 11-20, and decide the drinks and ice cream stations.
 
-## Kitchen art + oven door integration (2026-10-30, Claude) - branch `kitchen-art-integration`, not merged, no PR yet
+## Kitchen art + oven door integration (2026-10-30, Claude) - branch `kitchen-art-integration`, MERGED in PR #9
 Done (all in the branch, tests/typecheck/build green; see "Verified" below):
 - [x] New kitchen art: `public/assets/art/kitchen_full.webp` is now the supplied 2752x1536 image (old 1699x926 file replaced; same asset key). `data/restaurants.json` backgroundSize 2752x1536 and all 17 tap zones remapped to the new art (measured on a gridded copy). Layout source space is now 1699 x 948 (`SRC_H` 926 -> 948, same width so sprite sizes stay valid); every point in `src/views/layout.ts` re-measured (seats, vats, burners, slots, oven). New constants: `OVENS_LIT` (cooked pizza on the lit tray), `FRY_FROM` (centre of the food painted in each basket).
 - [x] Ingredients: ALL ingredients (raw fries, nuggets, buns, patties, lettuce, tomato, plates) are baked into the background. None needs to move or disappear in this game (supply is unlimited; the model only spawns flying copies and plate items), so nothing was cut out or patched. The old stock sprites (`StockViews` sprites) were removed so nothing is drawn twice. `StockViews` now draws only a dim "Lv N" cover on stations that are still locked (the old art showed locked stock as empty bins); the cover fades when the level unlocks. Tap squash on stock was dropped (the tap outline remains).
