@@ -3,6 +3,13 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
+## In progress (2026-10-31, Claude): supplied ice cream dispenser animation - branch `icecream-art` (from `pizza-plate-fix`, PR base `pizza-plate-fix` until #11 merges)
+Owner supplied `ice-cream-lanes.zip`: `ice_cream_base.png` (300x393 machine), `layer_00..74.png` (106x255 frames, 12 fps, 3 lanes left/mid/right via `lane_dx` -70/0/+70, offset 97.5,105.6 on the base) and `ice_cream_anim.json`. Plan (tick as done, one commit + push per step):
+- [ ] 1. Find where the base sits on the kitchen art (template match), pack the 75 frames into one webp sheet, add `ice_cream_base` / `ice_cream_anim` (lazy) and an `icecream_cooked` plate/bubble picture cut from the finished frame to `public/assets/art` + `data/assets.json`.
+- [ ] 2. Model: three lanes (`iceCreamMachines` 3, each lane a cone), swirl time set so the 75 frames play in it. The animation frame is a function of the model's cone timer only.
+- [ ] 3. View: base over the painted machine, layer per active lane, ring per lane, collect from the lane; keep the code-drawn scoop as the fallback if the art has not loaded.
+- [ ] 4. Tests, balance re-run, browser check, docs.
+
 ## Pizza plates fix (2026-10-30, Claude) - branch `pizza-plate-fix`, PR #11 (base `main`)
 Owner report: a cooked pizza went to the burger plates, and with four burgers waiting the pizza stayed in the oven and burned. Fix: the two painted dough bases are now two pizza-only plates (`recipes.json` `pizzaSlots` 2, slot row `'pizza'`, slot indices 6 and 7, `SLOTS[6..7]` on the dough discs). `tapOven` puts a ready pizza on a free pizza plate only; when both are taken it says "Serve a pizza first: the pizza plates are full" and the pizza waits in the oven. Burger and side plates never hold pizza; drinks and cones still use side slots, then burger plates.
 - Tests: 196 passing. CHANGED existing tests on purpose (behavior change the owner asked for): `tests/game.test.ts` pizza collect test now expects a pizza plate, plus a new test for full burger plates; `tests/sim.test.ts` slot count 6 to 8 and its bot collects pizza when a pizza plate is free; `tests/helpers/bot.ts` the same; `tests/kitchenart.test.ts` checks the two new slot positions.
