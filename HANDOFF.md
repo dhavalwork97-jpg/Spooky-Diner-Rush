@@ -3,6 +3,14 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
+## In progress (2026-10-30, Claude): Milestone 5 content - branch `milestone-5-content`
+Branched from `kitchen-art-integration` (b3de6c9, unmerged) so the 4-burner change is in the balance numbers. PR base must be `kitchen-art-integration` until that branch is merged (or rebase onto main after). Scope: Lv 11-20 progression data, scaling past Lv 20, balance simulation, docs. No new recipes (drinks and ice cream stations have zones but no model support; out of scope).
+- [ ] 1. `data/progression.json` Lv 11-20: customers up to 4 (only 4 seats), customer type weights (impatient from Lv 11, VIP Lv 14, critic Lv 16), tighter gaps and patience, unlock text.
+- [ ] 2. Scaling after Lv 20: extend `afterLast` with an arrival-gap step and floor (patience already sits on its floor); `levelDef` applies it; tests.
+- [ ] 3. Data tests (contiguous levels, seat cap, weights name real types, monotone items, banned words) in `tests/progression.test.ts`.
+- [ ] 4. Balance simulation to Lv 20 (bot, 5 seeds) in `tests/sim.test.ts`: print level times and closes, tune numbers, then assert bounds from the measured runs.
+- [ ] 5. Docs: `docs/progress.md` (Milestone 5 with Not-verified list), HANDOFF.md, architecture if needed.
+
 ## Kitchen art + oven door integration (2026-10-30, Claude) - branch `kitchen-art-integration`, not merged, no PR yet
 Done (all in the branch, tests/typecheck/build green; see "Verified" below):
 - [x] New kitchen art: `public/assets/art/kitchen_full.webp` is now the supplied 2752x1536 image (old 1699x926 file replaced; same asset key). `data/restaurants.json` backgroundSize 2752x1536 and all 17 tap zones remapped to the new art (measured on a gridded copy). Layout source space is now 1699 x 948 (`SRC_H` 926 -> 948, same width so sprite sizes stay valid); every point in `src/views/layout.ts` re-measured (seats, vats, burners, slots, oven). New constants: `OVENS_LIT` (cooked pizza on the lit tray), `FRY_FROM` (centre of the food painted in each basket).
