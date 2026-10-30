@@ -3,6 +3,20 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
+## In progress (2026-10-30, Claude): Milestone 6 - drinks (Lv 6) and ice cream (Lv 12) stations - branch `milestone-6-drinks-icecream`
+Branched from `milestone-5-content`. NOT merged: the owner asked me to merge `milestone-5-content` into `main` (it contains `kitchen-art-integration`, 6 commits ahead, 0 behind) but the session's permission checker refused both times, so the owner must merge it (or open the PR). If it merges first, rebase this branch onto `main`.
+Design (first pass, every number in `data/recipes.json`, owner to tune):
+- Drink (`drink`, Lv 6, price 10, xp 12): the dispenser has `drinkSpouts` (2) cups. Tap it to start a cup (fills in `fillAfter` 2.5 s), tap a full cup to put it on a free side slot (else a free plate). A cup never burns and waits for as long as needed.
+- Ice cream (`icecream`, Lv 12, price 22, xp 28): one machine. Tap to start a cone (swirls `readyAfter` 3.5 s), tap to collect onto a slot. A ready cone melts after `meltAfter` 14 s: it is cleared with a friendly message, no coin or reputation cost.
+- Orders: `progression.json` adds `drink` to the item list from Lv 6 and `icecream` from Lv 12. Order size and customer counts stay as they are.
+- Views: the dispenser and machine use the painted art; cups reuse the supplied `drink_cup` / `drink_soda` art; there is NO ice cream art in the repo, so the cone is drawn with shapes (placeholder, to flag to the owner).
+Plan (tick as done; one commit + push per step):
+- [ ] 1. Config + model: `ItemKind` gains `drink` and `icecream`; `recipes.json` entries and settings; `KitchenState` `dispensers` / `iceCreams`, `tapDrinks`, `tapIceCream`, melt, events; validate.ts; unit tests.
+- [ ] 2. Progression data (items from Lv 6 / Lv 12), keep Lv 1-20 tests green, update progression tests.
+- [ ] 3. Views + scene wiring (tap handlers for `drinks` / `ice_cream`, item sprites, fill and swirl animation, melt, reduced motion, lock covers use the existing zones).
+- [ ] 4. Bot (`tests/helpers/bot.ts`) learns to make drinks and ice cream; re-run the late-level balance simulation, retune numbers, update bounds only with the reason written down.
+- [ ] 5. Browser check, `docs/progress.md`, `docs/architecture.md`, RecipeBook entries if the recipe book lists items, final HANDOFF update.
+
 ## Milestone 5 content (2026-10-30, Claude) - branch `milestone-5-content`, not merged, no PR yet
 Branched from `kitchen-art-integration` (unmerged), so the PR base must be `kitchen-art-integration` (or rebase onto `main` once that is merged). The 4-burner change is in all balance numbers below.
 Done:
