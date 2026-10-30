@@ -3,12 +3,15 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
-## In progress (2026-10-31, Claude): supplied ice cream dispenser animation - branch `icecream-art` (from `pizza-plate-fix`, PR base `pizza-plate-fix` until #11 merges)
-Owner supplied `ice-cream-lanes.zip`: `ice_cream_base.png` (300x393 machine), `layer_00..74.png` (106x255 frames, 12 fps, 3 lanes left/mid/right via `lane_dx` -70/0/+70, offset 97.5,105.6 on the base) and `ice_cream_anim.json`. Plan (tick as done, one commit + push per step):
-- [ ] 1. Find where the base sits on the kitchen art (template match), pack the 75 frames into one webp sheet, add `ice_cream_base` / `ice_cream_anim` (lazy) and an `icecream_cooked` plate/bubble picture cut from the finished frame to `public/assets/art` + `data/assets.json`.
-- [ ] 2. Model: three lanes (`iceCreamMachines` 3, each lane a cone), swirl time set so the 75 frames play in it. The animation frame is a function of the model's cone timer only.
-- [ ] 3. View: base over the painted machine, layer per active lane, ring per lane, collect from the lane; keep the code-drawn scoop as the fallback if the art has not loaded.
-- [ ] 4. Tests, balance re-run, browser check, docs.
+## Supplied ice cream animation (2026-10-31, Claude) - branch `icecream-art` (from `pizza-plate-fix`; PR base `pizza-plate-fix` until #11 merges)
+Wired in the owner's `ice-cream-lanes.zip`. What it does:
+- Assets (`public/assets/art`, listed in `data/assets.json`): `ice_cream_base.webp` (300x393 machine, lazy), `ice_cream_anim.webp` (the 75 layers packed 10x8 into one sheet of 106x255 frames, 861 KB, lazy), `icecream_cooked.webp` (the finished cone cut from the last layer, 156x156 with transparent padding, loaded at boot; it replaces the code-drawn cone on plates, order bubbles and the RecipeBook).
+- The base picture is drawn over the painted machine's upper part (`ICE` in `src/views/layout.ts`; the base is a different drawing from the painted machine, so the match is by eye: scale 1.32 of the art, a small sliver of the painted machine shows at the left edge). The animation layers sit on top, one per lane (lane offsets from `ice_cream_anim.json`).
+- Model: `iceCreamMachines` 3 (one cone per lane, middle lane first, then left, right), swirl time 5 s (`readyAfter`), melt 14 s as before. The frame shown is a function of the model's cone timer only (frame = progress x 74, then the last frame is held); the model alone decides when a cone is ready or melted.
+- View: `src/views/PourViews.ts` (`loadIceCreamArt` loads in the background; until it arrives, or if it fails, the old code-drawn scoop and single ring are used). A small ring per lane sits on the cabinet under the machine; a melting cone fades and sinks (skipped with reduced motion); the last frames pulse when about to melt (not with reduced motion); a collected cone flies out from its own lane.
+- Tests: 198 passing (3-lane model tests; lane positions inside the machine zone; the three art files exist and are listed). `tests/sim_late.test.ts` unchanged and green: fast bot 0.21 / 0.42 / 0.53 / 0.57 closes a minute at Lv 6-10 / 11-15 / 16-20 / 21-25, average 0.51 / 0.71 / 0.78.
+- Seen in Chromium (1280x720, real clicks, Lv 12): three taps start the three lanes, the pour and swirl play, rings go to ticks, a tap collects one cone onto a plate, the next tap collects the next; no console errors.
+- Not verified: phone layout and touch size of the lane rings; reduced motion; slow connections (the 861 KB sheet loads after the scene starts, so the first cone may use the old scoop picture); the left-edge sliver of the painted machine is minor but visible if you look for it.
 
 ## Pizza plates fix (2026-10-30, Claude) - branch `pizza-plate-fix`, PR #11 (base `main`)
 Owner report: a cooked pizza went to the burger plates, and with four burgers waiting the pizza stayed in the oven and burned. Fix: the two painted dough bases are now two pizza-only plates (`recipes.json` `pizzaSlots` 2, slot row `'pizza'`, slot indices 6 and 7, `SLOTS[6..7]` on the dough discs). `tapOven` puts a ready pizza on a free pizza plate only; when both are taken it says "Serve a pizza first: the pizza plates are full" and the pizza waits in the oven. Burger and side plates never hold pizza; drinks and cones still use side slots, then burger plates.

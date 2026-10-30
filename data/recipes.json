@@ -10,7 +10,7 @@
     "burnReputationPenalty": 8,
     "ovens": 1,
     "drinkSpouts": 1,
-    "iceCreamMachines": 1,
+    "iceCreamMachines": 3,
     "pizzaSlots": 2
   },
   "items": {
@@ -66,7 +66,7 @@
       "unlockLevel": 12,
       "price": 22,
       "xp": 28,
-      "readyAfter": 3.5,
+      "readyAfter": 5,
       "burnWindow": 14
     }
   }

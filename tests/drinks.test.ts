@@ -87,12 +87,15 @@ describe('ice cream', () => {
     const s = at(12);
     noCustomers(s);
     s.tapIceCream();
-    s.tapIceCream(); // still swirling: nothing starts, one machine only
+    s.tapIceCream(); // the next lane starts: there are three
+    s.tapIceCream();
+    expect(s.cones.filter(Boolean).length).toBe(3);
+    s.tapIceCream(); // every lane is busy
     expect(lastInvalid(s).join()).toMatch(/swirling/);
-    run(s, 4);
+    run(s, 6);
     expect(s.cones[0]?.phase).not.toBe('cooking');
     s.tapIceCream();
-    expect(s.cones[0]).toBeNull();
+    expect(s.cones[0]).toBeNull(); // the first ready lane is collected
     expect(s.slots.some((x) => x.item?.kind === 'icecream')).toBe(true);
   });
 

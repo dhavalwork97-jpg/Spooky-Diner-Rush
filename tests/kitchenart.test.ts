@@ -4,8 +4,9 @@ import assets from '../data/assets.json';
 import { validateAssets } from '../src/data/validate';
 import { coverChange } from '../src/game/lockcover';
 import { defaultConfig } from '../src/game/config';
-import { CONE, CONE_RING, CUP, DRINK_RING, VAT_FOOD_W, VAT_GLASS, BURNERS, FRY_FROM, OVENS, OVENS_LIT, SLOTS, SRC_H, SRC_W, VATS } from '../src/views/layout';
+import { ICE, ICE_BASE_W, ICE_LANES, ICE_LANE_DX, ICE_LAYER_OFFSET, ICE_FRAMES, ICE_FRAME_W, CONE, CONE_RING, CUP, DRINK_RING, VAT_FOOD_W, VAT_GLASS, BURNERS, FRY_FROM, OVENS, OVENS_LIT, SLOTS, SRC_H, SRC_W, VATS } from '../src/views/layout';
 
+const artFiles = import.meta.glob('../public/assets/art/*.webp');
 const diner = restaurants.restaurants[0];
 const zone = (id: string) => {
   const z = diner.zones.find((q) => q.id === id)!;
@@ -95,5 +96,22 @@ describe('food inside the vat glass', () => {
     box(CONE).forEach((p) => expect(inside(p, 'ice_cream_machine'), `cone ${p}`).toBe(true));
     expect(inside(DRINK_RING, 'drink_dispenser')).toBe(true);
     expect(inside(CONE_RING, 'ice_cream_machine')).toBe(true);
+  });
+  it('puts the supplied ice cream machine and its three lanes over the painted machine', () => {
+    const k = ICE.w / ICE_BASE_W;
+    ICE_LANES.forEach((lane) => {
+      const x = ICE.x + (ICE_LAYER_OFFSET[0] + ICE_LANE_DX[lane] + ICE_FRAME_W / 2) * k;
+      const y = ICE.y + 315 * k; // the cone in that lane
+      expect(inside([x, y], 'ice_cream_machine'), `lane ${lane}`).toBe(true);
+    });
+    expect(ICE_LANES.length).toBe(defaultConfig.recipes.settings.iceCreamMachines);
+    expect(ICE_FRAMES).toBe(75);
+  });
+  it('has the ice cream art files and lists them in assets.json', () => {
+    for (const key of ['ice_cream_base', 'ice_cream_anim', 'icecream_cooked']) {
+      const a = assets.assets.find((q) => q.key === key);
+      expect(a, key).toBeTruthy();
+      expect(Object.keys(artFiles).some((f) => f.endsWith(a!.file.replace('assets/art/', ''))), a!.file).toBe(true);
+    }
   });
 });

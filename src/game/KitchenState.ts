@@ -492,7 +492,7 @@ export class KitchenState {
     this.emit({ type: 'drinkStart', spout: i });
   }
 
-  /** Tap the machine: collect a ready cone, or start swirling one. */
+  /** Tap the machine: collect a ready cone, or start swirling one in a free lane (there are `iceCreamMachines` lanes). */
   tapIceCream(): void {
     if (this.closed) return;
     const def = this.cfg.recipes.items.icecream;
@@ -507,7 +507,7 @@ export class KitchenState {
       return;
     }
     const i = this.cones.findIndex((p) => !p);
-    if (i < 0) return this.invalid('The cone is still swirling');
+    if (i < 0) return this.invalid('Every cone is still swirling');
     this.cones[i] = { t: 0, phase: 'cooking' };
     this.emit({ type: 'coneStart', machine: i });
   }

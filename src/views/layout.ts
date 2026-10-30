@@ -57,3 +57,18 @@ export const CONE: [number, number, number, number] = [34, 684, 57, 89];
 /** Where the progress rings sit on the dispenser and on the ice cream machine. */
 export const DRINK_RING: [number, number] = [283, 215];
 export const CONE_RING: [number, number] = [192, 527];
+
+/**
+ * The supplied ice cream machine picture (`ice_cream_base`, 300 x 393) is drawn over the painted machine's
+ * upper part, and its animation layers (`ice_cream_anim`, 106 x 255 frames, three lanes) over that.
+ * Source pixels; `ICE.w` is the on-screen width of the 300 px base. Layers sit at
+ * (ICE_LAYER_OFFSET + lane dx) in base pixels, scaled like the base.
+ */
+export const ICE = { x: -3.1, y: 482.8, w: 244.5 };
+export const ICE_BASE_W = 300;
+export const ICE_LAYER_OFFSET: [number, number] = [97.5, 105.6];
+export const ICE_LANE_DX = { left: -69.7, mid: 0, right: 69.7 } as const;
+/** Cone index to lane: the middle lane first, then left, then right. */
+export const ICE_LANES = ['mid', 'left', 'right'] as const;
+export const ICE_FRAMES = 75;
+export const ICE_FRAME_W = 106;

@@ -327,6 +327,36 @@
       "frameHeight": 242,
       "preferFallback": false,
       "lazy": true
+    },
+    {
+      "key": "ice_cream_base",
+      "type": "image",
+      "file": "assets/art/ice_cream_base.webp",
+      "scale": 1,
+      "width": 300,
+      "height": 393,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "ice_cream_anim",
+      "type": "spritesheet",
+      "file": "assets/art/ice_cream_anim.webp",
+      "scale": 1,
+      "frameWidth": 106,
+      "frameHeight": 255,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "icecream_cooked",
+      "type": "image",
+      "file": "assets/art/icecream_cooked.webp",
+      "scale": 1,
+      "width": 156,
+      "height": 156,
+      "preferFallback": false,
+      "lazy": false
     }
   ]
 }

@@ -25,7 +25,7 @@ export interface RecipeSettings {
   grillBurners: number;
   /** Cups the drinks dispenser can fill at once. */
   drinkSpouts: number;
-  /** Cones the ice cream machine can swirl at once. */
+  /** Cones the ice cream machine can swirl at once (one lane each). */
   iceCreamMachines: number;
   beginnerMaxLevel: number;
   beginnerBurnBonus: number;
