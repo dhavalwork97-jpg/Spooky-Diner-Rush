@@ -3,6 +3,13 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
+## Pizza plates fix (2026-10-30, Claude) - branch `pizza-plate-fix`, PR #11 (base `main`)
+Owner report: a cooked pizza went to the burger plates, and with four burgers waiting the pizza stayed in the oven and burned. Fix: the two painted dough bases are now two pizza-only plates (`recipes.json` `pizzaSlots` 2, slot row `'pizza'`, slot indices 6 and 7, `SLOTS[6..7]` on the dough discs). `tapOven` puts a ready pizza on a free pizza plate only; when both are taken it says "Serve a pizza first: the pizza plates are full" and the pizza waits in the oven. Burger and side plates never hold pizza; drinks and cones still use side slots, then burger plates.
+- Tests: 196 passing. CHANGED existing tests on purpose (behavior change the owner asked for): `tests/game.test.ts` pizza collect test now expects a pizza plate, plus a new test for full burger plates; `tests/sim.test.ts` slot count 6 to 8 and its bot collects pizza when a pizza plate is free; `tests/helpers/bot.ts` the same; `tests/kitchenart.test.ts` checks the two new slot positions.
+- Seen in Chromium (Lv 6, all four burger plates full): the pizza baked, was collected and landed on the top dough disc. Cooked pizza is drawn larger (112) so it fills the disc.
+- Not verified: the raw pizza look. The raw dough is the painted disc itself and does not move onto a plate. If the owner meant something else by "raw pizza isn't visible on plate", ask.
+- Note: PR #10 (HANDOFF status after PR #9) is a separate open PR; both touch the top of this file, so expect a trivial merge conflict in HANDOFF.md.
+
 ## Milestone 6: drinks (Lv 6) and ice cream (Lv 12) stations (2026-10-30, Claude) - branch `milestone-6-drinks-icecream`, not merged, no PR
 Branched from `milestone-5-content`. NOT merged: the owner asked me to merge `milestone-5-content` into `main` (it contains `kitchen-art-integration`; 6 commits ahead, 0 behind) but the session's permission checker refused every attempt, so the owner must merge it (or open the PR). If that merges first, rebase this branch onto `main` (or open this PR against `main` after it).
 What it does (all numbers in `data/recipes.json`, owner to tune):
