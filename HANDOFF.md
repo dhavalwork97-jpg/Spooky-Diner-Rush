@@ -3,13 +3,30 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
-## In progress (2026-10-30, Claude): Milestone 5 content - branch `milestone-5-content`
-Branched from `kitchen-art-integration` (b3de6c9, unmerged) so the 4-burner change is in the balance numbers. PR base must be `kitchen-art-integration` until that branch is merged (or rebase onto main after). Scope: Lv 11-20 progression data, scaling past Lv 20, balance simulation, docs. No new recipes (drinks and ice cream stations have zones but no model support; out of scope).
-- [ ] 1. `data/progression.json` Lv 11-20: customers up to 4 (only 4 seats), customer type weights (impatient from Lv 11, VIP Lv 14, critic Lv 16), tighter gaps and patience, unlock text.
-- [ ] 2. Scaling after Lv 20: extend `afterLast` with an arrival-gap step and floor (patience already sits on its floor); `levelDef` applies it; tests.
-- [ ] 3. Data tests (contiguous levels, seat cap, weights name real types, monotone items, banned words) in `tests/progression.test.ts`.
-- [ ] 4. Balance simulation to Lv 20 (bot, 5 seeds) in `tests/sim.test.ts`: print level times and closes, tune numbers, then assert bounds from the measured runs.
-- [ ] 5. Docs: `docs/progress.md` (Milestone 5 with Not-verified list), HANDOFF.md, architecture if needed.
+## Milestone 5 content (2026-10-30, Claude) - branch `milestone-5-content`, not merged, no PR yet
+Branched from `kitchen-art-integration` (unmerged), so the PR base must be `kitchen-art-integration` (or rebase onto `main` once that is merged). The 4-burner change is in all balance numbers below.
+Done:
+- [x] `data/progression.json` Lv 11-20 (was Lv 1-10): up to 4 customers (4 seats; Lv 13), impatient customers from Lv 11, VIPs from Lv 14 (5 percent, up to 10), critics from Lv 16 (5 percent, up to 8), arrival gaps `[3,6]` at Lv 11-12 easing to `[3.2,5.8]` at Lv 20 (a looser gap only in the level that adds the fourth customer), patience 34 -> 31, order size stays `[1,3]` (plate slots are 4). Unlock text announces the new customer types and the fourth seat. First-pass numbers (more VIPs and critics, tighter gaps) were measured and rejected: closes per minute climbed much too fast.
+- [x] After Lv 20: `afterLast` gets `arrivalGapStepPerLevel` -0.05 and `arrivalGapFloor` `[2.5,4.5]` (patience was already on its floor of 30); `levelDef` applies it (optional fields, older data still works). Types and order size stay as at Lv 20.
+- [x] Tests: `tests/progression.test.ts` (data rules, the type mix, scaling after Lv 20, model draws types from the weights), `tests/sim_late.test.ts` (balance simulation, bounds below), `tests/helpers/bot.ts` (copy of the M3 bot plus an upgrade-buying policy and a closes-per-minute helper).
+- [x] CHANGED an existing M3 test (flagging it): `tests/sim.test.ts` "30 minutes of play ... no growing state" asserted `events.length` is exactly 0. `events` is the queue the views drain each frame, and the bot's last action can leave one event in it; the new data moved where the seed-7 run stops, so it failed with 1. Now `toBeLessThan(10)` with a comment. Nothing else in M3 tests changed.
+### Balance numbers (bot, seeded, upgrades bought cheapest first; closes per minute, not per level, because levels get longer)
+| bot | Lv 15 at | Lv 20 at | Lv 6-10 | Lv 11-15 | Lv 16-20 | Lv 21-25 |
+|---|---|---|---|---|---|---|
+| fast (0.8 s per action) | 1140-1290 s | 2170-2420 s | 0.37-0.39 | 0.52-0.56 | 0.70 | 0.82-0.85 |
+| average (1.3 s) | 2180-2800 s | 4460-5090 s | 0.63 | 0.81-0.86 | 0.89 | 0.93 |
+| casual (2.0 s) | 3900-4560 s | not reached in 8000 s | 0.66 | 0.79-0.81 | n/a | n/a |
+Reading: a fast bot reaches Lv 20 in about 36-40 minutes; the close rate rises about 1.4x by Lv 11-15 and 1.9x by Lv 16-20 over Lv 6-10 and then flattens (about 0.8 a minute for the fast bot at Lv 26-30). Upgrades barely change the close rate: the bot is limited by how fast it acts, not by cook speed. By the end of every run the bot owned all 15 upgrade tiers, so shop prices look cheap against income (not retuned; no human data).
+### Verified
+- `npm test`: 186 passing (161 before + 25 new). `npm run typecheck`: clean. `npm run build`: ok.
+- Browser (Chromium 1280x720): Lv 16 with all four customer types seated; no errors.
+### Not verified / limitations
+- Everything above is a bot; human pacing at Lv 11-20 is unknown. The bot buys upgrades greedily and never drags items wrongly, so it is optimistic on some counts and clumsy on others.
+- Seats 2 and 3 (the two on the right) are one stool apart; with four customers their order-card tags touch slightly (still legible). Not changed.
+- Drinks (Lv 6) and ice cream (Lv 12) stations have zones in the art but no model support; not part of this milestone.
+- Level-up card text for Lv 11-20 was only read in data, not seen on screen; story cards exist only for Lv 1, 3, 5, 10, 15, 20.
+### Next
+Open the PR (base decision above), then a human playtest of Lv 11-20, and decide the drinks and ice cream stations.
 
 ## Kitchen art + oven door integration (2026-10-30, Claude) - branch `kitchen-art-integration`, not merged, no PR yet
 Done (all in the branch, tests/typecheck/build green; see "Verified" below):
@@ -150,7 +167,7 @@ Assumptions to confirm with the owner: upgrade tiers and prices; decor is cosmet
 ### Milestone 4 scope now on main
 Save v2 with backward-compatible v1 parsing; five upgrades with three tiers; persistent modifiers; cosmetic decor; career titles; chef speech bubbles; one-time story cards; Recipe Book; restaurant selection (only `burger_diner` is playable); HUD buttons. Details and the explicit not-verified list are in `docs/progress.md`.
 
-### Exact next task: Milestone 5 — content
+### Milestone 5 — content (status: implemented on branch `milestone-5-content`, see the section at the top; original brief below)
 Start from the latest `main`, inspect the current repository and docs first, and avoid rebuilding existing systems. Priorities:
 1.Lv 11–20 and the after-Lv 20 scaling.
 2.Balance simulation for the later levels.
