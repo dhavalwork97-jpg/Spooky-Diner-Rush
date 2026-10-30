@@ -3,19 +3,41 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
-## In progress (2026-10-30, Claude): Milestone 6 - drinks (Lv 6) and ice cream (Lv 12) stations - branch `milestone-6-drinks-icecream`
-Branched from `milestone-5-content`. NOT merged: the owner asked me to merge `milestone-5-content` into `main` (it contains `kitchen-art-integration`, 6 commits ahead, 0 behind) but the session's permission checker refused both times, so the owner must merge it (or open the PR). If it merges first, rebase this branch onto `main`.
-Design (first pass, every number in `data/recipes.json`, owner to tune):
-- Drink (`drink`, Lv 6, price 10, xp 12): the dispenser has `drinkSpouts` (2) cups. Tap it to start a cup (fills in `fillAfter` 2.5 s), tap a full cup to put it on a free side slot (else a free plate). A cup never burns and waits for as long as needed.
-- Ice cream (`icecream`, Lv 12, price 22, xp 28): one machine. Tap to start a cone (swirls `readyAfter` 3.5 s), tap to collect onto a slot. A ready cone melts after `meltAfter` 14 s: it is cleared with a friendly message, no coin or reputation cost.
-- Orders: `progression.json` adds `drink` to the item list from Lv 6 and `icecream` from Lv 12. Order size and customer counts stay as they are.
-- Views: the dispenser and machine use the painted art; cups reuse the supplied `drink_cup` / `drink_soda` art; there is NO ice cream art in the repo, so the cone is drawn with shapes (placeholder, to flag to the owner).
-Plan (tick as done; one commit + push per step):
-- [x] 1. Config + model (done: `tests/drinks.test.ts`, 8 tests; cups and cones are code-drawn textures `drink_cooked` / `icecream_cooked` in `src/art/builders.ts`): `ItemKind` gains `drink` and `icecream`; `recipes.json` entries and settings; `KitchenState` `dispensers` / `iceCreams`, `tapDrinks`, `tapIceCream`, melt, events; validate.ts; unit tests.
-- [x] 2. Progression data (items from Lv 6 / Lv 12), keep Lv 1-20 tests green, update progression tests.
-- [ ] 3. Views + scene wiring (tap handlers for `drinks` / `ice_cream`, item sprites, fill and swirl animation, melt, reduced motion, lock covers use the existing zones).
-- [x] 4. Bot (done; drink dispenser now has 1 spout and fills in 3.5 s after probing variants; see numbers at the end) (`tests/helpers/bot.ts`) learns to make drinks and ice cream; re-run the late-level balance simulation, retune numbers, update bounds only with the reason written down.
-- [ ] 5. Browser check, `docs/progress.md`, `docs/architecture.md`, RecipeBook entries if the recipe book lists items, final HANDOFF update.
+## Milestone 6: drinks (Lv 6) and ice cream (Lv 12) stations (2026-10-30, Claude) - branch `milestone-6-drinks-icecream`, not merged, no PR
+Branched from `milestone-5-content`. NOT merged: the owner asked me to merge `milestone-5-content` into `main` (it contains `kitchen-art-integration`; 6 commits ahead, 0 behind) but the session's permission checker refused every attempt, so the owner must merge it (or open the PR). If that merges first, rebase this branch onto `main` (or open this PR against `main` after it).
+What it does (all numbers in `data/recipes.json`, owner to tune):
+- Drink (`drink`, Lv 6, price 10, xp 12): one spout (`drinkSpouts` 1) fills a cup in 3.5 s. Tap the dispenser to start a cup and tap again to put the full cup on a free side slot (a free plate if both side slots are taken). A full cup never spoils.
+- Ice cream (`icecream`, Lv 12, price 22, xp 28): one machine swirls a cone in 3.5 s; tap to collect. A ready cone melts after 14 s: it is cleared with a "Melted" puff, no coin or reputation cost.
+- Orders: `progression.json` adds `drink` from Lv 6 and `icecream` from Lv 12 (and the unlock text "Drinks" / "Ice cream"). No change to customer counts, gaps, patience or order size.
+- Model: `KitchenState.spouts`, `.cones`, `tapDrinks()`, `tapIceCream()`; events `drinkStart/drinkPhase/coneStart/conePhase/melted`; `collect` has `from: 'dispenser' | 'icecream'`; `reopen()` clears both.
+- Views: `src/views/PourViews.ts` (glass fills in the first painted cup, a scoop grows on the first painted cone, a Ring above each machine), lock covers "Lv 6" / "Lv 12" in `StockViews`, tap handlers in `GameScene`. Positions (`CUP`, `CONE`, `DRINK_RING`, `CONE_RING`) are in `src/views/layout.ts` and tested to sit inside their zones.
+- Art: the cup and cone on plates, in order bubbles and in the RecipeBook are CODE-DRAWN textures `drink_cooked` and `icecream_cooked` (`src/art/builders.ts`). The supplied `drink_cup` / `drink_soda` art (lazy-loaded, never loaded anywhere) is NOT used; there is no ice cream art in the repo. Replace by adding files with those two keys.
+- RecipeBook: two new entries with steps (data/recipebook.json) and icons.
+Steps (all done, one commit each, pushed):
+- [x] 1. Config + model + `tests/drinks.test.ts` (8 tests)
+- [x] 2. Progression data
+- [x] 3. Views and scene wiring (+ layout test)
+- [x] 4. Bot learns drinks and ice cream; late-level simulation rerun
+- [x] 5. Browser check and docs
+### Balance (bot, seeded, same method as Milestone 5; closes per minute)
+| bot | Lv 20 at | Lv 6-10 | Lv 11-15 | Lv 16-20 | Lv 21-25 |
+|---|---|---|---|---|---|
+| fast | 2010-2190 s | 0.21 | 0.40 | 0.56 | 0.55 |
+| average | 3880-4400 s | 0.51 | 0.70 | 0.76 | n/a |
+| casual | Lv 15 at 3900-4500 s | 0.64 | 0.78 | n/a | n/a |
+Before this milestone the fast bot was 0.37 / 0.56 / 0.70 / 0.82, average 0.63 / 0.86 / 0.89 / 0.93: the game got somewhat EASIER, because drinks are a cheap item with no failure mode and they replace one in five orders of burgers or pizza. Station timings (spouts 1-2, fill 3.5-4.5 s, cone 3.5-6 s, melt 10-14 s) were probed and barely moved this, so I kept the simple values. If a harder late game is wanted, tune `data/progression.json` (gaps, patience, type weights), not the stations.
+### Verified
+- `npm test`: 195 passing (186 + 8 drinks + 1 layout). `npm run typecheck` clean. `npm run build` ok.
+- Chromium 1280x720 with real clicks at Lv 12: tapping the dispenser and the machine starts a cup and a cone; the glass fills and the scoop grows with a ring above each; after the wait a second tap puts a drink on one plate and a cone on the other; no page errors. Lv 8 screenshot shows the ice cream "Lv 12" cover over the painted cones.
+### Changed in tests (flagging it)
+- `tests/sim_late.test.ts` "the climb is gradual": the Lv 6-10 anchor of the fast bot is now about 0.2 closes a minute, so its ratio to later brackets is meaningless (a handful of closes). The ratio bounds now use the average bot; the fast bot keeps the monotonic check, the absolute bounds (under 0.8 at Lv 11-15, under 1.0 at Lv 16-20) and the 2x step check. Other bounds unchanged.
+### Not verified
+- Human feel: how drinks and cones play on a phone, whether one spout is annoying, whether 14 s before melting is right.
+- Reduced-motion and the 844x390 touch layout for the new rings and glass (the code uses the same Ring and the same reduced-motion checks as other stations, but I did not look).
+- The Lv 6 cover (only the Lv 12 one was seen), the Lv 6 and Lv 12 level-up cards, and the tutorial hand (no hints for drinks or ice cream).
+- Sound: drinks and cones reuse the existing pop and ding sounds only.
+### Next
+Owner: merge `milestone-5-content` into `main`, then open the Milestone 6 PR. Then: real ice cream art, decide on upgrades for the new stations (the Shop has none), and a human playtest of Lv 6-20.
 
 ## Milestone 5 content (2026-10-30, Claude) - branch `milestone-5-content`, not merged, no PR yet
 Branched from `kitchen-art-integration` (unmerged), so the PR base must be `kitchen-art-integration` (or rebase onto `main` once that is merged). The 4-burner change is in all balance numbers below.

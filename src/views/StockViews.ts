@@ -24,6 +24,8 @@ const LOCKS: LockDef[] = [
   { station: 'patty_tray', unlockLevel: 2, rect: [1356, 668, 210, 108] },
   { station: 'lettuce', unlockLevel: 2, rect: [330, 394, 132, 100] },
   { station: 'tomato', unlockLevel: 2, rect: [474, 368, 124, 144] },
+  { station: 'drinks', unlockLevel: 6, rect: [118, 372, 168, 92] },
+  { station: 'ice_cream', unlockLevel: 12, rect: [34, 682, 185, 100] },
 ];
 
 interface Cover {

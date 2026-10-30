@@ -50,3 +50,10 @@ export class Layout {
     return len * this.k;
   }
 }
+
+/** First painted cup under the dispenser and first painted cone in the ice cream machine (x, y, w, h in source pixels). */
+export const CUP: [number, number, number, number] = [123, 381, 45, 74];
+export const CONE: [number, number, number, number] = [34, 684, 57, 89];
+/** Where the progress rings sit on the dispenser and on the ice cream machine. */
+export const DRINK_RING: [number, number] = [283, 215];
+export const CONE_RING: [number, number] = [192, 527];

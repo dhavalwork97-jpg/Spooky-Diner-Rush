@@ -4,7 +4,7 @@ import assets from '../data/assets.json';
 import { validateAssets } from '../src/data/validate';
 import { coverChange } from '../src/game/lockcover';
 import { defaultConfig } from '../src/game/config';
-import { VAT_FOOD_W, VAT_GLASS, BURNERS, FRY_FROM, OVENS, OVENS_LIT, SLOTS, SRC_H, SRC_W, VATS } from '../src/views/layout';
+import { CONE, CONE_RING, CUP, DRINK_RING, VAT_FOOD_W, VAT_GLASS, BURNERS, FRY_FROM, OVENS, OVENS_LIT, SLOTS, SRC_H, SRC_W, VATS } from '../src/views/layout';
 
 const diner = restaurants.restaurants[0];
 const zone = (id: string) => {
@@ -84,5 +84,12 @@ describe('food inside the vat glass', () => {
   });
   it('the glass is centred on the vat points', () => {
     VATS.forEach((v) => expect(Math.abs((VAT_GLASS.top + VAT_GLASS.bottom) / 2 - v[1])).toBeLessThanOrEqual(2));
+  });
+  it('puts the dispenser cup, the cone and their rings inside their own zones', () => {
+    const box = (r: readonly number[]) => [[r[0], r[1]], [r[0] + r[2], r[1] + r[3]]];
+    box(CUP).forEach((p) => expect(inside(p, 'drink_dispenser'), `cup ${p}`).toBe(true));
+    box(CONE).forEach((p) => expect(inside(p, 'ice_cream_machine'), `cone ${p}`).toBe(true));
+    expect(inside(DRINK_RING, 'drink_dispenser')).toBe(true);
+    expect(inside(CONE_RING, 'ice_cream_machine')).toBe(true);
   });
 });

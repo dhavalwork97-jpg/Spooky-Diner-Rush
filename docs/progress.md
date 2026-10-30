@@ -236,3 +236,9 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 - Balance simulation (`tests/sim_late.test.ts`): a fast bot reaches Lv 20 in about 36 to 40 minutes, an average bot in about 75 to 85. Close rate per minute climbs gently (fast bot 0.37, 0.52-0.56, 0.70, 0.82-0.85 for Lv 6-10, 11-15, 16-20, 21-25) and flattens after that. First-pass numbers with heavier VIP and critic weights climbed too fast and were replaced.
 - Tests: 186 passing. One Milestone 3 assertion (the leftover event queue length) was loosened from exactly 0 to under 10, see HANDOFF.md.
 - Not verified: human pacing, the level-up card text on screen for Lv 11-20, tight order cards when all four seats are used (right-hand seats are one stool apart). Drinks and ice cream stations still have no model.
+
+## Milestone 6: drinks and ice cream stations (branch milestone-6-drinks-icecream)
+- Drinks unlock at Lv 6 (dispenser, one spout, 3.5 s to fill, never spoils). Ice cream unlocks at Lv 12 (one machine, 3.5 s to swirl, melts after 14 s at no cost). Both go on a free side slot or plate and are served like any other item; orders include them from those levels.
+- New: `KitchenState.spouts`, `cones`, `tapDrinks`, `tapIceCream`; `src/views/PourViews.ts`; lock covers "Lv 6" and "Lv 12"; RecipeBook entries; the balance bot now makes both items.
+- Tests: 195 passing. Balance: the game is somewhat easier than after Milestone 5 (fast bot 0.21 / 0.40 / 0.56 / 0.55 closes a minute at Lv 6-10 / 11-15 / 16-20 / 21-25; average bot 0.51 / 0.70 / 0.76). One ratio check in `tests/sim_late.test.ts` was moved to the average bot, see HANDOFF.md.
+- Not verified: human play, reduced motion and the phone layout for the new rings, the Lv 6 cover and level-up cards. The cup and cone are code-drawn placeholders; there is no ice cream art yet.
