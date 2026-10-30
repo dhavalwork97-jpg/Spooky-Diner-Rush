@@ -25,6 +25,13 @@ export function botStep(s: KitchenState): boolean {
   // 3. collect ready fries
   const readyVat = s.vats.findIndex((v) => v && isEdible(v.phase));
   if (readyVat >= 0 && s.slots.some((sl) => sl.row === 'side' && !sl.item)) return (s.tapFryer(readyVat), true);
+  // 3b. collect a ready cone or cup that someone still wants (a cone melts if it waits too long)
+  const freeServe = s.slots.some((sl) => !sl.item);
+  const haveKind = (k: 'drink' | 'icecream') => s.slots.filter((sl) => sl.item?.kind === k).length;
+  const wanted = (k: 'drink' | 'icecream') =>
+    s.customers.filter((c) => c.mood === 'waiting').reduce((n, c) => n + c.items.filter((x, i) => x === k && !c.delivered[i]).length, 0);
+  if (freeServe && s.cones.some((p) => p && p.phase !== 'cooking') && wanted('icecream') > haveKind('icecream')) return (s.tapIceCream(), true);
+  if (freeServe && s.spouts.some((p) => p?.phase === 'ready') && wanted('drink') > haveKind('drink')) return (s.tapDrinks(), true);
   // 4. burger building: toppings, patties, flips
   const build = s.buildingSlots()[0]?.item;
   const next = build ? s.layers[build.placed.length] : undefined;
@@ -44,6 +51,8 @@ export function botStep(s: KitchenState): boolean {
   for (const k of ['fries', 'nuggets'] as const) if (need(k) > haveOf(k) && s.vats.some((v) => !v)) return (s.startFry(k), true);
   if (s.level >= 2 && need('burger') > haveBurgers && s.burners.some((p) => !p)) return (s.startPatty(), true);
   if (need('pizza') > s.slots.filter((sl) => sl.item?.kind === 'pizza').length + s.ovens.filter(Boolean).length && s.ovens.some((o) => !o)) return (s.startPizza(), true);
+  if (s.level >= 6 && wanted('drink') > haveKind('drink') + s.spouts.filter(Boolean).length && s.spouts.some((p) => !p)) return (s.tapDrinks(), true);
+  if (s.level >= 12 && wanted('icecream') > haveKind('icecream') + s.cones.filter(Boolean).length && s.cones.some((p) => !p)) return (s.tapIceCream(), true);
   const onPlates = s.slots.filter((sl) => sl.row === 'plate' && sl.item).length;
   if (s.level >= 2 && !build && onPlates < need('burger') && s.slots.some((sl) => sl.row === 'plate' && !sl.item)) return (s.tapBuns(), true);
   return false;

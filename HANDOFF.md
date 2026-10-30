@@ -12,9 +12,9 @@ Design (first pass, every number in `data/recipes.json`, owner to tune):
 - Views: the dispenser and machine use the painted art; cups reuse the supplied `drink_cup` / `drink_soda` art; there is NO ice cream art in the repo, so the cone is drawn with shapes (placeholder, to flag to the owner).
 Plan (tick as done; one commit + push per step):
 - [x] 1. Config + model (done: `tests/drinks.test.ts`, 8 tests; cups and cones are code-drawn textures `drink_cooked` / `icecream_cooked` in `src/art/builders.ts`): `ItemKind` gains `drink` and `icecream`; `recipes.json` entries and settings; `KitchenState` `dispensers` / `iceCreams`, `tapDrinks`, `tapIceCream`, melt, events; validate.ts; unit tests.
-- [ ] 2. Progression data (items from Lv 6 / Lv 12), keep Lv 1-20 tests green, update progression tests.
+- [x] 2. Progression data (items from Lv 6 / Lv 12), keep Lv 1-20 tests green, update progression tests.
 - [ ] 3. Views + scene wiring (tap handlers for `drinks` / `ice_cream`, item sprites, fill and swirl animation, melt, reduced motion, lock covers use the existing zones).
-- [ ] 4. Bot (`tests/helpers/bot.ts`) learns to make drinks and ice cream; re-run the late-level balance simulation, retune numbers, update bounds only with the reason written down.
+- [x] 4. Bot (done; drink dispenser now has 1 spout and fills in 3.5 s after probing variants; see numbers at the end) (`tests/helpers/bot.ts`) learns to make drinks and ice cream; re-run the late-level balance simulation, retune numbers, update bounds only with the reason written down.
 - [ ] 5. Browser check, `docs/progress.md`, `docs/architecture.md`, RecipeBook entries if the recipe book lists items, final HANDOFF update.
 
 ## Milestone 5 content (2026-10-30, Claude) - branch `milestone-5-content`, not merged, no PR yet

@@ -118,9 +118,12 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink"
       ],
-      "unlocks": []
+      "unlocks": [
+        "Drinks"
+      ]
     },
     {
       "level": 7,
@@ -138,7 +141,8 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink"
       ],
       "unlocks": [
         "Three customers at once"
@@ -160,7 +164,8 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink"
       ],
       "unlocks": []
     },
@@ -180,7 +185,8 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink"
       ],
       "unlocks": []
     },
@@ -200,7 +206,8 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink"
       ],
       "unlocks": []
     },
@@ -220,7 +227,8 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink"
       ],
       "types": {
         "regular": 85,
@@ -246,13 +254,17 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink",
+        "icecream"
       ],
       "types": {
         "regular": 82,
         "impatient": 18
       },
-      "unlocks": []
+      "unlocks": [
+        "Ice cream"
+      ]
     },
     {
       "level": 13,
@@ -270,7 +282,9 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink",
+        "icecream"
       ],
       "types": {
         "regular": 82,
@@ -296,7 +310,9 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink",
+        "icecream"
       ],
       "types": {
         "regular": 78,
@@ -323,7 +339,9 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink",
+        "icecream"
       ],
       "types": {
         "regular": 76,
@@ -348,7 +366,9 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink",
+        "icecream"
       ],
       "types": {
         "regular": 72,
@@ -376,7 +396,9 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink",
+        "icecream"
       ],
       "types": {
         "regular": 70,
@@ -402,7 +424,9 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink",
+        "icecream"
       ],
       "types": {
         "regular": 68,
@@ -428,7 +452,9 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink",
+        "icecream"
       ],
       "types": {
         "regular": 66,
@@ -454,7 +480,9 @@
         "fries",
         "burger",
         "nuggets",
-        "pizza"
+        "pizza",
+        "drink",
+        "icecream"
       ],
       "types": {
         "regular": 64,

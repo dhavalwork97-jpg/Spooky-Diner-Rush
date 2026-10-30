@@ -9,7 +9,7 @@
     "trashPenaltyCoins": 2,
     "burnReputationPenalty": 8,
     "ovens": 1,
-    "drinkSpouts": 2,
+    "drinkSpouts": 1,
     "iceCreamMachines": 1
   },
   "items": {
@@ -57,7 +57,7 @@
       "unlockLevel": 6,
       "price": 10,
       "xp": 12,
-      "readyAfter": 2.5,
+      "readyAfter": 3.5,
       "burnWindow": 100000
     },
     "icecream": {

@@ -24,11 +24,9 @@ describe('drinks', () => {
     noCustomers(s);
     s.tapDrinks();
     expect(s.spouts[0]?.phase).toBe('cooking');
-    s.tapDrinks(); // second spout starts, the first is still filling
-    expect(s.spouts[1]).not.toBeNull();
-    s.tapDrinks(); // both busy
+    s.tapDrinks(); // the only spout is busy
     expect(lastInvalid(s).join()).toMatch(/filling/);
-    run(s, 3);
+    run(s, 4);
     expect(s.spouts[0]?.phase).toBe('ready');
     run(s, 600); // a ready cup never spoils or costs anything
     const rep = s.reputation;
@@ -45,14 +43,14 @@ describe('drinks', () => {
     noCustomers(s);
     s.slots.filter((x) => x.row === 'side').forEach((x) => (x.item = { id: 90 + x.index, kind: 'fries', placed: [], building: false }));
     s.tapDrinks();
-    run(s, 3);
+    run(s, 4);
     s.tapDrinks();
     expect(s.slots.filter((x) => x.row === 'plate').some((x) => x.item?.kind === 'drink')).toBe(true);
     s.slots.forEach((x) => {
       if (!x.item) x.item = { id: 200 + x.index, kind: 'fries', placed: [], building: false };
     });
     s.tapDrinks();
-    run(s, 3);
+    run(s, 4);
     s.drainEvents();
     s.tapDrinks();
     expect(lastInvalid(s).join()).toMatch(/plate is full/);
@@ -67,7 +65,7 @@ describe('drinks', () => {
     c.items = ['drink'];
     c.delivered = [false];
     s.tapDrinks();
-    run(s, 3);
+    run(s, 4);
     s.tapDrinks();
     const slot = s.slots.find((x) => x.item?.kind === 'drink')!;
     const coins = s.coins;
