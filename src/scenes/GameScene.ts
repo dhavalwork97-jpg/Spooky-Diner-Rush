@@ -21,7 +21,7 @@ import { KitchenState, type GameEvent } from '../game/KitchenState';
 import { nextHint } from '../game/tutorial';
 import { MUSTARD } from '../art/builders';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
-import { BURNERS, FRY_FROM, Layout, SLOTS, SRC_H, SRC_W, VATS } from '../views/layout';
+import { BURNERS, FRY_FROM, Layout, SLOTS, SRC_H, SRC_W, VAT_FOOD_W, VATS } from '../views/layout';
 import { StationViews } from '../views/StationViews';
 import { StockViews } from '../views/StockViews';
 import { loadOvenSheet } from '../views/OvenDoor';
@@ -440,7 +440,7 @@ export class GameScene extends Phaser.Scene {
         if (bin && !SaveSystem.reduceMotion()) {
           this.stations.holdVat(e.vat, 380, this.game.loop.time);
           const raw = this.add.image(bin.x, bin.y, `${e.kind}_raw`).setDepth(650);
-          raw.setScale(this.layout.s(e.kind === 'nuggets' ? 80 : 110) / raw.width);
+          raw.setScale(this.layout.s(VAT_FOOD_W[e.kind === 'nuggets' ? 'nuggets' : 'fries']) / raw.width);
           this.arc(raw, to, 360, 50, () => {
             raw.destroy();
             this.fx.burst(to.x, to.y, 0xfff1b8, 6, 30, 350);

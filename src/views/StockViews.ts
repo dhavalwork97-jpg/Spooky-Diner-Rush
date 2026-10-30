@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { coverChange } from '../game/lockcover';
 import { SaveSystem } from '../systems/SaveSystem';
 import { Layout } from './layout';
 
@@ -28,7 +29,7 @@ const LOCKS: LockDef[] = [
 interface Cover {
   def: LockDef;
   box: Phaser.GameObjects.Container;
-  locked: boolean;
+  locked: boolean | null;
 }
 
 export class StockViews {
@@ -46,7 +47,7 @@ export class StockViews {
         .text(0, 0, `Lv ${def.unlockLevel}`, { fontFamily: 'Fredoka, "Baloo 2", system-ui, sans-serif', fontSize: '22px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 })
         .setOrigin(0.5);
       const box = scene.add.container(layout.x(sx) + w / 2, layout.y(sy) + h / 2, [g, label]).setDepth(250).setVisible(false);
-      this.covers.push({ def, box, locked: false });
+      this.covers.push({ def, box, locked: null });
     }
     this.update(level, false);
   }
@@ -55,10 +56,11 @@ export class StockViews {
   update(level: number, animate = true): void {
     for (const c of this.covers) {
       const locked = level < c.def.unlockLevel;
-      if (locked === c.locked && (locked || !c.box.visible)) continue;
+      const change = coverChange(c.locked, locked);
+      if (change === 'none') continue; // never restart a fade that is already running
       c.locked = locked;
       this.scene.tweens.killTweensOf(c.box);
-      if (locked) {
+      if (change === 'lock') {
         c.box.setVisible(true).setAlpha(1);
       } else if (animate && !SaveSystem.reduceMotion()) {
         this.scene.tweens.add({ targets: c.box, alpha: 0, duration: 420, onComplete: () => c.box.setVisible(false) });

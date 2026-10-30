@@ -10,8 +10,15 @@ export const SRC_H = 948;
 
 export const SEATS_X = [916, 582, 1249, 1402];
 export const SEAT_BOTTOM_Y = 248;
-export const VATS: [number, number][] = [[353, 665], [467, 665]];
-export const BURNERS: [number, number][] = [[1340, 487], [1489, 487]];
+export const VATS: [number, number][] = [[345, 665], [469, 665]];
+/** The four grill burners painted in the art: top row first, then the bottom row. */
+export const BURNERS: [number, number][] = [[1340, 487], [1489, 487], [1351, 552], [1512, 552]];
+/** The timer ring and FLIP label of a bottom-row burner go below the patty, so they never cover the top row. */
+export const BURNER_LABEL_BELOW = [false, false, true, true];
+/** Size, in source pixels, of fries and nuggets sitting in a vat: kept inside the glass lid (about 114 x 75). */
+/** The inner glass of one vat lid, in source pixels around the vat point: half width, top and bottom y. */
+export const VAT_GLASS = { halfW: 57, top: 628, bottom: 703 };
+export const VAT_FOOD_W = { fries: 104, nuggets: 64 };
 /** Where a raw pizza sits on the pulled-out oven door (door open, art at rest). */
 export const OVENS: [number, number][] = [[777, 814]];
 /** Where the cooked pizza sits on the baking tray once the door has opened (lit interior). */

@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import restaurants from '../data/restaurants.json';
 import assets from '../data/assets.json';
 import { validateAssets } from '../src/data/validate';
-import { BURNERS, FRY_FROM, OVENS, OVENS_LIT, SLOTS, SRC_H, SRC_W, VATS } from '../src/views/layout';
+import { coverChange } from '../src/game/lockcover';
+import { defaultConfig } from '../src/game/config';
+import { VAT_FOOD_W, VAT_GLASS, BURNERS, FRY_FROM, OVENS, OVENS_LIT, SLOTS, SRC_H, SRC_W, VATS } from '../src/views/layout';
 
 const diner = restaurants.restaurants[0];
 const zone = (id: string) => {
@@ -45,5 +47,42 @@ describe('oven door sheet in the asset manifest', () => {
   it('rejects a spritesheet without a frame size', () => {
     const errs = validateAssets({ assets: [{ key: 's', type: 'spritesheet', file: 'a.webp', scale: 1 }] });
     expect(errs.join('\n')).toMatch(/frameWidth and frameHeight/);
+  });
+});
+
+describe('four grill burners', () => {
+  it('the game has as many burners as the art shows, each with a spot inside the grill zone', () => {
+    expect(defaultConfig.recipes.settings.grillBurners).toBe(4);
+    expect(BURNERS.length).toBe(4);
+    BURNERS.forEach((p) => expect(inside(p, 'grill'), `burner ${p}`).toBe(true));
+  });
+  it('burner spots are at least 60 source pixels apart so patties never overlap', () => {
+    for (let i = 0; i < BURNERS.length; i++)
+      for (let j = i + 1; j < BURNERS.length; j++) expect(Math.hypot(BURNERS[i][0] - BURNERS[j][0], BURNERS[i][1] - BURNERS[j][1])).toBeGreaterThan(60);
+  });
+});
+
+describe('lock cover changes', () => {
+  it('locks and unlocks once per change and never restarts a running fade', () => {
+    expect(coverChange(null, true)).toBe('lock');
+    expect(coverChange(null, false)).toBe('unlock');
+    expect(coverChange(true, false)).toBe('unlock');
+    expect(coverChange(false, false)).toBe('none'); // the fade already started: do nothing
+    expect(coverChange(true, true)).toBe('none');
+    expect(coverChange(false, true)).toBe('lock');
+  });
+});
+
+describe('food inside the vat glass', () => {
+  it('fries and nuggets fit inside the lid glass with the sprite aspect ratios', () => {
+    const glassW = VAT_GLASS.halfW * 2;
+    const glassH = VAT_GLASS.bottom - VAT_GLASS.top;
+    expect(VAT_FOOD_W.fries).toBeLessThan(glassW);
+    expect(VAT_FOOD_W.nuggets).toBeLessThan(glassW);
+    expect((VAT_FOOD_W.fries * 178) / 360).toBeLessThan(glassH); // fries_raw is 360 x 178
+    expect((VAT_FOOD_W.nuggets * 360) / 322).toBeLessThan(glassH - 2); // nuggets_raw is 322 x 360
+  });
+  it('the glass is centred on the vat points', () => {
+    VATS.forEach((v) => expect(Math.abs((VAT_GLASS.top + VAT_GLASS.bottom) / 2 - v[1])).toBeLessThanOrEqual(2));
   });
 });
