@@ -86,17 +86,17 @@ export const PERSONALITIES: Record<CustomerLook, Personality> = {
   sleepy: { breathMs: 4600, breath: 0.014, sway: 0.4, stepMs: 260, stepBounce: 6, tapMs: 1100, tapLift: 1.5, hop: 4, hopMs: 620, eatMs: 900, eat: 1.5, nod: 2.2, watchEveryMs: null, hearts: 2, sparkles: 2 },
   // Ghosts: hover about 8 px above the stool and bob. stepMs / stepBounce describe the glide bob while moving.
   // Monocle Gentleman: composed, slow.
-  monocle_gentleman: { breathMs: 3000, breath: 0, sway: 1.2, stepMs: 700, stepBounce: 3, tapMs: 600, tapLift: 3, hop: 8, hopMs: 480, eatMs: 600, eat: 2, nod: 0, watchEveryMs: null, hearts: 2, sparkles: 4, ghost: { hover: 8, bob: 4, bobMs: 3200 } },
+  monocle_gentleman: { breathMs: 3000, breath: 0, sway: 1.2, stepMs: 700, stepBounce: 3, tapMs: 600, tapLift: 3, hop: 8, hopMs: 480, eatMs: 600, eat: 2, nod: 0, watchEveryMs: null, hearts: 2, sparkles: 4, ghost: { hover: 3, bob: 4, bobMs: 3200 } },
   // Old Bearded Ghost: heavy and very slow.
-  old_bearded_ghost: { breathMs: 4200, breath: 0, sway: 0.8, stepMs: 900, stepBounce: 2.5, tapMs: 1000, tapLift: 2, hop: 5, hopMs: 600, eatMs: 900, eat: 1.5, nod: 0, watchEveryMs: null, hearts: 2, sparkles: 3, ghost: { hover: 8, bob: 3, bobMs: 4400 } },
+  old_bearded_ghost: { breathMs: 4200, breath: 0, sway: 0.8, stepMs: 900, stepBounce: 2.5, tapMs: 1000, tapLift: 2, hop: 5, hopMs: 600, eatMs: 900, eat: 1.5, nod: 0, watchEveryMs: null, hearts: 2, sparkles: 3, ghost: { hover: 3, bob: 3, bobMs: 4400 } },
   // Child in a Nightgown: light and bouncy.
-  child_nightgown: { breathMs: 2200, breath: 0, sway: 2, stepMs: 520, stepBounce: 4, tapMs: 380, tapLift: 4, hop: 14, hopMs: 360, eatMs: 320, eat: 3, nod: 0, watchEveryMs: null, hearts: 4, sparkles: 5, ghost: { hover: 9, bob: 5, bobMs: 2200 } },
+  child_nightgown: { breathMs: 2200, breath: 0, sway: 2, stepMs: 520, stepBounce: 4, tapMs: 380, tapLift: 4, hop: 14, hopMs: 360, eatMs: 320, eat: 3, nod: 0, watchEveryMs: null, hearts: 4, sparkles: 5, ghost: { hover: 3, bob: 5, bobMs: 2200 } },
   // Wild-hair Corset Ghost: restless, dramatic.
-  wildhair_corset_ghost: { breathMs: 2400, breath: 0, sway: 2, stepMs: 560, stepBounce: 4, tapMs: 420, tapLift: 4, hop: 12, hopMs: 380, eatMs: 380, eat: 3, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 5, ghost: { hover: 8, bob: 4.5, bobMs: 2400 } },
+  wildhair_corset_ghost: { breathMs: 2400, breath: 0, sway: 2, stepMs: 560, stepBounce: 4, tapMs: 420, tapLift: 4, hop: 12, hopMs: 380, eatMs: 380, eat: 3, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 5, ghost: { hover: 3, bob: 4.5, bobMs: 2400 } },
   // Vest Gentleman: dapper and calm.
-  vest_gentleman: { breathMs: 3200, breath: 0, sway: 1, stepMs: 700, stepBounce: 3, tapMs: 650, tapLift: 3, hop: 8, hopMs: 460, eatMs: 600, eat: 2, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 4, ghost: { hover: 8, bob: 4, bobMs: 3400 } },
+  vest_gentleman: { breathMs: 3200, breath: 0, sway: 1, stepMs: 700, stepBounce: 3, tapMs: 650, tapLift: 3, hop: 8, hopMs: 460, eatMs: 600, eat: 2, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 4, ghost: { hover: 3, bob: 4, bobMs: 3400 } },
   // Flame Crown Ghost: quick and flickery.
-  flame_crown_ghost: { breathMs: 1900, breath: 0, sway: 1.6, stepMs: 480, stepBounce: 4.5, tapMs: 340, tapLift: 4, hop: 14, hopMs: 340, eatMs: 300, eat: 3, nod: 0, watchEveryMs: null, hearts: 4, sparkles: 6, ghost: { hover: 9, bob: 5, bobMs: 1900 } },
+  flame_crown_ghost: { breathMs: 1900, breath: 0, sway: 1.6, stepMs: 480, stepBounce: 4.5, tapMs: 340, tapLift: 4, hop: 14, hopMs: 340, eatMs: 300, eat: 3, nod: 0, watchEveryMs: null, hearts: 4, sparkles: 6, ghost: { hover: 3, bob: 5, bobMs: 1900 } },
 };
 
 /** One frame of transform. dx/dy are px (negative dy is up); sx/sy multiply the base scale; angle is degrees. */
@@ -212,7 +212,7 @@ export const SCARE_FRAME_H = 370;
 export const SCARE_FRAMES = 45;
 export const SCARE_FPS = 12;
 /** Overlay scale: head top lines up with the idle ghost's head, centred on the customer, and the frame is drawn at this scale. */
-export const SCARE_SCALE = 0.62;
+export const SCARE_SCALE = 0.55;
 export const SCARE_FADE_MS = 150;
 export const SCARES: Partial<Record<CustomerLook, ScareDef>> = {
   monocle_gentleman: { key: 'ghost_scare_monocle_gentleman', file: 'assets/customers/ghosts/scare/monocle_gentleman_scare.webp', peakFrame: 38 },
@@ -264,7 +264,7 @@ export function settlePose(u: number): Pose {
   return { dx: 0, dy: -3.5 * s * (1 - x * 0.5), sx: 1 + 0.01 * s, sy: 1 - 0.015 * s, angle: 0 };
 }
 
-/** The "step up onto the stool" pop: a quick crouch, a hop of about 10 px with a stretch, then a landing squash. u runs 0..1. */
+/** The arrival pop (customers now stand on the floor, so it is a small hop): a quick crouch, a small hop of about 6 px with a stretch, then a landing squash. u runs 0..1. */
 export function popPose(u: number): Pose {
   const x = clamp01(u);
   if (x < 0.25) {
@@ -273,7 +273,7 @@ export function popPose(u: number): Pose {
   }
   if (x < 0.75) {
     const s = Math.sin(Math.PI * ((x - 0.25) / 0.5));
-    return { dx: 0, dy: -10 * s, sx: 1 - 0.02 * s, sy: 1 + 0.045 * s, angle: 0 };
+    return { dx: 0, dy: -6 * s, sx: 1 - 0.02 * s, sy: 1 + 0.04 * s, angle: 0 };
   }
   const s = Math.sin(Math.PI * ((x - 0.75) / 0.25));
   return { dx: 0, dy: 0, sx: 1 + 0.03 * s, sy: 1 - 0.05 * s, angle: 0 };

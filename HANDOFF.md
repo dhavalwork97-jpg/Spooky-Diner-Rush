@@ -3,6 +3,13 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
+## Customers stand on the floor, bigger, ghosts keep their colours (2026-10-31, Claude) - branch `feature/ghost-customers`
+Owner feedback after seeing a scare frame: everyone should stand on the floor in front of the stools like that one, not on the stool; ghosts looked colourless.
+- Feet now at `CUSTOMER_FLOOR_Y` (layout.ts, 326 source px, about y=240 logical), in front of the stools. They walk in and out along the floor.
+- With the stool limit gone, the height is `BODY_H` 162 (23 percent of the canvas, +45 percent over the first version: the original ask). Bubble is 76 px wide above the head (top about y=26); patience bar and price sit on the floor strip under the feet and stay above the kitchen stations (they touch the Lv 2 lock cover at the left seat only while that cover shows).
+- Ghost colours: the angry and worried warm tint (which turned blue glow brown) is skipped for ghosts, the alpha shimmer is gone (ghosts are opaque), and each ghost has a soft additive cyan copy over it (`glow`) so it reads as glowing. Angry ghosts flare red through that copy. Ghost hover 3 px.
+- Arrival pop is now a 6 px hop (no stool to step onto). Scare overlay scale 0.55 so it stays above the stations.
+
 ## Ghost customers (2026-10-31, Claude) - branch `feature/ghost-customers`, stacked on `feature/cute-customer-system` (PR #15); PR base is that branch
 Owner supplied 6 ghost cutouts and 4 scare sheets and wants the ghosts used as customers. Rendering and animation only.
 - Assets per the owner's SETUP: cutouts `public/assets/customers/ghosts/<name>.png` (lowercase, no number prefix: monocle_gentleman, old_bearded_ghost, child_nightgown, wildhair_corset_ghost, vest_gentleman, flame_crown_ghost) and `.../ghosts/scare/<name>_scare.{webp,atlas.json,anim.json}` for the first four. Not committed: scare PNGs, preview GIF, white_bg. The scare `.webp` loaded fine in Chromium, so the PNG fallback was not needed.

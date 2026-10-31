@@ -204,13 +204,13 @@ describe('customer motion', () => {
       expect(Math.abs(q.angle)).toBeLessThan(0.5);
     }
   });
-  it('settle and pop start and end at rest; the pop hops about 10 px', () => {
+  it('settle and pop start and end at rest; the pop hops about 6 px', () => {
     expect(settlePose(0).dy).toBeCloseTo(0);
     expect(settlePose(1).dy).toBeCloseTo(0);
     expect(popPose(0)).toMatchObject({ dy: 0, sy: 1 });
     let top = 0;
     for (let u = 0; u <= 1; u += 0.01) top = Math.min(top, popPose(u).dy);
-    expect(top).toBeCloseTo(-10, 0);
+    expect(top).toBeCloseTo(-6, 0);
     expect(popPose(1).dy).toBeCloseTo(0);
     expect(popPose(1).sy).toBeCloseTo(1);
   });

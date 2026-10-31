@@ -257,3 +257,7 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 ## Ghost customers (branch feature/ghost-customers)
 - Six ghosts join the customer pool (14 looks). They hover, float and glide; four play their supplied scare sheet when they leave angry (camera shake at the peak frame), the other two and any not-yet-loaded sheet use a code-only lunge. One sprite sheet still holds every customer.
 - Not verified: real device frame rate and the lazy load of the scare sheets (about 5 MB) on slow connections; scare sound not added.
+
+## Floor-standing customers (branch feature/ghost-customers)
+- Customers stand on the floor in front of the stools at 162 px (23 percent of the canvas); ghosts keep their own colours with an additive glow; arrival pop reduced to a small hop.
+- Not verified: real device; the left seat's price label overlaps the Lv 2 lock cover while that cover shows (Lv 1 only).

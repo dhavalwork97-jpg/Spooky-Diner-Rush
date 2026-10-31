@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { Customer } from '../game/KitchenState';
 import { INK, LEAF, MUSTARD, TOMATO } from '../art/builders';
 import { SaveSystem } from '../systems/SaveSystem';
-import { SEATS_X, SEAT_BOTTOM_Y, Layout } from './layout';
+import { SEATS_X, CUSTOMER_FLOOR_Y, Layout } from './layout';
 import { ParticlePool } from '../anim/ParticlePool';
 import {
   PERSONALITIES,
@@ -48,10 +48,11 @@ import {
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 /**
  * Every customer is drawn this tall (logical px, canvas is 698) from the soles of the shoes to the top of the hair:
- * 19.5 percent of the canvas height. Do not grow it without making room above the head: at this size the top of
- * the head is at y = 51 and the order bubble and Rush tag use all of the space above it.
+ * 23 percent of the canvas height, 45 percent taller than the first version. They stand on the restaurant floor in
+ * front of the stools (CUSTOMER_FLOOR_Y), so the order bubble fits above the head and the bar and price fit on the
+ * floor strip below the feet, above the kitchen stations.
  */
-const BODY_H = 136;
+const BODY_H = 162;
 /** Tap and drop targets are never narrower than this, even for the slimmest character. */
 const MIN_HIT_W = 96;
 /** How far past the screen edge a customer starts or ends their walk (logical px). */
@@ -59,7 +60,9 @@ const EDGE_MARGIN = 70;
 const HEART_MAX = 5;
 /** Scare sheets already asked for (they load lazily, the first time a ghost that has one appears). */
 const scareRequested = new Set<string>();
-const BUBBLE_W = 72;
+const GLOW_COLOR = 0x8fe8ff;
+const GLOW_ALPHA = 0.3;
+const BUBBLE_W = 76;
 const BAR_W = 100;
 const TYPE_CHIPS: Record<string, { label: string; color: number; text: string }> = {
   vip: { label: 'VIP', color: 0xf6c445, text: '#2B1B17' },
@@ -99,6 +102,8 @@ export class CustomerView {
   private seed: number;
   private look: number;
   private hover = 0;
+  private glow?: Phaser.GameObjects.Image;
+  private glowK = GLOW_ALPHA;
   private scareSprite?: Phaser.GameObjects.Sprite;
   private scareTimer?: Phaser.Time.TimerEvent;
   private hearts: Phaser.GameObjects.Image[] = [];
@@ -121,7 +126,7 @@ export class CustomerView {
   constructor(private scene: Phaser.Scene, layout: Layout, c: Customer, private fx?: ParticlePool) {
     this.id = c.id;
     this.x = layout.x(SEATS_X[c.seat]);
-    const bottom = layout.y(SEAT_BOTTOM_Y);
+    const bottom = layout.y(CUSTOMER_FLOOR_Y);
     this.baseY = bottom;
     this.look = c.look;
     this.persona = PERSONALITIES[lookKey(c.look)];
@@ -143,6 +148,10 @@ export class CustomerView {
     this.shadow.setScale(this.shadowW, this.scaleBase);
     this.body = scene.add.image(this.x, bottom, CUSTOMER_SHEET, lookIndex(c.look)).setOrigin(0.5, 1).setDepth(300);
     this.body.setScale(this.scaleBase);
+    if (this.persona.ghost) {
+      // a soft additive copy over the ghost lifts its colours so it reads as glowing, not washed out
+      this.glow = scene.add.image(this.x, bottom, CUSTOMER_SHEET, lookIndex(c.look)).setOrigin(0.5, 1).setDepth(301).setBlendMode(Phaser.BlendModes.ADD).setTint(GLOW_COLOR).setAlpha(GLOW_ALPHA).setScale(this.scaleBase);
+    }
     this.bodyW = FIGURE_W[lookIndex(c.look)] * this.scaleBase; // the figure, not the padded cell
     // widen the tap area for slim characters (hit area is in texture pixels)
     const hitW = Math.max(this.bodyW, MIN_HIT_W) / this.scaleBase;
@@ -165,7 +174,7 @@ export class CustomerView {
     bg.setScale(BUBBLE_W / bg.width);
     this.bubble.add(bg);
     const n = c.items.length;
-    const iconW = n > 2 ? 19 : 24;
+    const iconW = n > 2 ? 20 : 25;
     const gap = iconW + 3;
     this.tickY = -bg.displayHeight * 0.5;
     this.tickR = Math.round(iconW * 0.4);
@@ -197,7 +206,7 @@ export class CustomerView {
     }
 
     // patience bar and price on the floor
-    const barBottom = bottom + 14;
+    const barBottom = bottom + 4;
     this.barY = barBottom;
     this.barFrame = scene.add.image(this.x, barBottom, 'patience_bar_frame').setOrigin(0.5, 0).setDepth(311);
     this.barFrame.setScale(BAR_W / this.barFrame.width);
@@ -205,7 +214,7 @@ export class CustomerView {
     const coin = scene.add.image(-18, 0, 'coin');
     coin.setScale(18 / coin.width);
     const priceText = scene.add.text(-4, 0, String(c.price), { fontFamily: FONT, fontSize: '20px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 4 }).setOrigin(0, 0.5);
-    this.price = scene.add.container(this.x, barBottom + this.barFrame.displayHeight + 14, [coin, priceText]).setDepth(311);
+    this.price = scene.add.container(this.x, barBottom + this.barFrame.displayHeight + 12, [coin, priceText]).setDepth(311);
     this.drawBar(1);
 
     if (SaveSystem.reduceMotion()) {
@@ -268,7 +277,9 @@ export class CustomerView {
     if (this.mood === m) return;
     this.mood = m;
     // The supplied customers have one pose, so mood shows as a tint and a small motion.
-    if (m === 'angry') this.body.setTint(0xff9a8a);
+    // (ghosts keep their own colours: a warm tint turns the blue glow brown; they show mood by shimmying instead)
+    if (this.persona.ghost) this.body.clearTint();
+    else if (m === 'angry') this.body.setTint(0xff9a8a);
     else if (m === 'worried') this.body.setTint(0xffe2a0);
     else this.body.clearTint();
     if (m === 'happy') this.celebrate();
@@ -362,8 +373,7 @@ export class CustomerView {
     else if (now < this.eatUntil) pose = addPose(pose, eatPose(p, now, this.seed));
     const shakeK = (now - this.shakeAt) / 200;
     if (shakeK >= 0 && shakeK < 1) pose = addPose(pose, { ...REST, dx: Math.sin(shakeK * Math.PI * 8) * 6 * (1 - shakeK) });
-    // ghosts shimmer a little
-    this.applyPose(pose, p.ghost ? 0.95 + 0.05 * Math.sin(now / 280 + this.seed) : 1);
+    this.applyPose(pose, 1);
   }
 
   private applyPose(pose: Pose, alpha: number): void {
@@ -371,6 +381,7 @@ export class CustomerView {
     this.body.setScale(this.scaleBase * pose.sx, this.scaleBase * pose.sy);
     this.body.setAngle(pose.angle);
     this.body.setAlpha(alpha);
+    this.glow?.setPosition(this.body.x, this.body.y).setScale(this.body.scaleX, this.body.scaleY).setAngle(pose.angle).setAlpha(alpha * this.glowK);
     // the shadow stays on the floor, follows sideways motion and shrinks while the body is lifted
     const lift = Math.min(1, Math.max(0, -pose.dy + this.hover) / 10);
     this.shadow.setPosition(this.x + pose.dx, this.baseY).setScale(this.shadowW * (1 - lift * 0.3), this.scaleBase).setAlpha(alpha * (1 - lift * 0.5));
@@ -444,7 +455,7 @@ export class CustomerView {
       sc.anims.create({ key: def.key, frames: sc.anims.generateFrameNumbers(def.key, { start: 0, end: SCARE_FRAMES - 1 }), frameRate: SCARE_FPS, repeat: 0 });
     }
     sc.tweens.add({ targets: spr, alpha: 1, duration: SCARE_FADE_MS });
-    sc.tweens.add({ targets: [this.body, this.shadow], alpha: 0, duration: SCARE_FADE_MS });
+    sc.tweens.add({ targets: [this.body, this.shadow, ...(this.glow ? [this.glow] : [])], alpha: 0, duration: SCARE_FADE_MS });
     let finished = false;
     const finish = (): void => {
       if (finished) return;
@@ -469,7 +480,9 @@ export class CustomerView {
     const sc = this.scene;
     const prog = { t: 0 };
     let shook = false;
-    this.body.setTint(0xff7a7a);
+    // angry ghosts flare red through the glow copy; the body keeps its own colours
+    this.glow?.setTint(0xff5040);
+    this.glowK = 0.55;
     this.exitTween = sc.tweens.add({
       targets: prog,
       t: LUNGE_MS,
@@ -498,6 +511,7 @@ export class CustomerView {
     for (const h of this.hearts) h.destroy();
     this.hearts = [];
     this.shadow.destroy();
+    this.glow?.destroy();
     this.body.destroy();
     this.bubble.destroy();
     this.price.destroy();
