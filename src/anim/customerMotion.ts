@@ -38,7 +38,7 @@ export interface Personality {
   breath: number;
   /** Tilt while idle, degrees, slow. */
   sway: number;
-  /** Walking in or out: ms per step, bounce in px. */
+  /** Walking: ms per step (about 0.22 s) and hop height in px (6 to 9). */
   stepMs: number;
   stepBounce: number;
   /** Waiting-too-long reaction (foot tap): period ms, lift px. */
@@ -63,21 +63,21 @@ export interface Personality {
 
 export const PERSONALITIES: Record<CustomerLook, Personality> = {
   // Little Kid: quick, bouncy, can hardly stand still.
-  kid: { breathMs: 1500, breath: 0.016, sway: 1.2, stepMs: 150, stepBounce: 6, tapMs: 300, tapLift: 5, hop: 15, hopMs: 340, eatMs: 260, eat: 3, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 5 },
+  kid: { breathMs: 1500, breath: 0.016, sway: 1.2, stepMs: 200, stepBounce: 9, tapMs: 300, tapLift: 5, hop: 15, hopMs: 340, eatMs: 260, eat: 3, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 5 },
   // Grandma: slow and gentle everywhere.
-  grandma: { breathMs: 3400, breath: 0.01, sway: 0.5, stepMs: 300, stepBounce: 2, tapMs: 900, tapLift: 1.5, hop: 6, hopMs: 520, eatMs: 700, eat: 1.5, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 2 },
+  grandma: { breathMs: 3400, breath: 0.01, sway: 0.5, stepMs: 260, stepBounce: 6, tapMs: 900, tapLift: 1.5, hop: 6, hopMs: 520, eatMs: 700, eat: 1.5, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 2 },
   // Businessman: composed, checks his watch now and then.
-  businessman: { breathMs: 2700, breath: 0.01, sway: 0.4, stepMs: 210, stepBounce: 3, tapMs: 520, tapLift: 3, hop: 8, hopMs: 400, eatMs: 520, eat: 2, nod: 0, watchEveryMs: [4500, 8000], hearts: 2, sparkles: 3, watchAt: { x: 0.64, y: 0.44 } },
+  businessman: { breathMs: 2700, breath: 0.01, sway: 0.4, stepMs: 220, stepBounce: 7.5, tapMs: 520, tapLift: 3, hop: 8, hopMs: 400, eatMs: 520, eat: 2, nod: 0, watchEveryMs: [4500, 8000], hearts: 2, sparkles: 3, watchAt: { x: 0.64, y: 0.44 } },
   // Foodie Girl: excited when the food lands.
-  foodie: { breathMs: 2000, breath: 0.014, sway: 0.9, stepMs: 190, stepBounce: 4, tapMs: 420, tapLift: 4, hop: 17, hopMs: 360, eatMs: 340, eat: 3.5, nod: 0, watchEveryMs: null, hearts: 5, sparkles: 6 },
+  foodie: { breathMs: 2000, breath: 0.014, sway: 0.9, stepMs: 210, stepBounce: 8, tapMs: 420, tapLift: 4, hop: 17, hopMs: 360, eatMs: 340, eat: 3.5, nod: 0, watchEveryMs: null, hearts: 5, sparkles: 6 },
   // Cool Teen: relaxed, long slow idle.
-  teen: { breathMs: 3200, breath: 0.01, sway: 1.4, stepMs: 260, stepBounce: 2.5, tapMs: 700, tapLift: 2, hop: 7, hopMs: 460, eatMs: 600, eat: 2, nod: 0, watchEveryMs: null, hearts: 2, sparkles: 3 },
+  teen: { breathMs: 3200, breath: 0.01, sway: 1.4, stepMs: 230, stepBounce: 7, tapMs: 700, tapLift: 2, hop: 7, hopMs: 460, eatMs: 600, eat: 2, nod: 0, watchEveryMs: null, hearts: 2, sparkles: 3 },
   // Chef Fan: enthusiastic about the food.
-  chef_fan: { breathMs: 1900, breath: 0.014, sway: 0.8, stepMs: 190, stepBounce: 4, tapMs: 400, tapLift: 4, hop: 16, hopMs: 360, eatMs: 320, eat: 3.5, nod: 0, watchEveryMs: null, hearts: 5, sparkles: 6 },
+  chef_fan: { breathMs: 1900, breath: 0.014, sway: 0.8, stepMs: 210, stepBounce: 8, tapMs: 400, tapLift: 4, hop: 16, hopMs: 360, eatMs: 320, eat: 3.5, nod: 0, watchEveryMs: null, hearts: 5, sparkles: 6 },
   // Athlete: energetic, always a little on the move.
-  athlete: { breathMs: 1400, breath: 0.016, sway: 1, stepMs: 140, stepBounce: 5.5, tapMs: 280, tapLift: 5, hop: 13, hopMs: 320, eatMs: 280, eat: 3, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 5 },
+  athlete: { breathMs: 1400, breath: 0.016, sway: 1, stepMs: 190, stepBounce: 9, tapMs: 280, tapLift: 5, hop: 13, hopMs: 320, eatMs: 280, eat: 3, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 5 },
   // Sleepy: very slow, droops, sighs.
-  sleepy: { breathMs: 4600, breath: 0.014, sway: 0.4, stepMs: 380, stepBounce: 1.5, tapMs: 1100, tapLift: 1.5, hop: 4, hopMs: 620, eatMs: 900, eat: 1.5, nod: 2.2, watchEveryMs: null, hearts: 2, sparkles: 2 },
+  sleepy: { breathMs: 4600, breath: 0.014, sway: 0.4, stepMs: 260, stepBounce: 6, tapMs: 1100, tapLift: 1.5, hop: 4, hopMs: 620, eatMs: 900, eat: 1.5, nod: 2.2, watchEveryMs: null, hearts: 2, sparkles: 2 },
 };
 
 /** One frame of transform. dx/dy are px (negative dy is up); sx/sy multiply the base scale; angle is degrees. */
@@ -148,18 +148,76 @@ export function watchPose(k: number): Pose {
 }
 export const WATCH_MS = 1300;
 
-/** Walking: small steps with bounce while sliding sideways. dir is -1 or 1 (side the customer comes from or goes to). */
-export function walkPose(p: Personality, k: number, mode: 'in' | 'out', dir: number, distance = 60): { pose: Pose; alpha: number } {
-  const x = clamp01(k);
-  const total = mode === 'in' ? 520 : 600;
-  const steps = Math.max(1, Math.round(total / p.stepMs / 2));
-  const bounce = Math.abs(Math.sin(x * Math.PI * steps)) * p.stepBounce;
-  const slide = mode === 'in' ? (1 - easeOut(x)) * distance * dir : easeIn(x) * distance * dir;
-  const alpha = mode === 'in' ? clamp01(x * 3) : 1 - clamp01((x - 0.35) / 0.65);
-  return { pose: { dx: slide, dy: -bounce, sx: 1, sy: 1, angle: dir * (mode === 'in' ? -1 : 1) * Math.sin(x * Math.PI * steps) * 0.8 }, alpha };
+/** Walk-in and walk-out take 1.6 s; after arriving: a short settle bounce, then a 0.25 s pop up onto the stool. */
+export const WALK_MS = 1600;
+export const SETTLE_MS = 180;
+export const POP_MS = 250;
+export const ARRIVE_MS = WALK_MS + SETTLE_MS + POP_MS;
+/** Tilt in degrees while walking, alternating each step. */
+export const STEP_TILT = 3;
+
+/**
+ * One walking step cycle at time t (ms since the walk began). Each step is an ease-in-out hop (0 at foot-down,
+ * 1 at the top), the body tilts +/- 3 degrees alternating each step, and scaleY goes 0.97 at the bottom of the
+ * step to 1.03 at the top (scaleX the other way, so the figure never looks stretched). amp scales it all
+ * (0 means no walk cycle at all).
+ */
+export function stepPose(p: Personality, t: number, amp = 1): Pose {
+  if (amp <= 0) return REST;
+  const n = t / p.stepMs;
+  const bump = 0.5 - 0.5 * Math.cos(TAU * (n - Math.floor(n)));
+  const sy = 1 + 0.03 * (2 * bump - 1) * amp;
+  return { dx: 0, dy: -p.stepBounce * bump * amp, sx: 1 - (sy - 1) * 0.5, sy, angle: STEP_TILT * Math.sin(Math.PI * n) * amp };
 }
-export const WALK_IN_MS = 520;
-export const WALK_OUT_MS = 600;
+
+/** Settle bounce: a small damped hop after the last step. u runs 0..1. */
+export function settlePose(u: number): Pose {
+  const x = clamp01(u);
+  const s = Math.sin(Math.PI * x);
+  return { dx: 0, dy: -3.5 * s * (1 - x * 0.5), sx: 1 + 0.01 * s, sy: 1 - 0.015 * s, angle: 0 };
+}
+
+/** The "step up onto the stool" pop: a quick crouch, a hop of about 10 px with a stretch, then a landing squash. u runs 0..1. */
+export function popPose(u: number): Pose {
+  const x = clamp01(u);
+  if (x < 0.25) {
+    const c = easeOut(x / 0.25);
+    return { dx: 0, dy: 0, sx: 1 + 0.035 * c, sy: 1 - 0.06 * c, angle: 0 };
+  }
+  if (x < 0.75) {
+    const s = Math.sin(Math.PI * ((x - 0.25) / 0.5));
+    return { dx: 0, dy: -10 * s, sx: 1 - 0.02 * s, sy: 1 + 0.045 * s, angle: 0 };
+  }
+  const s = Math.sin(Math.PI * ((x - 0.75) / 0.25));
+  return { dx: 0, dy: 0, sx: 1 + 0.03 * s, sy: 1 - 0.05 * s, angle: 0 };
+}
+
+export type ArrivePhase = 'walk' | 'settle' | 'pop' | 'done';
+
+/**
+ * Walking in from off-screen. distance is how far the start is from the seat (px), dir is -1 (comes from the
+ * left) or 1 (from the right). Ease-out slide; the step cycle fades out over the last quarter so the
+ * character is not marching on the spot as they stop.
+ */
+export function arrivePose(p: Personality, t: number, distance: number, dir: number): { pose: Pose; phase: ArrivePhase } {
+  if (t < WALK_MS) {
+    const k = t / WALK_MS;
+    const amp = Math.min(1, (1 - k) * 4);
+    const step = stepPose(p, t, amp);
+    return { pose: { ...step, dx: (1 - easeOut(k)) * distance * dir }, phase: 'walk' };
+  }
+  if (t < WALK_MS + SETTLE_MS) return { pose: settlePose((t - WALK_MS) / SETTLE_MS), phase: 'settle' };
+  if (t < ARRIVE_MS) return { pose: popPose((t - WALK_MS - SETTLE_MS) / POP_MS), phase: 'pop' };
+  return { pose: REST, phase: 'done' };
+}
+
+/** Walking out to the edge the customer came from: the arrival in reverse (ease-in), same step cycle. */
+export function departPose(p: Personality, t: number, distance: number, dir: number): { pose: Pose; done: boolean } {
+  const k = clamp01(t / WALK_MS);
+  const amp = Math.min(1, k * 4);
+  const step = stepPose(p, t, amp);
+  return { pose: { ...step, dx: easeIn(k) * distance * dir }, done: t >= WALK_MS };
+}
 
 /** Time until the next wristwatch check, for personalities that have one. */
 export function nextWatchDelay(p: Personality, roll: number): number {

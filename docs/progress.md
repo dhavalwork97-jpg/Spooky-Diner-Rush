@@ -248,3 +248,8 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 - Motion is code only (`src/anim/customerMotion.ts`): breathing, walk in and out, foot tap when the wait drags, happy bounce and chewing on delivery, hearts and sparkles when the order is complete, a wristwatch check for the businessman. Each character has its own timing (kid and athlete energetic, grandma and sleepy slow, teen relaxed, foodie and chef fan excited).
 - Gameplay untouched apart from the cosmetic `look` range (0..2 to 0..7, same RNG draws).
 - Not verified: real phone or GPU frame rate; touch feel of the wider hit area on a device; long sessions for tween leaks beyond reading the code. Blinking was left out on purpose.
+
+## Customer size and walking pass (branch feature/cute-customer-system)
+- Customers are 136 logical px tall (19.5 percent of the 698 px canvas, was 16.0 percent). Order bubble, Rush tag, chip and ticks were made compact to fit above the head on screen.
+- Walk cycle: 1.6 s walk in from the screen edge (ease-out), per-step hop, alternating tilt, squash and stretch, shadow shrink, settle bounce, 0.25 s pop onto the stool; walk out in reverse. No step cycle when stationary.
+- Not verified: real device frame rate; how the 2.0 s arrival feels against the patience timer (unchanged on purpose).

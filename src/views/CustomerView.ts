@@ -9,10 +9,12 @@ import {
   Personality,
   Pose,
   REST,
-  WALK_IN_MS,
-  WALK_OUT_MS,
+  ARRIVE_MS,
+  WALK_MS,
   WATCH_MS,
   addPose,
+  arrivePose,
+  departPose,
   eatPose,
   hopPose,
   idlePose,
@@ -28,17 +30,22 @@ import {
   nextWatchDelay,
   phaseFor,
   seedFor,
-  walkPose,
   watchPose,
 } from '../anim/customerMotion';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
-/** Every customer is drawn this tall (logical px) from the soles of the shoes to the top of the hair. */
-const BODY_H = 112;
+/**
+ * Every customer is drawn this tall (logical px, canvas is 698) from the soles of the shoes to the top of the hair:
+ * 19.5 percent of the canvas height. Do not grow it without making room above the head: at this size the top of
+ * the head is at y = 51 and the order bubble and Rush tag use all of the space above it.
+ */
+const BODY_H = 136;
 /** Tap and drop targets are never narrower than this, even for the slimmest character. */
 const MIN_HIT_W = 96;
+/** How far past the screen edge a customer starts or ends their walk (logical px). */
+const EDGE_MARGIN = 70;
 const HEART_MAX = 5;
-const BUBBLE_W = 96;
+const BUBBLE_W = 72;
 const BAR_W = 100;
 const TYPE_CHIPS: Record<string, { label: string; color: number; text: string }> = {
   vip: { label: 'VIP', color: 0xf6c445, text: '#2B1B17' },
@@ -79,6 +86,9 @@ export class CustomerView {
   private hearts: Phaser.GameObjects.Image[] = [];
   private enterAt: number;
   private enterDir: number;
+  private edgeDist = 0;
+  private tickY = -20;
+  private tickR = 9;
   private hopAt = -1e9;
   private eatUntil = 0;
   private watchAt = -1e9;
@@ -100,7 +110,9 @@ export class CustomerView {
     this.deliveredCount = c.delivered.filter(Boolean).length;
     this.enterAt = scene.time.now;
     this.enterDir = this.x < layout.x(850) ? -1 : 1;
-    this.nextWatchAt = this.enterAt + WALK_IN_MS + nextWatchDelay(this.persona, Math.random());
+    this.nextWatchAt = this.enterAt + ARRIVE_MS + nextWatchDelay(this.persona, Math.random());
+    // they walk in from the nearest screen edge and walk back out the same way
+    this.edgeDist = this.enterDir < 0 ? this.x + EDGE_MARGIN : scene.scale.width + EDGE_MARGIN - this.x;
     // soft contact shadow so the feet sit on the floor
     // Character, shadow and hearts are all frames of one sprite sheet (one texture, one draw batch).
     // The shadow is an image from the sheet, not a Shape: Shapes drawn between sprites corrupted neighbours in testing.
@@ -127,13 +139,15 @@ export class CustomerView {
 
     // order bubble above the head
     this.bubbleBaseX = this.x;
-    this.bubble = scene.add.container(this.x, bottom - BODY_H - 2).setDepth(310);
+    this.bubble = scene.add.container(this.x, bottom - BODY_H + 1).setDepth(310);
     const bg = scene.add.image(0, 0, 'order_bubble').setOrigin(0.5, 1);
     bg.setScale(BUBBLE_W / bg.width);
     this.bubble.add(bg);
     const n = c.items.length;
-    const iconW = n > 2 ? 26 : 32;
-    const gap = iconW + 4;
+    const iconW = n > 2 ? 19 : 24;
+    const gap = iconW + 3;
+    this.tickY = -bg.displayHeight * 0.5;
+    this.tickR = Math.round(iconW * 0.4);
     c.items.forEach((k, i) => {
       const ix = (i - (n - 1) / 2) * gap;
       this.iconXs.push(ix);
@@ -145,19 +159,19 @@ export class CustomerView {
     this.bubble.add(this.ticks);
 
     // small red "Rush" tag while the customer is still fresh, and a chip for special customer types
-    const tagY = -bg.displayHeight + 4;
+    const tagY = -bg.displayHeight + 5;
     const tagBg = scene.add.graphics();
-    tagBg.fillStyle(0xd9382b, 1).fillRoundedRect(-27, -10, 54, 20, 8).lineStyle(2, INK, 1).strokeRoundedRect(-27, -10, 54, 20, 8);
-    const tagText = scene.add.text(0, 0, 'Rush', { fontFamily: FONT, fontSize: '15px', color: '#FFF4DC' }).setOrigin(0.5);
-    this.rushTag = scene.add.container(-24, tagY, [tagBg, tagText]);
+    tagBg.fillStyle(0xd9382b, 1).fillRoundedRect(-22, -8, 44, 16, 6).lineStyle(2, INK, 1).strokeRoundedRect(-22, -8, 44, 16, 6);
+    const tagText = scene.add.text(0, 0, 'Rush', { fontFamily: FONT, fontSize: '12px', color: '#FFF4DC' }).setOrigin(0.5);
+    this.rushTag = scene.add.container(-BUBBLE_W / 2 + 22, tagY, [tagBg, tagText]);
     this.bubble.add(this.rushTag);
     if (c.type !== 'regular') {
       const chip = TYPE_CHIPS[c.type];
       if (chip) {
         const chipBg = scene.add.graphics();
-        chipBg.fillStyle(chip.color, 1).fillRoundedRect(-33, -10, 66, 20, 8).lineStyle(2, INK, 1).strokeRoundedRect(-33, -10, 66, 20, 8);
-        const chipText = scene.add.text(0, 0, chip.label, { fontFamily: FONT, fontSize: '15px', color: chip.text }).setOrigin(0.5);
-        this.bubble.add(scene.add.container(30, tagY, [chipBg, chipText]));
+        chipBg.fillStyle(chip.color, 1).fillRoundedRect(-24, -8, 48, 16, 6).lineStyle(2, INK, 1).strokeRoundedRect(-24, -8, 48, 16, 6);
+        const chipText = scene.add.text(0, 0, chip.label, { fontFamily: FONT, fontSize: '12px', color: chip.text }).setOrigin(0.5);
+        this.bubble.add(scene.add.container(BUBBLE_W / 2 - 24, tagY, [chipBg, chipText]));
       }
     }
 
@@ -180,7 +194,12 @@ export class CustomerView {
       this.body.setAlpha(0);
       this.shadow.setAlpha(0);
       this.bubble.setScale(0);
-      scene.tweens.add({ targets: this.bubble, scale: 1, duration: 280, delay: 330, ease: 'Back.Out' });
+      const showAt = WALK_MS * 0.7;
+      scene.tweens.add({ targets: this.bubble, scale: 1, duration: 280, delay: showAt, ease: 'Back.Out' });
+      this.price.setAlpha(0);
+      this.barFrame.setAlpha(0);
+      this.bar.setAlpha(0);
+      scene.tweens.add({ targets: [this.price, this.barFrame, this.bar], alpha: 1, duration: 250, delay: showAt });
     }
   }
 
@@ -216,10 +235,11 @@ export class CustomerView {
     c.delivered.forEach((d, i) => {
       if (!d) return;
       const cx = this.iconXs[i];
-      const cy = -26;
-      g.fillStyle(LEAF, 1).fillCircle(cx, cy, 11);
-      g.lineStyle(2, INK, 1).strokeCircle(cx, cy, 11);
-      g.lineStyle(3, 0xffffff, 1).beginPath().moveTo(cx - 5, cy).lineTo(cx - 1, cy + 4).lineTo(cx + 6, cy - 5).strokePath();
+      const cy = this.tickY;
+      const r = this.tickR;
+      g.fillStyle(LEAF, 1).fillCircle(cx, cy, r);
+      g.lineStyle(2, INK, 1).strokeCircle(cx, cy, r);
+      g.lineStyle(2.5, 0xffffff, 1).beginPath().moveTo(cx - r * 0.45, cy).lineTo(cx - r * 0.1, cy + r * 0.35).lineTo(cx + r * 0.55, cy - r * 0.4).strokePath();
     });
   }
 
@@ -300,10 +320,9 @@ export class CustomerView {
       return;
     }
     // walking in
-    const inK = (now - this.enterAt) / WALK_IN_MS;
-    if (inK < 1) {
-      const w = walkPose(p, inK, 'in', this.enterDir);
-      this.applyPose(w.pose, w.alpha);
+    const arrive = now - this.enterAt < ARRIVE_MS ? arrivePose(p, now - this.enterAt, this.edgeDist, this.enterDir) : null;
+    if (arrive) {
+      this.applyPose(arrive.pose, 1);
       return;
     }
     let pose: Pose = idlePose(p, now, this.seed);
@@ -331,8 +350,8 @@ export class CustomerView {
     this.body.setAngle(pose.angle);
     this.body.setAlpha(alpha);
     // the shadow stays on the floor, follows sideways motion and shrinks while the body is lifted
-    const lift = Math.min(1, Math.max(0, -pose.dy) / 18);
-    this.shadow.setPosition(this.x + pose.dx, this.baseY).setScale(this.shadowW * (1 - lift * 0.25), this.scaleBase).setAlpha(alpha * (1 - lift * 0.35));
+    const lift = Math.min(1, Math.max(0, -pose.dy) / 10);
+    this.shadow.setPosition(this.x + pose.dx, this.baseY).setScale(this.shadowW * (1 - lift * 0.3), this.scaleBase).setAlpha(alpha * (1 - lift * 0.5));
   }
 
   update(c: Customer, now: number, rush = false): void {
@@ -366,16 +385,14 @@ export class CustomerView {
       return;
     }
     this.scene.tweens.add({ targets: [this.bubble, this.price, this.barFrame, this.bar], alpha: 0, duration: 200 });
-    // walk away to the side they came from: small steps, sliding out, fading
-    const prog = { k: 0 };
+    // walk back out the way they came in: same steps, to the screen edge
+    const prog = { t: 0 };
     this.exitTween = this.scene.tweens.add({
       targets: prog,
-      k: 1,
-      duration: WALK_OUT_MS,
-      onUpdate: () => {
-        const w = walkPose(this.persona, prog.k, 'out', this.enterDir);
-        this.applyPose(w.pose, w.alpha);
-      },
+      t: WALK_MS,
+      duration: WALK_MS,
+      ease: 'Linear',
+      onUpdate: () => this.applyPose(departPose(this.persona, prog.t, this.edgeDist, this.enterDir).pose, 1),
       onComplete: done,
     });
   }

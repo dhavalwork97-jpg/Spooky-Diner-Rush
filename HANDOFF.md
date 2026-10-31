@@ -3,6 +3,14 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
+## Customer size and walking pass (2026-10-31, Claude) - branch `feature/cute-customer-system` (PR #15)
+Owner feedback: too small, walking did not read. Customer rendering and animation only; no gameplay or balance change.
+- Size: `BODY_H` 112 -> 136 logical px, i.e. 16.0 percent -> 19.5 percent of the 698 px canvas (+21 percent). The brief asked for +45 percent (162 px) and also "18-20 percent"; 162 px puts the head top at y=25, leaving no room for the order bubble, so the 18-20 percent band won. Bubble shrank to 72 px wide (icons 24 px, Rush tag and type chip 44-48x16) and sits right on the head, all inside the screen (top of the Rush tag at about y=7). Bar and price are unchanged under the stool.
+- Walk (`src/anim/customerMotion.ts`): walk in from the nearest screen edge in 1.6 s (ease-out), step every 0.19-0.26 s per personality (about 0.22) with 6-9 px hop, +/- 3 degree alternating tilt, scaleY 0.97 to 1.03, shadow shrinks and fades at the top of each hop. Step amplitude fades out over the last quarter of the walk so they do not march on the spot. Then 0.18 s settle bounce and a 0.25 s pop onto the stool. Walk out is the same in reverse (ease-in, 1.6 s). Stationary customers have no step cycle, only breathing. Reduced motion unchanged (no walk).
+- Bubble, bar and price fade in when the customer is about 70 percent of the way in.
+- Things to know: the model's patience timer (and the 0.7 s arrive grace) start at spawn, so a customer is walking in for about 2.0 s while patience ticks. Not changed (gameplay). A customer who leaves keeps walking out for 1.6 s after the model frees the seat, so a new customer can spawn into that seat while the old one is still leaving.
+- Tests: 218 passing (12 new for steps, arrival, departure). Typecheck and build clean. Checked in headless Chromium: two customers mid-walk plus two seated, all eight characters seated, no console errors. Not checked on a real device.
+
 ## Cute customer system (2026-10-31, Claude) - branch `feature/cute-customer-system` (from `main`), PR open, NOT merged
 Replaced the 3 generic customers with the owner's 8 static PNG characters (kid, grandma, businessman, foodie, teen, chef_fan, athlete, sleepy) and gave them code-only motion.
 - Art: `public/assets/art/customers.webp` (one 800x768 sprite sheet, 160x384 cells, 156 KB, loaded at boot; key `customers` in `data/assets.json`). Frames 0-7 are the characters in `CUSTOMER_LOOKS` order, 8 is the contact shadow, 9 is the heart. Built by `tools/make_customer_art.py <dir of the 8 source PNGs>` (crops to the figure, drops faint alpha haze, same 384 px height for all, feet on the bottom edge). The source PNGs (11 MB) are not in the repo. `customer_01..03.webp` removed.
