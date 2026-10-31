@@ -1,7 +1,17 @@
 # HANDOFF
 
-Last updated: ChatGPT, session 2026-10-29
-Last updated at: 2026-10-29 12:00 IST
+Last updated: Claude, session 2026-10-31
+Last updated at: 2026-10-31 06:00 IST
+
+## CURRENT STATUS (2026-10-31) - read this first
+- EVERYTHING below is merged into `main`. PR #9 (kitchen art, oven door, Milestones 5 and 6; merge commit `316bb38`) and PR #13 (pizza plates #11, ice cream animation #12 and cold drink animation, merge commit `92b69a49cbd8c0d57502305b2c5191819921d127`). Where a section below says "not merged", "no PR" or names an unmerged base, that was true when it was written and is OUT OF DATE. The old feature branches can be deleted on GitHub. PR #10 (an older HANDOFF update) is superseded by this file.
+- Nothing was deployed by me; whether Vercel deployed `main` after the merges was not checked.
+- Checks on the merged tree: `npm test` 199 passing (18 files), `npm run typecheck` clean, `npm run build` ok.
+- In `main` now: new kitchen art and the pizza-oven door animation; 4-burner grill; "Lv N" lock covers; Lv 1-20 progression with scaling after Lv 20; drinks (Lv 6) and ice cream (Lv 12) stations with the owner's supplied animations (three lanes each); pizza on its own two plates (the dough bases) with raw dough shown until a pizza replaces it; bot balance simulation (`tests/sim_late.test.ts`).
+- Tests changed on purpose (reasons in the sections below): the leftover-event check and the slot count in `tests/sim.test.ts`, the pizza collect test in `tests/game.test.ts`, the ratio check in `tests/sim_late.test.ts`.
+- Open items: human playtest of Lv 6-20 on a real phone; reduced motion and 844x390 checks for the new stations and rings; Shop upgrades for drinks and ice cream (none exist); the game got somewhat easier once drinks arrived (tune `data/progression.json`); the Lv 6 and Lv 12 level-up cards and tutorial hints for the new stations; the supplied cold drink json has an unexplained `glass_scale_x` 0.86 that is unused; the ice cream base is a different drawing from the painted machine (thin sliver at the left edge); the supplied animation sheets (about 1.6 MB together) load after the scene starts.
+- Next task suggestion: ask the owner which open item comes first (no Milestone 7 brief is in the repo).
+- Environment notes: the stop hook "unpushed commits" message is a false alarm in this shallow clone (compare `git ls-remote origin <branch>` with `git rev-parse HEAD`). The session's permission checker blocks merges unless the owner states, in the same conversation, that they reviewed and approve the merge.
 
 ## Supplied cold drink animation (2026-10-31, Claude) - branch `colddrink-art` (from `icecream-art`; stacked on PR #11 and #12)
 Wired in the owner's `cold-drink-lanes.zip` the same way as the ice cream machine:
