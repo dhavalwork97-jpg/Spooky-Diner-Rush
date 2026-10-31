@@ -24,7 +24,7 @@ Phaser 3+ (installed: Phaser 4), TypeScript, Vite, Vitest. No other runtime libr
 ## Gameplay model (Milestone 2)
 - `src/game/KitchenState.ts` owns fryer vats, grill burners, counter plates, customers, XP, coins and reputation. `update(dt)` advances time; actions are method calls (`tapFryer`, `tapGrill`, `tapBuns`, `tapTrash`, `serve`). It emits events (`GameEvent`) that views drain each frame.
 - `src/game/cook.ts` holds the phase rules. `src/game/tutorial.ts` computes the next hint from state and never changes it.
-- `src/views/*` are read-only views: `StationViews` (fryer, grill and pizza oven), `PourViews` (drinks dispenser and ice cream machine), `StockViews` (lock covers), `ItemView` (plate items, draggable), `CustomerView`, `Hud`, `Popups`, `TutorialHand`, `Ring`.
+- `src/views/*` are read-only views: `StationViews` (fryer, grill and pizza oven), `PourViews` (drinks dispenser and ice cream machine), `StockViews` (lock covers), `ItemView` (plate items, draggable), `CustomerView` (eight supplied characters from one sprite sheet, motion from `anim/customerMotion.ts`), `Hud`, `Popups`, `TutorialHand`, `Ring`.
 - `src/art/builders.ts` draws every non-supplied texture in code and caches it by key.
 - `src/systems/AudioSystem.ts` synthesizes all sound; the context unlocks on the first pointer event.
 - Because the model has no Phaser code, it runs in tests and bot simulations without a browser.

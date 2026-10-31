@@ -114,6 +114,8 @@ export interface SaveSlice {
   coins: number;
 }
 
+/** Number of supplied customer characters (cosmetic). A test keeps this equal to `CUSTOMER_LOOKS` in anim/customerMotion.ts. */
+export const CUSTOMER_LOOK_COUNT = 8;
 const LEAVE_DELAY = 0.9;
 const ARRIVE_GRACE = 0.7;
 const LAYER_LABEL: Record<string, string> = {
@@ -385,7 +387,7 @@ export class KitchenState {
     const c: Customer = {
       id: this.nextId++,
       seat,
-      look: randInt(this.rng, 0, 2), // three supplied customer looks for now
+      look: randInt(this.rng, 0, CUSTOMER_LOOK_COUNT - 1), // cosmetic only: picks one of the eight supplied customer characters
       items,
       delivered: items.map(() => false),
       price,

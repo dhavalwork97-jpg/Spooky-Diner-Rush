@@ -3,9 +3,41 @@ import type { Customer } from '../game/KitchenState';
 import { INK, LEAF, MUSTARD, TOMATO } from '../art/builders';
 import { SaveSystem } from '../systems/SaveSystem';
 import { SEATS_X, SEAT_BOTTOM_Y, Layout } from './layout';
+import { ParticlePool } from '../anim/ParticlePool';
+import {
+  PERSONALITIES,
+  Personality,
+  Pose,
+  REST,
+  WALK_IN_MS,
+  WALK_OUT_MS,
+  WATCH_MS,
+  addPose,
+  eatPose,
+  hopPose,
+  idlePose,
+  impatiencePose,
+  CELL_H,
+  CUSTOMER_SHEET,
+  FIGURE_W,
+  HEART_FRAME,
+  SHADOW_ART_W,
+  SHADOW_FRAME,
+  lookIndex,
+  lookKey,
+  nextWatchDelay,
+  phaseFor,
+  seedFor,
+  walkPose,
+  watchPose,
+} from '../anim/customerMotion';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
+/** Every customer is drawn this tall (logical px) from the soles of the shoes to the top of the hair. */
 const BODY_H = 112;
+/** Tap and drop targets are never narrower than this, even for the slimmest character. */
+const MIN_HIT_W = 96;
+const HEART_MAX = 5;
 const BUBBLE_W = 96;
 const BAR_W = 100;
 const TYPE_CHIPS: Record<string, { label: string; color: number; text: string }> = {
@@ -17,6 +49,12 @@ const TYPE_CHIPS: Record<string, { label: string; color: number; text: string }>
 /**
  * One customer: a supplied character, a speech bubble with the order, a patience bar and the
  * price on the floor under the stool. Reads the model every frame; it never decides anything.
+ *
+ * The character is a single static PNG, so its motion is whole-body transforms around the feet
+ * (see anim/customerMotion.ts): breathing, walking steps, a foot-tap when the wait is long, a happy
+ * bounce and a chew when food arrives, hearts when the order is complete. One-shot reactions are
+ * timestamps read each frame, so there are no per-reaction tweens to leak; only hearts and the exit
+ * use tweens, and destroy() stops them.
  */
 export class CustomerView {
   readonly id: number;
@@ -32,21 +70,56 @@ export class CustomerView {
   private bubbleBaseX: number;
   private bodyW: number;
   private barY: number;
-  private bobTween?: Phaser.Tweens.Tween;
+  private baseY: number;
+  private scaleBase: number;
+  private shadow: Phaser.GameObjects.Image;
+  private shadowW = 1;
+  private persona: Personality;
+  private seed: number;
+  private hearts: Phaser.GameObjects.Image[] = [];
+  private enterAt: number;
+  private enterDir: number;
+  private hopAt = -1e9;
+  private eatUntil = 0;
+  private watchAt = -1e9;
+  private nextWatchAt = Infinity;
+  private shakeAt = -1e9;
+  private deliveredCount = 0;
+  private exitTween?: Phaser.Tweens.Tween;
   private leaving = false;
   private iconXs: number[] = [];
   private rushTag: Phaser.GameObjects.Container;
 
-  constructor(private scene: Phaser.Scene, layout: Layout, c: Customer) {
+  constructor(private scene: Phaser.Scene, layout: Layout, c: Customer, private fx?: ParticlePool) {
     this.id = c.id;
     this.x = layout.x(SEATS_X[c.seat]);
     const bottom = layout.y(SEAT_BOTTOM_Y);
-    this.body = scene.add.image(this.x, bottom, `customer_0${(c.look % 3) + 1}`).setOrigin(0.5, 1).setDepth(300);
-    this.body.setScale(BODY_H / this.body.height);
-    this.bodyW = this.body.displayWidth;
-    this.body.setInteractive({ useHandCursor: true });
+    this.baseY = bottom;
+    this.persona = PERSONALITIES[lookKey(c.look)];
+    this.seed = seedFor(c.id);
+    this.deliveredCount = c.delivered.filter(Boolean).length;
+    this.enterAt = scene.time.now;
+    this.enterDir = this.x < layout.x(850) ? -1 : 1;
+    this.nextWatchAt = this.enterAt + WALK_IN_MS + nextWatchDelay(this.persona, Math.random());
+    // soft contact shadow so the feet sit on the floor
+    // Character, shadow and hearts are all frames of one sprite sheet (one texture, one draw batch).
+    // The shadow is an image from the sheet, not a Shape: Shapes drawn between sprites corrupted neighbours in testing.
+    this.scaleBase = BODY_H / CELL_H;
+    this.shadow = scene.add.image(this.x, bottom, CUSTOMER_SHEET, SHADOW_FRAME).setOrigin(0.5, 1).setDepth(299);
+    this.shadowW = (this.scaleBase * FIGURE_W[lookIndex(c.look)]) / SHADOW_ART_W;
+    this.shadow.setScale(this.shadowW, this.scaleBase);
+    this.body = scene.add.image(this.x, bottom, CUSTOMER_SHEET, lookIndex(c.look)).setOrigin(0.5, 1).setDepth(300);
+    this.body.setScale(this.scaleBase);
+    this.bodyW = FIGURE_W[lookIndex(c.look)] * this.scaleBase; // the figure, not the padded cell
+    // widen the tap area for slim characters (hit area is in texture pixels)
+    const hitW = Math.max(this.bodyW, MIN_HIT_W) / this.scaleBase;
+    this.body.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle((this.body.width - hitW) / 2, 0, hitW, this.body.height),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true,
+    });
     this.highlight = scene.add
-      .rectangle(this.x, bottom - BODY_H / 2, this.bodyW + 22, BODY_H + 14)
+      .rectangle(this.x, bottom - BODY_H / 2, Math.max(this.bodyW, 70) + 22, BODY_H + 14)
       .setStrokeStyle(5, 0xffffff, 1)
       .setFillStyle(0xffffff, 0.12)
       .setDepth(299)
@@ -103,18 +176,21 @@ export class CustomerView {
     if (SaveSystem.reduceMotion()) {
       this.bubble.setScale(1);
     } else {
-      this.body.setAlpha(0).setY(bottom + 50);
-      scene.tweens.add({ targets: this.body, alpha: 1, y: bottom, duration: 380, ease: 'Back.Out' });
+      // the customer walks in (driven from update); the bubble pops once they have nearly arrived
+      this.body.setAlpha(0);
+      this.shadow.setAlpha(0);
       this.bubble.setScale(0);
       scene.tweens.add({ targets: this.bubble, scale: 1, duration: 280, delay: 330, ease: 'Back.Out' });
     }
   }
 
+  // Hit and centre use the seat position, not the bouncing sprite, so taps never move with the animation.
   get hitRect(): Phaser.Geom.Rectangle {
-    return new Phaser.Geom.Rectangle(this.x - this.bodyW / 2 - 14, this.body.y - BODY_H - 8, this.bodyW + 28, BODY_H + 24);
+    const w = Math.max(this.bodyW + 28, MIN_HIT_W);
+    return new Phaser.Geom.Rectangle(this.x - w / 2, this.baseY - BODY_H - 8, w, BODY_H + 24);
   }
   get center(): { x: number; y: number } {
-    return { x: this.x, y: this.body.y - BODY_H / 2 };
+    return { x: this.x, y: this.baseY - BODY_H / 2 };
   }
 
   setDropHighlight(on: boolean): void {
@@ -154,14 +230,117 @@ export class CustomerView {
     if (m === 'angry') this.body.setTint(0xff9a8a);
     else if (m === 'worried') this.body.setTint(0xffe2a0);
     else this.body.clearTint();
-    if (m === 'happy' && !SaveSystem.reduceMotion()) {
-      this.scene.tweens.add({ targets: this.body, y: this.body.y - 16, duration: 160, yoyo: true, ease: 'Quad.Out' });
+    if (m === 'happy') this.celebrate();
+  }
+
+  private motionOn(): boolean {
+    return !SaveSystem.reduceMotion() && !this.leaving;
+  }
+
+  /** Food arrived: happy bounce, then a few chews. */
+  private reactToFood(): void {
+    if (!this.motionOn()) return;
+    const now = this.scene.time.now;
+    this.hopAt = now;
+    this.eatUntil = now + this.persona.hopMs + this.persona.eatMs * 3;
+    this.sparkle(Math.ceil(this.persona.sparkles / 2));
+  }
+
+  /** Whole order served: hearts and sparkles, and keep chewing until they leave. */
+  private celebrate(): void {
+    if (!this.motionOn()) return;
+    const now = this.scene.time.now;
+    this.hopAt = now;
+    this.eatUntil = now + this.persona.hopMs + this.persona.eatMs * 3;
+    this.sparkle(this.persona.sparkles);
+    this.releaseHearts(this.persona.hearts);
+  }
+
+  private sparkle(n: number): void {
+    this.fx?.burst(this.x, this.baseY - BODY_H * 0.8, 0xfff1b8, n, 34, 420);
+  }
+
+  private releaseHearts(n: number): void {
+    for (let i = 0; i < n; i++) {
+      let h = this.hearts.find((x) => !x.active);
+      if (!h) {
+        if (this.hearts.length >= HEART_MAX) return;
+        h = this.scene.add.image(0, 0, CUSTOMER_SHEET, HEART_FRAME).setDepth(320);
+        this.hearts.push(h);
+      }
+      // hearts float up beside the head, below the order bubble, so they never hide the order
+      const side = i % 2 ? 1 : -1;
+      const dx = side * (this.bodyW * 0.5 + 8 + Math.floor(i / 2) * 12);
+      const y0 = this.baseY - BODY_H * 0.66 - (i % 2) * 8;
+      h.setActive(true).setVisible(true).setAlpha(1).setScale(0.25).setPosition(this.x + dx, y0);
+      this.scene.tweens.add({
+        targets: h,
+        y: y0 - 26,
+        x: h.x + side * 4,
+        scale: 0.45 + (i % 3) * 0.05,
+        duration: 800,
+        delay: i * 70,
+        ease: 'Sine.Out',
+      });
+      this.scene.tweens.add({
+        targets: h,
+        alpha: 0,
+        duration: 360,
+        delay: i * 70 + 460,
+        onComplete: () => h?.setActive(false).setVisible(false),
+      });
     }
+  }
+
+  /** Drives the body from the current state. Called from update() with the scene clock. */
+  private animate(c: Customer, now: number, frac: number): void {
+    const p = this.persona;
+    if (SaveSystem.reduceMotion()) {
+      this.applyPose(REST, 1);
+      return;
+    }
+    // walking in
+    const inK = (now - this.enterAt) / WALK_IN_MS;
+    if (inK < 1) {
+      const w = walkPose(p, inK, 'in', this.enterDir);
+      this.applyPose(w.pose, w.alpha);
+      return;
+    }
+    let pose: Pose = idlePose(p, now, this.seed);
+    const phase = c.mood === 'waiting' ? phaseFor(frac) : 'calm';
+    if (phase !== 'calm') pose = addPose(pose, impatiencePose(p, phase, now, this.seed));
+    // occasional wristwatch check (businessman); more often once the wait drags
+    if (this.nextWatchAt !== Infinity && c.mood === 'waiting' && now >= this.nextWatchAt && now - this.hopAt > 600) {
+      this.watchAt = now;
+      this.nextWatchAt = now + WATCH_MS + nextWatchDelay(p, Math.random()) * (phase === 'calm' ? 1 : 0.5);
+      if (p.watchAt) this.fx?.burst(this.x + (p.watchAt.x - 0.5) * this.bodyW, this.baseY - (1 - p.watchAt.y) * BODY_H, 0xffffff, 4, 9, 320);
+    }
+    const watchK = (now - this.watchAt) / WATCH_MS;
+    if (watchK >= 0 && watchK < 1) pose = addPose(pose, watchPose(watchK));
+    const hopK = (now - this.hopAt) / p.hopMs;
+    if (hopK >= 0 && hopK < 1) pose = addPose(pose, hopPose(p, hopK));
+    else if (now < this.eatUntil) pose = addPose(pose, eatPose(p, now, this.seed));
+    const shakeK = (now - this.shakeAt) / 200;
+    if (shakeK >= 0 && shakeK < 1) pose = addPose(pose, { ...REST, dx: Math.sin(shakeK * Math.PI * 8) * 6 * (1 - shakeK) });
+    this.applyPose(pose, 1);
+  }
+
+  private applyPose(pose: Pose, alpha: number): void {
+    this.body.setPosition(this.x + pose.dx, this.baseY + pose.dy);
+    this.body.setScale(this.scaleBase * pose.sx, this.scaleBase * pose.sy);
+    this.body.setAngle(pose.angle);
+    this.body.setAlpha(alpha);
+    // the shadow stays on the floor, follows sideways motion and shrinks while the body is lifted
+    const lift = Math.min(1, Math.max(0, -pose.dy) / 18);
+    this.shadow.setPosition(this.x + pose.dx, this.baseY).setScale(this.shadowW * (1 - lift * 0.25), this.scaleBase).setAlpha(alpha * (1 - lift * 0.35));
   }
 
   update(c: Customer, now: number, rush = false): void {
     this.rushTag.setVisible(rush);
     const frac = c.patience / c.patienceMax;
+    const delivered = c.delivered.filter(Boolean).length;
+    if (delivered > this.deliveredCount && c.mood !== 'happy') this.reactToFood();
+    this.deliveredCount = delivered;
     this.drawBar(frac);
     this.drawTicks(c);
     if (c.mood === 'happy') this.setMood('happy');
@@ -170,29 +349,43 @@ export class CustomerView {
     else this.setMood('normal');
     const shaking = c.mood === 'waiting' && frac < 0.25 && !SaveSystem.reduceMotion();
     this.bubble.x = this.bubbleBaseX + (shaking ? Math.sin(now / 35) * 2.5 : 0);
+    if (!this.leaving) this.animate(c, now, frac);
   }
 
   /** Wrong item dropped on this customer: a quick shake. */
   shake(): void {
     if (SaveSystem.reduceMotion()) return;
-    this.scene.tweens.add({ targets: this.body, x: this.x + 6, duration: 50, yoyo: true, repeat: 3, onComplete: () => this.body.setX(this.x) });
+    this.shakeAt = this.scene.time.now;
   }
 
   leave(done: () => void): void {
     this.leaving = true;
     this.highlight.setVisible(false);
-    this.bobTween?.stop();
     if (SaveSystem.reduceMotion()) {
       done();
       return;
     }
     this.scene.tweens.add({ targets: [this.bubble, this.price, this.barFrame, this.bar], alpha: 0, duration: 200 });
-    this.scene.tweens.add({ targets: this.body, alpha: 0, y: this.body.y + 40, duration: 300, onComplete: done });
+    // walk away to the side they came from: small steps, sliding out, fading
+    const prog = { k: 0 };
+    this.exitTween = this.scene.tweens.add({
+      targets: prog,
+      k: 1,
+      duration: WALK_OUT_MS,
+      onUpdate: () => {
+        const w = walkPose(this.persona, prog.k, 'out', this.enterDir);
+        this.applyPose(w.pose, w.alpha);
+      },
+      onComplete: done,
+    });
   }
 
   destroy(): void {
-    this.bobTween?.stop();
-    this.scene.tweens.killTweensOf([this.body, this.bubble, this.price, this.barFrame, this.bar]);
+    this.exitTween?.stop();
+    this.scene.tweens.killTweensOf([this.body, this.bubble, this.price, this.barFrame, this.bar, ...this.hearts]);
+    for (const h of this.hearts) h.destroy();
+    this.hearts = [];
+    this.shadow.destroy();
     this.body.destroy();
     this.bubble.destroy();
     this.price.destroy();

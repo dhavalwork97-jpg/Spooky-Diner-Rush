@@ -242,3 +242,9 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 - New: `KitchenState.spouts`, `cones`, `tapDrinks`, `tapIceCream`; `src/views/PourViews.ts`; lock covers "Lv 6" and "Lv 12"; RecipeBook entries; the balance bot now makes both items.
 - Tests: 195 passing. Balance: the game is somewhat easier than after Milestone 5 (fast bot 0.21 / 0.40 / 0.56 / 0.55 closes a minute at Lv 6-10 / 11-15 / 16-20 / 21-25; average bot 0.51 / 0.70 / 0.76). One ratio check in `tests/sim_late.test.ts` was moved to the average bot, see HANDOFF.md.
 - Not verified: human play, reduced motion and the phone layout for the new rings, the Lv 6 cover and level-up cards. The cup and cone are code-drawn placeholders; there is no ice cream art yet.
+
+## Cute customer system (branch feature/cute-customer-system)
+- Eight supplied static PNG customers replace the three generic ones. All draw from one sprite sheet (`customers.webp`, 156 KB). Equal displayed height (112 logical px), feet on the stool, soft contact shadow.
+- Motion is code only (`src/anim/customerMotion.ts`): breathing, walk in and out, foot tap when the wait drags, happy bounce and chewing on delivery, hearts and sparkles when the order is complete, a wristwatch check for the businessman. Each character has its own timing (kid and athlete energetic, grandma and sleepy slow, teen relaxed, foodie and chef fan excited).
+- Gameplay untouched apart from the cosmetic `look` range (0..2 to 0..7, same RNG draws).
+- Not verified: real phone or GPU frame rate; touch feel of the wider hit area on a device; long sessions for tween leaks beyond reading the code. Blinking was left out on purpose.

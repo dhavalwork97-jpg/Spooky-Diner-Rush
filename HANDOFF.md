@@ -3,6 +3,16 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
+## Cute customer system (2026-10-31, Claude) - branch `feature/cute-customer-system` (from `main`), PR open, NOT merged
+Replaced the 3 generic customers with the owner's 8 static PNG characters (kid, grandma, businessman, foodie, teen, chef_fan, athlete, sleepy) and gave them code-only motion.
+- Art: `public/assets/art/customers.webp` (one 800x768 sprite sheet, 160x384 cells, 156 KB, loaded at boot; key `customers` in `data/assets.json`). Frames 0-7 are the characters in `CUSTOMER_LOOKS` order, 8 is the contact shadow, 9 is the heart. Built by `tools/make_customer_art.py <dir of the 8 source PNGs>` (crops to the figure, drops faint alpha haze, same 384 px height for all, feet on the bottom edge). The source PNGs (11 MB) are not in the repo. `customer_01..03.webp` removed.
+- Why one sheet: with separate textures plus a shadow, headless Chromium drew pieces of the background over one customer (batching glitch). One texture fixed it and is cheaper on mobile. Keep customer art in the one sheet. Shadow and hearts are images from the sheet, not Phaser Shapes.
+- Motion: `src/anim/customerMotion.ts` (pure, tested): personalities table, idle breath (about 1 percent), walk-in/out steps, foot-tap when patience under 50 percent (faster under 25), happy bounce, chew, hearts and sparkles, businessman wristwatch check. `CustomerView` reads the model each frame and drives transforms around the feet; the exit and hearts use tweens that `destroy()` stops. Reduced motion shows a static pose.
+- Model change (cosmetic only): `Customer.look` is now `randInt(0, CUSTOMER_LOOK_COUNT - 1)` (was 0..2). Same number of RNG calls, so spawning and balance are unchanged. `GameScene` only passes `fx` to `CustomerView`.
+- Hit area: tap and drop rect is at least 96 logical px wide and uses the seat position, not the bouncing sprite.
+- Blinking overlay not done (the faces are 3D renders; a flat overlay would look pasted on). No facial or limb animation exists.
+- Tests: 212 passing (13 new in `tests/customermotion.test.ts`), typecheck clean, build ok. Checked in headless Chromium at 1280x698 and phone landscape: all 8 characters, walk-in, tap, hearts, walk-out, reduced motion, no console errors. NOT checked on a real phone or GPU (frame rate unmeasured).
+
 ## Supplied cold drink animation (2026-10-31, Claude) - branch `colddrink-art` (from `icecream-art`; stacked on PR #11 and #12)
 Wired in the owner's `cold-drink-lanes.zip` the same way as the ice cream machine:
 - Assets (`public/assets/art`, listed in `data/assets.json`): `cold_drink_base.webp` (300x393, lazy), `cold_drink_anim.webp` (61 layers of 122x215 packed 10x7, 515 KB, lazy), `cold_drink_icon.webp` (the 61 header-glow frames 63x92 packed 10x7, 252 KB, lazy), `drink_cooked.webp` (the full cola glass cut from the last layer, 156x156 padded, loaded at boot; replaces the code-drawn cup on plates, order bubbles and the RecipeBook).
