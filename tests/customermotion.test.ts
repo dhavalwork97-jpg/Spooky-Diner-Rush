@@ -43,7 +43,7 @@ import {
   stepPose,
   watchPose,
 } from '../src/anim/customerMotion';
-import { CUSTOMER_LOOK_COUNT, KitchenState } from '../src/game/KitchenState';
+import { CUSTOMER_LOOK_COUNT, CUSTOMER_LOOK_MIN, KitchenState } from '../src/game/KitchenState';
 import { defaultConfig } from '../src/game/config';
 
 const assets = assetsJson.assets;
@@ -77,7 +77,7 @@ describe('customer art', () => {
     expect(lookIndex(3)).toBe(3);
     expect(lookIndex(17)).toBe(3);
   });
-  it('the model only produces looks that exist', () => {
+  it('the model only produces ghost looks', () => {
     const s = new KitchenState({ level: 8, xp: 0, coins: 0 }, defaultConfig, 7);
     const seen = new Set<number>();
     for (let i = 0; i < 400; i++) {
@@ -85,10 +85,10 @@ describe('customer art', () => {
       for (const c of s.customers) seen.add(c.look);
       s.customers.length = 0;
     }
-    for (const l of seen) expect(l).toBeGreaterThanOrEqual(0), expect(l).toBeLessThan(CUSTOMER_LOOK_COUNT);
-    expect(seen.size).toBeGreaterThan(8);
-    expect([...seen].some((l) => isGhost(l))).toBe(true);
-    expect([...seen].some((l) => !isGhost(l))).toBe(true);
+    for (const l of seen) expect(l).toBeGreaterThanOrEqual(CUSTOMER_LOOK_MIN), expect(l).toBeLessThan(CUSTOMER_LOOK_COUNT);
+    // customers are ghosts only: all six appear and no person does
+    expect(seen.size).toBe(6);
+    for (const l of seen) expect(isGhost(l)).toBe(true);
   });
 });
 

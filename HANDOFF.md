@@ -3,6 +3,9 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
+## Ghosts only (2026-11-01, Claude) - branch `feature/ghost-customers`
+Owner: use only the ghost characters as customers. `CUSTOMER_LOOK_MIN = 8` in `KitchenState.ts`: only looks 8-13 (the six ghosts) spawn; same RNG draw count. Set it to 0 to mix the eight people back in. The people frames are still in `customers.webp` (about 200 KB of the 367 KB); re-run `tools/make_customer_art.py` without them if you want that back.
+
 ## Customers stand on the floor, bigger, ghosts keep their colours (2026-10-31, Claude) - branch `feature/ghost-customers`
 Owner feedback after seeing a scare frame: everyone should stand on the floor in front of the stools like that one, not on the stool; ghosts looked colourless.
 - Feet now at `CUSTOMER_FLOOR_Y` (layout.ts, 326 source px, about y=240 logical), in front of the stools. They walk in and out along the floor.
