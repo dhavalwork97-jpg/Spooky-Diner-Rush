@@ -3,6 +3,13 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
+## In progress (2026-10-31, Claude): supplied cold drink dispenser animation - branch `colddrink-art` (from `icecream-art`, which is PR #12 on top of PR #11)
+Owner supplied `cold-drink-lanes.zip`: `cold_drink_base.png` (300x393), `layer_00..60.png` (122x215, 61 frames, 12 fps, three lanes via `lane_dx` -69.1/0/+69.1 at offset 88.3,145.9, draw order left, right, mid, frame 0 when idle), `icon_00..60.png` (63x92 header glow at 119.2,29.9, frame of the most recently started lane), `cold_drink_anim.json`. Plan:
+- [x] 1. Packed into `cold_drink_anim.webp` (10x7 sheet), `cold_drink_icon.webp` (10x7), `cold_drink_base.webp`, plus `drink_cooked.webp` (the full cola glass cut from the last layer) in `public/assets/art`, listed in `data/assets.json`; `drinkSpouts` 3 and fill time 5 s in `data/recipes.json`.
+- [ ] 2. View: base over the painted dispenser, three layers always drawn in order (frame from the model timer only), header icon, one progress ring, collect from the lane; old code-drawn glass as the fallback until the art loads.
+- [ ] 3. Tests (3-lane model tests, placement inside the zone, files listed), balance re-run, browser check, docs.
+Note: the zip's `glass_scale_x` 0.86 is not described in its note; I did not use it.
+
 ## Supplied ice cream animation (2026-10-31, Claude) - branch `icecream-art` (from `pizza-plate-fix`; PR base `pizza-plate-fix` until #11 merges)
 Wired in the owner's `ice-cream-lanes.zip`. What it does:
 - Assets (`public/assets/art`, listed in `data/assets.json`): `ice_cream_base.webp` (300x393 machine, lazy), `ice_cream_anim.webp` (the 75 layers packed 10x8 into one sheet of 106x255 frames, 861 KB, lazy), `icecream_cooked.webp` (the finished cone cut from the last layer, 156x156 with transparent padding, loaded at boot; it replaces the code-drawn cone on plates, order bubbles and the RecipeBook).
