@@ -22,6 +22,18 @@ import {
   CELL_H,
   CUSTOMER_SHEET,
   FIGURE_W,
+  LUNGE_MS,
+  SCARES,
+  SCARE_FADE_MS,
+  SCARE_FRAMES,
+  SCARE_FPS,
+  SCARE_FRAME_H,
+  SCARE_FRAME_W,
+  SCARE_SCALE,
+  floatPose,
+  lungePose,
+  shimmyPose,
+  type ScareDef,
   HEART_FRAME,
   SHADOW_ART_W,
   SHADOW_FRAME,
@@ -45,6 +57,8 @@ const MIN_HIT_W = 96;
 /** How far past the screen edge a customer starts or ends their walk (logical px). */
 const EDGE_MARGIN = 70;
 const HEART_MAX = 5;
+/** Scare sheets already asked for (they load lazily, the first time a ghost that has one appears). */
+const scareRequested = new Set<string>();
 const BUBBLE_W = 72;
 const BAR_W = 100;
 const TYPE_CHIPS: Record<string, { label: string; color: number; text: string }> = {
@@ -83,6 +97,10 @@ export class CustomerView {
   private shadowW = 1;
   private persona: Personality;
   private seed: number;
+  private look: number;
+  private hover = 0;
+  private scareSprite?: Phaser.GameObjects.Sprite;
+  private scareTimer?: Phaser.Time.TimerEvent;
   private hearts: Phaser.GameObjects.Image[] = [];
   private enterAt: number;
   private enterDir: number;
@@ -105,7 +123,10 @@ export class CustomerView {
     this.x = layout.x(SEATS_X[c.seat]);
     const bottom = layout.y(SEAT_BOTTOM_Y);
     this.baseY = bottom;
+    this.look = c.look;
     this.persona = PERSONALITIES[lookKey(c.look)];
+    this.hover = this.persona.ghost?.hover ?? 0;
+    this.requestScare();
     this.seed = seedFor(c.id);
     this.deliveredCount = c.delivered.filter(Boolean).length;
     this.enterAt = scene.time.now;
@@ -325,9 +346,9 @@ export class CustomerView {
       this.applyPose(arrive.pose, 1);
       return;
     }
-    let pose: Pose = idlePose(p, now, this.seed);
+    let pose: Pose = p.ghost ? floatPose(p, now, this.seed) : idlePose(p, now, this.seed);
     const phase = c.mood === 'waiting' ? phaseFor(frac) : 'calm';
-    if (phase !== 'calm') pose = addPose(pose, impatiencePose(p, phase, now, this.seed));
+    if (phase !== 'calm') pose = addPose(pose, p.ghost ? shimmyPose(phase, now, this.seed) : impatiencePose(p, phase, now, this.seed));
     // occasional wristwatch check (businessman); more often once the wait drags
     if (this.nextWatchAt !== Infinity && c.mood === 'waiting' && now >= this.nextWatchAt && now - this.hopAt > 600) {
       this.watchAt = now;
@@ -341,16 +362,17 @@ export class CustomerView {
     else if (now < this.eatUntil) pose = addPose(pose, eatPose(p, now, this.seed));
     const shakeK = (now - this.shakeAt) / 200;
     if (shakeK >= 0 && shakeK < 1) pose = addPose(pose, { ...REST, dx: Math.sin(shakeK * Math.PI * 8) * 6 * (1 - shakeK) });
-    this.applyPose(pose, 1);
+    // ghosts shimmer a little
+    this.applyPose(pose, p.ghost ? 0.95 + 0.05 * Math.sin(now / 280 + this.seed) : 1);
   }
 
   private applyPose(pose: Pose, alpha: number): void {
-    this.body.setPosition(this.x + pose.dx, this.baseY + pose.dy);
+    this.body.setPosition(this.x + pose.dx, this.baseY + pose.dy - this.hover);
     this.body.setScale(this.scaleBase * pose.sx, this.scaleBase * pose.sy);
     this.body.setAngle(pose.angle);
     this.body.setAlpha(alpha);
     // the shadow stays on the floor, follows sideways motion and shrinks while the body is lifted
-    const lift = Math.min(1, Math.max(0, -pose.dy) / 10);
+    const lift = Math.min(1, Math.max(0, -pose.dy + this.hover) / 10);
     this.shadow.setPosition(this.x + pose.dx, this.baseY).setScale(this.shadowW * (1 - lift * 0.3), this.scaleBase).setAlpha(alpha * (1 - lift * 0.5));
   }
 
@@ -385,6 +407,13 @@ export class CustomerView {
       return;
     }
     this.scene.tweens.add({ targets: [this.bubble, this.price, this.barFrame, this.bar], alpha: 0, duration: 200 });
+    // an angry ghost scares on the way out: the supplied sheet when it is loaded, otherwise a code-only lunge
+    if (this.persona.ghost && this.mood === 'angry') {
+      const def = SCARES[lookKey(this.look)];
+      if (def && this.scene.textures.exists(def.key)) this.playScare(def, done);
+      else this.playLunge(done);
+      return;
+    }
     // walk back out the way they came in: same steps, to the screen edge
     const prog = { t: 0 };
     this.exitTween = this.scene.tweens.add({
@@ -397,7 +426,73 @@ export class CustomerView {
     });
   }
 
+  /** Ask for this ghost's scare sheet in the background, once. */
+  private requestScare(): void {
+    const def = SCARES[lookKey(this.look)];
+    if (!def || scareRequested.has(def.key) || this.scene.textures.exists(def.key) || SaveSystem.reduceMotion()) return;
+    scareRequested.add(def.key);
+    this.scene.load.spritesheet(def.key, def.file, { frameWidth: SCARE_FRAME_W, frameHeight: SCARE_FRAME_H });
+    if (!this.scene.load.isLoading()) this.scene.load.start();
+  }
+
+  /** Play the supplied scare sheet once, centred on the customer with the head tops lined up, shaking the camera at the peak frame. */
+  private playScare(def: ScareDef, done: () => void): void {
+    const sc = this.scene;
+    const spr = sc.add.sprite(this.x, this.baseY - BODY_H, def.key, 0).setOrigin(0.5, 0).setScale(SCARE_SCALE).setDepth(330).setAlpha(0);
+    this.scareSprite = spr;
+    if (!sc.anims.exists(def.key)) {
+      sc.anims.create({ key: def.key, frames: sc.anims.generateFrameNumbers(def.key, { start: 0, end: SCARE_FRAMES - 1 }), frameRate: SCARE_FPS, repeat: 0 });
+    }
+    sc.tweens.add({ targets: spr, alpha: 1, duration: SCARE_FADE_MS });
+    sc.tweens.add({ targets: [this.body, this.shadow], alpha: 0, duration: SCARE_FADE_MS });
+    let finished = false;
+    const finish = (): void => {
+      if (finished) return;
+      finished = true;
+      sc.tweens.add({ targets: spr, alpha: 0, duration: 200, onComplete: done });
+    };
+    let shook = false;
+    spr.on('animationupdate', (_a: unknown, frame: Phaser.Animations.AnimationFrame) => {
+      if (!shook && Number(frame.textureFrame) >= def.peakFrame) {
+        shook = true;
+        sc.cameras.main.shake(220, 0.004);
+      }
+    });
+    spr.once('animationcomplete', finish);
+    // safety net in case the animation never reports completion
+    this.scareTimer = sc.time.delayedCall((SCARE_FRAMES / SCARE_FPS) * 1000 + 800, finish);
+    spr.play(def.key);
+  }
+
+  /** Code-only scare (no sheet, or it has not loaded yet): the ghost surges toward the camera, flashes red and fades. */
+  private playLunge(done: () => void): void {
+    const sc = this.scene;
+    const prog = { t: 0 };
+    let shook = false;
+    this.body.setTint(0xff7a7a);
+    this.exitTween = sc.tweens.add({
+      targets: prog,
+      t: LUNGE_MS,
+      duration: LUNGE_MS,
+      ease: 'Linear',
+      onUpdate: () => {
+        const l = lungePose(prog.t / LUNGE_MS);
+        this.applyPose(l.pose, l.alpha);
+        if (l.peak && !shook) {
+          shook = true;
+          sc.cameras.main.shake(160, 0.003);
+        }
+      },
+      onComplete: done,
+    });
+  }
+
   destroy(): void {
+    this.scareTimer?.remove(false);
+    if (this.scareSprite) {
+      this.scene.tweens.killTweensOf(this.scareSprite);
+      this.scareSprite.destroy();
+    }
     this.exitTween?.stop();
     this.scene.tweens.killTweensOf([this.body, this.bubble, this.price, this.barFrame, this.bar, ...this.hearts]);
     for (const h of this.hearts) h.destroy();

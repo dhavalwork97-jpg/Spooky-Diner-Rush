@@ -9,7 +9,18 @@ import {
   HEART_FRAME,
   PERSONALITIES,
   REST,
+  SCARES,
+  SCARE_FRAMES,
+  SCARE_FRAME_H,
+  SCARE_FRAME_W,
+  SCARE_FPS,
   SHADOW_FRAME,
+  LUNGE_MS,
+  floatPose,
+  glidePose,
+  isGhost,
+  lungePose,
+  shimmyPose,
   addPose,
   eatPose,
   hopPose,
@@ -56,14 +67,15 @@ describe('customer art', () => {
   });
   it('keeps the model look count equal to the art count', () => {
     expect(CUSTOMER_LOOK_COUNT).toBe(CUSTOMER_LOOKS.length);
-    expect(CUSTOMER_LOOKS).toHaveLength(8);
+    expect(CUSTOMER_LOOKS).toHaveLength(14);
   });
   it('maps any look number to a character, even out of range', () => {
     expect(lookKey(0)).toBe('kid');
-    expect(lookKey(8)).toBe('kid');
-    expect(lookKey(-1)).toBe('sleepy');
+    expect(lookKey(14)).toBe('kid');
+    expect(lookKey(8)).toBe('monocle_gentleman');
+    expect(lookKey(-1)).toBe('flame_crown_ghost');
     expect(lookIndex(3)).toBe(3);
-    expect(lookIndex(11)).toBe(3);
+    expect(lookIndex(17)).toBe(3);
   });
   it('the model only produces looks that exist', () => {
     const s = new KitchenState({ level: 8, xp: 0, coins: 0 }, defaultConfig, 7);
@@ -74,7 +86,9 @@ describe('customer art', () => {
       s.customers.length = 0;
     }
     for (const l of seen) expect(l).toBeGreaterThanOrEqual(0), expect(l).toBeLessThan(CUSTOMER_LOOK_COUNT);
-    expect(seen.size).toBeGreaterThan(4);
+    expect(seen.size).toBeGreaterThan(8);
+    expect([...seen].some((l) => isGhost(l))).toBe(true);
+    expect([...seen].some((l) => !isGhost(l))).toBe(true);
   });
 });
 
@@ -131,7 +145,8 @@ describe('customer motion', () => {
     expect(WALK_MS).toBeGreaterThanOrEqual(1400);
     expect(WALK_MS).toBeLessThanOrEqual(1800);
     expect(POP_MS).toBe(250);
-    for (const k of CUSTOMER_LOOKS) {
+    for (const k of CUSTOMER_LOOKS.slice(0, 8)) {
+      // people only: ghosts glide with a slower bob
       const p = PERSONALITIES[k];
       expect(p.stepMs).toBeGreaterThanOrEqual(185);
       expect(p.stepMs).toBeLessThanOrEqual(265);
@@ -216,5 +231,79 @@ describe('customer motion', () => {
   });
   it('neighbouring customers get different phase offsets', () => {
     expect(seedFor(1)).not.toBe(seedFor(2));
+  });
+});
+
+const GHOST_NAMES = ['monocle_gentleman', 'old_bearded_ghost', 'child_nightgown', 'wildhair_corset_ghost', 'vest_gentleman', 'flame_crown_ghost'] as const;
+const publicFiles = import.meta.glob('../public/assets/customers/ghosts/**/*', { query: '?url', import: 'default' });
+const animJson = import.meta.glob('../public/assets/customers/ghosts/scare/*.anim.json', { eager: true, import: 'default' }) as Record<string, { frameWidth: number; frameHeight: number; frameCount: number; fps: number; peakFrame: number }>;
+
+describe('ghost customers', () => {
+  it('are the last six looks, flagged as ghosts; people are not', () => {
+    GHOST_NAMES.forEach((n, i) => {
+      expect(CUSTOMER_LOOKS[8 + i]).toBe(n);
+      expect(isGhost(8 + i)).toBe(true);
+      expect(PERSONALITIES[n].ghost!.hover).toBeGreaterThan(0);
+    });
+    for (let i = 0; i < 8; i++) expect(isGhost(i)).toBe(false);
+  });
+  it('have their cutouts in the specified folder, and no scare PNGs, GIF or white background folder', () => {
+    for (const n of GHOST_NAMES) expect(publicFiles[`../public/assets/customers/ghosts/${n}.png`], n).toBeTruthy();
+    expect(Object.keys(publicFiles).filter((f) => /_scare\.png$|\.gif$|white_bg/.test(f))).toHaveLength(0);
+  });
+  it('four have a scare sheet whose size, fps and peak frame match the supplied anim.json; two use the code lunge', () => {
+    expect(Object.keys(SCARES).sort()).toEqual(['child_nightgown', 'monocle_gentleman', 'old_bearded_ghost', 'wildhair_corset_ghost']);
+    expect(SCARES.vest_gentleman).toBeUndefined();
+    expect(SCARES.flame_crown_ghost).toBeUndefined();
+    for (const [look, def] of Object.entries(SCARES)) {
+      const a = animJson[`../public/assets/customers/ghosts/scare/${look}_scare.anim.json`];
+      expect(a, look).toBeTruthy();
+      expect(a.frameWidth).toBe(SCARE_FRAME_W);
+      expect(a.frameHeight).toBe(SCARE_FRAME_H);
+      expect(a.frameCount).toBe(SCARE_FRAMES);
+      expect(a.fps).toBe(SCARE_FPS);
+      expect(a.peakFrame).toBe(def!.peakFrame);
+      expect(publicFiles[`../public/${def!.file}`], look).toBeTruthy();
+      const listed = assets.find((x) => x.key === def!.key) as { lazy?: boolean; file: string } | undefined;
+      expect(listed?.file).toBe(def!.file);
+      expect(listed?.lazy).toBe(true);
+    }
+  });
+  it('float stays within a few px and a few degrees; calm ghosts do not shimmy', () => {
+    for (const n of GHOST_NAMES) {
+      const p = PERSONALITIES[n];
+      for (let t = 0; t < 9000; t += 41) {
+        const f = floatPose(p, t, 0.7);
+        expect(f.dy).toBeLessThanOrEqual(1e-9);
+        expect(f.dy).toBeGreaterThanOrEqual(-p.ghost!.bob - 1e-9);
+        expect(Math.abs(f.angle)).toBeLessThan(2.5);
+      }
+    }
+    expect(shimmyPose('calm', 5, 0)).toEqual(REST);
+    expect(Math.abs(shimmyPose('angry', 10, 0).dx)).toBeLessThanOrEqual(2.2);
+  });
+  it('glide and arrival: no hop or squash, ends at rest', () => {
+    const p = PERSONALITIES.child_nightgown;
+    for (let t = 0; t < WALK_MS; t += 11) {
+      const q = arrivePose(p, t, 400, -1).pose;
+      expect(q.sy).toBe(1);
+      expect(q.sx).toBe(1);
+      expect(q.dy).toBeGreaterThanOrEqual(-p.stepBounce - 1e-9);
+      expect(Math.abs(q.angle)).toBeLessThanOrEqual(2 + 1e-9);
+    }
+    expect(glidePose(p, 100, 0)).toEqual(REST);
+    expect(arrivePose(p, ARRIVE_MS, 400, -1).phase).toBe('done');
+    expect(departPose(p, WALK_MS, 400, 1).pose.dx).toBeCloseTo(400);
+  });
+  it('the code-only lunge grows toward the camera, then fades out and ends opaque-free', () => {
+    const a = lungePose(0);
+    expect(a.pose.sx).toBeCloseTo(1);
+    expect(a.alpha).toBe(1);
+    const mid = lungePose(0.6);
+    expect(mid.pose.sx).toBeGreaterThan(1.2);
+    expect(mid.pose.sx).toBeLessThan(1.3); // never grows past the top of the screen
+    expect(mid.peak).toBe(true);
+    expect(lungePose(1).alpha).toBeCloseTo(0);
+    expect(LUNGE_MS).toBeLessThan(1000);
   });
 });
