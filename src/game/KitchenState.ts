@@ -40,7 +40,7 @@ export interface SlotItem {
   /** True while a burger is still waiting for layers. */
   building: boolean;
 }
-export type SlotRow = 'plate' | 'side';
+export type SlotRow = 'plate' | 'side' | 'pizza';
 export interface Slot {
   index: number;
   row: SlotRow;
@@ -173,6 +173,7 @@ export class KitchenState {
     this.slots = [
       ...Array.from({ length: s.plateSlots }, (_, i): Slot => ({ index: i, row: 'plate', item: null })),
       ...Array.from({ length: s.sideSlots }, (_, i): Slot => ({ index: s.plateSlots + i, row: 'side', item: null })),
+      ...Array.from({ length: s.pizzaSlots }, (_, i): Slot => ({ index: s.plateSlots + s.sideSlots + i, row: 'pizza', item: null })),
     ];
   }
 
@@ -444,7 +445,7 @@ export class KitchenState {
     this.emit({ type: 'ovenStart', oven: i });
   }
 
-  /** Tap the oven: collect a ready pizza onto a plate, or throw away a burnt one. */
+  /** Tap the oven: collect a ready pizza onto a pizza plate, or throw away a burnt one. */
   tapOven(oven = 0): void {
     if (this.closed) return;
     const o = this.ovens[oven];
@@ -456,8 +457,9 @@ export class KitchenState {
       this.emit({ type: 'discard', where: 'oven', index: oven, penalty: true });
       return;
     }
-    const slot = this.freeSlot('plate');
-    if (!slot) return this.invalid('No free plate');
+    // A pizza has its own plates (the dough bases): burgers and drinks can never keep it in the oven to burn.
+    const slot = this.freeSlot('pizza');
+    if (!slot) return this.invalid('Serve a pizza first: the pizza plates are full');
     this.ovens[oven] = null;
     slot.item = { id: this.nextId++, kind: 'pizza', placed: [], building: false };
     this.emit({ type: 'collect', from: 'oven', index: oven, slot: slot.index });
@@ -490,7 +492,7 @@ export class KitchenState {
     this.emit({ type: 'drinkStart', spout: i });
   }
 
-  /** Tap the machine: collect a ready cone, or start swirling one. */
+  /** Tap the machine: collect a ready cone, or start swirling one in a free lane (there are `iceCreamMachines` lanes). */
   tapIceCream(): void {
     if (this.closed) return;
     const def = this.cfg.recipes.items.icecream;
@@ -505,7 +507,7 @@ export class KitchenState {
       return;
     }
     const i = this.cones.findIndex((p) => !p);
-    if (i < 0) return this.invalid('The cone is still swirling');
+    if (i < 0) return this.invalid('Every cone is still swirling');
     this.cones[i] = { t: 0, phase: 'cooking' };
     this.emit({ type: 'coneStart', machine: i });
   }

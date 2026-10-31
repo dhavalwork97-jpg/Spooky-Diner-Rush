@@ -24,9 +24,12 @@ describe('drinks', () => {
     noCustomers(s);
     s.tapDrinks();
     expect(s.spouts[0]?.phase).toBe('cooking');
-    s.tapDrinks(); // the only spout is busy
+    s.tapDrinks(); // the next lane starts: there are three
+    s.tapDrinks();
+    expect(s.spouts.filter(Boolean).length).toBe(3);
+    s.tapDrinks(); // every lane is busy
     expect(lastInvalid(s).join()).toMatch(/filling/);
-    run(s, 4);
+    run(s, 6);
     expect(s.spouts[0]?.phase).toBe('ready');
     run(s, 600); // a ready cup never spoils or costs anything
     const rep = s.reputation;
@@ -43,14 +46,14 @@ describe('drinks', () => {
     noCustomers(s);
     s.slots.filter((x) => x.row === 'side').forEach((x) => (x.item = { id: 90 + x.index, kind: 'fries', placed: [], building: false }));
     s.tapDrinks();
-    run(s, 4);
+    run(s, 6);
     s.tapDrinks();
     expect(s.slots.filter((x) => x.row === 'plate').some((x) => x.item?.kind === 'drink')).toBe(true);
     s.slots.forEach((x) => {
       if (!x.item) x.item = { id: 200 + x.index, kind: 'fries', placed: [], building: false };
     });
     s.tapDrinks();
-    run(s, 4);
+    run(s, 6);
     s.drainEvents();
     s.tapDrinks();
     expect(lastInvalid(s).join()).toMatch(/plate is full/);
@@ -65,7 +68,7 @@ describe('drinks', () => {
     c.items = ['drink'];
     c.delivered = [false];
     s.tapDrinks();
-    run(s, 4);
+    run(s, 6);
     s.tapDrinks();
     const slot = s.slots.find((x) => x.item?.kind === 'drink')!;
     const coins = s.coins;
@@ -87,12 +90,15 @@ describe('ice cream', () => {
     const s = at(12);
     noCustomers(s);
     s.tapIceCream();
-    s.tapIceCream(); // still swirling: nothing starts, one machine only
+    s.tapIceCream(); // the next lane starts: there are three
+    s.tapIceCream();
+    expect(s.cones.filter(Boolean).length).toBe(3);
+    s.tapIceCream(); // every lane is busy
     expect(lastInvalid(s).join()).toMatch(/swirling/);
-    run(s, 4);
+    run(s, 6);
     expect(s.cones[0]?.phase).not.toBe('cooking');
     s.tapIceCream();
-    expect(s.cones[0]).toBeNull();
+    expect(s.cones[0]).toBeNull(); // the first ready lane is collected
     expect(s.slots.some((x) => x.item?.kind === 'icecream')).toBe(true);
   });
 

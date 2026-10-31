@@ -25,8 +25,8 @@ export const OVENS: [number, number][] = [[777, 814]];
 export const OVENS_LIT: [number, number][] = [[757, 725]];
 /** Centre of the raw food piled in the fries and nuggets baskets, where the food leaves from. */
 export const FRY_FROM = { fries: [448, 815], nuggets: [308, 815] } as const;
-/** Plates on the serving counter (burgers) first, then the two side plates on the left counter (fries). */
-export const SLOTS: [number, number][] = [[1005, 450], [1141, 450], [1008, 538], [1144, 539], [378, 546], [522, 545]];
+/** Plates on the serving counter (burgers) first, then the two side plates on the left counter (fries), then the two pizza plates (the dough bases). */
+export const SLOTS: [number, number][] = [[1005, 450], [1141, 450], [1008, 538], [1144, 539], [378, 546], [522, 545], [857, 456], [857, 540]];
 
 export class Layout {
   constructor(readonly bg: BackgroundPlacement) {}
@@ -57,3 +57,35 @@ export const CONE: [number, number, number, number] = [34, 684, 57, 89];
 /** Where the progress rings sit on the dispenser and on the ice cream machine. */
 export const DRINK_RING: [number, number] = [283, 215];
 export const CONE_RING: [number, number] = [192, 527];
+
+/**
+ * The supplied ice cream machine picture (`ice_cream_base`, 300 x 393) is drawn over the painted machine's
+ * upper part, and its animation layers (`ice_cream_anim`, 106 x 255 frames, three lanes) over that.
+ * Source pixels; `ICE.w` is the on-screen width of the 300 px base. Layers sit at
+ * (ICE_LAYER_OFFSET + lane dx) in base pixels, scaled like the base.
+ */
+export const ICE = { x: -3.1, y: 482.8, w: 244.5 };
+export const ICE_BASE_W = 300;
+export const ICE_LAYER_OFFSET: [number, number] = [97.5, 105.6];
+export const ICE_LANE_DX = { left: -69.7, mid: 0, right: 69.7 } as const;
+/** Cone index to lane: the middle lane first, then left, then right. */
+export const ICE_LANES = ['mid', 'left', 'right'] as const;
+export const ICE_FRAMES = 75;
+export const ICE_FRAME_W = 106;
+
+/**
+ * The supplied cold drink dispenser picture (`cold_drink_base`, 300 x 393) is drawn over the painted
+ * dispenser and its animation layers (`cold_drink_anim`, 122 x 215 frames, 61 of them, three lanes) over that.
+ * `COLD.w` is the on-screen width of the 300 px base. Lanes are always drawn (frame 0 when idle) in
+ * `COLD_ZORDER` order; the header glow (`cold_drink_icon`, 63 x 92) sits at `COLD_ICON_OFFSET`.
+ */
+export const COLD = { x: 83.3, y: 161.8, w: 240.8 };
+export const COLD_BASE_W = 300;
+export const COLD_LAYER_OFFSET: [number, number] = [88.3, 145.9];
+export const COLD_ICON_OFFSET: [number, number] = [119.2, 29.9];
+export const COLD_LANE_DX = { left: -69.1, mid: 0, right: 69.1 } as const;
+export const COLD_ZORDER = ['left', 'right', 'mid'] as const;
+/** Cup index to lane: the middle lane first, then left, then right. */
+export const COLD_LANES = ['mid', 'left', 'right'] as const;
+export const COLD_FRAMES = 61;
+export const COLD_FRAME_W = 122;

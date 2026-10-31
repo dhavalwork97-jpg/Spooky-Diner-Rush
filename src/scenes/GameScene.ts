@@ -24,7 +24,7 @@ import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 import { BURNERS, FRY_FROM, Layout, SLOTS, SRC_H, SRC_W, VAT_FOOD_W, VATS } from '../views/layout';
 import { StationViews } from '../views/StationViews';
 import { StockViews } from '../views/StockViews';
-import { PourViews } from '../views/PourViews';
+import { PourViews, loadColdDrinkArt, loadIceCreamArt } from '../views/PourViews';
 import { loadOvenSheet } from '../views/OvenDoor';
 import { ItemView } from '../views/ItemView';
 import { CustomerView } from '../views/CustomerView';
@@ -127,6 +127,8 @@ export class GameScene extends Phaser.Scene {
     loadOvenSheet(this); // background load; the oven works without the door art until it arrives
     this.stations = new StationViews(this, this.layout, this.fx, this.state);
     this.pours = new PourViews(this, this.layout);
+    loadColdDrinkArt(this); // background load; the code-drawn glass is used until it arrives
+    loadIceCreamArt(this); // background load; the code-drawn scoop is used until it arrives
     this.hud = new Hud(this, this.state);
     this.toast = new Toast(this, LOGICAL_WIDTH / 2, 300);
     this.banner = new EventBanner(this, 551, 42);
@@ -432,7 +434,7 @@ export class GameScene extends Phaser.Scene {
     const slot = this.state.slots[slotIndex];
     if (!slot.item) return null;
     const home = this.slotPos(slotIndex);
-    const v = new ItemView(this, at?.x ?? home.x, at?.y ?? home.y, slot.item.id, slot.item.kind, slotIndex, this.layout.s(slot.item.kind === 'burger' ? 62 : slot.item.kind === 'pizza' ? 84 : 70));
+    const v = new ItemView(this, at?.x ?? home.x, at?.y ?? home.y, slot.item.id, slot.item.kind, slotIndex, this.layout.s(slot.item.kind === 'burger' ? 62 : slot.item.kind === 'pizza' ? 112 : slot.item.kind === 'icecream' ? 104 : slot.item.kind === 'drink' ? 100 : 70));
     v.home = home;
     this.items.set(slotIndex, v);
     return v;
@@ -484,12 +486,13 @@ export class GameScene extends Phaser.Scene {
       case 'conePhase':
         if (e.phase === 'ready') {
           audio.play('ding');
-          const at = this.pours.ringPos(e.type === 'drinkPhase' ? 'drink' : 'cone');
+          const at = e.type === 'drinkPhase' ? this.pours.ringPos('drink') : this.pours.coneRingPos(e.machine);
           this.fx.burst(at.x, at.y, 0xffffff, 6, 26, 320);
         }
         break;
       case 'melted': {
-        const at = this.pours.conePos();
+        this.pours.melt(e.machine);
+        const at = this.pours.conePos(e.machine);
         this.fx.burst(at.x, at.y, 0xf7b6c8, 8, 30, 420);
         this.floatText(at.x, at.y - 24, 'Melted', '#FFF4DC');
         break;
@@ -539,7 +542,7 @@ export class GameScene extends Phaser.Scene {
         this.toast.show('Burnt! Tap to throw it away');
         break;
       case 'collect': {
-        const from = e.from === 'fryer' ? this.stations.vatPos(e.index) : e.from === 'dispenser' ? this.pours.dispenserPos() : e.from === 'icecream' ? this.pours.conePos() : this.stations.ovenPos(e.index);
+        const from = e.from === 'fryer' ? this.stations.vatPos(e.index) : e.from === 'dispenser' ? this.pours.dispenserPos(e.index) : e.from === 'icecream' ? this.pours.conePos(e.index) : this.stations.ovenPos(e.index);
         const v = this.makeItem(e.slot, from);
         if (v) {
           v.showFries();
@@ -826,6 +829,7 @@ export class GameScene extends Phaser.Scene {
       } else if (!slot.item && v && !v.leaving) this.removeItem(slot.index, false);
     }
     this.stock.update(this.state.level);
+    this.stock.updateDough(this.state);
     this.stations.update(this.state, time);
     this.pours.update(this.state, time);
     this.hud.update(this.state, dtReal);

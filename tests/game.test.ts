@@ -341,7 +341,7 @@ describe('pizza', () => {
     s.startPizza();
     expect(s.drainEvents()).toEqual([{ type: 'invalid', message: 'Pizza unlocks at Lv 5' }]);
   });
-  it('bakes in the oven and is collected onto a free plate', () => {
+  it('bakes in the oven and is collected onto a pizza plate (its own plates, not the burger plates)', () => {
     const s = lv5();
     s.startPizza();
     run(s, 4);
@@ -352,7 +352,27 @@ describe('pizza', () => {
     expect(s.ovens[0]?.phase).toBe('ready');
     s.tapOven();
     expect(s.ovens[0]).toBeNull();
-    expect(s.slots[0]).toMatchObject({ row: 'plate', item: { kind: 'pizza', building: false } });
+    expect(s.slots.find((x) => x.row === 'pizza' && x.item)).toMatchObject({ item: { kind: 'pizza', building: false } });
+    expect(s.slots.filter((x) => x.row === 'plate').every((x) => !x.item)).toBe(true);
+  });
+  it('is never blocked by full burger plates, and says so when the pizza plates are full', () => {
+    const s = lv5();
+    s.nextArrival = 1e9;
+    s.slots.filter((x) => x.row === 'plate' || x.row === 'side').forEach((x) => (x.item = { id: 50 + x.index, kind: 'burger', placed: [], building: false }));
+    s.startPizza();
+    run(s, 8.5);
+    s.tapOven();
+    expect(s.ovens[0]).toBeNull();
+    expect(s.slots.filter((x) => x.row === 'pizza' && x.item).length).toBe(1);
+    s.startPizza();
+    run(s, 8.5);
+    s.tapOven();
+    s.startPizza();
+    run(s, 8.5);
+    s.drainEvents();
+    s.tapOven();
+    expect(s.ovens[0]).not.toBeNull(); // both pizza plates are taken: it waits in the oven
+    expect(s.drainEvents()[0]).toMatchObject({ type: 'invalid' });
   });
   it('asks for dough when the oven is empty and says when it is full', () => {
     const s = lv5();

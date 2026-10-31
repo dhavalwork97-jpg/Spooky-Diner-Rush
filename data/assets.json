@@ -327,6 +327,76 @@
       "frameHeight": 242,
       "preferFallback": false,
       "lazy": true
+    },
+    {
+      "key": "ice_cream_base",
+      "type": "image",
+      "file": "assets/art/ice_cream_base.webp",
+      "scale": 1,
+      "width": 300,
+      "height": 393,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "ice_cream_anim",
+      "type": "spritesheet",
+      "file": "assets/art/ice_cream_anim.webp",
+      "scale": 1,
+      "frameWidth": 106,
+      "frameHeight": 255,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "icecream_cooked",
+      "type": "image",
+      "file": "assets/art/icecream_cooked.webp",
+      "scale": 1,
+      "width": 156,
+      "height": 156,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "cold_drink_base",
+      "type": "image",
+      "file": "assets/art/cold_drink_base.webp",
+      "scale": 1,
+      "width": 300,
+      "height": 393,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "cold_drink_anim",
+      "type": "spritesheet",
+      "file": "assets/art/cold_drink_anim.webp",
+      "scale": 1,
+      "frameWidth": 122,
+      "frameHeight": 215,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "cold_drink_icon",
+      "type": "spritesheet",
+      "file": "assets/art/cold_drink_icon.webp",
+      "scale": 1,
+      "frameWidth": 63,
+      "frameHeight": 92,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "drink_cooked",
+      "type": "image",
+      "file": "assets/art/drink_cooked.webp",
+      "scale": 1,
+      "width": 156,
+      "height": 156,
+      "preferFallback": false,
+      "lazy": false
     }
   ]
 }

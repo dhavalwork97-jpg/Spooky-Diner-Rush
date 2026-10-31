@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { coverChange } from '../game/lockcover';
 import { SaveSystem } from '../systems/SaveSystem';
-import { Layout } from './layout';
+import type { KitchenState } from '../game/KitchenState';
+import { Layout, SLOTS } from './layout';
 
 /**
  * The new kitchen art already shows every ingredient stocked (fries, nuggets, buns, patties,
@@ -24,7 +25,7 @@ const LOCKS: LockDef[] = [
   { station: 'patty_tray', unlockLevel: 2, rect: [1356, 668, 210, 108] },
   { station: 'lettuce', unlockLevel: 2, rect: [330, 394, 132, 100] },
   { station: 'tomato', unlockLevel: 2, rect: [474, 368, 124, 144] },
-  { station: 'drinks', unlockLevel: 6, rect: [118, 372, 168, 92] },
+  { station: 'drinks', unlockLevel: 6, rect: [105, 356, 196, 92] },
   { station: 'ice_cream', unlockLevel: 12, rect: [34, 682, 185, 100] },
 ];
 
@@ -36,6 +37,7 @@ interface Cover {
 
 export class StockViews {
   private covers: Cover[] = [];
+  private dough: Phaser.GameObjects.Image[] = [];
 
   constructor(private scene: Phaser.Scene, layout: Layout, level: number) {
     for (const def of LOCKS) {
@@ -51,7 +53,20 @@ export class StockViews {
       const box = scene.add.container(layout.x(sx) + w / 2, layout.y(sy) + h / 2, [g, label]).setDepth(250).setVisible(false);
       this.covers.push({ def, box, locked: null });
     }
+    // Raw dough sits on each pizza plate until a cooked pizza takes its place.
+    for (const [sx, sy] of SLOTS.slice(-2)) {
+      const im = scene.add.image(layout.x(sx), layout.y(sy) - 6, 'pizza_raw').setDepth(300).setVisible(false);
+      im.setScale(layout.s(112) / im.width);
+      this.dough.push(im);
+    }
     this.update(level, false);
+  }
+
+  /** Show raw dough on every pizza plate that has no cooked pizza, once pizza is unlocked. */
+  updateDough(state: KitchenState): void {
+    const plates = state.slots.filter((x) => x.row === 'pizza');
+    const open = state.level >= state.cfg.recipes.items.pizza.unlockLevel;
+    this.dough.forEach((im, i) => im.setVisible(open && !!plates[i] && !plates[i].item));
   }
 
   /** Cover every station that is still locked. `animate` fades a newly unlocked cover away. */
@@ -78,5 +93,7 @@ export class StockViews {
       c.box.destroy();
     }
     this.covers = [];
+    this.dough.forEach((d) => d.destroy());
+    this.dough = [];
   }
 }
