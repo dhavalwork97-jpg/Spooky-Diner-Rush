@@ -72,3 +72,20 @@ export const ICE_LANE_DX = { left: -69.7, mid: 0, right: 69.7 } as const;
 export const ICE_LANES = ['mid', 'left', 'right'] as const;
 export const ICE_FRAMES = 75;
 export const ICE_FRAME_W = 106;
+
+/**
+ * The supplied cold drink dispenser picture (`cold_drink_base`, 300 x 393) is drawn over the painted
+ * dispenser and its animation layers (`cold_drink_anim`, 122 x 215 frames, 61 of them, three lanes) over that.
+ * `COLD.w` is the on-screen width of the 300 px base. Lanes are always drawn (frame 0 when idle) in
+ * `COLD_ZORDER` order; the header glow (`cold_drink_icon`, 63 x 92) sits at `COLD_ICON_OFFSET`.
+ */
+export const COLD = { x: 83.3, y: 161.8, w: 240.8 };
+export const COLD_BASE_W = 300;
+export const COLD_LAYER_OFFSET: [number, number] = [88.3, 145.9];
+export const COLD_ICON_OFFSET: [number, number] = [119.2, 29.9];
+export const COLD_LANE_DX = { left: -69.1, mid: 0, right: 69.1 } as const;
+export const COLD_ZORDER = ['left', 'right', 'mid'] as const;
+/** Cup index to lane: the middle lane first, then left, then right. */
+export const COLD_LANES = ['mid', 'left', 'right'] as const;
+export const COLD_FRAMES = 61;
+export const COLD_FRAME_W = 122;

@@ -4,7 +4,7 @@ import { INK } from '../art/builders';
 import { Ring } from './Ring';
 import assetsJson from '../../data/assets.json';
 import { SaveSystem } from '../systems/SaveSystem';
-import { CONE, CONE_RING, CUP, DRINK_RING, ICE, ICE_BASE_W, ICE_FRAMES, ICE_LANES, ICE_LANE_DX, ICE_LAYER_OFFSET, type Layout } from './layout';
+import { COLD, COLD_BASE_W, COLD_FRAMES, COLD_ICON_OFFSET, COLD_LANE_DX, COLD_LANES, COLD_LAYER_OFFSET, COLD_ZORDER, CONE, CONE_RING, CUP, DRINK_RING, ICE, ICE_BASE_W, ICE_FRAMES, ICE_LANES, ICE_LANE_DX, ICE_LAYER_OFFSET, type Layout } from './layout';
 
 /**
  * The drinks dispenser and the ice cream machine. Both are painted into the kitchen art (three empty
@@ -31,6 +31,27 @@ export function loadIceCreamArt(scene: Phaser.Scene): void {
   if (queued && !scene.load.isLoading()) scene.load.start();
 }
 const SCOOP = 0xf7b6c8;
+export const COLD_BASE = 'cold_drink_base';
+export const COLD_ANIM = 'cold_drink_anim';
+export const COLD_ICON = 'cold_drink_icon';
+
+/** Load the supplied cold drink art in the background. Until it arrives (or if it fails) the code-drawn glass is used. */
+export function loadColdDrinkArt(scene: Phaser.Scene): void {
+  const defs = (assetsJson as { assets: { key: string; file: string; frameWidth?: number; frameHeight?: number }[] }).assets;
+  const find = (k: string) => defs.find((a) => a.key === k);
+  const base = find(COLD_BASE);
+  const anim = find(COLD_ANIM);
+  const icon = find(COLD_ICON);
+  if (!base || !anim || !icon || !anim.frameWidth || !anim.frameHeight || !icon.frameWidth || !icon.frameHeight) return;
+  let queued = false;
+  scene.load.on('loaderror', (f: Phaser.Loader.File) => {
+    if (f.key === COLD_BASE || f.key === COLD_ANIM || f.key === COLD_ICON) console.error(`Missing asset: ${f.key} (${f.url}); the cold drink animation is off`);
+  });
+  if (!scene.textures.exists(COLD_BASE)) (scene.load.image(COLD_BASE, base.file), (queued = true));
+  if (!scene.textures.exists(COLD_ANIM)) (scene.load.spritesheet(COLD_ANIM, anim.file, { frameWidth: anim.frameWidth, frameHeight: anim.frameHeight }), (queued = true));
+  if (!scene.textures.exists(COLD_ICON)) (scene.load.spritesheet(COLD_ICON, icon.file, { frameWidth: icon.frameWidth, frameHeight: icon.frameHeight }), (queued = true));
+  if (queued && !scene.load.isLoading()) scene.load.start();
+}
 
 export class PourViews {
   private cupRing: Ring;
@@ -40,6 +61,9 @@ export class PourViews {
   private laneRings: Ring[] = [];
   private layers: Phaser.GameObjects.Sprite[] = [];
   private baseImg?: Phaser.GameObjects.Image;
+  private coldBase?: Phaser.GameObjects.Image;
+  private coldLayers = new Map<string, Phaser.GameObjects.Sprite>();
+  private coldIcon?: Phaser.GameObjects.Sprite;
   private scene: Phaser.Scene;
 
   constructor(scene: Phaser.Scene, private layout: Layout) {
@@ -50,8 +74,16 @@ export class PourViews {
     this.cone = scene.add.graphics().setDepth(590);
   }
 
-  /** Where a collected cup leaves from. */
-  dispenserPos(): { x: number; y: number } {
+  private coldPt(bx: number, by: number): { x: number; y: number } {
+    const k = COLD.w / COLD_BASE_W;
+    return { x: COLD.x + bx * k, y: COLD.y + by * k };
+  }
+  /** Where a collected cup leaves from (the glass in its lane when the art is on, else the first painted cup). */
+  dispenserPos(i = 0): { x: number; y: number } {
+    if (this.coldBase) {
+      const p = this.coldPt(COLD_LAYER_OFFSET[0] + COLD_LANE_DX[COLD_LANES[i % COLD_LANES.length]] + 61, 290);
+      return { x: this.layout.x(p.x), y: this.layout.y(p.y) };
+    }
     return { x: this.layout.x(CUP[0] + CUP[2] / 2), y: this.layout.y(CUP[1] + CUP[3] / 2) };
   }
   /** True once the supplied ice cream art is on screen. */
@@ -102,6 +134,21 @@ export class PourViews {
     this.cone.clear();
   }
 
+  /** Build the cold drink picture, its three lanes and the header glow once the art has loaded. */
+  private attachColdArt(): void {
+    if (this.coldBase || !this.scene.textures.exists(COLD_BASE) || !this.scene.textures.exists(COLD_ANIM) || !this.scene.textures.exists(COLD_ICON)) return;
+    const L = this.layout;
+    const sc = this.layout.s(COLD.w) / COLD_BASE_W;
+    this.coldBase = this.scene.add.image(L.x(COLD.x), L.y(COLD.y), COLD_BASE).setOrigin(0, 0).setDepth(240).setScale(sc);
+    COLD_ZORDER.forEach((lane, z) => {
+      const p = this.coldPt(COLD_LAYER_OFFSET[0] + COLD_LANE_DX[lane], COLD_LAYER_OFFSET[1]);
+      this.coldLayers.set(lane, this.scene.add.sprite(L.x(p.x), L.y(p.y), COLD_ANIM, 0).setOrigin(0, 0).setDepth(245 + z).setScale(sc));
+    });
+    const ip = this.coldPt(COLD_ICON_OFFSET[0], COLD_ICON_OFFSET[1]);
+    this.coldIcon = this.scene.add.sprite(L.x(ip.x), L.y(ip.y), COLD_ICON, 0).setOrigin(0, 0).setDepth(248).setScale(sc);
+    this.cup.clear();
+  }
+
   /** A melting cone fades away where it stood. */
   melt(i: number): void {
     const src = this.layers[i];
@@ -116,8 +163,27 @@ export class PourViews {
 
   update(state: KitchenState, now: number): void {
     const L = this.layout;
-    const drink = state.spouts.find((p) => p) ?? null;
     const dDef = state.cfg.recipes.items.drink;
+    this.attachColdArt();
+    let drink: (typeof state.spouts)[number] = state.spouts.find((p) => p) ?? null;
+    if (this.coldBase) {
+      // The frame is a function of the model's timers only; the model decides when a cup is full.
+      let newest: (typeof state.spouts)[number] = null;
+      COLD_LANES.forEach((lane, i) => {
+        const c = state.spouts[i] ?? null;
+        const frame = !c ? 0 : c.phase === 'cooking' ? Math.min(COLD_FRAMES - 1, Math.floor(Math.min(1, c.t / dDef.readyAfter!) * (COLD_FRAMES - 1))) : COLD_FRAMES - 1;
+        this.coldLayers.get(lane)?.setFrame(frame);
+        if (c && c.phase === 'cooking' && (!newest || c.t < newest.t)) newest = c;
+      });
+      const cooking = newest as (typeof state.spouts)[number];
+      this.coldIcon?.setFrame(cooking ? Math.min(COLD_FRAMES - 1, Math.floor(Math.min(1, cooking.t / dDef.readyAfter!) * (COLD_FRAMES - 1))) : 0);
+      // One ring: a tick when any cup is full, otherwise the progress of the cup that is furthest along.
+      const full = state.spouts.some((c) => c?.phase === 'ready');
+      const lead = state.spouts.reduce<(typeof state.spouts)[number]>((a, c) => (c && (!a || c.t > a.t) ? c : a), null);
+      this.cup.clear();
+      this.cupRing.show(full ? 'ready' : lead ? 'cooking' : null, lead ? lead.t / dDef.readyAfter! : 0, now);
+      drink = null;
+    } else {
     this.cup.clear();
     if (drink) {
       const f = Math.min(1, drink.t / dDef.readyAfter!);
@@ -130,6 +196,7 @@ export class PourViews {
       this.cup.lineStyle(2, INK, 0.5).strokeRect(px, py, pw, ph);
     }
     this.cupRing.show(drink ? drink.phase : null, drink ? drink.t / dDef.readyAfter! : 0, now);
+    }
 
     const cDef = state.cfg.recipes.items.icecream;
     this.attachArt();
@@ -172,6 +239,9 @@ export class PourViews {
     this.cup.destroy();
     this.cone.destroy();
     this.baseImg?.destroy();
+    this.coldBase?.destroy();
+    this.coldLayers.forEach((l) => l.destroy());
+    this.coldIcon?.destroy();
     this.layers.forEach((l) => l.destroy());
     this.laneRings.forEach((r) => r.destroy());
   }

@@ -4,7 +4,7 @@ import assets from '../data/assets.json';
 import { validateAssets } from '../src/data/validate';
 import { coverChange } from '../src/game/lockcover';
 import { defaultConfig } from '../src/game/config';
-import { ICE, ICE_BASE_W, ICE_LANES, ICE_LANE_DX, ICE_LAYER_OFFSET, ICE_FRAMES, ICE_FRAME_W, CONE, CONE_RING, CUP, DRINK_RING, VAT_FOOD_W, VAT_GLASS, BURNERS, FRY_FROM, OVENS, OVENS_LIT, SLOTS, SRC_H, SRC_W, VATS } from '../src/views/layout';
+import { COLD, COLD_BASE_W, COLD_LANES, COLD_LANE_DX, COLD_LAYER_OFFSET, COLD_FRAME_W, COLD_FRAMES, ICE, ICE_BASE_W, ICE_LANES, ICE_LANE_DX, ICE_LAYER_OFFSET, ICE_FRAMES, ICE_FRAME_W, CONE, CONE_RING, CUP, DRINK_RING, VAT_FOOD_W, VAT_GLASS, BURNERS, FRY_FROM, OVENS, OVENS_LIT, SLOTS, SRC_H, SRC_W, VATS } from '../src/views/layout';
 
 const artFiles = import.meta.glob('../public/assets/art/*.webp');
 const diner = restaurants.restaurants[0];
@@ -107,8 +107,18 @@ describe('food inside the vat glass', () => {
     expect(ICE_LANES.length).toBe(defaultConfig.recipes.settings.iceCreamMachines);
     expect(ICE_FRAMES).toBe(75);
   });
+  it('puts the supplied cold drink dispenser and its three lanes over the painted dispenser', () => {
+    const k = COLD.w / COLD_BASE_W;
+    COLD_LANES.forEach((lane) => {
+      const x = COLD.x + (COLD_LAYER_OFFSET[0] + COLD_LANE_DX[lane] + COLD_FRAME_W / 2) * k;
+      const y = COLD.y + 290 * k; // the glass in that lane
+      expect(inside([x, y], 'drink_dispenser'), `lane ${lane}`).toBe(true);
+    });
+    expect(COLD_LANES.length).toBe(defaultConfig.recipes.settings.drinkSpouts);
+    expect(COLD_FRAMES).toBe(61);
+  });
   it('has the ice cream art files and lists them in assets.json', () => {
-    for (const key of ['ice_cream_base', 'ice_cream_anim', 'icecream_cooked']) {
+    for (const key of ['ice_cream_base', 'ice_cream_anim', 'icecream_cooked', 'cold_drink_base', 'cold_drink_anim', 'cold_drink_icon', 'drink_cooked']) {
       const a = assets.assets.find((q) => q.key === key);
       expect(a, key).toBeTruthy();
       expect(Object.keys(artFiles).some((f) => f.endsWith(a!.file.replace('assets/art/', ''))), a!.file).toBe(true);
