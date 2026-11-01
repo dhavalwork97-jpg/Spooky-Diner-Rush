@@ -21,6 +21,7 @@ import { KitchenState, type GameEvent } from '../game/KitchenState';
 import { nextHint } from '../game/tutorial';
 import { MUSTARD } from '../art/builders';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
+import { laneSpan } from '../kitchen/grab';
 import { BURNERS, COLD, COLD_BASE_W, COLD_LANE_DX, FRY_FROM, ICE, ICE_BASE_W, ICE_LANE_DX, Layout, SLOTS, SRC_H, SRC_W, VAT_FOOD_W, VATS } from '../views/layout';
 import { StationViews } from '../views/StationViews';
 import { StockViews } from '../views/StockViews';
@@ -358,18 +359,30 @@ export class GameScene extends Phaser.Scene {
     ];
     const live = new Set<string>();
     for (const { from, n } of lanes) {
+      const ready = Array.from({ length: n }, (_, i) => this.state.pourReady(from, i));
+      const sig = ready.map((r) => (r ? '1' : '0')).join('');
+      const pos = Array.from({ length: n }, (_, i) => (from === 'dispenser' ? this.pours.dispenserPos(i) : this.pours.conePos(i)));
+      const kind = from === 'dispenser' ? 'drink' : 'icecream';
+      const pitch = this.layout.s(from === 'dispenser' ? (COLD_LANE_DX.right * COLD.w) / COLD_BASE_W : (ICE_LANE_DX.right * ICE.w) / ICE_BASE_W);
       for (let i = 0; i < n; i++) {
-        if (!this.state.pourReady(from, i)) continue;
+        if (!ready[i]) continue;
         const key = `${from}${i}`;
         live.add(key);
-        if (this.pourItems.has(key)) continue;
-        const at = from === 'dispenser' ? this.pours.dispenserPos(i) : this.pours.conePos(i);
-        const kind = from === 'dispenser' ? 'drink' : 'icecream';
-        // One lane wide (lanes touch, so no wider), but tall: a cone's grab area reaches down over its progress ring.
-        const pitch = this.layout.s(from === 'dispenser' ? (COLD_LANE_DX.right * COLD.w) / COLD_BASE_W : (ICE_LANE_DX.right * ICE.w) / ICE_BASE_W);
+        const old = this.pourItems.get(key);
+        // The grab span depends on which neighbours are ready, so build it again when that changes (never while it is held or flying).
+        if (old && (old.pourSig === sig || old.dragging || old.leaving)) continue;
+        if (old) {
+          this.pourItems.delete(key);
+          if (this.selectedPour === key) this.selectedPour = null;
+          old.destroy();
+        }
+        // Wide: its own lane plus free neighbour lanes. Tall: a cone's area reaches down over its progress ring.
+        const span = laneSpan(pos.map((p) => p.x), ready, i, pitch);
         const down = from === 'icecream' ? this.layout.s(34) : this.layout.s(8);
-        const v = new ItemView(this, at.x, at.y + down, 100000 + this.pourIds++, kind, -1, this.layout.s(kind === 'drink' ? 100 : 104), { w: pitch, h: this.layout.s(from === 'icecream' ? 150 : 120) });
+        const cx = pos[i].x + (span.left + span.right) / 2;
+        const v = new ItemView(this, cx, pos[i].y + down, 100000 + this.pourIds++, kind, -1, this.layout.s(kind === 'drink' ? 100 : 104), { w: span.right - span.left, h: this.layout.s(from === 'icecream' ? 150 : 120) });
         v.source = { from, index: i };
+        v.pourSig = sig;
         v.showFries();
         v.setProxy(true);
         this.pourItems.set(key, v);
