@@ -2,7 +2,7 @@
   "restaurants": [
     {
       "id": "burger_diner",
-      "name": "Burger Diner",
+      "name": "Spooky Diner",
       "unlockLevel": 1,
       "background": "kitchen_full",
       "backgroundSize": {
