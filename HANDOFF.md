@@ -3,6 +3,9 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
+## Losing-patience expressions for ghosts (2026-11-01, Claude) - branch `feature/ghost-customers`
+Owner picked "use the scare sheets earlier". Below half patience, the four ghosts that have a scare sheet fade into its early frames laid over the idle ghost (ghost box from each `.anim.json`: same width, head top and centre; follows the body's lean and squash). Frame = severity x `warnMax` (22 monocle, 20 old bearded, 14 child, 20 wildhair), so the face turns more menacing as patience falls; it holds, and the full scare still plays on the angry leave. `warnSeverity/warnFrame/warnAlpha/warnScale` in `customerMotion.ts`, `CustomerView.updateWarn`. Vest gentleman and flame crown ghost have no sheet so they keep their face. Happy and eating expressions still need new art. Only the sheets that already loaded are used. Tests: 226. Checked in headless Chromium at 100, 40, 20 and 4 percent patience.
+
 ## Ghosts only (2026-11-01, Claude) - branch `feature/ghost-customers`
 Owner: use only the ghost characters as customers. `CUSTOMER_LOOK_MIN = 8` in `KitchenState.ts`: only looks 8-13 (the six ghosts) spawn; same RNG draw count. Set it to 0 to mix the eight people back in. The people frames are still in `customers.webp` (about 200 KB of the 367 KB); re-run `tools/make_customer_art.py` without them if you want that back.
 

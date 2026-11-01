@@ -206,6 +206,12 @@ export interface ScareDef {
   key: string;
   file: string;
   peakFrame: number;
+  /** Ghost box in frame 0 (from the sheet's anim.json): width px, centre x and top y as fractions of the frame. */
+  boxW: number;
+  boxCx: number;
+  boxTop: number;
+  /** Last frame used for the "losing patience" expression (before the face turns into the full lunge). */
+  warnMax: number;
 }
 export const SCARE_FRAME_W = 208;
 export const SCARE_FRAME_H = 370;
@@ -215,12 +221,25 @@ export const SCARE_FPS = 12;
 export const SCARE_SCALE = 0.55;
 export const SCARE_FADE_MS = 150;
 export const SCARES: Partial<Record<CustomerLook, ScareDef>> = {
-  monocle_gentleman: { key: 'ghost_scare_monocle_gentleman', file: 'assets/customers/ghosts/scare/monocle_gentleman_scare.webp', peakFrame: 38 },
-  old_bearded_ghost: { key: 'ghost_scare_old_bearded_ghost', file: 'assets/customers/ghosts/scare/old_bearded_ghost_scare.webp', peakFrame: 37 },
-  child_nightgown: { key: 'ghost_scare_child_nightgown', file: 'assets/customers/ghosts/scare/child_nightgown_scare.webp', peakFrame: 26 },
-  wildhair_corset_ghost: { key: 'ghost_scare_wildhair_corset_ghost', file: 'assets/customers/ghosts/scare/wildhair_corset_ghost_scare.webp', peakFrame: 32 },
+  monocle_gentleman: { key: 'ghost_scare_monocle_gentleman', file: 'assets/customers/ghosts/scare/monocle_gentleman_scare.webp', peakFrame: 38, boxW: 201, boxCx: 0.512, boxTop: 0, warnMax: 22 },
+  old_bearded_ghost: { key: 'ghost_scare_old_bearded_ghost', file: 'assets/customers/ghosts/scare/old_bearded_ghost_scare.webp', peakFrame: 37, boxW: 160, boxCx: 0.495, boxTop: 0.068, warnMax: 20 },
+  child_nightgown: { key: 'ghost_scare_child_nightgown', file: 'assets/customers/ghosts/scare/child_nightgown_scare.webp', peakFrame: 26, boxW: 125, boxCx: 0.493, boxTop: 0.124, warnMax: 14 },
+  wildhair_corset_ghost: { key: 'ghost_scare_wildhair_corset_ghost', file: 'assets/customers/ghosts/scare/wildhair_corset_ghost_scare.webp', peakFrame: 32, boxW: 207, boxCx: 0.498, boxTop: 0.089, warnMax: 20 },
 };
 export const isGhost = (look: number): boolean => !!PERSONALITIES[lookKey(look)].ghost;
+
+/**
+ * Losing-patience expression: below half patience a ghost with a scare sheet fades into the early frames of its
+ * sheet (laid over the idle ghost: same width, same head top, same centre), and the face turns more menacing as
+ * patience falls: frame = severity * warnMax. Only that face is swapped; the rest still floats and shimmies.
+ */
+export function warnSeverity(frac: number): number {
+  return clamp01((0.5 - frac) / 0.5);
+}
+export const warnFrame = (def: ScareDef, severity: number): number => Math.round(clamp01(severity) * def.warnMax);
+export const warnAlpha = (severity: number): number => clamp01(severity * 3);
+/** Overlay scale so the ghost box matches the idle figure's width (px). */
+export const warnScale = (def: ScareDef, idleWidth: number): number => idleWidth / def.boxW;
 
 /** Code-only scare lunge (about 0.7 s): the ghost surges toward the camera, then fades. k runs 0..1. */
 export const LUNGE_MS = 700;

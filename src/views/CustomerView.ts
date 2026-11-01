@@ -29,6 +29,10 @@ import {
   SCARE_FPS,
   SCARE_FRAME_H,
   SCARE_FRAME_W,
+  warnAlpha,
+  warnFrame,
+  warnScale,
+  warnSeverity,
   SCARE_SCALE,
   floatPose,
   lungePose,
@@ -103,6 +107,8 @@ export class CustomerView {
   private look: number;
   private hover = 0;
   private glow?: Phaser.GameObjects.Image;
+  private warn?: Phaser.GameObjects.Image;
+  private warnK = 0;
   private glowK = GLOW_ALPHA;
   private scareSprite?: Phaser.GameObjects.Sprite;
   private scareTimer?: Phaser.Time.TimerEvent;
@@ -373,7 +379,23 @@ export class CustomerView {
     else if (now < this.eatUntil) pose = addPose(pose, eatPose(p, now, this.seed));
     const shakeK = (now - this.shakeAt) / 200;
     if (shakeK >= 0 && shakeK < 1) pose = addPose(pose, { ...REST, dx: Math.sin(shakeK * Math.PI * 8) * 6 * (1 - shakeK) });
+    this.updateWarn(c, frac);
     this.applyPose(pose, 1);
+  }
+
+  /** Losing-patience face: fade into the early frames of the ghost's scare sheet once patience is under half. */
+  private updateWarn(c: Customer, frac: number): void {
+    const def = SCARES[lookKey(this.look)];
+    const sev = def && c.mood === 'waiting' ? warnSeverity(frac) : 0;
+    this.warnK = sev;
+    if (!def || sev <= 0 || !this.scene.textures.exists(def.key)) {
+      this.warn?.setVisible(false);
+      return;
+    }
+    if (!this.warn) {
+      this.warn = this.scene.add.image(this.x, this.baseY, def.key, 0).setOrigin(0.5, 0).setDepth(300.5);
+    }
+    this.warn.setVisible(true).setFrame(warnFrame(def, sev)).setAlpha(warnAlpha(sev));
   }
 
   private applyPose(pose: Pose, alpha: number): void {
@@ -381,6 +403,18 @@ export class CustomerView {
     this.body.setScale(this.scaleBase * pose.sx, this.scaleBase * pose.sy);
     this.body.setAngle(pose.angle);
     this.body.setAlpha(alpha);
+    if (this.warn?.visible) {
+      const def = SCARES[lookKey(this.look)]!;
+      const k = warnScale(def, FIGURE_W[lookIndex(this.look)] * this.scaleBase);
+      const rad = (pose.angle * Math.PI) / 180;
+      const headY = this.body.y - BODY_H * pose.sy;
+      // line the ghost box up with the idle figure: head top, centre x, width; follow the body's lean and squash
+      this.warn
+        .setScale(k * pose.sx, k * pose.sy)
+        .setPosition(this.body.x + Math.sin(rad) * BODY_H * pose.sy - (def.boxCx - 0.5) * SCARE_FRAME_W * k, headY - def.boxTop * SCARE_FRAME_H * k * pose.sy)
+        .setAngle(pose.angle)
+        .setAlpha(alpha * warnAlpha(this.warnK));
+    }
     this.glow?.setPosition(this.body.x, this.body.y).setScale(this.body.scaleX, this.body.scaleY).setAngle(pose.angle).setAlpha(alpha * this.glowK);
     // the shadow stays on the floor, follows sideways motion and shrinks while the body is lifted
     const lift = Math.min(1, Math.max(0, -pose.dy + this.hover) / 10);
@@ -449,6 +483,7 @@ export class CustomerView {
   /** Play the supplied scare sheet once, centred on the customer with the head tops lined up, shaking the camera at the peak frame. */
   private playScare(def: ScareDef, done: () => void): void {
     const sc = this.scene;
+    this.warn?.setVisible(false);
     const spr = sc.add.sprite(this.x, this.baseY - BODY_H, def.key, 0).setOrigin(0.5, 0).setScale(SCARE_SCALE).setDepth(330).setAlpha(0);
     this.scareSprite = spr;
     if (!sc.anims.exists(def.key)) {
@@ -481,6 +516,7 @@ export class CustomerView {
     const prog = { t: 0 };
     let shook = false;
     // angry ghosts flare red through the glow copy; the body keeps its own colours
+    this.warn?.setVisible(false);
     this.glow?.setTint(0xff5040);
     this.glowK = 0.55;
     this.exitTween = sc.tweens.add({
@@ -512,6 +548,7 @@ export class CustomerView {
     this.hearts = [];
     this.shadow.destroy();
     this.glow?.destroy();
+    this.warn?.destroy();
     this.body.destroy();
     this.bubble.destroy();
     this.price.destroy();

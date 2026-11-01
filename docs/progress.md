@@ -261,3 +261,7 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 ## Floor-standing customers (branch feature/ghost-customers)
 - Customers stand on the floor in front of the stools at 162 px (23 percent of the canvas); ghosts keep their own colours with an additive glow; arrival pop reduced to a small hop.
 - Not verified: real device; the left seat's price label overlaps the Lv 2 lock cover while that cover shows (Lv 1 only).
+
+## Ghost losing-patience expressions (branch feature/ghost-customers)
+- Under half patience the four scare-sheet ghosts fade into the early frames of their sheet over the idle ghost, so the face gets more menacing as patience falls. Vest gentleman and flame crown ghost have no sheet, so no expression. Happy and eating expressions need new art.
+- Not verified: real device; the 150 ms-ish cross-fade shows a faint double exposure for a moment.

@@ -10,6 +10,10 @@ import {
   PERSONALITIES,
   REST,
   SCARES,
+  warnAlpha,
+  warnFrame,
+  warnScale,
+  warnSeverity,
   SCARE_FRAMES,
   SCARE_FRAME_H,
   SCARE_FRAME_W,
@@ -263,6 +267,11 @@ describe('ghost customers', () => {
       expect(a.frameCount).toBe(SCARE_FRAMES);
       expect(a.fps).toBe(SCARE_FPS);
       expect(a.peakFrame).toBe(def!.peakFrame);
+      const box = (a as unknown as { ghostBoxFirstFrame: { width: number; centerXFractionOfFrame: number; topYFractionOfFrame: number } }).ghostBoxFirstFrame;
+      expect(def!.boxW).toBe(box.width);
+      expect(def!.boxCx).toBeCloseTo(box.centerXFractionOfFrame, 3);
+      expect(def!.boxTop).toBeCloseTo(box.topYFractionOfFrame, 3);
+      expect(def!.warnMax).toBeLessThan(def!.peakFrame);
       expect(publicFiles[`../public/${def!.file}`], look).toBeTruthy();
       const listed = assets.find((x) => x.key === def!.key) as { lazy?: boolean; file: string } | undefined;
       expect(listed?.file).toBe(def!.file);
@@ -305,5 +314,26 @@ describe('ghost customers', () => {
     expect(mid.peak).toBe(true);
     expect(lungePose(1).alpha).toBeCloseTo(0);
     expect(LUNGE_MS).toBeLessThan(1000);
+  });
+});
+
+describe('losing-patience expression (scare sheet frames held on the idle ghost)', () => {
+  it('starts under half patience and gets stronger as patience falls', () => {
+    expect(warnSeverity(1)).toBe(0);
+    expect(warnSeverity(0.5)).toBe(0);
+    expect(warnSeverity(0.25)).toBeCloseTo(0.5);
+    expect(warnSeverity(0)).toBe(1);
+    const def = SCARES.monocle_gentleman!;
+    expect(warnFrame(def, 0)).toBe(0);
+    expect(warnFrame(def, 1)).toBe(def.warnMax);
+    expect(warnFrame(def, 0.5)).toBeGreaterThan(0);
+    expect(warnFrame(def, 0.5)).toBeLessThan(def.warnMax);
+    expect(warnAlpha(0)).toBe(0);
+    expect(warnAlpha(0.34)).toBe(1);
+  });
+  it('scales the overlay so the ghost box matches the idle figure width', () => {
+    const def = SCARES.child_nightgown!;
+    expect(warnScale(def, 125)).toBeCloseTo(1);
+    expect(warnScale(def, 75)).toBeCloseTo(0.6);
   });
 });
