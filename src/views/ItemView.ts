@@ -15,6 +15,9 @@ export class ItemView extends Phaser.GameObjects.Container {
   readonly itemId: number;
   readonly kind: ItemKind;
   slotIndex: number;
+  /** Set for a cup or cone that is served straight from its machine (it has no plate slot). */
+  source?: { from: 'dispenser' | 'icecream'; index: number };
+  private proxy = false;
   leaving = false;
   dragging = false;
   home = { x: 0, y: 0 };
@@ -27,7 +30,7 @@ export class ItemView extends Phaser.GameObjects.Container {
   private ready = false;
 
   /** `w` is the item's on-screen width in logical pixels. */
-  constructor(scene: Phaser.Scene, x: number, y: number, itemId: number, kind: ItemKind, slotIndex: number, private itemW: number) {
+  constructor(scene: Phaser.Scene, x: number, y: number, itemId: number, kind: ItemKind, slotIndex: number, private itemW: number, hit?: { w: number; h: number }) {
     super(scene, x, y);
     this.itemId = itemId;
     this.kind = kind;
@@ -38,7 +41,7 @@ export class ItemView extends Phaser.GameObjects.Container {
     this.sel = scene.add.circle(0, 0, itemW * 0.68).setStrokeStyle(5, 0xffffff, 1).setFillStyle(0, 0).setVisible(false);
     this.art = scene.add.container(0, 0);
     this.add([this.shadow, this.glow, this.art, this.sel]);
-    this.setSize(Math.max(88, itemW * 1.3), Math.max(88, itemW * 1.3)).setDepth(700);
+    this.setSize(hit?.w ?? Math.max(88, itemW * 1.3), hit?.h ?? Math.max(88, itemW * 1.3)).setDepth(700);
     scene.add.existing(this);
     this.setInteractive({ useHandCursor: true, draggable: true });
     scene.input.setDraggable(this);
@@ -99,7 +102,25 @@ export class ItemView extends Phaser.GameObjects.Container {
     this.sel.setVisible(on);
   }
 
+  /** At rest the painted glass or cone on the machine is the picture; this object is only its grab area and shows while dragged. */
+  setProxy(on: boolean): void {
+    this.proxy = on;
+    this.art.setVisible(!on);
+    this.glow.setVisible(!on);
+    this.shadow.setVisible(!on);
+  }
+
+  /** Show the item (used when it flies to a customer). */
+  reveal(): void {
+    this.art.setVisible(true);
+    this.shadow.setVisible(true);
+  }
+
   setDragging(on: boolean): void {
+    if (this.proxy) {
+      this.art.setVisible(on);
+      this.shadow.setVisible(on);
+    }
     this.dragging = on;
     this.setDepth(on ? 1100 : 700);
     this.setScale(on ? 1.1 : 1);

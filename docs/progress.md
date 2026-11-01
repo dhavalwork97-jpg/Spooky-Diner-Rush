@@ -265,3 +265,6 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 ## Ghost losing-patience expressions (branch feature/ghost-customers)
 - Under half patience the four scare-sheet ghosts fade into the early frames of their sheet over the idle ghost, so the face gets more menacing as patience falls. Vest gentleman and flame crown ghost have no sheet, so no expression. Happy and eating expressions need new art.
 - Not verified: real device; the 150 ms-ish cross-fade shows a faint double exposure for a moment.
+
+## Serve drinks and ice cream from the machine (branch feature/serve-from-dispenser)
+- Full cups and cones stay at the dispenser / ice cream machine and are dragged (or tap, then tap the customer) straight to the customer; a tap no longer moves them to a plate. Plates and side slots are not used for them. Fast Lv 20 bot is about 7 s quicker; test floor lowered to 1750 s.
