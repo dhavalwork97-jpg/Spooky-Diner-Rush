@@ -61,6 +61,20 @@ export class BootScene extends Phaser.Scene {
     this.registry.set('restaurants', restaurants);
     buildAllTextures(this, defaultConfig);
     const start = pickStartRestaurant(restaurants, SaveSystem.data.lastRestaurant, SaveSystem.data.level);
-    this.scene.start('Game', { restaurantId: start });
+    // Canvas text does not redraw when a font arrives later, so wait for the bundled font (a missing file only delays by the timeout).
+    const go = (): void => void this.scene.start('Game', { restaurantId: start });
+    const fonts = typeof document !== 'undefined' ? document.fonts : undefined;
+    if (!fonts) {
+      go();
+      return;
+    }
+    let done = false;
+    const once = (): void => {
+      if (done) return;
+      done = true;
+      go();
+    };
+    Promise.all([fonts.load('400 24px Fredoka'), fonts.load('700 24px Fredoka')]).then(once, once);
+    window.setTimeout(once, 1500);
   }
 }

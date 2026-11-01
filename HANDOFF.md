@@ -3,6 +3,14 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
+## Housekeeping and release packaging (2026-11-01, Claude) - branch `chore/release-prep` (from main after PR #19), PR open, NOT merged
+- Fredoka bundled: `public/assets/fonts/fredoka-{400,600,700}.woff2` (+ OFL text), `@font-face` in `index.html`, BootScene waits for the font (1.5 s cap) because canvas text does not redraw later.
+- People frames blanked in `customers.webp` (391 KB -> 238 KB; frame numbers unchanged; tool flag `--blank-people`). Spawn pool is unchanged (ghosts only).
+- Lv 1 price label over the tomato lock cover: left as is on purpose (at Lv 2+ the same price sits over the same tray); shrinking the cover only exposed painted tomatoes behind the coin.
+- Packaging: ghost cutout PNGs removed from `dist/` by a Vite plugin (they are art sources only; dist 16 MB -> 12 MB), CrazyGames SDK v3 script tag and awaited `init()` (never throws, 3 s cap), `docs/release.md` with sizes, SDK status and what the owner still has to do.
+- Tests 229, typecheck and build clean; browser: game starts in 1.3 s with the SDK script blocked, fonts load. Real SDK, real device, real audio not checked.
+
+
 ## Release check: playthrough and phone size (2026-11-01, Claude) - branch `fix/anim-helper-drift` (from main a3414ed), PR open, NOT merged
 Full Lv 1-20 playthrough in Chromium (bot calling the model, real game loop, speed 6, 1280x698; screenshot per level) and phone viewports (844x390, 932x430, 667x375 landscape, 390x844 portrait).
 - Lv 20 reached at 2568 s game time (about 43 min, inside the 30-50 min target); no page errors; no persistent view/model mismatches; object and tween counts flat (about 180-215 objects) so no leaks seen. Only console noise is the headless software-GL "GPU stall" message. Frame rate in headless (10-15 fps) says nothing about real devices.

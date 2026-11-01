@@ -4,7 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Chef Rush</title>
+<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 <style>
+  @font-face { font-family: Fredoka; font-weight: 400; font-style: normal; font-display: block; src: url(./assets/fonts/fredoka-400.woff2) format('woff2'); }
+  @font-face { font-family: Fredoka; font-weight: 600; font-style: normal; font-display: block; src: url(./assets/fonts/fredoka-600.woff2) format('woff2'); }
+  @font-face { font-family: Fredoka; font-weight: 700; font-style: normal; font-display: block; src: url(./assets/fonts/fredoka-700.woff2) format('woff2'); }
   html, body { margin: 0; height: 100%; background: #2B1B17; overflow: hidden; touch-action: none; }
   #game { width: 100vw; height: 100vh; }
   #rotate { display: none; position: fixed; inset: 0; z-index: 10; background: #2B1B17; color: #FFF4DC;
@@ -19,6 +23,7 @@
 <body>
 <div id="game"></div>
 <div id="rotate"><div class="phone"></div><div>Turn your phone sideways to play</div></div>
+<link rel="preload" as="font" type="font/woff2" crossorigin href="./assets/fonts/fredoka-400.woff2" />
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

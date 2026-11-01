@@ -274,3 +274,6 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 ## Release check: playthrough and phone size (branch fix/anim-helper-drift)
 - Lv 1-20 browser playthrough clean except one bug, fixed: overlapping pop/bounce/shake animations ratcheted the rest scale (HUD coin icon grew to fill the screen). Phone-size check: rotate prompt in portrait, landscape fits; dispenser tick added as a 45 px handle for serving a full cup because the lane grab areas are small on phones.
 - Not verified: real device, slow network, real sound.
+
+## Housekeeping and release packaging (branch chore/release-prep)
+- Bundled Fredoka, blanked unused people frames (-153 KB), cutout PNGs no longer shipped (dist 16 -> 12 MB), CrazyGames SDK v3 script and init added, `docs/release.md` written. Not verified: real SDK, real device, real audio.
