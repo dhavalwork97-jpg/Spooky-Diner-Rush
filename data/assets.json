@@ -417,6 +417,26 @@
       "frameHeight": 370,
       "preferFallback": false,
       "lazy": true
+    },
+    {
+      "key": "ghost_scare_flame_crown_ghost",
+      "type": "spritesheet",
+      "file": "assets/customers/ghosts/scare/flame_crown_ghost_scare.webp",
+      "scale": 1,
+      "frameWidth": 208,
+      "frameHeight": 370,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "ghost_scare_ragged_dress_girl",
+      "type": "spritesheet",
+      "file": "assets/customers/ghosts/scare/ragged_dress_girl_scare.webp",
+      "scale": 1,
+      "frameWidth": 208,
+      "frameHeight": 370,
+      "preferFallback": false,
+      "lazy": true
     }
   ]
 }

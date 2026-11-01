@@ -1,6 +1,8 @@
 """Build the game-ready customer sprite sheet from the supplied transparent PNGs.
 
-Usage: python3 tools/make_customer_art.py <dir with customer_*.png> [ghost dir] [out file]
+Usage: python3 tools/make_customer_art.py <dir with customer_*.png | existing customers.webp> [ghost dir] [out file]
+  Pass the current public/assets/art/customers.webp as the first argument when the eight people PNGs are not at hand:
+  the 8 people cells are then copied from it (they are not used in game any more) and the ghosts are rebuilt from their cutouts.
   ghost dir defaults to public/assets/customers/ghosts (the committed ghost cutouts).
 
 For each source PNG: drop the faint alpha haze left by background removal (keep only the largest
@@ -12,8 +14,8 @@ The characters themselves are not redrawn.
 Ghosts keep their soft glow (no component filtering); only stray alpha under 3 is dropped.
 
 Sheet layout: 4 columns x 4 rows of CELL_W x HEIGHT cells.
-Frames 0-7: people in the order of NAMES, frames 8-13: ghosts in the order of GHOSTS (all must match
-CUSTOMER_LOOKS in src/anim/customerMotion.ts), frame 14: contact shadow, frame 15: heart.
+Frames 0-7: people in the order of NAMES, frames 8-14: ghosts in the order of GHOSTS (all must match
+CUSTOMER_LOOKS in src/anim/customerMotion.ts), frame 15: contact shadow, frame 16: heart.
 """
 import sys
 from pathlib import Path
@@ -23,7 +25,7 @@ from PIL import Image, ImageDraw, ImageFilter
 from scipy import ndimage
 
 NAMES = ['kid', 'grandma', 'businessman', 'foodie', 'teen', 'chef_fan', 'athlete', 'sleepy']
-GHOSTS = ['monocle_gentleman', 'old_bearded_ghost', 'child_nightgown', 'wildhair_corset_ghost', 'vest_gentleman', 'flame_crown_ghost']
+GHOSTS = ['monocle_gentleman', 'old_bearded_ghost', 'child_nightgown', 'wildhair_corset_ghost', 'vest_gentleman', 'flame_crown_ghost', 'ragged_dress_girl']
 HEIGHT = 384
 CELL_W = 192
 COLS = 4
@@ -87,7 +89,16 @@ if __name__ == '__main__':
     dst = Path(sys.argv[3]) if len(sys.argv) > 3 else Path('public/assets/art/customers.webp')
     cells = []
     widths = []
-    for name, f in [(n, figure(src / f'customer_{n}.png')) for n in NAMES] + [(n, ghost_figure(ghosts / f'{n}.png')) for n in GHOSTS]:
+    if src.is_file():
+        old = Image.open(src).convert('RGBA')
+        for i, n in enumerate(NAMES):
+            cell = old.crop(((i % COLS) * CELL_W, (i // COLS) * HEIGHT, (i % COLS) * CELL_W + CELL_W, (i // COLS) * HEIGHT + HEIGHT))
+            cells.append(cell)
+            widths.append(0)
+        figs = [(n, ghost_figure(ghosts / f'{n}.png')) for n in GHOSTS]
+    else:
+        figs = [(n, figure(src / f'customer_{n}.png')) for n in NAMES] + [(n, ghost_figure(ghosts / f'{n}.png')) for n in GHOSTS]
+    for name, f in figs:
         assert f.width <= CELL_W, (name, f.width)
         cell = Image.new('RGBA', (CELL_W, HEIGHT), (0, 0, 0, 0))
         cell.paste(f, ((CELL_W - f.width) // 2, 0))

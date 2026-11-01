@@ -11,7 +11,7 @@
 export const CUSTOMER_LOOKS = [
   'kid', 'grandma', 'businessman', 'foodie', 'teen', 'chef_fan', 'athlete', 'sleepy',
   // ghosts (indexes 8-13)
-  'monocle_gentleman', 'old_bearded_ghost', 'child_nightgown', 'wildhair_corset_ghost', 'vest_gentleman', 'flame_crown_ghost',
+  'monocle_gentleman', 'old_bearded_ghost', 'child_nightgown', 'wildhair_corset_ghost', 'vest_gentleman', 'flame_crown_ghost', 'ragged_dress_girl',
 ] as const;
 export type CustomerLook = (typeof CUSTOMER_LOOKS)[number];
 
@@ -32,7 +32,7 @@ export const CELL_H = 384;
 export const SHADOW_FRAME = CUSTOMER_LOOKS.length;
 export const HEART_FRAME = CUSTOMER_LOOKS.length + 1;
 /** Width of each figure inside its cell, in sheet pixels (same order as CUSTOMER_LOOKS). Used for shadow size. */
-export const FIGURE_W = [138, 142, 132, 122, 122, 151, 152, 131, 179, 163, 179, 180, 140, 143] as const;
+export const FIGURE_W = [138, 142, 132, 122, 122, 151, 152, 131, 179, 163, 179, 180, 140, 143, 187] as const;
 /** Width of the ellipse drawn in the shadow frame, in sheet pixels. */
 export const SHADOW_ART_W = 132;
 
@@ -97,6 +97,7 @@ export const PERSONALITIES: Record<CustomerLook, Personality> = {
   vest_gentleman: { breathMs: 3200, breath: 0, sway: 1, stepMs: 700, stepBounce: 3, tapMs: 650, tapLift: 3, hop: 8, hopMs: 460, eatMs: 600, eat: 2, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 4, ghost: { hover: 3, bob: 4, bobMs: 3400 } },
   // Flame Crown Ghost: quick and flickery.
   flame_crown_ghost: { breathMs: 1900, breath: 0, sway: 1.6, stepMs: 480, stepBounce: 4.5, tapMs: 340, tapLift: 4, hop: 14, hopMs: 340, eatMs: 300, eat: 3, nod: 0, watchEveryMs: null, hearts: 4, sparkles: 6, ghost: { hover: 3, bob: 5, bobMs: 1900 } },
+  ragged_dress_girl: { breathMs: 2400, breath: 0, sway: 2.2, stepMs: 600, stepBounce: 3.5, tapMs: 420, tapLift: 3.5, hop: 12, hopMs: 400, eatMs: 380, eat: 2.5, nod: 0, watchEveryMs: null, hearts: 4, sparkles: 6, ghost: { hover: 3, bob: 5, bobMs: 2600 } },
 };
 
 /** One frame of transform. dx/dy are px (negative dy is up); sx/sy multiply the base scale; angle is degrees. */
@@ -224,6 +225,9 @@ export const SCARES: Partial<Record<CustomerLook, ScareDef>> = {
   monocle_gentleman: { key: 'ghost_scare_monocle_gentleman', file: 'assets/customers/ghosts/scare/monocle_gentleman_scare.webp', peakFrame: 38, boxW: 201, boxCx: 0.512, boxTop: 0, warnMax: 22 },
   old_bearded_ghost: { key: 'ghost_scare_old_bearded_ghost', file: 'assets/customers/ghosts/scare/old_bearded_ghost_scare.webp', peakFrame: 37, boxW: 160, boxCx: 0.495, boxTop: 0.068, warnMax: 20 },
   child_nightgown: { key: 'ghost_scare_child_nightgown', file: 'assets/customers/ghosts/scare/child_nightgown_scare.webp', peakFrame: 26, boxW: 125, boxCx: 0.493, boxTop: 0.124, warnMax: 14 },
+  flame_crown_ghost: { key: 'ghost_scare_flame_crown_ghost', file: 'assets/customers/ghosts/scare/flame_crown_ghost_scare.webp', peakFrame: 26, boxW: 170, boxCx: 0.5, boxTop: 0, warnMax: 18 },
+  // Her clip is a calm spin, so there is no menacing early face (warnMax 0): she only gets the full clip when she leaves angry.
+  ragged_dress_girl: { key: 'ghost_scare_ragged_dress_girl', file: 'assets/customers/ghosts/scare/ragged_dress_girl_scare.webp', peakFrame: 32, boxW: 164, boxCx: 0.462, boxTop: 0.076, warnMax: 0 },
   wildhair_corset_ghost: { key: 'ghost_scare_wildhair_corset_ghost', file: 'assets/customers/ghosts/scare/wildhair_corset_ghost_scare.webp', peakFrame: 32, boxW: 207, boxCx: 0.498, boxTop: 0.089, warnMax: 20 },
 };
 export const isGhost = (look: number): boolean => !!PERSONALITIES[lookKey(look)].ghost;
