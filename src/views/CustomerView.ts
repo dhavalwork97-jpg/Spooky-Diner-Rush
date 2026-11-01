@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { Customer } from '../game/KitchenState';
 import { INK, LEAF, MUSTARD, TOMATO } from '../art/builders';
 import { SaveSystem } from '../systems/SaveSystem';
-import { SEATS_X, SEAT_BOTTOM_Y, Layout } from './layout';
+import { SEATS_X, CUSTOMER_FLOOR_Y, Layout } from './layout';
 import { ParticlePool } from '../anim/ParticlePool';
 import {
   PERSONALITIES,
@@ -22,6 +22,22 @@ import {
   CELL_H,
   CUSTOMER_SHEET,
   FIGURE_W,
+  LUNGE_MS,
+  SCARES,
+  SCARE_FADE_MS,
+  SCARE_FRAMES,
+  SCARE_FPS,
+  SCARE_FRAME_H,
+  SCARE_FRAME_W,
+  warnAlpha,
+  warnFrame,
+  warnScale,
+  warnSeverity,
+  SCARE_SCALE,
+  floatPose,
+  lungePose,
+  shimmyPose,
+  type ScareDef,
   HEART_FRAME,
   SHADOW_ART_W,
   SHADOW_FRAME,
@@ -36,16 +52,21 @@ import {
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 /**
  * Every customer is drawn this tall (logical px, canvas is 698) from the soles of the shoes to the top of the hair:
- * 19.5 percent of the canvas height. Do not grow it without making room above the head: at this size the top of
- * the head is at y = 51 and the order bubble and Rush tag use all of the space above it.
+ * 23 percent of the canvas height, 45 percent taller than the first version. They stand on the restaurant floor in
+ * front of the stools (CUSTOMER_FLOOR_Y), so the order bubble fits above the head and the bar and price fit on the
+ * floor strip below the feet, above the kitchen stations.
  */
-const BODY_H = 136;
+const BODY_H = 162;
 /** Tap and drop targets are never narrower than this, even for the slimmest character. */
 const MIN_HIT_W = 96;
 /** How far past the screen edge a customer starts or ends their walk (logical px). */
 const EDGE_MARGIN = 70;
 const HEART_MAX = 5;
-const BUBBLE_W = 72;
+/** Scare sheets already asked for (they load lazily, the first time a ghost that has one appears). */
+const scareRequested = new Set<string>();
+const GLOW_COLOR = 0x8fe8ff;
+const GLOW_ALPHA = 0.3;
+const BUBBLE_W = 76;
 const BAR_W = 100;
 const TYPE_CHIPS: Record<string, { label: string; color: number; text: string }> = {
   vip: { label: 'VIP', color: 0xf6c445, text: '#2B1B17' },
@@ -83,6 +104,14 @@ export class CustomerView {
   private shadowW = 1;
   private persona: Personality;
   private seed: number;
+  private look: number;
+  private hover = 0;
+  private glow?: Phaser.GameObjects.Image;
+  private warn?: Phaser.GameObjects.Image;
+  private warnK = 0;
+  private glowK = GLOW_ALPHA;
+  private scareSprite?: Phaser.GameObjects.Sprite;
+  private scareTimer?: Phaser.Time.TimerEvent;
   private hearts: Phaser.GameObjects.Image[] = [];
   private enterAt: number;
   private enterDir: number;
@@ -103,9 +132,12 @@ export class CustomerView {
   constructor(private scene: Phaser.Scene, layout: Layout, c: Customer, private fx?: ParticlePool) {
     this.id = c.id;
     this.x = layout.x(SEATS_X[c.seat]);
-    const bottom = layout.y(SEAT_BOTTOM_Y);
+    const bottom = layout.y(CUSTOMER_FLOOR_Y);
     this.baseY = bottom;
+    this.look = c.look;
     this.persona = PERSONALITIES[lookKey(c.look)];
+    this.hover = this.persona.ghost?.hover ?? 0;
+    this.requestScare();
     this.seed = seedFor(c.id);
     this.deliveredCount = c.delivered.filter(Boolean).length;
     this.enterAt = scene.time.now;
@@ -122,6 +154,10 @@ export class CustomerView {
     this.shadow.setScale(this.shadowW, this.scaleBase);
     this.body = scene.add.image(this.x, bottom, CUSTOMER_SHEET, lookIndex(c.look)).setOrigin(0.5, 1).setDepth(300);
     this.body.setScale(this.scaleBase);
+    if (this.persona.ghost) {
+      // a soft additive copy over the ghost lifts its colours so it reads as glowing, not washed out
+      this.glow = scene.add.image(this.x, bottom, CUSTOMER_SHEET, lookIndex(c.look)).setOrigin(0.5, 1).setDepth(301).setBlendMode(Phaser.BlendModes.ADD).setTint(GLOW_COLOR).setAlpha(GLOW_ALPHA).setScale(this.scaleBase);
+    }
     this.bodyW = FIGURE_W[lookIndex(c.look)] * this.scaleBase; // the figure, not the padded cell
     // widen the tap area for slim characters (hit area is in texture pixels)
     const hitW = Math.max(this.bodyW, MIN_HIT_W) / this.scaleBase;
@@ -144,7 +180,7 @@ export class CustomerView {
     bg.setScale(BUBBLE_W / bg.width);
     this.bubble.add(bg);
     const n = c.items.length;
-    const iconW = n > 2 ? 19 : 24;
+    const iconW = n > 2 ? 20 : 25;
     const gap = iconW + 3;
     this.tickY = -bg.displayHeight * 0.5;
     this.tickR = Math.round(iconW * 0.4);
@@ -176,7 +212,7 @@ export class CustomerView {
     }
 
     // patience bar and price on the floor
-    const barBottom = bottom + 14;
+    const barBottom = bottom + 4;
     this.barY = barBottom;
     this.barFrame = scene.add.image(this.x, barBottom, 'patience_bar_frame').setOrigin(0.5, 0).setDepth(311);
     this.barFrame.setScale(BAR_W / this.barFrame.width);
@@ -184,7 +220,7 @@ export class CustomerView {
     const coin = scene.add.image(-18, 0, 'coin');
     coin.setScale(18 / coin.width);
     const priceText = scene.add.text(-4, 0, String(c.price), { fontFamily: FONT, fontSize: '20px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 4 }).setOrigin(0, 0.5);
-    this.price = scene.add.container(this.x, barBottom + this.barFrame.displayHeight + 14, [coin, priceText]).setDepth(311);
+    this.price = scene.add.container(this.x, barBottom + this.barFrame.displayHeight + 12, [coin, priceText]).setDepth(311);
     this.drawBar(1);
 
     if (SaveSystem.reduceMotion()) {
@@ -247,7 +283,9 @@ export class CustomerView {
     if (this.mood === m) return;
     this.mood = m;
     // The supplied customers have one pose, so mood shows as a tint and a small motion.
-    if (m === 'angry') this.body.setTint(0xff9a8a);
+    // (ghosts keep their own colours: a warm tint turns the blue glow brown; they show mood by shimmying instead)
+    if (this.persona.ghost) this.body.clearTint();
+    else if (m === 'angry') this.body.setTint(0xff9a8a);
     else if (m === 'worried') this.body.setTint(0xffe2a0);
     else this.body.clearTint();
     if (m === 'happy') this.celebrate();
@@ -325,9 +363,9 @@ export class CustomerView {
       this.applyPose(arrive.pose, 1);
       return;
     }
-    let pose: Pose = idlePose(p, now, this.seed);
+    let pose: Pose = p.ghost ? floatPose(p, now, this.seed) : idlePose(p, now, this.seed);
     const phase = c.mood === 'waiting' ? phaseFor(frac) : 'calm';
-    if (phase !== 'calm') pose = addPose(pose, impatiencePose(p, phase, now, this.seed));
+    if (phase !== 'calm') pose = addPose(pose, p.ghost ? shimmyPose(phase, now, this.seed) : impatiencePose(p, phase, now, this.seed));
     // occasional wristwatch check (businessman); more often once the wait drags
     if (this.nextWatchAt !== Infinity && c.mood === 'waiting' && now >= this.nextWatchAt && now - this.hopAt > 600) {
       this.watchAt = now;
@@ -341,16 +379,45 @@ export class CustomerView {
     else if (now < this.eatUntil) pose = addPose(pose, eatPose(p, now, this.seed));
     const shakeK = (now - this.shakeAt) / 200;
     if (shakeK >= 0 && shakeK < 1) pose = addPose(pose, { ...REST, dx: Math.sin(shakeK * Math.PI * 8) * 6 * (1 - shakeK) });
+    this.updateWarn(c, frac);
     this.applyPose(pose, 1);
   }
 
+  /** Losing-patience face: fade into the early frames of the ghost's scare sheet once patience is under half. */
+  private updateWarn(c: Customer, frac: number): void {
+    const def = SCARES[lookKey(this.look)];
+    const sev = def && c.mood === 'waiting' ? warnSeverity(frac) : 0;
+    this.warnK = sev;
+    if (!def || sev <= 0 || !this.scene.textures.exists(def.key)) {
+      this.warn?.setVisible(false);
+      return;
+    }
+    if (!this.warn) {
+      this.warn = this.scene.add.image(this.x, this.baseY, def.key, 0).setOrigin(0.5, 0).setDepth(300.5);
+    }
+    this.warn.setVisible(true).setFrame(warnFrame(def, sev)).setAlpha(warnAlpha(sev));
+  }
+
   private applyPose(pose: Pose, alpha: number): void {
-    this.body.setPosition(this.x + pose.dx, this.baseY + pose.dy);
+    this.body.setPosition(this.x + pose.dx, this.baseY + pose.dy - this.hover);
     this.body.setScale(this.scaleBase * pose.sx, this.scaleBase * pose.sy);
     this.body.setAngle(pose.angle);
     this.body.setAlpha(alpha);
+    if (this.warn?.visible) {
+      const def = SCARES[lookKey(this.look)]!;
+      const k = warnScale(def, FIGURE_W[lookIndex(this.look)] * this.scaleBase);
+      const rad = (pose.angle * Math.PI) / 180;
+      const headY = this.body.y - BODY_H * pose.sy;
+      // line the ghost box up with the idle figure: head top, centre x, width; follow the body's lean and squash
+      this.warn
+        .setScale(k * pose.sx, k * pose.sy)
+        .setPosition(this.body.x + Math.sin(rad) * BODY_H * pose.sy - (def.boxCx - 0.5) * SCARE_FRAME_W * k, headY - def.boxTop * SCARE_FRAME_H * k * pose.sy)
+        .setAngle(pose.angle)
+        .setAlpha(alpha * warnAlpha(this.warnK));
+    }
+    this.glow?.setPosition(this.body.x, this.body.y).setScale(this.body.scaleX, this.body.scaleY).setAngle(pose.angle).setAlpha(alpha * this.glowK);
     // the shadow stays on the floor, follows sideways motion and shrinks while the body is lifted
-    const lift = Math.min(1, Math.max(0, -pose.dy) / 10);
+    const lift = Math.min(1, Math.max(0, -pose.dy + this.hover) / 10);
     this.shadow.setPosition(this.x + pose.dx, this.baseY).setScale(this.shadowW * (1 - lift * 0.3), this.scaleBase).setAlpha(alpha * (1 - lift * 0.5));
   }
 
@@ -385,6 +452,13 @@ export class CustomerView {
       return;
     }
     this.scene.tweens.add({ targets: [this.bubble, this.price, this.barFrame, this.bar], alpha: 0, duration: 200 });
+    // an angry ghost scares on the way out: the supplied sheet when it is loaded, otherwise a code-only lunge
+    if (this.persona.ghost && this.mood === 'angry') {
+      const def = SCARES[lookKey(this.look)];
+      if (def && this.scene.textures.exists(def.key)) this.playScare(def, done);
+      else this.playLunge(done);
+      return;
+    }
     // walk back out the way they came in: same steps, to the screen edge
     const prog = { t: 0 };
     this.exitTween = this.scene.tweens.add({
@@ -397,12 +471,84 @@ export class CustomerView {
     });
   }
 
+  /** Ask for this ghost's scare sheet in the background, once. */
+  private requestScare(): void {
+    const def = SCARES[lookKey(this.look)];
+    if (!def || scareRequested.has(def.key) || this.scene.textures.exists(def.key) || SaveSystem.reduceMotion()) return;
+    scareRequested.add(def.key);
+    this.scene.load.spritesheet(def.key, def.file, { frameWidth: SCARE_FRAME_W, frameHeight: SCARE_FRAME_H });
+    if (!this.scene.load.isLoading()) this.scene.load.start();
+  }
+
+  /** Play the supplied scare sheet once, centred on the customer with the head tops lined up, shaking the camera at the peak frame. */
+  private playScare(def: ScareDef, done: () => void): void {
+    const sc = this.scene;
+    this.warn?.setVisible(false);
+    const spr = sc.add.sprite(this.x, this.baseY - BODY_H, def.key, 0).setOrigin(0.5, 0).setScale(SCARE_SCALE).setDepth(330).setAlpha(0);
+    this.scareSprite = spr;
+    if (!sc.anims.exists(def.key)) {
+      sc.anims.create({ key: def.key, frames: sc.anims.generateFrameNumbers(def.key, { start: 0, end: SCARE_FRAMES - 1 }), frameRate: SCARE_FPS, repeat: 0 });
+    }
+    sc.tweens.add({ targets: spr, alpha: 1, duration: SCARE_FADE_MS });
+    sc.tweens.add({ targets: [this.body, this.shadow, ...(this.glow ? [this.glow] : [])], alpha: 0, duration: SCARE_FADE_MS });
+    let finished = false;
+    const finish = (): void => {
+      if (finished) return;
+      finished = true;
+      sc.tweens.add({ targets: spr, alpha: 0, duration: 200, onComplete: done });
+    };
+    let shook = false;
+    spr.on('animationupdate', (_a: unknown, frame: Phaser.Animations.AnimationFrame) => {
+      if (!shook && Number(frame.textureFrame) >= def.peakFrame) {
+        shook = true;
+        sc.cameras.main.shake(220, 0.004);
+      }
+    });
+    spr.once('animationcomplete', finish);
+    // safety net in case the animation never reports completion
+    this.scareTimer = sc.time.delayedCall((SCARE_FRAMES / SCARE_FPS) * 1000 + 800, finish);
+    spr.play(def.key);
+  }
+
+  /** Code-only scare (no sheet, or it has not loaded yet): the ghost surges toward the camera, flashes red and fades. */
+  private playLunge(done: () => void): void {
+    const sc = this.scene;
+    const prog = { t: 0 };
+    let shook = false;
+    // angry ghosts flare red through the glow copy; the body keeps its own colours
+    this.warn?.setVisible(false);
+    this.glow?.setTint(0xff5040);
+    this.glowK = 0.55;
+    this.exitTween = sc.tweens.add({
+      targets: prog,
+      t: LUNGE_MS,
+      duration: LUNGE_MS,
+      ease: 'Linear',
+      onUpdate: () => {
+        const l = lungePose(prog.t / LUNGE_MS);
+        this.applyPose(l.pose, l.alpha);
+        if (l.peak && !shook) {
+          shook = true;
+          sc.cameras.main.shake(160, 0.003);
+        }
+      },
+      onComplete: done,
+    });
+  }
+
   destroy(): void {
+    this.scareTimer?.remove(false);
+    if (this.scareSprite) {
+      this.scene.tweens.killTweensOf(this.scareSprite);
+      this.scareSprite.destroy();
+    }
     this.exitTween?.stop();
     this.scene.tweens.killTweensOf([this.body, this.bubble, this.price, this.barFrame, this.bar, ...this.hearts]);
     for (const h of this.hearts) h.destroy();
     this.hearts = [];
     this.shadow.destroy();
+    this.glow?.destroy();
+    this.warn?.destroy();
     this.body.destroy();
     this.bubble.destroy();
     this.price.destroy();

@@ -10,6 +10,8 @@ export const SRC_H = 948;
 
 export const SEATS_X = [916, 582, 1249, 1402];
 export const SEAT_BOTTOM_Y = 248;
+/** Where customers' feet stand: on the restaurant floor in front of the stools (source pixels). */
+export const CUSTOMER_FLOOR_Y = 326;
 export const VATS: [number, number][] = [[345, 665], [469, 665]];
 /** The four grill burners painted in the art: top row first, then the bottom row. */
 export const BURNERS: [number, number][] = [[1340, 487], [1489, 487], [1351, 552], [1512, 552]];

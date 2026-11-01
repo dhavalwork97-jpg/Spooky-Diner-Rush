@@ -1,0 +1,42 @@
+{
+ "key": "wildhair_corset_ghost_scare",
+ "image": "wildhair_corset_ghost_scare.png",
+ "imageWebp": "wildhair_corset_ghost_scare.webp",
+ "frameWidth": 208,
+ "frameHeight": 370,
+ "columns": 9,
+ "rows": 5,
+ "frameCount": 45,
+ "fps": 12,
+ "durationMs": 3750,
+ "loop": false,
+ "firstFrame": 0,
+ "lastFrame": 44,
+ "peakFrame": 32,
+ "phaserSpritesheetConfig": {
+  "frameWidth": 208,
+  "frameHeight": 370,
+  "endFrame": 44
+ },
+ "phaserAnimation": {
+  "key": "wildhair_corset_ghost_scare",
+  "frames": "frames 0-44",
+  "frameRate": 12,
+  "repeat": 0
+ },
+ "ghostBoxFirstFrame": {
+  "left": 0,
+  "top": 33,
+  "right": 207,
+  "bottom": 369,
+  "width": 207,
+  "height": 336,
+  "heightFractionOfFrame": 0.908,
+  "centerXFractionOfFrame": 0.498,
+  "bottomYFractionOfFrame": 0.997,
+  "widthFractionOfFrame": 0.995,
+  "topYFractionOfFrame": 0.089,
+  "bottomMayBeCropped": true
+ },
+ "note": "Frames are full 9:16 transparent canvases (the ghost lunges toward the camera). Align the overlay so ghostBoxFirstFrame centre-X and head-top match the idle ghost, scale so ghostBoxFirstFrame.width matches the idle ghost width, then crossfade ~150ms and play once. The ghost's lower tail may be cropped by the frame bottom (bottomMayBeCropped)."
+}

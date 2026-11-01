@@ -253,3 +253,15 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 - Customers are 136 logical px tall (19.5 percent of the 698 px canvas, was 16.0 percent). Order bubble, Rush tag, chip and ticks were made compact to fit above the head on screen.
 - Walk cycle: 1.6 s walk in from the screen edge (ease-out), per-step hop, alternating tilt, squash and stretch, shadow shrink, settle bounce, 0.25 s pop onto the stool; walk out in reverse. No step cycle when stationary.
 - Not verified: real device frame rate; how the 2.0 s arrival feels against the patience timer (unchanged on purpose).
+
+## Ghost customers (branch feature/ghost-customers)
+- Six ghosts join the customer pool (14 looks). They hover, float and glide; four play their supplied scare sheet when they leave angry (camera shake at the peak frame), the other two and any not-yet-loaded sheet use a code-only lunge. One sprite sheet still holds every customer.
+- Not verified: real device frame rate and the lazy load of the scare sheets (about 5 MB) on slow connections; scare sound not added.
+
+## Floor-standing customers (branch feature/ghost-customers)
+- Customers stand on the floor in front of the stools at 162 px (23 percent of the canvas); ghosts keep their own colours with an additive glow; arrival pop reduced to a small hop.
+- Not verified: real device; the left seat's price label overlaps the Lv 2 lock cover while that cover shows (Lv 1 only).
+
+## Ghost losing-patience expressions (branch feature/ghost-customers)
+- Under half patience the four scare-sheet ghosts fade into the early frames of their sheet over the idle ghost, so the face gets more menacing as patience falls. Vest gentleman and flame crown ghost have no sheet, so no expression. Happy and eating expressions need new art.
+- Not verified: real device; the 150 ms-ish cross-fade shows a faint double exposure for a moment.

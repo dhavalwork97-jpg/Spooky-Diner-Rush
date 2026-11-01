@@ -8,7 +8,11 @@
  */
 
 /** Order matters: it is the index the model stores in `Customer.look`. */
-export const CUSTOMER_LOOKS = ['kid', 'grandma', 'businessman', 'foodie', 'teen', 'chef_fan', 'athlete', 'sleepy'] as const;
+export const CUSTOMER_LOOKS = [
+  'kid', 'grandma', 'businessman', 'foodie', 'teen', 'chef_fan', 'athlete', 'sleepy',
+  // ghosts (indexes 8-13)
+  'monocle_gentleman', 'old_bearded_ghost', 'child_nightgown', 'wildhair_corset_ghost', 'vest_gentleman', 'flame_crown_ghost',
+] as const;
 export type CustomerLook = (typeof CUSTOMER_LOOKS)[number];
 
 export function lookIndex(look: number): number {
@@ -18,17 +22,17 @@ export function lookIndex(look: number): number {
 export const lookKey = (look: number): CustomerLook => CUSTOMER_LOOKS[lookIndex(look)];
 
 /**
- * All customer art is one sprite sheet (`customers`, 160 x 384 cells, built by tools/make_customer_art.py):
+ * All customer art is one sprite sheet (`customers`, 192 x 384 cells, built by tools/make_customer_art.py):
  * one texture means one draw batch however many customers are on screen.
- * Frames 0-7 are the characters in CUSTOMER_LOOKS order; then the contact shadow and the heart.
+ * Frames 0-13 are the people then the ghosts, in CUSTOMER_LOOKS order; then the contact shadow and the heart.
  */
 export const CUSTOMER_SHEET = 'customers';
-export const CELL_W = 160;
+export const CELL_W = 192;
 export const CELL_H = 384;
 export const SHADOW_FRAME = CUSTOMER_LOOKS.length;
 export const HEART_FRAME = CUSTOMER_LOOKS.length + 1;
 /** Width of each figure inside its cell, in sheet pixels (same order as CUSTOMER_LOOKS). Used for shadow size. */
-export const FIGURE_W = [138, 142, 132, 122, 122, 151, 152, 131] as const;
+export const FIGURE_W = [138, 142, 132, 122, 122, 151, 152, 131, 179, 163, 179, 180, 140, 143] as const;
 /** Width of the ellipse drawn in the shadow frame, in sheet pixels. */
 export const SHADOW_ART_W = 132;
 
@@ -59,6 +63,8 @@ export interface Personality {
   sparkles: number;
   /** Where the wristwatch glint sits, as a fraction of the sprite (x from left, y from top). */
   watchAt?: { x: number; y: number };
+  /** Ghosts hover above the stool and float instead of breathing; walking is a glide, not footsteps. */
+  ghost?: { hover: number; bob: number; bobMs: number };
 }
 
 export const PERSONALITIES: Record<CustomerLook, Personality> = {
@@ -78,6 +84,19 @@ export const PERSONALITIES: Record<CustomerLook, Personality> = {
   athlete: { breathMs: 1400, breath: 0.016, sway: 1, stepMs: 190, stepBounce: 9, tapMs: 280, tapLift: 5, hop: 13, hopMs: 320, eatMs: 280, eat: 3, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 5 },
   // Sleepy: very slow, droops, sighs.
   sleepy: { breathMs: 4600, breath: 0.014, sway: 0.4, stepMs: 260, stepBounce: 6, tapMs: 1100, tapLift: 1.5, hop: 4, hopMs: 620, eatMs: 900, eat: 1.5, nod: 2.2, watchEveryMs: null, hearts: 2, sparkles: 2 },
+  // Ghosts: hover about 8 px above the stool and bob. stepMs / stepBounce describe the glide bob while moving.
+  // Monocle Gentleman: composed, slow.
+  monocle_gentleman: { breathMs: 3000, breath: 0, sway: 1.2, stepMs: 700, stepBounce: 3, tapMs: 600, tapLift: 3, hop: 8, hopMs: 480, eatMs: 600, eat: 2, nod: 0, watchEveryMs: null, hearts: 2, sparkles: 4, ghost: { hover: 3, bob: 4, bobMs: 3200 } },
+  // Old Bearded Ghost: heavy and very slow.
+  old_bearded_ghost: { breathMs: 4200, breath: 0, sway: 0.8, stepMs: 900, stepBounce: 2.5, tapMs: 1000, tapLift: 2, hop: 5, hopMs: 600, eatMs: 900, eat: 1.5, nod: 0, watchEveryMs: null, hearts: 2, sparkles: 3, ghost: { hover: 3, bob: 3, bobMs: 4400 } },
+  // Child in a Nightgown: light and bouncy.
+  child_nightgown: { breathMs: 2200, breath: 0, sway: 2, stepMs: 520, stepBounce: 4, tapMs: 380, tapLift: 4, hop: 14, hopMs: 360, eatMs: 320, eat: 3, nod: 0, watchEveryMs: null, hearts: 4, sparkles: 5, ghost: { hover: 3, bob: 5, bobMs: 2200 } },
+  // Wild-hair Corset Ghost: restless, dramatic.
+  wildhair_corset_ghost: { breathMs: 2400, breath: 0, sway: 2, stepMs: 560, stepBounce: 4, tapMs: 420, tapLift: 4, hop: 12, hopMs: 380, eatMs: 380, eat: 3, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 5, ghost: { hover: 3, bob: 4.5, bobMs: 2400 } },
+  // Vest Gentleman: dapper and calm.
+  vest_gentleman: { breathMs: 3200, breath: 0, sway: 1, stepMs: 700, stepBounce: 3, tapMs: 650, tapLift: 3, hop: 8, hopMs: 460, eatMs: 600, eat: 2, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 4, ghost: { hover: 3, bob: 4, bobMs: 3400 } },
+  // Flame Crown Ghost: quick and flickery.
+  flame_crown_ghost: { breathMs: 1900, breath: 0, sway: 1.6, stepMs: 480, stepBounce: 4.5, tapMs: 340, tapLift: 4, hop: 14, hopMs: 340, eatMs: 300, eat: 3, nod: 0, watchEveryMs: null, hearts: 4, sparkles: 6, ghost: { hover: 3, bob: 5, bobMs: 1900 } },
 };
 
 /** One frame of transform. dx/dy are px (negative dy is up); sx/sy multiply the base scale; angle is degrees. */
@@ -148,6 +167,93 @@ export function watchPose(k: number): Pose {
 }
 export const WATCH_MS = 1300;
 
+/** Ghost idle: a slow float bob and gentle sway (no breathing squash). The constant hover height is applied by the view. */
+export function floatPose(p: Personality, t: number, seed: number): Pose {
+  const g = p.ghost;
+  if (!g) return REST;
+  const s = Math.sin((t / g.bobMs) * TAU + seed);
+  const sway = Math.sin((t / (g.bobMs * 1.7)) * TAU + seed * 1.3) * p.sway;
+  return { dx: 0, dy: -g.bob * (0.5 + 0.5 * s), sx: 1, sy: 1 + 0.006 * s, angle: sway };
+}
+
+/** Ghost agitation while the wait drags: a shimmy instead of a foot tap. Calm is still. */
+export function shimmyPose(phase: Phase, t: number, seed: number): Pose {
+  if (phase === 'calm') return REST;
+  const fast = phase === 'angry';
+  const s = Math.sin(t / (fast ? 45 : 90) + seed);
+  return { dx: s * (fast ? 2.2 : 1), dy: 0, sx: 1, sy: 1, angle: s * (fast ? 1.2 : 0.5) };
+}
+
+/** Ghost glide while moving: a smooth bob and a slow +/- 2 degree lean, no hop or squash. amp scales it (0 is still). */
+export function glidePose(p: Personality, t: number, amp = 1): Pose {
+  if (amp <= 0) return REST;
+  const n = t / p.stepMs;
+  const bob = 0.5 - 0.5 * Math.cos(TAU * (n - Math.floor(n)));
+  return { dx: 0, dy: -p.stepBounce * bob * amp, sx: 1, sy: 1, angle: 2 * Math.sin(Math.PI * n) * amp };
+}
+
+/** Ghosts do not hop onto the stool: a soft rise and settle. u runs 0..1. */
+export function floatUpPose(u: number): Pose {
+  return { dx: 0, dy: -4 * Math.sin(Math.PI * clamp01(u)), sx: 1, sy: 1, angle: 0 };
+}
+
+/**
+ * Scare sheets (supplied, 45 frames of 208 x 370 at 12 fps, play once). They play when a ghost leaves angry, and
+ * the camera shakes at the peak frame. Ghosts without a sheet, or a sheet that has not finished loading,
+ * get the code-only lunge instead. Peak frames come from each sheet's .anim.json (a test keeps them in step).
+ */
+export interface ScareDef {
+  key: string;
+  file: string;
+  peakFrame: number;
+  /** Ghost box in frame 0 (from the sheet's anim.json): width px, centre x and top y as fractions of the frame. */
+  boxW: number;
+  boxCx: number;
+  boxTop: number;
+  /** Last frame used for the "losing patience" expression (before the face turns into the full lunge). */
+  warnMax: number;
+}
+export const SCARE_FRAME_W = 208;
+export const SCARE_FRAME_H = 370;
+export const SCARE_FRAMES = 45;
+export const SCARE_FPS = 12;
+/** Overlay scale: head top lines up with the idle ghost's head, centred on the customer, and the frame is drawn at this scale. */
+export const SCARE_SCALE = 0.55;
+export const SCARE_FADE_MS = 150;
+export const SCARES: Partial<Record<CustomerLook, ScareDef>> = {
+  monocle_gentleman: { key: 'ghost_scare_monocle_gentleman', file: 'assets/customers/ghosts/scare/monocle_gentleman_scare.webp', peakFrame: 38, boxW: 201, boxCx: 0.512, boxTop: 0, warnMax: 22 },
+  old_bearded_ghost: { key: 'ghost_scare_old_bearded_ghost', file: 'assets/customers/ghosts/scare/old_bearded_ghost_scare.webp', peakFrame: 37, boxW: 160, boxCx: 0.495, boxTop: 0.068, warnMax: 20 },
+  child_nightgown: { key: 'ghost_scare_child_nightgown', file: 'assets/customers/ghosts/scare/child_nightgown_scare.webp', peakFrame: 26, boxW: 125, boxCx: 0.493, boxTop: 0.124, warnMax: 14 },
+  wildhair_corset_ghost: { key: 'ghost_scare_wildhair_corset_ghost', file: 'assets/customers/ghosts/scare/wildhair_corset_ghost_scare.webp', peakFrame: 32, boxW: 207, boxCx: 0.498, boxTop: 0.089, warnMax: 20 },
+};
+export const isGhost = (look: number): boolean => !!PERSONALITIES[lookKey(look)].ghost;
+
+/**
+ * Losing-patience expression: below half patience a ghost with a scare sheet fades into the early frames of its
+ * sheet (laid over the idle ghost: same width, same head top, same centre), and the face turns more menacing as
+ * patience falls: frame = severity * warnMax. Only that face is swapped; the rest still floats and shimmies.
+ */
+export function warnSeverity(frac: number): number {
+  return clamp01((0.5 - frac) / 0.5);
+}
+export const warnFrame = (def: ScareDef, severity: number): number => Math.round(clamp01(severity) * def.warnMax);
+export const warnAlpha = (severity: number): number => clamp01(severity * 3);
+/** Overlay scale so the ghost box matches the idle figure's width (px). */
+export const warnScale = (def: ScareDef, idleWidth: number): number => idleWidth / def.boxW;
+
+/** Code-only scare lunge (about 0.7 s): the ghost surges toward the camera, then fades. k runs 0..1. */
+export const LUNGE_MS = 700;
+export function lungePose(k: number): { pose: Pose; alpha: number; peak: boolean } {
+  const x = clamp01(k);
+  const e = easeOut(Math.min(1, x / 0.6));
+  const scale = 1 + 0.25 * e; // kept small: the figure is 136 px tall and the top of the screen is 51 px above its head
+  return {
+    pose: { dx: Math.sin(x * Math.PI * 14) * 3 * (1 - x), dy: -6 * e, sx: scale, sy: scale, angle: 0 },
+    alpha: x < 0.6 ? 1 : 1 - (x - 0.6) / 0.4,
+    peak: x >= 0.55,
+  };
+}
+
 /** Walk-in and walk-out take 1.6 s; after arriving: a short settle bounce, then a 0.25 s pop up onto the stool. */
 export const WALK_MS = 1600;
 export const SETTLE_MS = 180;
@@ -177,7 +283,7 @@ export function settlePose(u: number): Pose {
   return { dx: 0, dy: -3.5 * s * (1 - x * 0.5), sx: 1 + 0.01 * s, sy: 1 - 0.015 * s, angle: 0 };
 }
 
-/** The "step up onto the stool" pop: a quick crouch, a hop of about 10 px with a stretch, then a landing squash. u runs 0..1. */
+/** The arrival pop (customers now stand on the floor, so it is a small hop): a quick crouch, a small hop of about 6 px with a stretch, then a landing squash. u runs 0..1. */
 export function popPose(u: number): Pose {
   const x = clamp01(u);
   if (x < 0.25) {
@@ -186,7 +292,7 @@ export function popPose(u: number): Pose {
   }
   if (x < 0.75) {
     const s = Math.sin(Math.PI * ((x - 0.25) / 0.5));
-    return { dx: 0, dy: -10 * s, sx: 1 - 0.02 * s, sy: 1 + 0.045 * s, angle: 0 };
+    return { dx: 0, dy: -6 * s, sx: 1 - 0.02 * s, sy: 1 + 0.04 * s, angle: 0 };
   }
   const s = Math.sin(Math.PI * ((x - 0.75) / 0.25));
   return { dx: 0, dy: 0, sx: 1 + 0.03 * s, sy: 1 - 0.05 * s, angle: 0 };
@@ -203,11 +309,14 @@ export function arrivePose(p: Personality, t: number, distance: number, dir: num
   if (t < WALK_MS) {
     const k = t / WALK_MS;
     const amp = Math.min(1, (1 - k) * 4);
-    const step = stepPose(p, t, amp);
+    const step = p.ghost ? glidePose(p, t, amp) : stepPose(p, t, amp);
     return { pose: { ...step, dx: (1 - easeOut(k)) * distance * dir }, phase: 'walk' };
   }
   if (t < WALK_MS + SETTLE_MS) return { pose: settlePose((t - WALK_MS) / SETTLE_MS), phase: 'settle' };
-  if (t < ARRIVE_MS) return { pose: popPose((t - WALK_MS - SETTLE_MS) / POP_MS), phase: 'pop' };
+  if (t < ARRIVE_MS) {
+    const u = (t - WALK_MS - SETTLE_MS) / POP_MS;
+    return { pose: p.ghost ? floatUpPose(u) : popPose(u), phase: 'pop' };
+  }
   return { pose: REST, phase: 'done' };
 }
 
@@ -215,7 +324,7 @@ export function arrivePose(p: Personality, t: number, distance: number, dir: num
 export function departPose(p: Personality, t: number, distance: number, dir: number): { pose: Pose; done: boolean } {
   const k = clamp01(t / WALK_MS);
   const amp = Math.min(1, k * 4);
-  const step = stepPose(p, t, amp);
+  const step = p.ghost ? glidePose(p, t, amp) : stepPose(p, t, amp);
   return { pose: { ...step, dx: easeIn(k) * distance * dir }, done: t >= WALK_MS };
 }
 
