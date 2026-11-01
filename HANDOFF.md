@@ -1,7 +1,25 @@
 # HANDOFF
 
-Last updated: ChatGPT, session 2026-10-29
-Last updated at: 2026-10-29 12:00 IST
+Last updated: Claude, session 2026-11-01
+Last updated at: 2026-11-01 15:40 IST
+
+## START HERE: current status (2026-11-01, Claude)
+First version (one restaurant) is feature complete and in release prep. Sections below are newest first; older milestone notes are further down.
+- `main` is at 6d5eb54 (PR #19 merged). Merged today: customer system, ghost-only customers with scare clips (PRs #15, #16, #18), drinks and ice cream served straight from the machine (#17), animation helper drift fix (#19). Backups: branches `backup/main-2026-10-29`, `backup/main-2026-11-01`, `backup/main-2026-11-01-b` (a3414ed).
+- OPEN, NOT MERGED: PR #20 `chore/release-prep` (bundled Fredoka, smaller art sheet, SDK init, 12 MB build, `docs/release.md`). Merge it, then read `docs/release.md`.
+- Tests 229, typecheck and build clean on the branch.
+- Left for the owner: CrazyGames cover images, title and description, "saves progress" toggle, testing with the real SDK, real phones (thumb feel, fps), real sound, slow connections (scare sheets about 7 MB lazy).
+- Known limits: vest gentleman has no scare clip (code lunge) and no angry face; no scare sound; ghosts have no happy or eating faces (needs new art); people customers are blanked in `customers.webp` (needs the 8 PNGs and `CUSTOMER_LOOK_MIN` 0 to return); fast Lv 20 bot is about 7 s quicker since drinks skip the plates (test floor 1750 s); the Lv 1 price label sits over the tomato cover on purpose; second restaurant is not in this version (next update).
+- Tools: `tools/make_customer_art.py` (see its header; `--blank-people`). Headless play script lived outside the repo (a bot calling the model through `window.__chefRush` with `?debug&level=N&speed=N`).
+- Process notes: branch per task, PR, never merge without the owner saying so. The stop hook "unpushed commits / no remote branch" warning has been a false alarm every time (check `git ls-remote --heads origin <branch>`). Avoid `pkill -f "vite preview"` in the shell (it kills the shell); GitHub writes work through git push and `gh api` REST only.
+
+## Housekeeping and release packaging (2026-11-01, Claude) - branch `chore/release-prep` (from main after PR #19), PR open, NOT merged
+- Fredoka bundled: `public/assets/fonts/fredoka-{400,600,700}.woff2` (+ OFL text), `@font-face` in `index.html`, BootScene waits for the font (1.5 s cap) because canvas text does not redraw later.
+- People frames blanked in `customers.webp` (391 KB -> 238 KB; frame numbers unchanged; tool flag `--blank-people`). Spawn pool is unchanged (ghosts only).
+- Lv 1 price label over the tomato lock cover: left as is on purpose (at Lv 2+ the same price sits over the same tray); shrinking the cover only exposed painted tomatoes behind the coin.
+- Packaging: ghost cutout PNGs removed from `dist/` by a Vite plugin (they are art sources only; dist 16 MB -> 12 MB), CrazyGames SDK v3 script tag and awaited `init()` (never throws, 3 s cap), `docs/release.md` with sizes, SDK status and what the owner still has to do.
+- Tests 229, typecheck and build clean; browser: game starts in 1.3 s with the SDK script blocked, fonts load. Real SDK, real device, real audio not checked.
+
 
 ## Release check: playthrough and phone size (2026-11-01, Claude) - branch `fix/anim-helper-drift` (from main a3414ed), PR open, NOT merged
 Full Lv 1-20 playthrough in Chromium (bot calling the model, real game loop, speed 6, 1280x698; screenshot per level) and phone viewports (844x390, 932x430, 667x375 landscape, 390x844 portrait).

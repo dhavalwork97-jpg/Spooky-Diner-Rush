@@ -1,6 +1,8 @@
 """Build the game-ready customer sprite sheet from the supplied transparent PNGs.
 
-Usage: python3 tools/make_customer_art.py <dir with customer_*.png | existing customers.webp> [ghost dir] [out file]
+Usage: python3 tools/make_customer_art.py <dir with customer_*.png | existing customers.webp> [ghost dir] [out file] [--blank-people]
+  --blank-people leaves frames 0-7 empty (same frame numbers, about half the file size): the game only spawns ghosts.
+  To bring the people back, re-run with the dir of the eight customer_*.png files (not in the repo; the owner has them) and set CUSTOMER_LOOK_MIN to 0.
   Pass the current public/assets/art/customers.webp as the first argument when the eight people PNGs are not at hand:
   the 8 people cells are then copied from it (they are not used in game any more) and the ghosts are rebuilt from their cutouts.
   ghost dir defaults to public/assets/customers/ghosts (the committed ghost cutouts).
@@ -84,16 +86,18 @@ def heart() -> Image.Image:
 
 
 if __name__ == '__main__':
-    src = Path(sys.argv[1])
-    ghosts = Path(sys.argv[2]) if len(sys.argv) > 2 else Path('public/assets/customers/ghosts')
-    dst = Path(sys.argv[3]) if len(sys.argv) > 3 else Path('public/assets/art/customers.webp')
+    blank = '--blank-people' in sys.argv
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    src = Path(args[0])
+    ghosts = Path(args[1]) if len(args) > 1 else Path('public/assets/customers/ghosts')
+    dst = Path(args[2]) if len(args) > 2 else Path('public/assets/art/customers.webp')
     cells = []
     widths = []
     if src.is_file():
         old = Image.open(src).convert('RGBA')
         for i, n in enumerate(NAMES):
             cell = old.crop(((i % COLS) * CELL_W, (i // COLS) * HEIGHT, (i % COLS) * CELL_W + CELL_W, (i // COLS) * HEIGHT + HEIGHT))
-            cells.append(cell)
+            cells.append(Image.new('RGBA', (CELL_W, HEIGHT), (0, 0, 0, 0)) if blank else cell)
             widths.append(0)
         figs = [(n, ghost_figure(ghosts / f'{n}.png')) for n in GHOSTS]
     else:
