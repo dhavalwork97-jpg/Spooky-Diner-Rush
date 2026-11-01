@@ -40,3 +40,25 @@ export class AnimGuard {
     return this.running.size;
   }
 }
+
+/**
+ * The resting value (scale, x, y) of a target while an animation of one key is in flight. A restart reads the
+ * value from here, not from the target, which is already mid-animation: otherwise every overlapping restart
+ * ratchets the rest value up (the HUD coin icon grew to fill the screen).
+ */
+export class RestValues<T> {
+  private values = new Map<string, T>();
+
+  /** The rest value in flight for this key, or `current` when nothing is animating. */
+  of(key: string, current: T): T {
+    return this.values.get(key) ?? current;
+  }
+
+  set(key: string, value: T): void {
+    this.values.set(key, value);
+  }
+
+  clear(key: string): void {
+    this.values.delete(key);
+  }
+}
