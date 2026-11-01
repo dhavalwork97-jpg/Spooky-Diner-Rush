@@ -1,0 +1,42 @@
+{
+ "key": "flame_crown_ghost_scare",
+ "image": "flame_crown_ghost_scare.png",
+ "imageWebp": "flame_crown_ghost_scare.webp",
+ "frameWidth": 208,
+ "frameHeight": 370,
+ "columns": 9,
+ "rows": 5,
+ "frameCount": 45,
+ "fps": 12,
+ "durationMs": 3750,
+ "loop": false,
+ "firstFrame": 0,
+ "lastFrame": 44,
+ "peakFrame": 26,
+ "phaserSpritesheetConfig": {
+  "frameWidth": 208,
+  "frameHeight": 370,
+  "endFrame": 44
+ },
+ "phaserAnimation": {
+  "key": "flame_crown_ghost_scare",
+  "frames": "frames 0-44",
+  "frameRate": 12,
+  "repeat": 0
+ },
+ "ghostBoxFirstFrame": {
+  "left": 19,
+  "top": 0,
+  "right": 189,
+  "bottom": 369,
+  "width": 170,
+  "height": 369,
+  "widthFractionOfFrame": 0.817,
+  "heightFractionOfFrame": 0.997,
+  "centerXFractionOfFrame": 0.5,
+  "topYFractionOfFrame": 0.0,
+  "bottomYFractionOfFrame": 0.997,
+  "bottomMayBeCropped": true
+ },
+ "note": "Frames are full 9:16 transparent canvases. Align the overlay so ghostBoxFirstFrame centre-X and head-top match the idle ghost, scale so ghostBoxFirstFrame.width matches the idle ghost width, then crossfade ~150ms and play once."
+}

@@ -265,3 +265,6 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 ## Ghost losing-patience expressions (branch feature/ghost-customers)
 - Under half patience the four scare-sheet ghosts fade into the early frames of their sheet over the idle ghost, so the face gets more menacing as patience falls. Vest gentleman and flame crown ghost have no sheet, so no expression. Happy and eating expressions need new art.
 - Not verified: real device; the 150 ms-ish cross-fade shows a faint double exposure for a moment.
+
+## Two more ghost scare sheets (branch feature/two-more-ghosts)
+- Flame crown ghost gets her real scare sheet and angry face; new customer ragged_dress_girl (cutout taken from frame 0 of her sheet) with a calm spin clip when she leaves angry. Only the vest gentleman still uses the code lunge.

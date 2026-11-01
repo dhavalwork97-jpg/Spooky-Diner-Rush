@@ -115,7 +115,7 @@ export interface SaveSlice {
 }
 
 /** Number of supplied customer characters (cosmetic). A test keeps this equal to `CUSTOMER_LOOKS` in anim/customerMotion.ts. */
-export const CUSTOMER_LOOK_COUNT = 14;
+export const CUSTOMER_LOOK_COUNT = 15;
 /** First look that can spawn. Looks 0-7 are the people, 8-13 the ghosts; customers are ghosts only for now (set to 0 to mix people back in). */
 export const CUSTOMER_LOOK_MIN = 8;
 const LEAVE_DELAY = 0.9;

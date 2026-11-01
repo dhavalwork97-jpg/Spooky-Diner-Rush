@@ -3,6 +3,13 @@
 Last updated: ChatGPT, session 2026-10-29
 Last updated at: 2026-10-29 12:00 IST
 
+## Two more ghost scare sheets (2026-11-01, Claude) - branch `feature/two-more-ghosts` (from main), PR open, NOT merged
+Owner supplied `ghost_scare_sprites_new2.zip` (only scare sheets, no cutouts): `flame_crown_ghost` (already a customer, so she now plays a real scare instead of the code lunge and gets the losing-patience face, `warnMax` 18) and a NEW ghost `ragged_dress_girl`.
+- `ragged_dress_girl` has no idle cutout in the zip: `ghosts/ragged_dress_girl.png` is frame 0 of her scare sheet, clipped to the `ghostBoxFirstFrame` x range (drops the loose ring swirls). Look 14 (`CUSTOMER_LOOKS`, `CUSTOMER_LOOK_COUNT` 15, FIGURE_W 187); sheet frames: ghosts 8-14, shadow 15, heart 16 (`customers.webp` 768x1920, 391 KB). If the owner has a proper cutout, drop it over that PNG and re-run the tool.
+- `tools/make_customer_art.py` now accepts the existing `customers.webp` as first argument (people cells are copied from it since the 8 people PNGs are not in the repo; ghosts are rebuilt from their cutouts). Command used: `python3 tools/make_customer_art.py /tmp/old_customers.webp public/assets/customers/ghosts public/assets/art/customers.webp` (copy the old sheet first).
+- Scare: `SCARES` entries (flame crown peak 26, ragged girl peak 32); sheets are lazy. Her clip is a calm spin with amber eyes, so `warnMax` 0 = no angry face while waiting, she only plays the clip when she leaves angry. Only `vest_gentleman` still uses the code lunge and has no angry face.
+- Tests 226 pass; typecheck and build clean. Headless Chromium: both seated, flame crown angry face at low patience, both scare clips play, no errors. Not checked on a real device. Lazy download grows by about 2 MB.
+
 ## Losing-patience expressions for ghosts (2026-11-01, Claude) - branch `feature/ghost-customers`
 Owner picked "use the scare sheets earlier". Below half patience, the four ghosts that have a scare sheet fade into its early frames laid over the idle ghost (ghost box from each `.anim.json`: same width, head top and centre; follows the body's lean and squash). Frame = severity x `warnMax` (22 monocle, 20 old bearded, 14 child, 20 wildhair), so the face turns more menacing as patience falls; it holds, and the full scare still plays on the angry leave. `warnSeverity/warnFrame/warnAlpha/warnScale` in `customerMotion.ts`, `CustomerView.updateWarn`. Vest gentleman and flame crown ghost have no sheet so they keep their face. Happy and eating expressions still need new art. Only the sheets that already loaded are used. Tests: 226. Checked in headless Chromium at 100, 40, 20 and 4 percent patience.
 

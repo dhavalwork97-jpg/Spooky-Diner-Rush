@@ -71,15 +71,15 @@ describe('customer art', () => {
   });
   it('keeps the model look count equal to the art count', () => {
     expect(CUSTOMER_LOOK_COUNT).toBe(CUSTOMER_LOOKS.length);
-    expect(CUSTOMER_LOOKS).toHaveLength(14);
+    expect(CUSTOMER_LOOKS).toHaveLength(15);
   });
   it('maps any look number to a character, even out of range', () => {
     expect(lookKey(0)).toBe('kid');
-    expect(lookKey(14)).toBe('kid');
+    expect(lookKey(15)).toBe('kid');
     expect(lookKey(8)).toBe('monocle_gentleman');
-    expect(lookKey(-1)).toBe('flame_crown_ghost');
+    expect(lookKey(-1)).toBe('ragged_dress_girl');
     expect(lookIndex(3)).toBe(3);
-    expect(lookIndex(17)).toBe(3);
+    expect(lookIndex(18)).toBe(3);
   });
   it('the model only produces ghost looks', () => {
     const s = new KitchenState({ level: 8, xp: 0, coins: 0 }, defaultConfig, 7);
@@ -90,8 +90,8 @@ describe('customer art', () => {
       s.customers.length = 0;
     }
     for (const l of seen) expect(l).toBeGreaterThanOrEqual(CUSTOMER_LOOK_MIN), expect(l).toBeLessThan(CUSTOMER_LOOK_COUNT);
-    // customers are ghosts only: all six appear and no person does
-    expect(seen.size).toBe(6);
+    // customers are ghosts only: all seven appear and no person does
+    expect(seen.size).toBe(7);
     for (const l of seen) expect(isGhost(l)).toBe(true);
   });
 });
@@ -238,12 +238,12 @@ describe('customer motion', () => {
   });
 });
 
-const GHOST_NAMES = ['monocle_gentleman', 'old_bearded_ghost', 'child_nightgown', 'wildhair_corset_ghost', 'vest_gentleman', 'flame_crown_ghost'] as const;
+const GHOST_NAMES = ['monocle_gentleman', 'old_bearded_ghost', 'child_nightgown', 'wildhair_corset_ghost', 'vest_gentleman', 'flame_crown_ghost', 'ragged_dress_girl'] as const;
 const publicFiles = import.meta.glob('../public/assets/customers/ghosts/**/*', { query: '?url', import: 'default' });
 const animJson = import.meta.glob('../public/assets/customers/ghosts/scare/*.anim.json', { eager: true, import: 'default' }) as Record<string, { frameWidth: number; frameHeight: number; frameCount: number; fps: number; peakFrame: number }>;
 
 describe('ghost customers', () => {
-  it('are the last six looks, flagged as ghosts; people are not', () => {
+  it('are the last seven looks, flagged as ghosts; people are not', () => {
     GHOST_NAMES.forEach((n, i) => {
       expect(CUSTOMER_LOOKS[8 + i]).toBe(n);
       expect(isGhost(8 + i)).toBe(true);
@@ -255,10 +255,10 @@ describe('ghost customers', () => {
     for (const n of GHOST_NAMES) expect(publicFiles[`../public/assets/customers/ghosts/${n}.png`], n).toBeTruthy();
     expect(Object.keys(publicFiles).filter((f) => /_scare\.png$|\.gif$|white_bg/.test(f))).toHaveLength(0);
   });
-  it('four have a scare sheet whose size, fps and peak frame match the supplied anim.json; two use the code lunge', () => {
-    expect(Object.keys(SCARES).sort()).toEqual(['child_nightgown', 'monocle_gentleman', 'old_bearded_ghost', 'wildhair_corset_ghost']);
+  it('six have a scare sheet whose size, fps and peak frame match the supplied anim.json; vest_gentleman uses the code lunge', () => {
+    expect(Object.keys(SCARES).sort()).toEqual(['child_nightgown', 'flame_crown_ghost', 'monocle_gentleman', 'old_bearded_ghost', 'ragged_dress_girl', 'wildhair_corset_ghost']);
     expect(SCARES.vest_gentleman).toBeUndefined();
-    expect(SCARES.flame_crown_ghost).toBeUndefined();
+    expect(SCARES.ragged_dress_girl!.warnMax).toBe(0); // calm spin: no angry face before the full clip
     for (const [look, def] of Object.entries(SCARES)) {
       const a = animJson[`../public/assets/customers/ghosts/scare/${look}_scare.anim.json`];
       expect(a, look).toBeTruthy();
@@ -272,6 +272,7 @@ describe('ghost customers', () => {
       expect(def!.boxCx).toBeCloseTo(box.centerXFractionOfFrame, 3);
       expect(def!.boxTop).toBeCloseTo(box.topYFractionOfFrame, 3);
       expect(def!.warnMax).toBeLessThan(def!.peakFrame);
+      expect(def!.warnMax).toBeGreaterThanOrEqual(0);
       expect(publicFiles[`../public/${def!.file}`], look).toBeTruthy();
       const listed = assets.find((x) => x.key === def!.key) as { lazy?: boolean; file: string } | undefined;
       expect(listed?.file).toBe(def!.file);

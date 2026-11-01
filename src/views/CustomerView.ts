@@ -386,7 +386,7 @@ export class CustomerView {
   /** Losing-patience face: fade into the early frames of the ghost's scare sheet once patience is under half. */
   private updateWarn(c: Customer, frac: number): void {
     const def = SCARES[lookKey(this.look)];
-    const sev = def && c.mood === 'waiting' ? warnSeverity(frac) : 0;
+    const sev = def && def.warnMax > 0 && c.mood === 'waiting' ? warnSeverity(frac) : 0;
     this.warnK = sev;
     if (!def || sev <= 0 || !this.scene.textures.exists(def.key)) {
       this.warn?.setVisible(false);
