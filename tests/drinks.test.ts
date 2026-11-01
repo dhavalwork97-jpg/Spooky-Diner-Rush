@@ -19,7 +19,7 @@ describe('drinks', () => {
     expect(lastInvalid(s)[0]).toMatch(/Lv 6/);
   });
 
-  it('fill, wait without spoiling, and land on a side slot', () => {
+  it('fill and wait in their lane without spoiling; a tap never moves them to a plate', () => {
     const s = at(6);
     noCustomers(s);
     s.tapDrinks();
@@ -34,33 +34,30 @@ describe('drinks', () => {
     run(s, 600); // a ready cup never spoils or costs anything
     const rep = s.reputation;
     expect(s.spouts[0]?.phase).toBe('ready');
-    s.tapDrinks();
-    expect(s.spouts[0]).toBeNull();
-    const side = s.slots.filter((x) => x.row === 'side');
-    expect(side.some((x) => x.item?.kind === 'drink')).toBe(true);
+    expect(s.pourReady('dispenser', 0)).toBe(true);
+    s.drainEvents();
+    s.tapDrinks(); // all lanes hold a full cup: the player is told to drag one out
+    expect(lastInvalid(s).join()).toMatch(/Drag/);
+    expect(s.spouts.filter((p) => p?.phase === 'ready').length).toBe(3);
+    expect(s.slots.every((x) => !x.item)).toBe(true);
     expect(s.reputation).toBe(rep);
   });
 
-  it('use a free plate when both side slots are taken, and refuse when everything is full', () => {
+  it('do not use up plate or side slots', () => {
     const s = at(6);
     noCustomers(s);
-    s.slots.filter((x) => x.row === 'side').forEach((x) => (x.item = { id: 90 + x.index, kind: 'fries', placed: [], building: false }));
+    s.slots.forEach((x) => (x.item = { id: 90 + x.index, kind: 'fries', placed: [], building: false }));
     s.tapDrinks();
     run(s, 6);
-    s.tapDrinks();
-    expect(s.slots.filter((x) => x.row === 'plate').some((x) => x.item?.kind === 'drink')).toBe(true);
-    s.slots.forEach((x) => {
-      if (!x.item) x.item = { id: 200 + x.index, kind: 'fries', placed: [], building: false };
-    });
-    s.tapDrinks();
-    run(s, 6);
-    s.drainEvents();
-    s.tapDrinks();
-    expect(lastInvalid(s).join()).toMatch(/plate is full/);
-    expect(s.spouts.some((p) => p?.phase === 'ready')).toBe(true);
+    expect(s.spouts[0]?.phase).toBe('ready');
+    s.spawnCustomer();
+    const c = s.customers[0];
+    c.items = ['drink'];
+    c.delivered = [false];
+    expect(s.serveFromPour('dispenser', 0, c.id)).toBe(true); // works with every plate full
   });
 
-  it('can be served to the customer who ordered one', () => {
+  it('are served straight from the dispenser to the customer who ordered one', () => {
     const s = at(6);
     noCustomers(s);
     s.spawnCustomer();
@@ -68,13 +65,32 @@ describe('drinks', () => {
     c.items = ['drink'];
     c.delivered = [false];
     s.tapDrinks();
+    expect(s.serveFromPour('dispenser', 0, c.id)).toBe(false); // still filling
     run(s, 6);
-    s.tapDrinks();
-    const slot = s.slots.find((x) => x.item?.kind === 'drink')!;
+    s.drainEvents();
     const coins = s.coins;
-    expect(s.serve(slot.index, c.id)).toBe(true);
+    expect(s.serveFromPour('dispenser', 0, c.id)).toBe(true);
+    expect(s.spouts[0]).toBeNull();
     expect(c.mood).toBe('happy');
     expect(s.coins).toBeGreaterThan(coins);
+    const ev = s.drainEvents().find((e) => e.type === 'deliver') as { from?: string; index?: number; slot: number };
+    expect(ev.from).toBe('dispenser');
+    expect(ev.slot).toBe(-1);
+  });
+
+  it('keep their cup when the customer did not order a drink, and cost patience', () => {
+    const s = at(6);
+    noCustomers(s);
+    s.spawnCustomer();
+    const c = s.customers[0];
+    c.items = ['fries'];
+    c.delivered = [false];
+    s.tapDrinks();
+    run(s, 6);
+    const patience = c.patience;
+    expect(s.serveFromPour('dispenser', 0, c.id)).toBe(false);
+    expect(s.spouts[0]?.phase).toBe('ready');
+    expect(c.patience).toBeLessThan(patience);
   });
 });
 
@@ -86,7 +102,7 @@ describe('ice cream', () => {
     expect(lastInvalid(s)[0]).toMatch(/Lv 12/);
   });
 
-  it('swirls, can be collected, and goes to a slot', () => {
+  it('swirls and a ready cone stays in its lane', () => {
     const s = at(12);
     noCustomers(s);
     s.tapIceCream();
@@ -97,9 +113,31 @@ describe('ice cream', () => {
     expect(lastInvalid(s).join()).toMatch(/swirling/);
     run(s, 6);
     expect(s.cones[0]?.phase).not.toBe('cooking');
+    s.drainEvents();
+    s.tapIceCream(); // a tap no longer takes the cone
+    expect(lastInvalid(s).join()).toMatch(/Drag/);
+    expect(s.cones[0]).not.toBeNull();
+    expect(s.slots.every((x) => !x.item)).toBe(true);
+  });
+
+  it('is served straight from the machine, even with every plate full', () => {
+    const s = at(12);
+    noCustomers(s);
+    s.slots.forEach((x) => (x.item = { id: 90 + x.index, kind: 'fries', placed: [], building: false }));
+    s.spawnCustomer();
+    const c = s.customers[0];
+    c.items = ['icecream'];
+    c.delivered = [false];
     s.tapIceCream();
-    expect(s.cones[0]).toBeNull(); // the first ready lane is collected
-    expect(s.slots.some((x) => x.item?.kind === 'icecream')).toBe(true);
+    expect(s.serveFromPour('icecream', 0, c.id)).toBe(false); // still swirling
+    run(s, 6);
+    s.drainEvents();
+    expect(s.serveFromPour('icecream', 0, c.id)).toBe(true);
+    expect(s.cones[0]).toBeNull();
+    expect(c.mood).toBe('happy');
+    const ev = s.drainEvents().find((e) => e.type === 'deliver') as { from?: string; slot: number };
+    expect(ev.from).toBe('icecream');
+    expect(ev.slot).toBe(-1);
   });
 
   it('melts if left too long, at no cost', () => {

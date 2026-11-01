@@ -268,3 +268,5 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 
 ## Two more ghost scare sheets (branch feature/two-more-ghosts)
 - Flame crown ghost gets her real scare sheet and angry face; new customer ragged_dress_girl (cutout taken from frame 0 of her sheet) with a calm spin clip when she leaves angry. Only the vest gentleman still uses the code lunge.
+## Serve drinks and ice cream from the machine (branch feature/serve-from-dispenser)
+- Full cups and cones stay at the dispenser / ice cream machine and are dragged (or tap, then tap the customer) straight to the customer; a tap no longer moves them to a plate. Plates and side slots are not used for them. Fast Lv 20 bot is about 7 s quicker; test floor lowered to 1750 s.

@@ -81,6 +81,10 @@ export class GameScene extends Phaser.Scene {
   private muteLine!: Phaser.GameObjects.Graphics;
 
   private items = new Map<number, ItemView>();
+  /** A grab area over each finished cup or cone, keyed `dispenser0`, `icecream1`... */
+  private pourItems = new Map<string, ItemView>();
+  private selectedPour: string | null = null;
+  private pourIds = 0;
   private custViews = new Map<number, CustomerView>();
   private selectedSlot: number | null = null;
   private dragTarget: number | null = null;
@@ -335,6 +339,43 @@ export class GameScene extends Phaser.Scene {
   private setSelectedSlot(slot: number | null): void {
     this.selectedSlot = slot;
     this.items.forEach((v, i) => v.setSelected(i === slot));
+    if (slot !== null) this.setSelectedPour(null);
+  }
+
+  private setSelectedPour(key: string | null): void {
+    this.selectedPour = key;
+    this.pourItems.forEach((v, k) => v.setSelected(k === key));
+    if (key !== null && this.selectedSlot !== null) this.setSelectedSlot(null);
+  }
+
+  /** Keep one grab area over every finished cup and cone; the model decides which ones are ready. */
+  private syncPourItems(): void {
+    const lanes: { from: 'dispenser' | 'icecream'; n: number }[] = [
+      { from: 'dispenser', n: this.state.spouts.length },
+      { from: 'icecream', n: this.state.cones.length },
+    ];
+    const live = new Set<string>();
+    for (const { from, n } of lanes) {
+      for (let i = 0; i < n; i++) {
+        if (!this.state.pourReady(from, i)) continue;
+        const key = `${from}${i}`;
+        live.add(key);
+        if (this.pourItems.has(key)) continue;
+        const at = from === 'dispenser' ? this.pours.dispenserPos(i) : this.pours.conePos(i);
+        const kind = from === 'dispenser' ? 'drink' : 'icecream';
+        const v = new ItemView(this, at.x, at.y, 100000 + this.pourIds++, kind, -1, this.layout.s(kind === 'drink' ? 100 : 104), { w: this.layout.s(50), h: this.layout.s(84) });
+        v.source = { from, index: i };
+        v.showFries();
+        v.setProxy(true);
+        this.pourItems.set(key, v);
+      }
+    }
+    for (const [key, v] of this.pourItems) {
+      if (live.has(key) || v.leaving) continue;
+      this.pourItems.delete(key);
+      if (this.selectedPour === key) this.selectedPour = null;
+      v.destroy();
+    }
   }
 
   private customerAt(x: number, y: number): CustomerView | null {
@@ -366,6 +407,18 @@ export class GameScene extends Phaser.Scene {
     this.dragTarget = null;
     obj.setDragging(false);
     const moved = Phaser.Math.Distance.Between(pointer.downX, pointer.downY, pointer.upX, pointer.upY);
+    const src = obj.source;
+    if (src) {
+      const key = `${src.from}${src.index}`;
+      if (moved < 10) {
+        obj.setPosition(obj.home.x, obj.home.y);
+        this.setSelectedPour(this.selectedPour === key ? null : key);
+        return;
+      }
+      const target = this.customerAt(pointer.worldX, pointer.worldY);
+      if (!target || !this.state.serveFromPour(src.from, src.index, target.id)) this.snapBack(obj);
+      return;
+    }
     if (moved < 10) {
       // a tap: select this item, then tap a customer to serve it (tap-to-serve)
       obj.setPosition(obj.home.x, obj.home.y);
@@ -381,19 +434,29 @@ export class GameScene extends Phaser.Scene {
   }
 
   private snapBack(obj: ItemView): void {
+    if (obj.source) obj.reveal();
     this.tweens.add({
       targets: obj,
       x: obj.home.x,
       y: obj.home.y,
       duration: SaveSystem.reduceMotion() ? 0 : 140,
       ease: 'Quad.Out',
-      onComplete: () => shake(this, obj, `item${obj.itemId}`, 5, 200),
+      onComplete: () => {
+        if (obj.source) obj.setProxy(true);
+        shake(this, obj, `item${obj.itemId}`, 5, 200);
+      },
     });
     audio.play('wrong');
   }
 
   private onCustomerTap(id: number): void {
     audio.unlock();
+    if (this.selectedPour !== null) {
+      const v = this.pourItems.get(this.selectedPour);
+      this.setSelectedPour(null);
+      if (v?.source) this.state.serveFromPour(v.source.from, v.source.index, id);
+      return;
+    }
     if (this.selectedSlot === null) return;
     const slot = this.selectedSlot;
     this.setSelectedSlot(null);
@@ -542,7 +605,7 @@ export class GameScene extends Phaser.Scene {
         this.toast.show('Burnt! Tap to throw it away');
         break;
       case 'collect': {
-        const from = e.from === 'fryer' ? this.stations.vatPos(e.index) : e.from === 'dispenser' ? this.pours.dispenserPos(e.index) : e.from === 'icecream' ? this.pours.conePos(e.index) : this.stations.ovenPos(e.index);
+        const from = e.from === 'fryer' ? this.stations.vatPos(e.index) : this.stations.ovenPos(e.index);
         const v = this.makeItem(e.slot, from);
         if (v) {
           v.showFries();
@@ -580,13 +643,19 @@ export class GameScene extends Phaser.Scene {
         break;
       }
       case 'deliver': {
-        const v = this.items.get(e.slot);
+        const key = e.from ? `${e.from}${e.index}` : null;
+        const v = key ? this.pourItems.get(key) : this.items.get(e.slot);
+        if (key) {
+          this.pourItems.delete(key);
+          if (this.selectedPour === key) this.setSelectedPour(null);
+          v?.setProxy(false);
+        }
         const cv = this.custViews.get(e.customer);
         if (v) {
           this.items.delete(e.slot);
           v.leaving = true;
           v.setDragging(false);
-          if (this.selectedSlot === e.slot) this.setSelectedSlot(null);
+          if (!key && this.selectedSlot === e.slot) this.setSelectedSlot(null);
           const target = cv ? cv.center : v.home;
           this.arc(v, target, 260, 20, () => v.destroy());
           this.tweens.add({ targets: v, scale: 0.4, alpha: 0.2, duration: 260 });
@@ -657,6 +726,9 @@ export class GameScene extends Phaser.Scene {
         this.banner.hide();
         this.items.forEach((v) => v.destroy());
         this.items.clear();
+        this.pourItems.forEach((v) => v.destroy());
+        this.pourItems.clear();
+        this.selectedPour = null;
         this.custViews.forEach((c) => c.destroy());
         this.custViews.clear();
         this.overlay.hide();
@@ -832,6 +904,7 @@ export class GameScene extends Phaser.Scene {
     this.stock.updateDough(this.state);
     this.stations.update(this.state, time);
     this.pours.update(this.state, time);
+    this.syncPourItems();
     this.hud.update(this.state, dtReal);
     if (this.state.event) this.banner.update(this.state.event.remaining);
     this.updateHint();
@@ -920,6 +993,7 @@ export class GameScene extends Phaser.Scene {
     this.storyCard.destroy();
     this.fx.destroy();
     this.items.clear();
+    this.pourItems.clear();
     this.custViews.clear();
     this.views = [];
     audio.setSizzle(0);

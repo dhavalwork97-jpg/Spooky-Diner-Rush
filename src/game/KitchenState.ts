@@ -23,6 +23,8 @@ export interface Oven {
   phase: CookPhase;
 }
 /** A cup filling at the dispenser, or a cone swirling in the ice cream machine. */
+/** A drink or ice cream is served straight from the machine it was made in (slot is -1 in those events). */
+export type PourSource = 'dispenser' | 'icecream';
 export interface Pour {
   t: number;
   phase: CookPhase;
@@ -74,15 +76,15 @@ export type GameEvent =
   | { type: 'pattyStart'; burner: number }
   | { type: 'pattyPhase'; burner: number; phase: CookPhase }
   | { type: 'pattyFlip'; burner: number }
-  | { type: 'collect'; from: 'fryer' | 'oven' | 'dispenser' | 'icecream'; index: number; slot: number }
+  | { type: 'collect'; from: 'fryer' | 'oven'; index: number; slot: number }
   | { type: 'buildStart'; slot: number }
   | { type: 'layerAdded'; slot: number; layer: string; burner?: number }
   | { type: 'burgerDone'; slot: number }
   | { type: 'discard'; where: 'vat' | 'burner' | 'oven' | 'slot' | 'build'; index: number; penalty: boolean }
   | { type: 'burnt'; where: 'vat' | 'burner' | 'oven'; index: number }
   | { type: 'arrive'; customer: number }
-  | { type: 'deliver'; customer: number; slot: number; itemIndex: number }
-  | { type: 'wrongDrop'; slot: number; customer: number | null; penalty?: boolean }
+  | { type: 'deliver'; customer: number; slot: number; itemIndex: number; from?: PourSource; index?: number }
+  | { type: 'wrongDrop'; slot: number; customer: number | null; penalty?: boolean; from?: PourSource; index?: number }
   | { type: 'comboChanged'; combo: number; max: number; broken: boolean }
   | { type: 'eventStart'; id: string; name: string; duration: number }
   | { type: 'eventEnd'; id: string }
@@ -471,47 +473,24 @@ export class KitchenState {
 
   // ----- drinks and ice cream -----
 
-  /** A drink or cone goes on a free side slot, or on a free plate when the side is full. */
-  private freeServeSlot(): Slot | undefined {
-    return this.freeSlot('side') ?? this.freeSlot('plate');
-  }
-
-  /** Tap the dispenser: collect a full cup if one is waiting, otherwise start filling one. */
+  /** Tap the dispenser: start filling a cup in a free lane. A full cup stays in its lane until it is dragged to a customer. */
   tapDrinks(): void {
     if (this.closed) return;
     const def = this.cfg.recipes.items.drink;
     if (this.level < def.unlockLevel) return this.invalid(`Drinks unlock at Lv ${def.unlockLevel}`);
-    const full = this.spouts.findIndex((p) => p?.phase === 'ready');
-    if (full >= 0) {
-      const slot = this.freeServeSlot();
-      if (!slot) return this.invalid('The plate is full');
-      this.spouts[full] = null;
-      slot.item = { id: this.nextId++, kind: 'drink', placed: [], building: false };
-      this.emit({ type: 'collect', from: 'dispenser', index: full, slot: slot.index });
-      return;
-    }
     const i = this.spouts.findIndex((p) => !p);
-    if (i < 0) return this.invalid('Cups are still filling');
+    if (i < 0) return this.invalid(this.spouts.some((p) => p?.phase === 'ready') ? 'Drag the full drink to a customer' : 'Cups are still filling');
     this.spouts[i] = { t: 0, phase: 'cooking' };
     this.emit({ type: 'drinkStart', spout: i });
   }
 
-  /** Tap the machine: collect a ready cone, or start swirling one in a free lane (there are `iceCreamMachines` lanes). */
+  /** Tap the machine: start swirling a cone in a free lane (there are `iceCreamMachines` lanes). A ready cone stays in its lane until it is dragged to a customer (or melts). */
   tapIceCream(): void {
     if (this.closed) return;
     const def = this.cfg.recipes.items.icecream;
     if (this.level < def.unlockLevel) return this.invalid(`Ice cream unlocks at Lv ${def.unlockLevel}`);
-    const ready = this.cones.findIndex((p) => p && p.phase !== 'cooking');
-    if (ready >= 0) {
-      const slot = this.freeServeSlot();
-      if (!slot) return this.invalid('The plate is full');
-      this.cones[ready] = null;
-      slot.item = { id: this.nextId++, kind: 'icecream', placed: [], building: false };
-      this.emit({ type: 'collect', from: 'icecream', index: ready, slot: slot.index });
-      return;
-    }
     const i = this.cones.findIndex((p) => !p);
-    if (i < 0) return this.invalid('Every cone is still swirling');
+    if (i < 0) return this.invalid(this.cones.some((p) => p && p.phase !== 'cooking') ? 'Drag the ice cream to a customer' : 'Every cone is still swirling');
     this.cones[i] = { t: 0, phase: 'cooking' };
     this.emit({ type: 'coneStart', machine: i });
   }
@@ -634,6 +613,35 @@ export class KitchenState {
     c.delivered[need] = true;
     this.emit({ type: 'deliver', customer: c.id, slot: slotIndex, itemIndex: need });
     if (item.kind === 'burger') this.burgersServed++;
+    if (c.delivered.every(Boolean)) this.completeOrder(c);
+    return true;
+  }
+
+  /** True when the cup or cone in this lane is finished and can be dragged out. */
+  pourReady(from: PourSource, index: number): boolean {
+    const p = from === 'dispenser' ? this.spouts[index] : this.cones[index];
+    return !!p && p.phase !== 'cooking';
+  }
+
+  /** Drop a finished cup or cone straight from its machine on a customer. Returns true if it was accepted. */
+  serveFromPour(from: PourSource, index: number, customerId: number): boolean {
+    if (this.closed) return false;
+    const kind: ItemKind = from === 'dispenser' ? 'drink' : 'icecream';
+    const c = this.customers.find((x) => x.id === customerId);
+    if (!this.pourReady(from, index) || !c || c.mood !== 'waiting') {
+      this.emit({ type: 'wrongDrop', slot: -1, customer: c?.id ?? null, from, index });
+      return false;
+    }
+    const need = c.items.findIndex((k, i) => k === kind && !c.delivered[i]);
+    if (need < 0) {
+      c.patience = Math.max(0, c.patience - c.patienceMax * this.cfg.combo.wrongItemPatiencePenalty);
+      this.emit({ type: 'wrongDrop', slot: -1, customer: c.id, penalty: true, from, index });
+      return false;
+    }
+    if (from === 'dispenser') this.spouts[index] = null;
+    else this.cones[index] = null;
+    c.delivered[need] = true;
+    this.emit({ type: 'deliver', customer: c.id, slot: -1, itemIndex: need, from, index });
     if (c.delivered.every(Boolean)) this.completeOrder(c);
     return true;
   }
