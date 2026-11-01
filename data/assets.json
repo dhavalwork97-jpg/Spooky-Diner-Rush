@@ -437,6 +437,30 @@
       "frameHeight": 370,
       "preferFallback": false,
       "lazy": true
+    },
+    {
+      "key": "title_bg",
+      "type": "image",
+      "file": "assets/intro/title_bg.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "title_logo",
+      "type": "image",
+      "file": "assets/intro/title_logo.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "title_chef",
+      "type": "image",
+      "file": "assets/intro/title_chef.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true
     }
   ]
 }
