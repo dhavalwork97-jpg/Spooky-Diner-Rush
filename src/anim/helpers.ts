@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { AnimGuard } from './guard';
+import { AnimGuard, RestValues } from './guard';
 import { SaveSystem } from '../systems/SaveSystem';
 
 /**
@@ -8,6 +8,7 @@ import { SaveSystem } from '../systems/SaveSystem';
  * Reduced motion removes shake, scale and travel, and keeps simple fades.
  */
 export const animGuard = new AnimGuard();
+const rest = new RestValues<{ a: number; b: number }>();
 
 type Target = Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Transform & { alpha: number; setAlpha(value?: number): unknown };
 
@@ -34,23 +35,28 @@ function run(scene: Phaser.Scene, key: string, config: Phaser.Types.Tweens.Tween
 /** Quick scale pop, used for tap feedback and item appearing. */
 export function pop(scene: Phaser.Scene, target: Target, id?: string, peak = 1.12, duration = 180): void {
   if (SaveSystem.reduceMotion()) return;
-  const sx = target.scaleX;
-  const sy = target.scaleY;
-  run(scene, keyOf(target, 'pop', id), {
+  const key = keyOf(target, 'pop', id);
+  const { a: sx, b: sy } = rest.of(key, { a: target.scaleX, b: target.scaleY });
+  run(scene, key, {
     targets: target,
     scaleX: sx * peak,
     scaleY: sy * peak,
     duration: duration / 2,
     yoyo: true,
     ease: 'Back.Out',
-  }, () => target.setScale(sx, sy));
+  }, () => {
+    target.setScale(sx, sy);
+    rest.clear(key);
+  });
+  rest.set(key, { a: sx, b: sy });
 }
 
 /** Vertical bounce, used for "ready" items. */
 export function bounce(scene: Phaser.Scene, target: Target, id?: string, height = 10, duration = 300): void {
   if (SaveSystem.reduceMotion()) return;
-  const y = target.y;
-  run(scene, keyOf(target, 'bounce', id), {
+  const key = keyOf(target, 'bounce', id);
+  const y = rest.of(key, { a: target.y, b: 0 }).a;
+  run(scene, key, {
     targets: target,
     y: y - height,
     duration: duration / 2,
@@ -58,14 +64,17 @@ export function bounce(scene: Phaser.Scene, target: Target, id?: string, height 
     ease: 'Quad.Out',
   }, () => {
     target.y = y;
+    rest.clear(key);
   });
+  rest.set(key, { a: y, b: 0 });
 }
 
 /** Horizontal shake, used for invalid drops and danger. Skipped in reduced motion. */
 export function shake(scene: Phaser.Scene, target: Target, id?: string, distance = 6, duration = 240): void {
   if (SaveSystem.reduceMotion()) return;
-  const x = target.x;
-  run(scene, keyOf(target, 'shake', id), {
+  const key = keyOf(target, 'shake', id);
+  const x = rest.of(key, { a: target.x, b: 0 }).a;
+  run(scene, key, {
     targets: target,
     x: { from: x - distance, to: x + distance },
     duration: duration / 6,
@@ -74,7 +83,9 @@ export function shake(scene: Phaser.Scene, target: Target, id?: string, distance
     ease: 'Sine.InOut',
   }, () => {
     target.x = x;
+    rest.clear(key);
   });
+  rest.set(key, { a: x, b: 0 });
 }
 
 /** Alpha pulse used as a glow. Reduced motion shows a steady glow instead of pulsing. */

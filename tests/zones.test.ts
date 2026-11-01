@@ -3,7 +3,7 @@ import restaurants from '../data/restaurants.json';
 import assets from '../data/assets.json';
 import { fitBackground, hitTestZone, logicalToNorm, normToLogical, rectsOverlap, undersizedZones, type ZoneDef } from '../src/kitchen/zones';
 import { validateAssets, validateRestaurants } from '../src/data/validate';
-import { AnimGuard } from '../src/anim/guard';
+import { AnimGuard, RestValues } from '../src/anim/guard';
 import { parseSave } from '../src/systems/SaveSystem';
 
 const diner = restaurants.restaurants[0];
@@ -119,5 +119,22 @@ describe('touch slop', () => {
   });
   it('still returns null on empty space', () => {
     expect(hitTestZone(zones, 0.5, 0.05, 0.025)).toBeNull();
+  });
+});
+
+describe('RestValues', () => {
+  it('keeps the rest value while an animation is in flight, so restarts do not ratchet it', () => {
+    const r = new RestValues<{ a: number }>();
+    let scale = 1; // what the target reads right now
+    const start = (peak: number) => {
+      const base = r.of('coin:pop', { a: scale });
+      scale = base.a * peak; // mid-animation value
+      r.set('coin:pop', base);
+      return base.a;
+    };
+    for (let i = 0; i < 20; i++) expect(start(1.25)).toBe(1); // 20 overlapping pops, rest stays 1
+    r.clear('coin:pop');
+    scale = 1;
+    expect(r.of('coin:pop', { a: 3 }).a).toBe(3); // nothing in flight: reads the target
   });
 });

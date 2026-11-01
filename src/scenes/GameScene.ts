@@ -21,7 +21,7 @@ import { KitchenState, type GameEvent } from '../game/KitchenState';
 import { nextHint } from '../game/tutorial';
 import { MUSTARD } from '../art/builders';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
-import { BURNERS, FRY_FROM, Layout, SLOTS, SRC_H, SRC_W, VAT_FOOD_W, VATS } from '../views/layout';
+import { BURNERS, COLD, COLD_BASE_W, COLD_LANE_DX, FRY_FROM, ICE, ICE_BASE_W, ICE_LANE_DX, Layout, SLOTS, SRC_H, SRC_W, VAT_FOOD_W, VATS } from '../views/layout';
 import { StationViews } from '../views/StationViews';
 import { StockViews } from '../views/StockViews';
 import { PourViews, loadColdDrinkArt, loadIceCreamArt } from '../views/PourViews';
@@ -84,6 +84,8 @@ export class GameScene extends Phaser.Scene {
   /** A grab area over each finished cup or cone, keyed `dispenser0`, `icecream1`... */
   private pourItems = new Map<string, ItemView>();
   private selectedPour: string | null = null;
+  /** The green tick on the dispenser: a big touch target that picks the first full cup (tap it, then tap the customer). */
+  private drinkBadge?: Phaser.GameObjects.Zone;
   private pourIds = 0;
   private custViews = new Map<number, CustomerView>();
   private selectedSlot: number | null = null;
@@ -363,13 +365,28 @@ export class GameScene extends Phaser.Scene {
         if (this.pourItems.has(key)) continue;
         const at = from === 'dispenser' ? this.pours.dispenserPos(i) : this.pours.conePos(i);
         const kind = from === 'dispenser' ? 'drink' : 'icecream';
-        const v = new ItemView(this, at.x, at.y, 100000 + this.pourIds++, kind, -1, this.layout.s(kind === 'drink' ? 100 : 104), { w: this.layout.s(50), h: this.layout.s(84) });
+        // One lane wide (lanes touch, so no wider), but tall: a cone's grab area reaches down over its progress ring.
+        const pitch = this.layout.s(from === 'dispenser' ? (COLD_LANE_DX.right * COLD.w) / COLD_BASE_W : (ICE_LANE_DX.right * ICE.w) / ICE_BASE_W);
+        const down = from === 'icecream' ? this.layout.s(34) : this.layout.s(8);
+        const v = new ItemView(this, at.x, at.y + down, 100000 + this.pourIds++, kind, -1, this.layout.s(kind === 'drink' ? 100 : 104), { w: pitch, h: this.layout.s(from === 'icecream' ? 150 : 120) });
         v.source = { from, index: i };
         v.showFries();
         v.setProxy(true);
         this.pourItems.set(key, v);
       }
     }
+    // The tick on the dispenser works as a handle while a full cup waits.
+    if (!this.drinkBadge) {
+      const r = this.pours.ringPos('drink');
+      const z = this.add.zone(r.x, r.y, this.layout.s(110), this.layout.s(110)).setDepth(900).setInteractive({ useHandCursor: true });
+      z.on('pointerdown', () => {
+        audio.unlock();
+        const i = this.state.spouts.findIndex((_, n) => this.state.pourReady('dispenser', n));
+        if (i >= 0) this.setSelectedPour(this.selectedPour === `dispenser${i}` ? null : `dispenser${i}`);
+      });
+      this.drinkBadge = z;
+    }
+    if (this.drinkBadge.input) this.drinkBadge.input.enabled = this.state.spouts.some((_, n) => this.state.pourReady('dispenser', n));
     for (const [key, v] of this.pourItems) {
       if (live.has(key) || v.leaving) continue;
       this.pourItems.delete(key);
