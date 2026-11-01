@@ -8,7 +8,7 @@
 
 ---
 
-# Chef Rush: Progress
+# Spooky Diner Rush: Progress
 
 ## Milestone 2: Vertical slice (completed)
 

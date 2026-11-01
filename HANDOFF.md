@@ -3,6 +3,9 @@
 Last updated: Claude, session 2026-11-01
 Last updated at: 2026-11-01 15:40 IST
 
+## Rename to Spooky Diner Rush (2026-11-01, Claude) - branch `chore/rename-spooky-diner-rush`
+Owner picked "Spooky Diner Rush" (ghost customers and scares). Changed: page title (`index.html`), boot screen text (`BootScene`), README and doc headings. Deliberately NOT changed: save key `chef-rush-save` (so nobody loses progress), `package.json` name, GitHub repo name, the `window.__chefRush` debug hook. Not done: CrazyGames listing text, cover art, a logo.
+
 ## START HERE: current status (2026-11-01, Claude)
 First version (one restaurant) is feature complete and in release prep. Sections below are newest first; older milestone notes are further down.
 - `main` is at 6d5eb54 (PR #19 merged). Merged today: customer system, ghost-only customers with scare clips (PRs #15, #16, #18), drinks and ice cream served straight from the machine (#17), animation helper drift fix (#19). Backups: branches `backup/main-2026-10-29`, `backup/main-2026-11-01`, `backup/main-2026-11-01-b` (a3414ed).

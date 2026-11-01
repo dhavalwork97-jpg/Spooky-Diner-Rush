@@ -39,7 +39,7 @@ export class BootScene extends Phaser.Scene {
     const h = LOGICAL_HEIGHT;
     this.add.rectangle(w / 2, h / 2, w, h, 0x2b1b17);
     this.add
-      .text(w / 2, h / 2 - 50, 'Chef Rush', { fontFamily: 'Fredoka, "Baloo 2", system-ui, sans-serif', fontSize: '56px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 6 })
+      .text(w / 2, h / 2 - 50, 'Spooky Diner Rush', { fontFamily: 'Fredoka, "Baloo 2", system-ui, sans-serif', fontSize: '56px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 6 })
       .setOrigin(0.5);
     const frame = this.add.rectangle(w / 2, h / 2 + 20, 420, 28, 0x1f2a44).setStrokeStyle(4, 0x2b1b17);
     const fill = this.add.rectangle(w / 2 - 208, h / 2 + 20, 4, 18, 0xf28c28).setOrigin(0, 0.5);

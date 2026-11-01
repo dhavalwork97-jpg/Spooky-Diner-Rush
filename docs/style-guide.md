@@ -1,4 +1,4 @@
-# Chef Rush Style Guide
+# Spooky Diner Rush Style Guide
 
 Status: DRAFT for approval. Every asset, UI element, and effect follows this document.
 

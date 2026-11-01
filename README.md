@@ -1,4 +1,4 @@
-# Chef Rush
+# Spooky Diner Rush
 
 A fast, level-based cooking game for the browser (Phaser + TypeScript + Vite).
 
