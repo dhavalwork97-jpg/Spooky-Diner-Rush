@@ -219,36 +219,6 @@
       "lazy": false
     },
     {
-      "key": "customer_01",
-      "type": "image",
-      "file": "assets/art/customer_01.webp",
-      "scale": 0.5,
-      "width": 305,
-      "height": 520,
-      "preferFallback": false,
-      "lazy": false
-    },
-    {
-      "key": "customer_02",
-      "type": "image",
-      "file": "assets/art/customer_02.webp",
-      "scale": 0.5,
-      "width": 273,
-      "height": 520,
-      "preferFallback": false,
-      "lazy": false
-    },
-    {
-      "key": "customer_03",
-      "type": "image",
-      "file": "assets/art/customer_03.webp",
-      "scale": 0.5,
-      "width": 251,
-      "height": 520,
-      "preferFallback": false,
-      "lazy": false
-    },
-    {
       "key": "patience_bar_frame",
       "type": "image",
       "file": "assets/art/patience_bar_frame.webp",
@@ -397,6 +367,56 @@
       "height": 156,
       "preferFallback": false,
       "lazy": false
+    },
+    {
+      "key": "customers",
+      "type": "spritesheet",
+      "file": "assets/art/customers.webp",
+      "scale": 1,
+      "frameWidth": 192,
+      "frameHeight": 384,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "ghost_scare_monocle_gentleman",
+      "type": "spritesheet",
+      "file": "assets/customers/ghosts/scare/monocle_gentleman_scare.webp",
+      "scale": 1,
+      "frameWidth": 208,
+      "frameHeight": 370,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "ghost_scare_old_bearded_ghost",
+      "type": "spritesheet",
+      "file": "assets/customers/ghosts/scare/old_bearded_ghost_scare.webp",
+      "scale": 1,
+      "frameWidth": 208,
+      "frameHeight": 370,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "ghost_scare_child_nightgown",
+      "type": "spritesheet",
+      "file": "assets/customers/ghosts/scare/child_nightgown_scare.webp",
+      "scale": 1,
+      "frameWidth": 208,
+      "frameHeight": 370,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "ghost_scare_wildhair_corset_ghost",
+      "type": "spritesheet",
+      "file": "assets/customers/ghosts/scare/wildhair_corset_ghost_scare.webp",
+      "scale": 1,
+      "frameWidth": 208,
+      "frameHeight": 370,
+      "preferFallback": false,
+      "lazy": true
     }
   ]
 }

@@ -736,7 +736,7 @@ export class GameScene extends Phaser.Scene {
   private addCustomer(id: number): void {
     const c = this.state.customers.find((x) => x.id === id);
     if (!c) return;
-    const view = new CustomerView(this, this.layout, c);
+    const view = new CustomerView(this, this.layout, c, this.fx);
     view.body.on('pointerdown', () => this.onCustomerTap(id));
     this.custViews.set(id, view);
   }

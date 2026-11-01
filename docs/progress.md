@@ -242,3 +242,26 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 - New: `KitchenState.spouts`, `cones`, `tapDrinks`, `tapIceCream`; `src/views/PourViews.ts`; lock covers "Lv 6" and "Lv 12"; RecipeBook entries; the balance bot now makes both items.
 - Tests: 195 passing. Balance: the game is somewhat easier than after Milestone 5 (fast bot 0.21 / 0.40 / 0.56 / 0.55 closes a minute at Lv 6-10 / 11-15 / 16-20 / 21-25; average bot 0.51 / 0.70 / 0.76). One ratio check in `tests/sim_late.test.ts` was moved to the average bot, see HANDOFF.md.
 - Not verified: human play, reduced motion and the phone layout for the new rings, the Lv 6 cover and level-up cards. The cup and cone are code-drawn placeholders; there is no ice cream art yet.
+
+## Cute customer system (branch feature/cute-customer-system)
+- Eight supplied static PNG customers replace the three generic ones. All draw from one sprite sheet (`customers.webp`, 156 KB). Equal displayed height (112 logical px), feet on the stool, soft contact shadow.
+- Motion is code only (`src/anim/customerMotion.ts`): breathing, walk in and out, foot tap when the wait drags, happy bounce and chewing on delivery, hearts and sparkles when the order is complete, a wristwatch check for the businessman. Each character has its own timing (kid and athlete energetic, grandma and sleepy slow, teen relaxed, foodie and chef fan excited).
+- Gameplay untouched apart from the cosmetic `look` range (0..2 to 0..7, same RNG draws).
+- Not verified: real phone or GPU frame rate; touch feel of the wider hit area on a device; long sessions for tween leaks beyond reading the code. Blinking was left out on purpose.
+
+## Customer size and walking pass (branch feature/cute-customer-system)
+- Customers are 136 logical px tall (19.5 percent of the 698 px canvas, was 16.0 percent). Order bubble, Rush tag, chip and ticks were made compact to fit above the head on screen.
+- Walk cycle: 1.6 s walk in from the screen edge (ease-out), per-step hop, alternating tilt, squash and stretch, shadow shrink, settle bounce, 0.25 s pop onto the stool; walk out in reverse. No step cycle when stationary.
+- Not verified: real device frame rate; how the 2.0 s arrival feels against the patience timer (unchanged on purpose).
+
+## Ghost customers (branch feature/ghost-customers)
+- Six ghosts join the customer pool (14 looks). They hover, float and glide; four play their supplied scare sheet when they leave angry (camera shake at the peak frame), the other two and any not-yet-loaded sheet use a code-only lunge. One sprite sheet still holds every customer.
+- Not verified: real device frame rate and the lazy load of the scare sheets (about 5 MB) on slow connections; scare sound not added.
+
+## Floor-standing customers (branch feature/ghost-customers)
+- Customers stand on the floor in front of the stools at 162 px (23 percent of the canvas); ghosts keep their own colours with an additive glow; arrival pop reduced to a small hop.
+- Not verified: real device; the left seat's price label overlaps the Lv 2 lock cover while that cover shows (Lv 1 only).
+
+## Ghost losing-patience expressions (branch feature/ghost-customers)
+- Under half patience the four scare-sheet ghosts fade into the early frames of their sheet over the idle ghost, so the face gets more menacing as patience falls. Vest gentleman and flame crown ghost have no sheet, so no expression. Happy and eating expressions need new art.
+- Not verified: real device; the 150 ms-ish cross-fade shows a faint double exposure for a moment.

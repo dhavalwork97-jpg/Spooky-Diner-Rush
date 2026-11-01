@@ -1,0 +1,42 @@
+{
+ "key": "old_bearded_ghost_scare",
+ "image": "old_bearded_ghost_scare.png",
+ "imageWebp": "old_bearded_ghost_scare.webp",
+ "frameWidth": 208,
+ "frameHeight": 370,
+ "columns": 9,
+ "rows": 5,
+ "frameCount": 45,
+ "fps": 12,
+ "durationMs": 3750,
+ "loop": false,
+ "firstFrame": 0,
+ "lastFrame": 44,
+ "peakFrame": 37,
+ "phaserSpritesheetConfig": {
+  "frameWidth": 208,
+  "frameHeight": 370,
+  "endFrame": 44
+ },
+ "phaserAnimation": {
+  "key": "old_bearded_ghost_scare",
+  "frames": "frames 0-44",
+  "frameRate": 12,
+  "repeat": 0
+ },
+ "ghostBoxFirstFrame": {
+  "left": 23,
+  "top": 25,
+  "right": 183,
+  "bottom": 369,
+  "width": 160,
+  "height": 344,
+  "heightFractionOfFrame": 0.93,
+  "centerXFractionOfFrame": 0.495,
+  "bottomYFractionOfFrame": 0.997,
+  "widthFractionOfFrame": 0.769,
+  "topYFractionOfFrame": 0.068,
+  "bottomMayBeCropped": true
+ },
+ "note": "Frames are full 9:16 transparent canvases (the ghost lunges toward the camera). Align the overlay so ghostBoxFirstFrame centre-X and head-top match the idle ghost, scale so ghostBoxFirstFrame.width matches the idle ghost width, then crossfade ~150ms and play once. The ghost's lower tail may be cropped by the frame bottom (bottomMayBeCropped)."
+}

@@ -114,6 +114,10 @@ export interface SaveSlice {
   coins: number;
 }
 
+/** Number of supplied customer characters (cosmetic). A test keeps this equal to `CUSTOMER_LOOKS` in anim/customerMotion.ts. */
+export const CUSTOMER_LOOK_COUNT = 14;
+/** First look that can spawn. Looks 0-7 are the people, 8-13 the ghosts; customers are ghosts only for now (set to 0 to mix people back in). */
+export const CUSTOMER_LOOK_MIN = 8;
 const LEAVE_DELAY = 0.9;
 const ARRIVE_GRACE = 0.7;
 const LAYER_LABEL: Record<string, string> = {
@@ -385,7 +389,7 @@ export class KitchenState {
     const c: Customer = {
       id: this.nextId++,
       seat,
-      look: randInt(this.rng, 0, 2), // three supplied customer looks for now
+      look: randInt(this.rng, CUSTOMER_LOOK_MIN, CUSTOMER_LOOK_COUNT - 1), // cosmetic only: picks one of the supplied ghosts (same RNG draw count as before)
       items,
       delivered: items.map(() => false),
       price,
