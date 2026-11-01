@@ -4,7 +4,7 @@ Build: `npm run build` (typecheck + Vite), output in `dist/` (relative paths, so
 
 ## Size (dist, 2026-11-01)
 - Whole `dist/`: about 11.9 MB. Boot art loaded before play: about 1.2 MB, game script 1.5 MB (about 400 KB gzipped), bundled Fredoka font 3 x 16 KB.
-- Lazy (only when needed): ghost scare sheets, about 9.0 MB in total (each ghost's sheet loads the first time that ghost appears; the game works without them, it uses a code lunge).
+- Lazy (only when needed): about 9.0 MB in total, of which the six ghost scare sheets are about 7.0 MB (each loads the first time that ghost appears; without it the game uses a code lunge) and the rest is the ice cream and cold drink animations.
 - The ghost cutout PNGs in `public/assets/customers/ghosts/` are only the source for `tools/make_customer_art.py`; the build removes them from `dist/` (`vite.config.ts`).
 
 ## SDK (CrazyGames v3)
