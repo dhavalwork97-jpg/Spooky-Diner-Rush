@@ -18,6 +18,8 @@ export class ItemView extends Phaser.GameObjects.Container {
   /** Set for a cup or cone that is served straight from its machine (it has no plate slot). */
   source?: { from: 'dispenser' | 'icecream'; index: number };
   private proxy = false;
+  /** Which lanes of its machine were ready when this grab area was sized. */
+  pourSig = '';
   leaving = false;
   dragging = false;
   home = { x: 0, y: 0 };

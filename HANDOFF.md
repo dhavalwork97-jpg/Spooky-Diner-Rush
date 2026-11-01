@@ -21,6 +21,13 @@ First version (one restaurant) is feature complete and in release prep. Sections
 - Tests 229, typecheck and build clean; browser: game starts in 1.3 s with the SDK script blocked, fonts load. Real SDK, real device, real audio not checked.
 
 
+## Touch drag check and wider machine grab areas (2026-11-01, Claude) - branch `fix/touch-grab` (from main 6d5eb54), PR open, NOT merged
+Owner report: in Chrome device mode, dragging cooked items to customers did not work.
+- Reproduced with real emulated touch events (CDP `Input.dispatchTouchEvent`, 667x375 up to 1180x820, also rotating from portrait): cook fries with touch taps, pick up, drag to customer = works. Every plate/side/pizza slot (8) x every seat (4) with burger, fries and pizza = 32 of 32 drags work. So no failure found for items on plates.
+- Likely culprit for drinks and ice cream: the grab area of a full glass or cone was one lane wide (about 21 px on a phone), so a finger or cursor easily misses it and just taps the machine. Fix: `laneSpan` in `src/kitchen/grab.ts` lets a ready lane also grab the free lanes beside it (0.9 lane each way, neighbours split the gap, never overlap), rebuilt when the neighbours' readiness changes (`ItemView.pourSig`). At 844x390 a lone glass or cone is about 41 px wide; touch drags with offsets of up to 20-40 px all serve. Unit test added (233 tests).
+- Not reproduced / unknown: whatever the owner hit (device, item type, what happened). If it still fails, ask which device, which item, and whether the item snapped back, did nothing, or the customer shook.
+- Harness traps (cost time, not game bugs): clearing `state.customers` leaves old customer views in `custViews`, which then win the drop test; level-up cards block input.
+
 ## Release check: playthrough and phone size (2026-11-01, Claude) - branch `fix/anim-helper-drift` (from main a3414ed), PR open, NOT merged
 Full Lv 1-20 playthrough in Chromium (bot calling the model, real game loop, speed 6, 1280x698; screenshot per level) and phone viewports (844x390, 932x430, 667x375 landscape, 390x844 portrait).
 - Lv 20 reached at 2568 s game time (about 43 min, inside the 30-50 min target); no page errors; no persistent view/model mismatches; object and tween counts flat (about 180-215 objects) so no leaks seen. Only console noise is the headless software-GL "GPU stall" message. Frame rate in headless (10-15 fps) says nothing about real devices.
