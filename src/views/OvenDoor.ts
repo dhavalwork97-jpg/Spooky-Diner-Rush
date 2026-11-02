@@ -1,3 +1,4 @@
+import { NIGHT_GRADE } from '../anim/atmosphereMath';
 import Phaser from 'phaser';
 import assetsJson from '../../data/assets.json';
 import type { CookPhase } from '../game/cook';
@@ -68,7 +69,7 @@ export class OvenDoor {
 
   private attach(): void {
     if (this.sprite || !this.scene.textures.exists(OVEN_SHEET)) return;
-    const s = this.scene.add.sprite(this.layout.x(FRAME_X), this.layout.y(FRAME_Y), OVEN_SHEET, 0).setOrigin(0, 0).setDepth(450).setVisible(false);
+    const s = this.scene.add.sprite(this.layout.x(FRAME_X), this.layout.y(FRAME_Y), OVEN_SHEET, 0).setOrigin(0, 0).setDepth(450).setTint(NIGHT_GRADE).setVisible(false);
     s.setScale(this.layout.s(FRAME_W) / s.width);
     this.sprite = s;
   }

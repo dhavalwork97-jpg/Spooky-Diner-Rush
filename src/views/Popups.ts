@@ -19,15 +19,25 @@ export class Toast {
   private box: Phaser.GameObjects.Container;
   private text: Phaser.GameObjects.Text;
   private timer?: Phaser.Time.TimerEvent;
+  private bg?: Phaser.GameObjects.Graphics;
 
   constructor(private scene: Phaser.Scene, x: number, y: number) {
     this.text = scene.add.text(0, 0, '', { fontFamily: FONT, fontSize: '26px', color: '#2B1B17' }).setOrigin(0.5);
     this.box = scene.add.container(x, y).setDepth(950).setAlpha(0);
-    this.box.add([panel(scene, 340, 58), this.text]);
+    this.box.add(this.text);
+    this.resize(340);
+  }
+
+  /** Redraw the cream panel at `w` wide, behind the text. */
+  private resize(w: number): void {
+    this.bg?.destroy();
+    this.bg = panel(this.scene, w, 58);
+    this.box.addAt(this.bg, 0);
   }
 
   show(message: string): void {
     this.text.setText(message);
+    this.resize(Math.max(340, Math.ceil(this.text.width) + 56)); // the panel always fits the message
     this.box.setAlpha(1).setScale(1);
     this.scene.tweens.killTweensOf(this.box);
     if (!SaveSystem.reduceMotion()) {
