@@ -4,6 +4,7 @@ import {
   AIR,
   FLOOR,
   FOG_ASPECT,
+  GRADE_STOPS,
   FOG_GAP,
   LAMPS,
   QUALITY_DESKTOP,
@@ -40,6 +41,22 @@ describe('lamp light', () => {
   });
 });
 
+describe('dusk grade', () => {
+  it('gets lighter from the dark windows down to the counters, so the cooking area stays bright', () => {
+    const lum = (hex: string) => {
+      const n = parseInt(hex.slice(1), 16);
+      return ((n >> 16) & 255) * 0.3 + ((n >> 8) & 255) * 0.59 + (n & 255) * 0.11;
+    };
+    const stops = GRADE_STOPS.map(([at, c]) => [at, lum(c)]);
+    for (let i = 1; i < stops.length; i++) {
+      expect(stops[i][0]).toBeGreaterThan(stops[i - 1][0]);
+      expect(stops[i][1]).toBeGreaterThanOrEqual(stops[i - 1][1]);
+    }
+    expect(stops[0][1]).toBeGreaterThan(100); // never near-black
+    expect(stops[stops.length - 1][1]).toBeGreaterThan(235); // machines at about full brightness
+  });
+});
+
 describe('envelope', () => {
   it('is 0 at both ends, 1 in the middle and smooth', () => {
     expect(envelope(0)).toBe(0);
@@ -69,19 +86,20 @@ describe('fog', () => {
     const rng = makeRng(11);
     for (let i = 0; i < 500; i++) {
       const f = fogSpec(rng);
-      expect(f.width).toBeLessThanOrEqual(250);
+      expect(f.width).toBeLessThanOrEqual(310);
       expect(f.x - f.width / 2).toBeGreaterThanOrEqual(FLOOR.x - 1);
       expect(f.x + f.width / 2).toBeLessThanOrEqual(FLOOR.x + FLOOR.w + 1);
       expect(f.y).toBeGreaterThanOrEqual(FLOOR.y);
       expect(f.y).toBeLessThanOrEqual(FLOOR.y + FLOOR.h);
       expect(Math.abs(f.drift)).toBeLessThanOrEqual(90);
-      expect(f.peakAlpha).toBeLessThanOrEqual(0.28);
-      expect(f.life).toBeGreaterThanOrEqual(10);
+      expect(f.peakAlpha).toBeLessThanOrEqual(0.66);
+      expect(f.peakAlpha).toBeGreaterThanOrEqual(0.42); // visible, not a rumour
+      expect(f.life).toBeGreaterThanOrEqual(9);
       expect([0, 1, 2]).toContain(f.variant);
     }
   });
 
-  it('keeps the floor mostly clear: a few percent on average, about 1 percent of the whole picture at most', () => {
+  it('keeps the floor mostly clear: a fraction of the floor strip on average, a few percent of the whole picture at most', () => {
     // Patches alive on average = life / gap. The soft picture of a patch is about 35 percent solid (blobs fade to nothing).
     const rng = makeRng(5);
     let life = 0;
@@ -96,8 +114,9 @@ describe('fog', () => {
     const meanArea = area / n;
     const meanGap = (FOG_GAP[0] + FOG_GAP[1]) / 2;
     const alive = Math.min(QUALITY_DESKTOP.maxFog, meanLife / meanGap);
-    expect((alive * meanArea) / (FLOOR.w * FLOOR.h)).toBeLessThan(0.1);
-    expect((QUALITY_DESKTOP.maxFog * 250 * 250 * FOG_ASPECT * 0.35) / (SRC_W * SRC_H)).toBeLessThan(0.015);
+    expect((alive * meanArea) / (FLOOR.w * FLOOR.h)).toBeLessThan(0.3);
+    expect((alive * meanArea) / (FLOOR.w * FLOOR.h)).toBeGreaterThan(0.05); // and it does show up
+    expect((QUALITY_DESKTOP.maxFog * 310 * 310 * FOG_ASPECT * 0.35) / (SRC_W * SRC_H)).toBeLessThan(0.04);
   });
 });
 
@@ -110,7 +129,7 @@ describe('wisps and motes', () => {
       expect(w.x + w.dx).toBeGreaterThanOrEqual(AIR.x - 1);
       expect(w.x).toBeLessThanOrEqual(AIR.x + AIR.w + 1);
       expect(w.x + w.dx).toBeLessThanOrEqual(AIR.x + AIR.w + 1);
-      expect(w.peakAlpha).toBeLessThanOrEqual(0.45);
+      expect(w.peakAlpha).toBeLessThanOrEqual(0.66);
       expect(Math.abs(w.dx) / w.life).toBeLessThan(70); // px per second
     }
   });

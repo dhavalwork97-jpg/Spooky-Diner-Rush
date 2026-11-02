@@ -6,9 +6,9 @@ import {
   FOG_ASPECT,
   FOG_GAP,
   GRADE_DEPTH,
+  GRADE_STOPS,
   LAMPS,
   MOON,
-  NIGHT_GRADE,
   NIGHT_SKY,
   QUALITY_DESKTOP,
   QUALITY_MOBILE,
@@ -30,7 +30,8 @@ import {
  * interactive and nothing sits above the customers (depth 299+), so taps, drags and ghosts are untouched.
  *
  * Depth order (all below the customers at 299 and the items at 500+):
- *   255 dusk grade (multiply: darkens the background, decor and painted machines), window sky, vignette
+ *   249 dusk grade (multiply gradient over the background, decor and painted machines, but under the Lv lock covers at 250),
+ *       window sky, vignette
  *   256-259 sky pinpoints, moon, pendant lamps and their glow
  *   270 floor fog, 275 wisps, 280 floating motes
  *
@@ -45,7 +46,8 @@ const MOON_TEX = 'atm_moon';
 const WISP = 'atm_wisp';
 const LAMP = 'atm_lamp';
 const VIGNETTE = 'atm_vignette';
-const FOG_TINT = 0x62dfe8;
+const GRADE = 'atm_grade';
+const FOG_TINT = 0x3fd9e6;
 const WISP_TINT = 0x8fefff;
 
 type Img = Phaser.GameObjects.Image;
@@ -80,8 +82,8 @@ export class Atmosphere {
     this.buildSky();
     this.buildLamps();
     this.reduced = SaveSystem.reduceMotion();
-    this.fogLeft = randRange(this.rng, 3, 6);
-    this.wispLeft = randRange(this.rng, 8, 16);
+    this.fogLeft = randRange(this.rng, 1, 2.5);
+    this.wispLeft = randRange(this.rng, 6, 12);
     this.moteLeft = 0.5;
     scene.game.events.on(Phaser.Core.Events.BLUR, this.onBlur, this);
     scene.game.events.on(Phaser.Core.Events.FOCUS, this.onFocus, this);
@@ -174,7 +176,9 @@ export class Atmosphere {
     const { bg } = this.layout;
     const mult = (x: number, y: number, w: number, h: number, color: number, depth: number) =>
       this.add(this.scene.add.rectangle(x, y, w, h, color).setOrigin(0, 0).setDepth(depth).setBlendMode(Phaser.BlendModes.MULTIPLY));
-    mult(bg.x, bg.y, bg.width, bg.height, NIGHT_GRADE, D.grade);
+    this.add(
+      this.scene.add.image(bg.x, bg.y, GRADE).setOrigin(0, 0).setDisplaySize(bg.width, bg.height).setDepth(D.grade).setBlendMode(Phaser.BlendModes.MULTIPLY),
+    );
     for (const p of WINDOW_PANES) mult(this.layout.x(p.x), this.layout.y(p.y), this.layout.s(p.w), this.layout.y(p.y + p.h) - this.layout.y(p.y), NIGHT_SKY, D.grade + 0.1);
     this.add(this.scene.add.image(bg.x, bg.y, VIGNETTE).setOrigin(0, 0).setDisplaySize(bg.width, bg.height).setDepth(D.grade + 0.2));
   }
@@ -218,8 +222,8 @@ export class Atmosphere {
       glow.setDisplaySize(L.s(lamp.glow), L.s(lamp.glow * 0.8));
       const core = this.add(this.scene.add.image(L.x(lamp.x), L.y(lamp.y + 4), GLOW).setTint(0xffe3a0).setBlendMode(Phaser.BlendModes.ADD).setDepth(D.lampGlow));
       core.setDisplaySize(L.s(lamp.glow * 0.34), L.s(lamp.glow * 0.26));
-      const base = 0.5;
-      const coreBase = 0.75;
+      const base = 0.7;
+      const coreBase = 0.85;
       glow.setAlpha(base);
       core.setAlpha(coreBase);
       this.lamps.push({ glow, core, phase: rng() * 6, base, coreBase });
@@ -374,11 +378,11 @@ function ensureTextures(scene: Phaser.Scene): void {
       const rng = makeRng(100 + v * 17);
       for (let i = 0; i < 8; i++) {
         const cx = w * (0.22 + rng() * 0.56);
-        const cy = h * (0.4 + rng() * 0.2);
-        const r = 26 + rng() * 30;
+        const cy = h * (0.45 + rng() * 0.1);
+        const r = 22 + rng() * 26; // always fits inside the canvas so the edges fade to nothing
         const g = c.createRadialGradient(cx, cy, 0, cx, cy, r);
-        g.addColorStop(0, 'rgba(255,255,255,0.55)');
-        g.addColorStop(0.6, 'rgba(255,255,255,0.16)');
+        g.addColorStop(0, 'rgba(255,255,255,0.7)');
+        g.addColorStop(0.6, 'rgba(255,255,255,0.24)');
         g.addColorStop(1, 'rgba(255,255,255,0)');
         c.fillStyle = g;
         c.fillRect(cx - r, cy - r, r * 2, r * 2);
@@ -465,10 +469,17 @@ function ensureTextures(scene: Phaser.Scene): void {
     c.fillRect(cx - 16, 84, 32, 32);
   });
 
+  make(GRADE, 4, 256, (c, w, h) => {
+    const g = c.createLinearGradient(0, 0, 0, h);
+    for (const [at, color] of GRADE_STOPS) g.addColorStop(at, color);
+    c.fillStyle = g;
+    c.fillRect(0, 0, w, h);
+  });
+
   make(VIGNETTE, 128, 72, (c, w, h) => {
     const g = c.createRadialGradient(w / 2, h / 2, h * 0.35, w / 2, h / 2, w * 0.62);
     g.addColorStop(0, 'rgba(10,8,40,0)');
-    g.addColorStop(1, 'rgba(10,8,40,0.42)');
+    g.addColorStop(1, 'rgba(10,8,40,0.3)');
     c.fillStyle = g;
     c.fillRect(0, 0, w, h);
   });
