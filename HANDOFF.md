@@ -1,5 +1,13 @@
 # HANDOFF
 
+## Landscape on phones (2026-11-02, Claude) - branch `feature/mobile-landscape` (from main 4dfa062), pushed, NO PR yet, NOT merged
+Owner: "the game should run in landscape mode directly on mobile devices". A web page cannot rotate the screen silently; Android Chrome allows `screen.orientation.lock('landscape')` only while fullscreen and after a tap.
+- `src/systems/Orientation.ts`: `enterLandscape(env)` = fullscreen then lock, never throws, returns locked / fullscreen / unsupported / skipped; skipped on desktop (coarse pointer and short side under 900 css px only) and inside an iframe (CrazyGames does its own). `initOrientation()` (called first in `main.ts`): the first tap on a phone enters fullscreen + landscape; leaving fullscreen (Back) re-arms the next tap; taps are de-duplicated within 1 s.
+- `index.html`: the portrait overlay is now an orange "Tap to play in landscape" button (tapping it fullscreens and locks, so a phone held upright flips to landscape). Where the browser cannot lock (iPhone Safari: no orientation.lock, no fullscreen) it keeps "Turn your phone sideways to play". `GameScene` still pauses the model while portrait.
+- `public/manifest.webmanifest` (`display: fullscreen`, `orientation: landscape`) + `public/icons/icon-192.png`, `icon-512.png` (chef on the dark brown, made from `chef.webp`): an installed copy ("Add to Home screen") opens landscape directly. Manifest and icons are new, `<meta>` tags added in `index.html`.
+- Tests: `tests/orientation.test.ts` (7 with fakes). Checked in headless Chromium mobile emulation with stubbed fullscreen/lock: portrait 390x844 shows the button, one tap = one fullscreen + one lock; landscape 844x390 first tap = fullscreen + lock; no-lock browser keeps the turn text; desktop makes no calls. 265 tests, typecheck and build clean.
+- Not checked: a real Android phone (some browsers refuse the lock, Samsung Internet behaviour, fullscreen exit via swipe), iPhone (cannot lock; still needs the player to turn the phone), installed-PWA launch, CrazyGames iframe (intentionally untouched). Not done: CSS-rotating the game on iPhone portrait (Phaser input would need a custom transform).
+
 ## Spooky night atmosphere (2026-11-02, Claude) - branch `feature/spooky-night-atmosphere` (from main cebeb13), pushed, NO PR yet, NOT merged
 Owner brief: subtle haunted night look as separate layers; no gameplay or layout change; the reference image is a mood target only.
 Finding: `kitchen_full.webp` is a bright DAYTIME kitchen, so the night look is built from overlays, not by swapping art.

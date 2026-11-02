@@ -6,6 +6,7 @@ import { ShopScene } from './scenes/ShopScene';
 import { RecipeBookScene } from './scenes/RecipeBookScene';
 import { RestaurantSelectScene } from './scenes/RestaurantSelectScene';
 import { CrazyGames } from './sdk/crazygames';
+import { initOrientation } from './systems/Orientation';
 
 const start = (): Phaser.Game =>
   new Phaser.Game({
@@ -19,6 +20,8 @@ const start = (): Phaser.Game =>
     render: { antialias: true, roundPixels: false },
     scene: [BootScene, TitleScene, GameScene, ShopScene, RecipeBookScene, RestaurantSelectScene],
   });
+
+initOrientation(); // phones: the first tap enters fullscreen and locks landscape
 
 // The CrazyGames SDK must be ready before the save data is read in BootScene.
 void CrazyGames.init().then(() => {
