@@ -277,3 +277,6 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 
 ## Housekeeping and release packaging (branch chore/release-prep)
 - Bundled Fredoka, blanked unused people frames (-153 KB), cutout PNGs no longer shipped (dist 16 -> 12 MB), CrazyGames SDK v3 script and init added, `docs/release.md` written. Not verified: real SDK, real device, real audio.
+
+## Title screen and intro video (2026-11-01)
+Title scene before every game (logo, chef with ghost, "Tap to play"), tap starts a skippable 10 s intro video (1.5 MB). Falls back to the game on any failure or reduced motion; `?debug` skips it. Details in HANDOFF.md.
