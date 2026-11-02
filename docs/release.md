@@ -1,4 +1,4 @@
-# Release notes: first version (Chef Rush, one restaurant)
+# Release notes: first version (Spooky Diner Rush, one restaurant)
 
 Build: `npm run build` (typecheck + Vite), output in `dist/` (relative paths, so it runs from any sub-folder). Zip the contents of `dist/` for upload. Second restaurant ships in a later update.
 

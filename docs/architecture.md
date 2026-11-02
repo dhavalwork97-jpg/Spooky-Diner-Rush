@@ -1,4 +1,4 @@
-# Chef Rush: Architecture
+# Spooky Diner Rush: Architecture
 
 ## Stack
 Phaser 3+ (installed: Phaser 4), TypeScript, Vite, Vitest. No other runtime libraries.

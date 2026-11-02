@@ -1,10 +1,40 @@
 {
   "cards": [
-    { "id": "intro", "level": 1, "title": "Welcome to Burger Diner", "text": "Chef here! The grill is hot and the first customers are on their way. Serve them fast and the tips will follow." },
-    { "id": "word_spreads", "level": 3, "title": "Word gets around", "text": "Folks are talking about your fries. Keep the orders quick and the line will only get longer." },
-    { "id": "pizza_oven", "level": 5, "title": "The oven is lit", "text": "Dough, oven, plate, done. Pizza is on the menu now. Keep an eye on it so it does not burn, chef." },
-    { "id": "sous_chef", "level": 10, "title": "Sous Chef", "text": "You run this kitchen like a pro. A full counter of hungry customers is no trouble for you." },
-    { "id": "head_chef", "level": 15, "title": "Head Chef", "text": "VIP guests are dropping by, and they tip big for fast service. Keep that combo going!" },
-    { "id": "kitchen_boss", "level": 20, "title": "Kitchen Boss", "text": "From one little fryer to a full kitchen. The whole street knows Burger Diner now." }
+    {
+      "id": "intro",
+      "level": 1,
+      "title": "Welcome to Spooky Diner",
+      "text": "Chef here! The grill is hot and the first guests are drifting in. They are a little see-through, but they tip just fine. Serve them fast!"
+    },
+    {
+      "id": "word_spreads",
+      "level": 3,
+      "title": "Word gets around",
+      "text": "Ghosts all over town are talking about your fries. Keep the orders quick and the line will only get longer."
+    },
+    {
+      "id": "pizza_oven",
+      "level": 5,
+      "title": "The oven is lit",
+      "text": "Dough, oven, plate, done. Pizza is on the menu now. Keep an eye on it so it does not burn, chef. Nobody wants an angry ghost."
+    },
+    {
+      "id": "sous_chef",
+      "level": 10,
+      "title": "Sous Chef",
+      "text": "You run this kitchen like a pro. A full counter of hungry ghosts is no trouble for you."
+    },
+    {
+      "id": "head_chef",
+      "level": 15,
+      "title": "Head Chef",
+      "text": "VIP spirits are dropping by, and they tip big for fast service. Keep that combo going!"
+    },
+    {
+      "id": "kitchen_boss",
+      "level": 20,
+      "title": "Kitchen Boss",
+      "text": "From one little fryer to a full kitchen. Every ghost on the street knows Spooky Diner now."
+    }
   ]
 }
