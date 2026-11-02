@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync } from 'node:fs';
 import assetsJson from '../data/assets.json';
+
+const files = Object.keys(import.meta.glob('/public/assets/intro/*', { query: '?url' }));
+const existsSync = (p: string): boolean => files.includes(`/${p}`);
 
 describe('title screen assets', () => {
   const list = (assetsJson as { assets: { key: string; file: string; lazy?: boolean }[] }).assets;
