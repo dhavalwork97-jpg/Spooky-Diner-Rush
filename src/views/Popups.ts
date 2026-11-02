@@ -57,7 +57,7 @@ export class LevelUpCard {
   private queue: { level: number; coins: number; unlocks: string[]; title?: string }[] = [];
   private showing = false;
 
-  constructor(private scene: Phaser.Scene, private fx: ParticlePool, x: number, y: number) {
+  constructor(private scene: Phaser.Scene, private fx: ParticlePool, x: number, y: number, private onDone?: () => void) {
     this.title = scene.add
       .text(0, -52, '', { fontFamily: FONT, fontSize: '56px', color: '#F28C28', stroke: '#2B1B17', strokeThickness: 8 })
       .setOrigin(0.5);
@@ -77,7 +77,9 @@ export class LevelUpCard {
   private next(): void {
     const item = this.queue.splice(0, 1)[0];
     if (!item) {
+      const wasShowing = this.showing;
       this.showing = false;
+      if (wasShowing) this.onDone?.(); // the last card is gone: a calm moment
       return;
     }
     this.showing = true;

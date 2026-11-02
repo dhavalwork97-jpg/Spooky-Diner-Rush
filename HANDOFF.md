@@ -6,6 +6,13 @@ Last updated at: 2026-11-01 15:40 IST
 ## Rename to Spooky Diner Rush (2026-11-01, Claude) - branch `chore/rename-spooky-diner-rush`
 Owner picked "Spooky Diner Rush" (ghost customers and scares). Changed: page title (`index.html`), boot screen text (`BootScene`), README and doc headings. Deliberately NOT changed: save key `chef-rush-save` (so nobody loses progress), `package.json` name, GitHub repo name, the `window.__chefRush` debug hook. Also: the restaurant's display name is now "Spooky Diner" (`data/restaurants.json`; its id `burger_diner` is unchanged because saves refer to it) and the six story cards in `data/story.json` are rewritten for the ghost theme. Not done: CrazyGames listing text, cover art, a logo, intro animation.
 
+## CrazyGames loading and ad hooks (2026-11-02, Claude) - branch `feature/crazygames-ads`, PR open, NOT merged
+- `src/sdk/crazygames.ts`: `loadingStart/Stop`, `canShowAd`, `midgameAd(onStart)` (resolves true if an ad was shown; 3 min own cooldown `AD_GAP_MS`, 90 s watchdog, never rejects, no-op without SDK), `_reset()` for tests.
+- `main.ts`: loadingStart after init; BootScene: loadingStop when it hands over to Title/Game.
+- GameScene: `breakAd(then)` freezes model (`paused`) and sound during the ad and always runs `then`; spots: Reopen tap on the Closed overlay, and `adDue` set when the last level-up card hides (Lv 3+), run by `runDueAd()` in update once no pause/overlay/story card/level-up card is open. `onBlur` ignored during an ad.
+- Verified in headless Chromium with a fake SDK (blocked-script route): load order init, loadingStart, loadingStop, gameplayStart; Reopen -> gameplayStop, requestAd, adStarted, adFinished, gameplayStart and the restaurant reopens; level-up -> ad after the Lv 5 story card was dismissed. 242 tests (7 new in `tests/ads.test.ts`).
+- Not done: rewarded ads (reward design needed), real SDK check on the CrazyGames QA tool, ad volume/mute check with real ads.
+
 ## Title screen and intro video (2026-11-01, Claude) - branch `feature/title-intro`, PR #25 MERGED
 Owner supplied Gemini art (night diner, logo on green, chef with ghost on green) and a 10 s intro video, no instructions; read as "an animation before every game starts".
 - Assets in `public/assets/intro/` (made by `tools/make_title_art.py`, see its header): `title_bg.webp`, `title_logo.webp`, `title_chef.webp` (green keyed out, logo glow halo removed) and `intro.mp4` (6.3 MB -> 1.5 MB, 1280x720, aac). Art entries are lazy in `data/assets.json`; `TitleScene` loads them itself.

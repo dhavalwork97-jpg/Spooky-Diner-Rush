@@ -21,4 +21,7 @@ const start = (): Phaser.Game =>
   });
 
 // The CrazyGames SDK must be ready before the save data is read in BootScene.
-void CrazyGames.init().then(start);
+void CrazyGames.init().then(() => {
+  CrazyGames.loadingStart();
+  start();
+});

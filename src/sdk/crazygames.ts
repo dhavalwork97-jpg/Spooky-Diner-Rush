@@ -7,7 +7,8 @@ interface CGData {
 }
 interface CGSdk {
   init?: () => Promise<void>;
-  game?: { gameplayStart?: () => void; gameplayStop?: () => void };
+  game?: { gameplayStart?: () => void; gameplayStop?: () => void; loadingStart?: () => void; loadingStop?: () => void };
+  ad?: { requestAd?: (type: 'midgame' | 'rewarded', cb: { adStarted?: () => void; adFinished?: () => void; adError?: (e: unknown) => void }) => void };
   data?: CGData;
 }
 
@@ -16,6 +17,12 @@ function sdk(): CGSdk | undefined {
 }
 
 let playing = false;
+let loading = false;
+let lastAdAt = -Infinity;
+/** Our own spacing between mid-game ads; the SDK enforces its own limits on top of this. */
+export const AD_GAP_MS = 180_000;
+/** An ad that never reports back must not freeze the game. */
+export const AD_TIMEOUT_MS = 90_000;
 
 export const CrazyGames = {
   /** Initialise the SDK (it must finish before the save data or any other call is used). Never throws; gives up after `ms`. */
@@ -27,6 +34,69 @@ export const CrazyGames = {
     } catch {
       /* the SDK is disabled on other domains and rejects: play without it */
     }
+  },
+  loadingStart(): void {
+    if (loading) return;
+    loading = true;
+    try {
+      sdk()?.game?.loadingStart?.();
+    } catch {
+      /* ignore */
+    }
+  },
+  loadingStop(): void {
+    if (!loading) return;
+    loading = false;
+    try {
+      sdk()?.game?.loadingStop?.();
+    } catch {
+      /* ignore */
+    }
+  },
+  /** True when a mid-game ad may be requested now (SDK ad module present and our cooldown over). */
+  canShowAd(now = Date.now()): boolean {
+    return typeof sdk()?.ad?.requestAd === 'function' && now - lastAdAt >= AD_GAP_MS;
+  },
+  /**
+   * Requests a mid-game ad at a natural break. `onStart` runs only if an ad really starts (pause the game and sound there).
+   * Resolves with true when an ad was shown, false when none was (no SDK, cooldown, error, timeout). Never rejects.
+   */
+  midgameAd(onStart: () => void, now = Date.now()): Promise<boolean> {
+    if (!this.canShowAd(now)) return Promise.resolve(false);
+    lastAdAt = now;
+    return new Promise<boolean>((resolve) => {
+      let started = false;
+      let done = false;
+      const end = (): void => {
+        if (done) return;
+        done = true;
+        window.clearTimeout(timer);
+        resolve(started);
+      };
+      const timer = window.setTimeout(end, AD_TIMEOUT_MS);
+      try {
+        sdk()?.ad?.requestAd?.('midgame', {
+          adStarted: () => {
+            started = true;
+            try {
+              onStart();
+            } catch {
+              /* ignore */
+            }
+          },
+          adFinished: end,
+          adError: end,
+        });
+      } catch {
+        end();
+      }
+    });
+  },
+  /** Test hook: forget the cooldown and flags. */
+  _reset(): void {
+    playing = false;
+    loading = false;
+    lastAdAt = -Infinity;
   },
   gameplayStart(): void {
     if (playing) return;
