@@ -13,7 +13,7 @@ export interface TitleData {
 
 /**
  * Title screen shown before every game: night diner, logo, chef with a ghost, "Tap to play".
- * The tap is the user gesture that lets the intro video play with sound. The video is a DOM overlay
+ * The intro video starts by itself (muted if the browser refuses sound before a tap) as a DOM overlay
  * that can be skipped with a tap; any problem (load error, autoplay refusal, reduced motion) goes straight to the game.
  */
 export class TitleScene extends Phaser.Scene {
@@ -71,8 +71,12 @@ export class TitleScene extends Phaser.Scene {
     }
 
     this.prepareVideo(reduce);
-    this.input.once('pointerdown', this.onTap, this);
-    this.input.keyboard?.once('keydown', this.onTap, this);
+    if (this.video) {
+      this.startIntro(); // the intro starts by itself; a tap or key during it skips
+    } else {
+      this.input.once('pointerdown', this.onTap, this);
+      this.input.keyboard?.once('keydown', this.onTap, this);
+    }
   }
 
   /** Starts fetching the video while the player looks at the title; it stays hidden until the tap. */
@@ -104,27 +108,40 @@ export class TitleScene extends Phaser.Scene {
     }
   }
 
+  /** Only used when there is no video (reduced motion or setup failure): the title waits for a tap. */
   private onTap(): void {
     if (this.starting) return;
     audio.unlock();
+    this.begin();
+  }
+
+  /**
+   * Plays the intro at once. Browsers may refuse sound before the first tap, so a refused play() is retried muted
+   * (muted autoplay is always allowed). Any error, or no playback within 5 s, goes straight to the game.
+   */
+  private startIntro(): void {
     const v = this.video;
-    if (!v) {
-      this.begin();
-      return;
-    }
+    if (!v) return;
     this.introPlaying = true;
-    v.style.display = 'block';
-    void v.offsetHeight; // commit display before the fade
-    v.style.opacity = '1';
     const finish = (): void => this.begin();
     v.addEventListener('ended', finish, { once: true });
     v.addEventListener('error', finish, { once: true });
-    // A second tap or any key skips the intro.
+    // A tap or any key skips the intro.
     const skip = (): void => finish();
     v.addEventListener('pointerdown', skip, { once: true });
     window.addEventListener('keydown', skip, { once: true });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => window.removeEventListener('keydown', skip));
-    v.play().catch(finish);
+    const watchdog = window.setTimeout(finish, 5000);
+    v.addEventListener('playing', () => {
+      window.clearTimeout(watchdog);
+      v.style.display = 'block';
+      void v.offsetHeight; // commit display before the fade
+      v.style.opacity = '1';
+    }, { once: true });
+    v.play().catch(() => {
+      v.muted = true;
+      v.play().catch(finish);
+    });
   }
 
   /** Fades the video out (if any) and starts the game. */
