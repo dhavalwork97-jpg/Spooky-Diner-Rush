@@ -139,7 +139,7 @@ export class GameScene extends Phaser.Scene {
     this.hud = new Hud(this, this.state);
     this.toast = new Toast(this, LOGICAL_WIDTH / 2, 300);
     this.banner = new EventBanner(this, 551, 42);
-    this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330);
+    this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330, () => this.levelBreakAd());
     this.overlay = new Overlay(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.hand = new TutorialHand(this);
     this.storyCard = new StoryCard(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
@@ -750,7 +750,7 @@ export class GameScene extends Phaser.Scene {
         audio.play('close');
         audio.setSizzle(0);
         CrazyGames.gameplayStop();
-        this.overlay.show('Closed', 'Too many unhappy customers.\nYour level, XP and coins are safe.', 'Reopen', () => this.state.reopen());
+        this.overlay.show('Closed', 'Too many unhappy customers.\nYour level, XP and coins are safe.', 'Reopen', () => this.breakAd(() => this.state.reopen()));
         break;
       case 'reopened':
         this.banner.hide();
@@ -939,6 +939,7 @@ export class GameScene extends Phaser.Scene {
     if (this.state.event) this.banner.update(this.state.event.remaining);
     this.updateHint();
     this.maybeShowStory();
+    this.runDueAd();
     if (!this.paused && !this.state.closed && this.state.clock - this.chefLastAt > CHEF_IDLE_AFTER) {
       this.chefLastAt = this.state.clock;
       this.sayChef(this.chefTalk.say('idle', this.state.clock));
@@ -992,7 +993,51 @@ export class GameScene extends Phaser.Scene {
 
   // ---------------------------------------------------------------- pause
 
+  /** True while a CrazyGames ad is on screen: the model and sound are frozen. */
+  private adActive = false;
+  private adPending = false;
+
+  /**
+   * A mid-game ad at a natural break. The game and sound stay frozen while it plays; `then` always runs afterwards,
+   * also when no ad was shown (no SDK, cooldown, error), so it can never block the player.
+   */
+  private breakAd(then?: () => void): void {
+    if (this.adActive || this.adPending) return;
+    this.adPending = true;
+    void CrazyGames.midgameAd(() => {
+      this.adActive = true;
+      this.paused = true;
+      audio.pauseAll();
+      CrazyGames.gameplayStop();
+    }).then((shown) => {
+      this.adPending = false;
+      if (shown) {
+        this.adActive = false;
+        this.paused = false;
+        audio.resumeAll();
+        if (!this.state.closed) CrazyGames.gameplayStart();
+      }
+      then?.();
+    });
+  }
+
+  private adDue = false;
+
+  /** After the last level-up card: an ad is due from Lv 3 on; it runs at the next calm moment (see `runDueAd`). */
+  private levelBreakAd(): void {
+    if (this.state.level >= 3) this.adDue = true;
+  }
+
+  /** Runs a due ad only when nothing else is open: no pause, closed overlay, story card or level-up card. */
+  private runDueAd(): void {
+    if (!this.adDue || this.adActive || this.adPending) return;
+    if (this.paused || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing) return;
+    this.adDue = false;
+    this.breakAd();
+  }
+
   private onBlur(): void {
+    if (this.adActive) return;
     if (this.paused || this.state.closed) return;
     this.paused = true;
     CrazyGames.gameplayStop();

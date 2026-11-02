@@ -9,6 +9,7 @@ import decorJson from '../../data/decor.json';
 import recipebookJson from '../../data/recipebook.json';
 import restaurantMenuJson from '../../data/restaurant_menu.json';
 import { assertValid, validateAssets, validateRestaurants, validateUpgrades, validateCareer, validateChef, validateStory, validateDecor, validateRecipeBook, validateRestaurantMenu, type AssetDef, type RestaurantDef } from '../data/validate';
+import { CrazyGames } from '../sdk/crazygames';
 import { SaveSystem } from '../systems/SaveSystem';
 import { buildAllTextures } from '../art/builders';
 import { defaultConfig } from '../game/config';
@@ -64,7 +65,10 @@ export class BootScene extends Phaser.Scene {
     // Canvas text does not redraw when a font arrives later, so wait for the bundled font (a missing file only delays by the timeout).
     // The title screen (with the intro video) comes before every game; ?debug starts straight in, as the test scripts expect.
     const next = new URLSearchParams(location.search).has('debug') ? 'Game' : 'Title';
-    const go = (): void => void this.scene.start(next, { restaurantId: start });
+    const go = (): void => {
+      CrazyGames.loadingStop();
+      void this.scene.start(next, { restaurantId: start });
+    };
     const fonts = typeof document !== 'undefined' ? document.fonts : undefined;
     if (!fonts) {
       go();
