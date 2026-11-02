@@ -6,6 +6,12 @@ Last updated at: 2026-11-01 15:40 IST
 ## Rename to Spooky Diner Rush (2026-11-01, Claude) - branch `chore/rename-spooky-diner-rush`
 Owner picked "Spooky Diner Rush" (ghost customers and scares). Changed: page title (`index.html`), boot screen text (`BootScene`), README and doc headings. Deliberately NOT changed: save key `chef-rush-save` (so nobody loses progress), `package.json` name, GitHub repo name, the `window.__chefRush` debug hook. Also: the restaurant's display name is now "Spooky Diner" (`data/restaurants.json`; its id `burger_diner` is unchanged because saves refer to it) and the six story cards in `data/story.json` are rewritten for the ghost theme. Not done: CrazyGames listing text, cover art, a logo, intro animation.
 
+## In progress: rewarded ad "revive" (2026-11-02, Claude) - branch `feature/rewarded-revive` (from `feature/crazygames-ads`, PR #26 not merged yet, so merge #26 first)
+Owner asked for rewarded ads. Design call (owner can change): on the Closed overlay a second button "Watch an ad: reopen at full reputation" (normal Reopen gives 55, ad gives 100, no coins touched so the economy is unaffected). Shown only when the SDK ad module exists. Reward only when the ad finishes; an error shows "No ad available right now" and the overlay stays.
+- [ ] sdk: `rewardedAd(onStart)` / `canShowRewarded()`
+- [ ] `KitchenState.reopen(full)`, `Overlay` optional second button, GameScene wiring
+- [ ] tests, typecheck, build, fake-SDK browser check, docs/release.md, PR (not merged)
+
 ## CrazyGames loading and ad hooks (2026-11-02, Claude) - branch `feature/crazygames-ads`, PR open, NOT merged
 - `src/sdk/crazygames.ts`: `loadingStart/Stop`, `canShowAd`, `midgameAd(onStart)` (resolves true if an ad was shown; 3 min own cooldown `AD_GAP_MS`, 90 s watchdog, never rejects, no-op without SDK), `_reset()` for tests.
 - `main.ts`: loadingStart after init; BootScene: loadingStop when it hands over to Title/Game.
