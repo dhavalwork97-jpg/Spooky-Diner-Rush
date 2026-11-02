@@ -743,10 +743,11 @@ export class KitchenState {
   }
 
   /** Reopen after closing. The player keeps level, XP and coins; the kitchen starts fresh. */
-  reopen(): void {
+  /** `full` (earned by watching a rewarded ad) reopens at full reputation instead of the normal `reopenTo`. */
+  reopen(full = false): void {
     if (!this.closed) return;
     this.closed = false;
-    this.reputation = this.cfg.xp.reputation.reopenTo;
+    this.reputation = full ? 100 : this.cfg.xp.reputation.reopenTo;
     this.vats = this.vats.map(() => null);
     this.burners = this.burners.map(() => null);
     this.ovens = this.ovens.map(() => null);

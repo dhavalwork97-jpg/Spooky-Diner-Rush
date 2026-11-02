@@ -750,7 +750,13 @@ export class GameScene extends Phaser.Scene {
         audio.play('close');
         audio.setSizzle(0);
         CrazyGames.gameplayStop();
-        this.overlay.show('Closed', 'Too many unhappy customers.\nYour level, XP and coins are safe.', 'Reopen', () => this.breakAd(() => this.state.reopen()));
+        this.overlay.show(
+          'Closed',
+          'Too many unhappy customers.\nYour level, XP and coins are safe.',
+          'Reopen',
+          () => this.breakAd(() => this.state.reopen()),
+          CrazyGames.canShowRewarded() ? { label: 'Watch an ad: reopen at full reputation', onPress: () => this.reviveWithAd() } : undefined,
+        );
         break;
       case 'reopened':
         this.banner.hide();
@@ -1022,6 +1028,27 @@ export class GameScene extends Phaser.Scene {
   }
 
   private adDue = false;
+
+  /** Rewarded ad on the Closed screen: reopen at full reputation, but only if the ad is watched to the end. */
+  private reviveWithAd(): void {
+    if (this.adActive || this.adPending || !this.state.closed) return;
+    this.adPending = true;
+    void CrazyGames.rewardedAd(() => {
+      this.adActive = true;
+      this.paused = true;
+      audio.pauseAll();
+      CrazyGames.gameplayStop();
+    }).then((finished) => {
+      this.adPending = false;
+      if (this.adActive) {
+        this.adActive = false;
+        this.paused = false;
+        audio.resumeAll();
+      }
+      if (finished) this.state.reopen(true);
+      else this.overlay.setSub('No ad available right now.\nYou can still reopen.');
+    });
+  }
 
   /** After the last level-up card: an ad is due from Lv 3 on; it runs at the next calm moment (see `runDueAd`). */
   private levelBreakAd(): void {

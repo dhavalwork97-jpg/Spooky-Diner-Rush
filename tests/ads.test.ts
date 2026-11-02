@@ -85,3 +85,42 @@ describe('CrazyGames ads and loading', () => {
     expect(game.loadingStop).toHaveBeenCalledOnce();
   });
 });
+
+describe('rewarded ads', () => {
+  it('rewards only when the ad is watched to the end', async () => {
+    install((_t, cb) => {
+      cb.adStarted?.();
+      cb.adFinished?.();
+    });
+    const start = vi.fn();
+    expect(await CrazyGames.rewardedAd(start)).toBe(true);
+    expect(start).toHaveBeenCalledOnce();
+  });
+
+  it('gives no reward on error, no SDK or a silent ad', async () => {
+    expect(CrazyGames.canShowRewarded()).toBe(false);
+    expect(await CrazyGames.rewardedAd(() => undefined)).toBe(false);
+    install((_t, cb) => {
+      cb.adStarted?.();
+      cb.adError?.('closed early');
+    });
+    expect(await CrazyGames.rewardedAd(() => undefined)).toBe(false);
+    vi.useFakeTimers();
+    install((_t, cb) => cb.adStarted?.());
+    const p = CrazyGames.rewardedAd(() => undefined);
+    await vi.advanceTimersByTimeAsync(91_000);
+    expect(await p).toBe(false);
+  });
+
+  it('is not held back by the mid-game cooldown, but holds it back after a watched ad', async () => {
+    install((_t, cb) => {
+      cb.adStarted?.();
+      cb.adFinished?.();
+    });
+    const t0 = 5_000_000;
+    expect(await CrazyGames.midgameAd(() => undefined, t0)).toBe(true);
+    expect(await CrazyGames.rewardedAd(() => undefined, t0 + 10)).toBe(true);
+    expect(CrazyGames.canShowAd(t0 + AD_GAP_MS + 5)).toBe(false); // cooldown restarted by the rewarded ad
+    expect(CrazyGames.canShowAd(t0 + 10 + AD_GAP_MS)).toBe(true);
+  });
+});

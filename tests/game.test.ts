@@ -265,6 +265,30 @@ describe('closing and reopening', () => {
   });
 });
 
+describe('reopen after closing', () => {
+  const close = (): KitchenState => {
+    const s = new KitchenState();
+    (s as unknown as { addReputation(d: number): void }).addReputation(-1000);
+    return s;
+  };
+
+  it('normally reopens at the reopenTo reputation', () => {
+    const s = close();
+    expect(s.closed).toBe(true);
+    s.reopen();
+    expect(s.reputation).toBe(s.cfg.xp.reputation.reopenTo);
+  });
+
+  it('reopens at full reputation after a rewarded ad, and only once', () => {
+    const s = close();
+    s.reopen(true);
+    expect(s.reputation).toBe(100);
+    s.reputation = 40;
+    s.reopen(true); // already open: ignored
+    expect(s.reputation).toBe(40);
+  });
+});
+
 describe('xp and levels', () => {
   it('levels up, grants coins and reports unlocks', () => {
     const s = new KitchenState({ level: 1, xp: 0, coins: 0 }, undefined, 9);

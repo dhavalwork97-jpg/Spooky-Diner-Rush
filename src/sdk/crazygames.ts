@@ -92,6 +92,47 @@ export const CrazyGames = {
       }
     });
   },
+  /** True when the SDK ad module is there (a rewarded ad is player-initiated, so no cooldown applies). */
+  canShowRewarded(): boolean {
+    return typeof sdk()?.ad?.requestAd === 'function';
+  },
+  /**
+   * Requests a rewarded ad. `onStart` runs only if an ad really starts. Resolves true ONLY when the ad was watched to the end
+   * (grant the reward then); false on no SDK, error, no fill or timeout. Never rejects.
+   */
+  rewardedAd(onStart: () => void, now = Date.now()): Promise<boolean> {
+    if (!this.canShowRewarded()) return Promise.resolve(false);
+    return new Promise<boolean>((resolve) => {
+      let finished = false;
+      let done = false;
+      const end = (): void => {
+        if (done) return;
+        done = true;
+        window.clearTimeout(timer);
+        if (finished) lastAdAt = now; // a rewarded ad just ran: hold back the next mid-game ad
+        resolve(finished);
+      };
+      const timer = window.setTimeout(end, AD_TIMEOUT_MS);
+      try {
+        sdk()?.ad?.requestAd?.('rewarded', {
+          adStarted: () => {
+            try {
+              onStart();
+            } catch {
+              /* ignore */
+            }
+          },
+          adFinished: () => {
+            finished = true;
+            end();
+          },
+          adError: end,
+        });
+      } catch {
+        end();
+      }
+    });
+  },
   /** Test hook: forget the cooldown and flags. */
   _reset(): void {
     playing = false;
