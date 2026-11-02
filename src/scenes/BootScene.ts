@@ -62,7 +62,9 @@ export class BootScene extends Phaser.Scene {
     buildAllTextures(this, defaultConfig);
     const start = pickStartRestaurant(restaurants, SaveSystem.data.lastRestaurant, SaveSystem.data.level);
     // Canvas text does not redraw when a font arrives later, so wait for the bundled font (a missing file only delays by the timeout).
-    const go = (): void => void this.scene.start('Game', { restaurantId: start });
+    // The title screen (with the intro video) comes before every game; ?debug starts straight in, as the test scripts expect.
+    const next = new URLSearchParams(location.search).has('debug') ? 'Game' : 'Title';
+    const go = (): void => void this.scene.start(next, { restaurantId: start });
     const fonts = typeof document !== 'undefined' ? document.fonts : undefined;
     if (!fonts) {
       go();
