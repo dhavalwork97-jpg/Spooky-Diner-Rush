@@ -127,6 +127,9 @@ export class Overlay {
   private button: Phaser.GameObjects.Container;
   private buttonText: Phaser.GameObjects.Text;
   private onPress: (() => void) | null = null;
+  private extra: Phaser.GameObjects.Container;
+  private extraText: Phaser.GameObjects.Text;
+  private onExtra: (() => void) | null = null;
 
   constructor(private scene: Phaser.Scene, w: number, h: number) {
     const dim = scene.add.rectangle(w / 2, h / 2, w, h, 0x1a0f0c, 0.72).setInteractive();
@@ -150,16 +153,39 @@ export class Overlay {
       this.onPress?.();
     });
     this.button.on('pointerout', () => this.button.setScale(1));
-    this.root = scene.add.container(0, 0, [dim, this.title, this.sub, this.button]).setDepth(1500).setVisible(false);
+    // Optional second button (a rewarded ad offer): wider, calmer colour, only shown when `show` is given one.
+    const eg = scene.add.graphics();
+    eg.fillStyle(0x000000, 0.25).fillRoundedRect(-230, -30, 460, 80, 18);
+    eg.fillStyle(0x2f7d4f, 1).fillRoundedRect(-230, -36, 460, 76, 18);
+    eg.lineStyle(5, INK, 1).strokeRoundedRect(-230, -36, 460, 76, 18);
+    this.extraText = scene.add.text(0, 2, '', { fontFamily: FONT, fontSize: '30px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 }).setOrigin(0.5);
+    this.extra = scene.add.container(w / 2, h / 2 + 190, [eg, this.extraText]).setSize(460, 76).setInteractive({ useHandCursor: true }).setVisible(false);
+    this.extra.on('pointerdown', () => this.extra.setScale(0.96));
+    this.extra.on('pointerout', () => this.extra.setScale(1));
+    this.extra.on('pointerup', () => {
+      this.extra.setScale(1);
+      audio.play('click');
+      this.onExtra?.();
+    });
+    this.root = scene.add.container(0, 0, [dim, this.title, this.sub, this.button, this.extra]).setDepth(1500).setVisible(false);
   }
 
-  show(title: string, sub: string, buttonLabel: string, onPress: () => void): void {
+  show(title: string, sub: string, buttonLabel: string, onPress: () => void, extra?: { label: string; onPress: () => void }): void {
+    this.extra.setVisible(!!extra);
+    if (extra) {
+      this.extraText.setText(extra.label);
+      this.onExtra = extra.onPress;
+    }
     this.title.setText(title);
     this.sub.setText(sub);
     this.buttonText.setText(buttonLabel);
     this.onPress = onPress;
     this.root.setVisible(true).setAlpha(0);
     this.scene.tweens.add({ targets: this.root, alpha: 1, duration: SaveSystem.reduceMotion() ? 0 : 250 });
+  }
+
+  setSub(text: string): void {
+    this.sub.setText(text);
   }
 
   hide(): void {

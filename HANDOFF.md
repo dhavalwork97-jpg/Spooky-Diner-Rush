@@ -6,6 +6,12 @@ Last updated at: 2026-11-01 15:40 IST
 ## Rename to Spooky Diner Rush (2026-11-01, Claude) - branch `chore/rename-spooky-diner-rush`
 Owner picked "Spooky Diner Rush" (ghost customers and scares). Changed: page title (`index.html`), boot screen text (`BootScene`), README and doc headings. Deliberately NOT changed: save key `chef-rush-save` (so nobody loses progress), `package.json` name, GitHub repo name, the `window.__chefRush` debug hook. Also: the restaurant's display name is now "Spooky Diner" (`data/restaurants.json`; its id `burger_diner` is unchanged because saves refer to it) and the six story cards in `data/story.json` are rewritten for the ghost theme. Not done: CrazyGames listing text, cover art, a logo, intro animation.
 
+## Rewarded ad "revive" (2026-11-02, Claude) - branch `feature/rewarded-revive` (based on `feature/crazygames-ads`, PR #26), PR open, NOT merged. Merge #26 first.
+- Owner asked for rewarded ads; design call made by me (owner can change): Closed overlay gets a second green button "Watch an ad: reopen at full reputation" (`Overlay.show(..., extra)`); normal Reopen = 55 reputation, ad = 100 (`KitchenState.reopen(full)`); no coin reward, economy untouched.
+- `CrazyGames.rewardedAd(onStart)` resolves true only on `adFinished`; error/no SDK/90 s silence = no reward; `canShowRewarded()` hides the button without the SDK. A watched rewarded ad restarts the mid-game ad cooldown. GameScene `reviveWithAd()` freezes model and sound like `breakAd`; on failure the overlay text says "No ad available right now. You can still reopen."
+- Checked in headless Chromium with a fake SDK: finish -> reopened at 100, log gameplayStop, requestAd:rewarded, adStarted, adFinished, gameplayStart; error -> stays closed, message shown, Reopen still works. 247 tests.
+- Not checked: real SDK / QA tool, other reward ideas (double level-up coins) if the owner prefers.
+
 ## CrazyGames loading and ad hooks (2026-11-02, Claude) - branch `feature/crazygames-ads`, PR open, NOT merged
 - `src/sdk/crazygames.ts`: `loadingStart/Stop`, `canShowAd`, `midgameAd(onStart)` (resolves true if an ad was shown; 3 min own cooldown `AD_GAP_MS`, 90 s watchdog, never rejects, no-op without SDK), `_reset()` for tests.
 - `main.ts`: loadingStart after init; BootScene: loadingStop when it hands over to Title/Game.
