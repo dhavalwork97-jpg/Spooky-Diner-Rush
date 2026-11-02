@@ -1,7 +1,16 @@
 # HANDOFF
 
-Last updated: Claude, session 2026-11-01
-Last updated at: 2026-11-01 15:40 IST
+## Spooky night atmosphere (2026-11-02, Claude) - branch `feature/spooky-night-atmosphere` (from main cebeb13), pushed, NO PR yet, NOT merged
+Owner brief: subtle haunted night look as separate layers; no gameplay or layout change; the reference image is a mood target only.
+Finding: `kitchen_full.webp` is a bright DAYTIME kitchen, so the night look is built from overlays, not by swapping art.
+- `src/anim/atmosphereMath.ts` (pure, tested): source-pixel boxes (window panes, lamps, floor strip, air), quality tables, lamp flicker, twinkle, fade envelope, fog/wisp/mote spec makers. `tests/atmosphere.test.ts` (14 tests).
+- `src/anim/atmosphere.ts` (Phaser): all textures drawn into canvases at start-up (no downloads). Depths: 255 dusk grade (multiply over background, decor and the painted drink/ice machines; customers 299+, items 500+ untouched), window sky multiply, vignette; 256-259 sky pinpoints, moon, one extra drawn pendant lamp, lamp glows; 270 floor fog; 275 wisps; 280 motes. Nothing is interactive.
+- Fog: small cyan patches (150-250 src px wide, low alpha), at most 2 at once, one every 8-18 s, only inside the floor strip (y 322-366 src), 10-16 s life with smooth fade. Wisps: every 14-30 s, max 2 (1 on phones). Motes: 10 (6 on phones). Lamp glow breathes about 4 percent, a rare soft dip of 6 percent, never a flash.
+- Fog, wisps, motes are pooled and driven by tracked counter tweens: paused on game BLUR and tab hidden, stopped in `destroy()` (called from `GameScene.cleanup`). Reduced motion (setting or OS) = static night look: no fog, wisps, motes, twinkle or flicker; switching it at run time is picked up within 1 s.
+- Oven door sprite (depth 450) is tinted with `NIGHT_GRADE` so it matches the dimmed painted oven.
+- Wording rule: sky dots are called "pinpoints" (the banned word is not allowed in code/tests).
+- Checked in headless Chromium (software GL): 1280x698 and 844x390 landscape, ghosts clearly visible, no page errors; reduced motion gives 0 fog/wisps/motes; tapped all 17 zones, each selects and acts as before. 257 tests, typecheck and build clean.
+- Not checked: real Android phone (fps, battery), real GPU colour, the grade at other levels' unlocked machines (looked fine at Lv 6), CrazyGames preview. The two painted pendant lamps keep their black shades (only glow added); the third lamp is drawn by code. Tuning knobs are constants at the top of `atmosphereMath.ts` (`NIGHT_GRADE`, `NIGHT_SKY`, `FOG_GAP`, `FOG_ASPECT`, qualities).
 
 ## Rename to Spooky Diner Rush (2026-11-01, Claude) - branch `chore/rename-spooky-diner-rush`
 Owner picked "Spooky Diner Rush" (ghost customers and scares). Changed: page title (`index.html`), boot screen text (`BootScene`), README and doc headings. Deliberately NOT changed: save key `chef-rush-save` (so nobody loses progress), `package.json` name, GitHub repo name, the `window.__chefRush` debug hook. Also: the restaurant's display name is now "Spooky Diner" (`data/restaurants.json`; its id `burger_diner` is unchanged because saves refer to it) and the six story cards in `data/story.json` are rewritten for the ghost theme. Not done: CrazyGames listing text, cover art, a logo, intro animation.

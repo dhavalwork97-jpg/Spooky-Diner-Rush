@@ -4,6 +4,7 @@ import { fitBackground, hitTestZone, logicalToNorm, normToLogical, type Backgrou
 import { handleStationTap, registerStationHandler, clearStationHandlers, type TapPoint } from '../kitchen/stationHandlers';
 import { animGuard, fade, pop, shake } from '../anim/helpers';
 import { ParticlePool } from '../anim/ParticlePool';
+import { Atmosphere } from '../anim/atmosphere';
 import { SaveSystem } from '../systems/SaveSystem';
 import { modsFor } from '../game/shop';
 import { titleEarnedAt } from '../game/career';
@@ -58,6 +59,7 @@ export class GameScene extends Phaser.Scene {
   private highlight!: Phaser.GameObjects.Graphics;
   private label!: Phaser.GameObjects.Text;
   private fx!: ParticlePool;
+  private atmosphere?: Atmosphere;
   private showAll = false;
   private selectedId: string | null = null;
 
@@ -129,6 +131,7 @@ export class GameScene extends Phaser.Scene {
 
     this.syncDecor();
     this.fx = new ParticlePool(this, 140);
+    this.atmosphere = new Atmosphere(this, this.layout);
     this.buildZones();
     this.stock = new StockViews(this, this.layout, this.state.level);
     loadOvenSheet(this); // background load; the oven works without the door art until it arrives
@@ -189,6 +192,7 @@ export class GameScene extends Phaser.Scene {
         if (def) this.state.startEvent(def);
       },
       spawn: (type: string) => this.state.spawnCustomer(type),
+      atmosphere: () => this.atmosphere?.live,
       levelCardVisible: () => this.levelUpCard.isShowing,
       chef: () => this.chef.text,
       story: () => this.storyCard.id,
@@ -936,6 +940,7 @@ export class GameScene extends Phaser.Scene {
         if (nv) slot.item.kind !== 'burger' ? nv.showFries() : nv.syncLayers(slot.item.placed, slot.item.building, false);
       } else if (!slot.item && v && !v.leaving) this.removeItem(slot.index, false);
     }
+    this.atmosphere?.update(delta);
     this.stock.update(this.state.level);
     this.stock.updateDough(this.state);
     this.stations.update(this.state, time);
@@ -1094,6 +1099,8 @@ export class GameScene extends Phaser.Scene {
     this.hand.destroy();
     this.storyCard.destroy();
     this.fx.destroy();
+    this.atmosphere?.destroy();
+    this.atmosphere = undefined;
     this.items.clear();
     this.pourItems.clear();
     this.custViews.clear();
