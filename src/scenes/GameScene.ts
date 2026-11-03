@@ -20,7 +20,6 @@ import { audio } from '../systems/AudioSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
 import { nextHint } from '../game/tutorial';
-import { MUSTARD } from '../art/builders';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 import { laneSpan } from '../kitchen/grab';
 import { BURNERS, COLD, COLD_BASE_W, COLD_LANE_DX, FRY_FROM, ICE, ICE_BASE_W, ICE_LANE_DX, Layout, SLOTS, SRC_H, SRC_W, VAT_FOOD_W, VATS } from '../views/layout';
@@ -56,7 +55,6 @@ export class GameScene extends Phaser.Scene {
   private bg!: BackgroundPlacement;
   private layout!: Layout;
   private views: ZoneView[] = [];
-  private highlight!: Phaser.GameObjects.Graphics;
   private label!: Phaser.GameObjects.Text;
   private fx!: ParticlePool;
   private atmosphere?: Atmosphere;
@@ -151,7 +149,6 @@ export class GameScene extends Phaser.Scene {
     this.buildMuteButton();
     this.menuButtons = new MenuButtons(this, (k: MenuKind) => (k === 'shop' ? this.openShop() : k === 'book' ? this.openRecipeBook() : this.openRestaurants()));
 
-    this.highlight = this.add.graphics().setDepth(900).setAlpha(0);
     this.label = this.add
       .text(0, 0, '', { fontFamily: FONT, fontSize: '24px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 })
       .setOrigin(0.5, 1)
@@ -320,18 +317,9 @@ export class GameScene extends Phaser.Scene {
     this.selectedId = zone.id;
     audio.play('tap');
     const text = handleStationTap(zone, this.state.level, pt);
-    const { x, y, width, height } = view.rect;
+    const { x, y, width } = view.rect;
 
-    // Tap feedback: an overlay outline that fades, never part of the background.
-    this.highlight.clear();
-    this.highlight.fillStyle(0xfff4dc, 0.14).fillRoundedRect(x, y, width, height, 12);
-    this.highlight.lineStyle(4, MUSTARD, 1).strokeRoundedRect(x, y, width, height, 12);
-    this.highlight.setAlpha(1);
-    animGuard.cancel('highlight:fade');
-    this.time.delayedCall(300, () => {
-      if (this.selectedId === zone.id) fade(this, this.highlight, 0, 200, 'highlight');
-    });
-
+    // No box is drawn around the tapped zone any more (it looked like a stray outline); the tap sound and the label below remain.
     if (text) {
       this.label.setText(text).setPosition(x + width / 2, Math.max(y - 4, 30)).setAlpha(1).setScale(1);
       pop(this, this.label, 'label', 1.15, 180);

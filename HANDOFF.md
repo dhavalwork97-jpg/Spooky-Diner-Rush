@@ -1,5 +1,32 @@
 # HANDOFF
 
+## Tap outline box and ghost frame edges (2026-11-03, Claude) - branch `fix/tap-outline` (from `feature/android-capacitor` 778fc7f), DONE, pushed, NO PR yet, NOT merged
+Owner report (browser and Android): outline boxes appear around tapped areas, and the ghost shows a visible rectangular border. Owner wants everything else identical. The AdMob work is on its own branch `feature/android-admob` (only the plugin dependency is committed there so far); this fix does not touch it.
+Root causes (reproduced in headless Chromium, nothing guessed):
+1. `GameScene.selectZone` drew a mustard 4 px rounded box plus a 14 percent cream fill around the WHOLE tapped zone (`this.highlight`, depth 900), fading 300 ms later. It is pure tap feedback, not a CSS focus ring or a browser tap highlight, and it is the same in the browser and the Android WebView.
+2. Ghost box: the six `scare/*.webp` sheets are full-frame art. The ghosts (above all `wildhair_corset_ghost`: ghost box 99.5 percent of the frame width) touch the frame edges and carry a cyan haze (alpha about 27-64 over most of the frame), so the frame edge shows as a rectangle while the face fades in (the losing-patience overlay) and during the scare.
+Plan:
+- [x] 1. `GameScene.ts`: stop drawing the zone box (remove `highlight`); keep sound, label pop, `selectedId`, item/customer selection rings, `?zones` debug outlines.
+- [x] 2. `index.html`: `-webkit-tap-highlight-color: transparent` and no focus outline on page and canvas (hardening for the WebView, cannot be checked on a phone here).
+- [x] 3. `tools/feather_scare_edges.py`: fade the haze and the cut at the frame edges of the scare sheets (alpha only, recorded as `edgeFeather` in each `.anim.json` so it runs once); re-encode the six sheets.
+- [x] 4. Tests, typecheck, build, browser before/after pixel check, `build:android` + `cap sync`.
+Result: 282 tests (2 new in `tests/tapoutline.test.ts`), typecheck, `build`, `build:crazygames`, `build:android` and `cap sync android` clean. Headless Chromium: outline pixels (mustard 0xF6C445 on the grill zone border) 2801 before, 0 after, tap message and sound unchanged; the wild-haired ghost shows no rectangle in the losing-patience overlay or the scare (the full scare frame now has a soft edge); fryer taps start cooking in the browser, CrazyGames and Android bundles (mouse and touch), no page errors. Scare sheets 6.9 MB -> 6.5 MB (re-encoded, alpha only changed; the original PNG sources are not in the repo, so `tools/feather_scare_edges.py` only runs once per sheet).
+Kept on purpose: item and customer selection rings, oven and machine glow, `?zones` debug outlines (key Z).
+NOT checked: a real phone or the Android WebView (no Android SDK here, no APK built). The new CSS (`-webkit-tap-highlight-color: transparent`, no focus outline) is hardening for the WebView and cannot be seen in desktop Chromium.
+
+## Android packaging with Capacitor, packaging step (2026-11-03, Claude) - branch `feature/android-capacitor` (stacked on `feature/crazygames-submission-prep` 7eedf58, because it reuses its `vite.config.ts`, audio and orientation changes), JS side DONE, native side NOT built here, pushed, NO PR yet, NOT merged
+Owner said "go ahead on the Android packaging step". Rules: no AdMob yet (a later step), no ad logic or reward numbers touched, browser and CrazyGames builds must stay as they are, no signing keys in git. This sandbox has Java 21 and Gradle but NO Android SDK and cannot reach Google's download hosts, so an APK build and any device test are impossible here (say so in the report).
+Plan:
+- [x] 1. Install `@capacitor/core`, `@capacitor/app`, `@capacitor/android`, `@capacitor/cli` (all free).
+- [x] 2. Build mode `android` (`npm run build:android` -> `dist-android/`): same Vite build, but the CrazyGames SDK script tag is removed (CrazyGames must never run inside the APK; the wrapper is a no-op without it, so no ads until Step 4). Intro video stays.
+- [x] 3. `capacitor.config.ts` (webDir `dist-android`), `npx cap add android`, commit the generated `android/` project (no keystores, no local.properties).
+- [x] 4. Native: landscape (`sensorLandscape`), immersive fullscreen, no reload.
+- [x] 5. JS: `src/platform/android.ts` (only loaded in the android build): app pause/resume -> pause game, save, stop sound; Back button -> close panel, else pause, else minimize (never exit by accident); skip the web fullscreen/orientation code in the app.
+- [x] 6. Tests (pure decision functions), typecheck, tests, build, build:crazygames, build:android, `npx cap sync android`.
+- [x] 7. Try `gradlew assembleDebug` (expected to fail here: no SDK); write exact manual steps; update docs and this file.
+Result: typecheck clean, 280 tests (9 new in `tests/android.test.ts`), `npm run build`, `build:crazygames`, `build:android` and `npx cap sync android` all ok. The Android glue and the Capacitor files are in `dist-android` ONLY (verified: 1 JS file and no Capacitor in `dist` and `dist-crazygames`; no CrazyGames script tag in `dist-android/index.html`). Generated output (`dist-android`, `android/app/src/main/assets/public`) is git-ignored; I had committed it by mistake on the CrazyGames branch and removed it again in a later commit (it is still in that branch's history, about 150 files). Manual steps and the phone test list: `docs/android.md`.
+NOT done / NOT verified: `./gradlew assembleDebug` could not run here (no Android SDK, downloads from Google and Gradle hosts are blocked), so no APK exists, `MainActivity.java` is uncompiled, and nothing ran on an emulator or phone. The `appId` `com.spookydinerrush.game` is provisional. `npm audit` shows 4 moderate issues in a dev-only dependency of `@capacitor/cli` (minimatch); the suggested fix is a breaking downgrade, not applied.
+
 ## CrazyGames submission prep, Browser prep (2026-11-03, Claude) - branch `feature/crazygames-submission-prep` (from main b71fb1d), Browser prep DONE, pushed, NO PR yet, NOT merged
 Owner approved the Inspection report and decided: (1) the intro video is OFF in the CrazyGames build only, (2) the game name stays "Spooky Diner Rush", (3) go ahead on this branch. Rule: Browser prep touches no ad logic and no reward numbers (normal Reopen 55, rewarded 100, interstitial gap 180 s stay exactly as they are). The platform-neutral ad service is NOT part of Browser prep (it belongs with the Android work, needs the owner's OK first).
 Plan (tick each when done):
