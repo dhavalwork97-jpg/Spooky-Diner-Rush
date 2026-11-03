@@ -49,6 +49,12 @@ export class AudioSystem {
     if (this.ctx && !this.heldByGame && this.isStopped()) void this.ctx.resume();
   }
 
+  /** The Android app went to the background: stop sound without marking it as a game pause, so coming back restarts it. */
+  suspendForBackground(): void {
+    this.setSizzle(0);
+    void this.ctx?.suspend();
+  }
+
   applyVolumes(): void {
     const s = SaveSystem.data.settings;
     if (!this.master || !this.sfxGain || !this.musicGain) return;

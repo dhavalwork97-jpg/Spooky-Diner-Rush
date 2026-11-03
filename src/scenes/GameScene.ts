@@ -1068,6 +1068,16 @@ export class GameScene extends Phaser.Scene {
     this.breakAd();
   }
 
+  /** Android app: it went to the background or Back was pressed. Pauses like losing window focus; does nothing while a panel already holds the game. */
+  pauseFromSystem(): void {
+    if (this.scene.isActive()) this.onBlur();
+  }
+
+  /** What the Android Back button needs to know. */
+  get backState(): { paused: boolean; closed: boolean; adActive: boolean } {
+    return { paused: this.paused, closed: this.state.closed, adActive: this.adActive };
+  }
+
   private onBlur(): void {
     if (this.adActive) return;
     if (this.paused || this.state.closed) return;

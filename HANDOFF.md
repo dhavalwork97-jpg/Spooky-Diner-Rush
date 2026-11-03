@@ -1,5 +1,18 @@
 # HANDOFF
 
+## Android packaging with Capacitor, packaging step (2026-11-03, Claude) - branch `feature/android-capacitor` (stacked on `feature/crazygames-submission-prep` 7eedf58, because it reuses its `vite.config.ts`, audio and orientation changes), JS side DONE, native side NOT built here, pushed, NO PR yet, NOT merged
+Owner said "go ahead on the Android packaging step". Rules: no AdMob yet (a later step), no ad logic or reward numbers touched, browser and CrazyGames builds must stay as they are, no signing keys in git. This sandbox has Java 21 and Gradle but NO Android SDK and cannot reach Google's download hosts, so an APK build and any device test are impossible here (say so in the report).
+Plan:
+- [x] 1. Install `@capacitor/core`, `@capacitor/app`, `@capacitor/android`, `@capacitor/cli` (all free).
+- [x] 2. Build mode `android` (`npm run build:android` -> `dist-android/`): same Vite build, but the CrazyGames SDK script tag is removed (CrazyGames must never run inside the APK; the wrapper is a no-op without it, so no ads until Step 4). Intro video stays.
+- [x] 3. `capacitor.config.ts` (webDir `dist-android`), `npx cap add android`, commit the generated `android/` project (no keystores, no local.properties).
+- [x] 4. Native: landscape (`sensorLandscape`), immersive fullscreen, no reload.
+- [x] 5. JS: `src/platform/android.ts` (only loaded in the android build): app pause/resume -> pause game, save, stop sound; Back button -> close panel, else pause, else minimize (never exit by accident); skip the web fullscreen/orientation code in the app.
+- [x] 6. Tests (pure decision functions), typecheck, tests, build, build:crazygames, build:android, `npx cap sync android`.
+- [x] 7. Try `gradlew assembleDebug` (expected to fail here: no SDK); write exact manual steps; update docs and this file.
+Result: typecheck clean, 280 tests (9 new in `tests/android.test.ts`), `npm run build`, `build:crazygames`, `build:android` and `npx cap sync android` all ok. The Android glue and the Capacitor files are in `dist-android` ONLY (verified: 1 JS file and no Capacitor in `dist` and `dist-crazygames`; no CrazyGames script tag in `dist-android/index.html`). Generated output (`dist-android`, `android/app/src/main/assets/public`) is git-ignored; I had committed it by mistake on the CrazyGames branch and removed it again in a later commit (it is still in that branch's history, about 150 files). Manual steps and the phone test list: `docs/android.md`.
+NOT done / NOT verified: `./gradlew assembleDebug` could not run here (no Android SDK, downloads from Google and Gradle hosts are blocked), so no APK exists, `MainActivity.java` is uncompiled, and nothing ran on an emulator or phone. The `appId` `com.spookydinerrush.game` is provisional. `npm audit` shows 4 moderate issues in a dev-only dependency of `@capacitor/cli` (minimatch); the suggested fix is a breaking downgrade, not applied.
+
 ## CrazyGames submission prep, Browser prep (2026-11-03, Claude) - branch `feature/crazygames-submission-prep` (from main b71fb1d), Browser prep DONE, pushed, NO PR yet, NOT merged
 Owner approved the Inspection report and decided: (1) the intro video is OFF in the CrazyGames build only, (2) the game name stays "Spooky Diner Rush", (3) go ahead on this branch. Rule: Browser prep touches no ad logic and no reward numbers (normal Reopen 55, rewarded 100, interstitial gap 180 s stay exactly as they are). The platform-neutral ad service is NOT part of Browser prep (it belongs with the Android work, needs the owner's OK first).
 Plan (tick each when done):
@@ -11,7 +24,7 @@ Plan (tick each when done):
 - [x] 6. Browser check with a fake SDK inside an iframe (800x450 and 1280x720): init order, ads, reopen, no console errors, no intro request.
 - [x] 7. ZIP of `dist-crazygames`, list its contents, check `index.html` is at the ZIP root; update `docs/release.md`.
 Result: typecheck clean, 271 tests (6 new in `tests/crazygames_build.test.ts`), `npm run build` and `npm run build:crazygames` ok. Headless Chromium with a FAKE SDK (route-stubbed script) with the game inside an iframe: load order init, loadingStart, loadingStop, then gameplayStart after the one title tap; no intro.mp4 request, no `<video>`; rewarded error = stays closed (rep 0), normal Reopen = 55 with a midgame ad, rewarded finish = 100, normal Reopen inside the 180 s cooldown = 55 with no new ad request; phone iframes: 0 fullscreen calls, portrait overlay text is the turn-your-phone text; no console errors. ZIP 11.0 MB, 76 files, `index.html` at the root.
-NOT checked: the real CrazyGames SDK / QA tool, a real phone or iPhone (iOS audio resume is unit-tested with a fake AudioContext only), the CrazyGames App safe areas, Safari, a slow connection. Not done on purpose: the platform-neutral ad service (needs owner approval, Android stage).
+NOT checked: the real CrazyGames SDK / QA tool, a real phone or iPhone (iOS audio resume is unit-tested with a fake AudioContext only), the CrazyGames App safe areas, Safari, a slow connection. Not done on purpose: the platform-neutral ad service (needs owner approval, Android step).
 
 ## Landscape on phones (2026-11-02, Claude) - branch `feature/mobile-landscape` (from main 4dfa062), pushed, NO PR yet, NOT merged
 Owner: "the game should run in landscape mode directly on mobile devices". A web page cannot rotate the screen silently; Android Chrome allows `screen.orientation.lock('landscape')` only while fullscreen and after a tap.
