@@ -1,0 +1,10 @@
+{
+	"appId": "com.spookydinerrush.game",
+	"appName": "Spooky Diner Rush",
+	"webDir": "dist-android",
+	"backgroundColor": "#2B1B17",
+	"android": {
+		"allowMixedContent": false,
+		"webContentsDebuggingEnabled": false
+	}
+}

@@ -1,0 +1,960 @@
+{
+ "frames": [
+  {
+   "filename": "scare_00",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_01",
+   "frame": {
+    "x": 208,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_02",
+   "frame": {
+    "x": 416,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_03",
+   "frame": {
+    "x": 624,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_04",
+   "frame": {
+    "x": 832,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_05",
+   "frame": {
+    "x": 1040,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_06",
+   "frame": {
+    "x": 1248,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_07",
+   "frame": {
+    "x": 1456,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_08",
+   "frame": {
+    "x": 1664,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_09",
+   "frame": {
+    "x": 0,
+    "y": 370,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_10",
+   "frame": {
+    "x": 208,
+    "y": 370,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_11",
+   "frame": {
+    "x": 416,
+    "y": 370,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_12",
+   "frame": {
+    "x": 624,
+    "y": 370,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_13",
+   "frame": {
+    "x": 832,
+    "y": 370,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_14",
+   "frame": {
+    "x": 1040,
+    "y": 370,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_15",
+   "frame": {
+    "x": 1248,
+    "y": 370,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_16",
+   "frame": {
+    "x": 1456,
+    "y": 370,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_17",
+   "frame": {
+    "x": 1664,
+    "y": 370,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_18",
+   "frame": {
+    "x": 0,
+    "y": 740,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_19",
+   "frame": {
+    "x": 208,
+    "y": 740,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_20",
+   "frame": {
+    "x": 416,
+    "y": 740,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_21",
+   "frame": {
+    "x": 624,
+    "y": 740,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_22",
+   "frame": {
+    "x": 832,
+    "y": 740,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_23",
+   "frame": {
+    "x": 1040,
+    "y": 740,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_24",
+   "frame": {
+    "x": 1248,
+    "y": 740,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_25",
+   "frame": {
+    "x": 1456,
+    "y": 740,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_26",
+   "frame": {
+    "x": 1664,
+    "y": 740,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_27",
+   "frame": {
+    "x": 0,
+    "y": 1110,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_28",
+   "frame": {
+    "x": 208,
+    "y": 1110,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_29",
+   "frame": {
+    "x": 416,
+    "y": 1110,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_30",
+   "frame": {
+    "x": 624,
+    "y": 1110,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_31",
+   "frame": {
+    "x": 832,
+    "y": 1110,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_32",
+   "frame": {
+    "x": 1040,
+    "y": 1110,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_33",
+   "frame": {
+    "x": 1248,
+    "y": 1110,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_34",
+   "frame": {
+    "x": 1456,
+    "y": 1110,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_35",
+   "frame": {
+    "x": 1664,
+    "y": 1110,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_36",
+   "frame": {
+    "x": 0,
+    "y": 1480,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_37",
+   "frame": {
+    "x": 208,
+    "y": 1480,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_38",
+   "frame": {
+    "x": 416,
+    "y": 1480,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_39",
+   "frame": {
+    "x": 624,
+    "y": 1480,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_40",
+   "frame": {
+    "x": 832,
+    "y": 1480,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_41",
+   "frame": {
+    "x": 1040,
+    "y": 1480,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_42",
+   "frame": {
+    "x": 1248,
+    "y": 1480,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_43",
+   "frame": {
+    "x": 1456,
+    "y": 1480,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  },
+  {
+   "filename": "scare_44",
+   "frame": {
+    "x": 1664,
+    "y": 1480,
+    "w": 208,
+    "h": 370
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 208,
+    "h": 370
+   },
+   "sourceSize": {
+    "w": 208,
+    "h": 370
+   }
+  }
+ ],
+ "meta": {
+  "app": "ghost-scare-builder",
+  "version": "1.0",
+  "image": "wildhair_corset_ghost_scare.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 1872,
+   "h": 1850
+  },
+  "scale": "1"
+ }
+}

@@ -1,0 +1,42 @@
+{
+ "key": "ragged_dress_girl_scare",
+ "image": "ragged_dress_girl_scare.png",
+ "imageWebp": "ragged_dress_girl_scare.webp",
+ "frameWidth": 208,
+ "frameHeight": 370,
+ "columns": 9,
+ "rows": 5,
+ "frameCount": 45,
+ "fps": 12,
+ "durationMs": 3750,
+ "loop": false,
+ "firstFrame": 0,
+ "lastFrame": 44,
+ "peakFrame": 32,
+ "phaserSpritesheetConfig": {
+  "frameWidth": 208,
+  "frameHeight": 370,
+  "endFrame": 44
+ },
+ "phaserAnimation": {
+  "key": "ragged_dress_girl_scare",
+  "frames": "frames 0-44",
+  "frameRate": 12,
+  "repeat": 0
+ },
+ "ghostBoxFirstFrame": {
+  "left": 14,
+  "top": 28,
+  "right": 178,
+  "bottom": 350,
+  "width": 164,
+  "height": 322,
+  "widthFractionOfFrame": 0.788,
+  "heightFractionOfFrame": 0.87,
+  "centerXFractionOfFrame": 0.462,
+  "topYFractionOfFrame": 0.076,
+  "bottomYFractionOfFrame": 0.946,
+  "bottomMayBeCropped": false
+ },
+ "note": "Frames are full 9:16 transparent canvases. Align the overlay so ghostBoxFirstFrame centre-X and head-top match the idle ghost, scale so ghostBoxFirstFrame.width matches the idle ghost width, then crossfade ~150ms and play once. NOTE: this is an extra character (not one of the original six). Its clip is a calm spin with light rings, and the eyes turn amber near the end; it is spooky-cute rather than a jump scare."
+}

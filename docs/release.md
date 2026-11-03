@@ -5,7 +5,7 @@
 2. Zip the CONTENTS of `dist-crazygames/` so `index.html` is at the top of the ZIP, not inside a folder. Windows 10/11 or macOS (Terminal or PowerShell, from the repo root): `tar -a -c -f chef-rush-crazygames.zip -C dist-crazygames .` Or open the folder, select everything inside, right-click, Compress / Send to ZIP.
 3. Upload that ZIP on the CrazyGames developer portal yourself. Not done by Claude: submission, cover images, title and description, the "saves progress" toggle.
 - What differs from the normal build: no intro video (CrazyGames wants players in gameplay at once, at most one click; `src/build/target.ts`, `vite.config.ts`), so `intro.mp4` (1.5 MB) is not in the ZIP and the title waits for one tap. Everything else (ads, saves, art) is identical.
-- Checked 2026-11-03 (Stage 2): ZIP 11.0 MB, 76 files, `index.html` at the root, no `.mp4`, all paths relative, only external URL is the SDK script. Limits: 250 MB total, 1500 files, 50 MB initial (20 MB for the mobile homepage).
+- Checked 2026-11-03 (browser prep): ZIP 11.0 MB, 76 files, `index.html` at the root, no `.mp4`, all paths relative, only external URL is the SDK script. Limits: 250 MB total, 1500 files, 50 MB initial (20 MB for the mobile homepage).
 - Inside the CrazyGames iframe the page makes no fullscreen or orientation-lock attempt and the portrait overlay only says "Turn your phone sideways to play" (CrazyGames shows its own rotate prompt). `user-select: none` is set on the body, and sound the browser stopped (iOS) restarts on the next tap unless the game paused it.
 
 ## Size (dist, 2026-11-01)

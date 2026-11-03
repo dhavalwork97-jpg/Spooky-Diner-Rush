@@ -1,7 +1,7 @@
 # HANDOFF
 
-## CrazyGames submission prep, Stage 2 (2026-11-03, Claude) - branch `feature/crazygames-submission-prep` (from main b71fb1d), Stage 2 DONE, pushed, NO PR yet, NOT merged
-Owner approved the Stage 1 report and decided: (1) the intro video is OFF in the CrazyGames build only, (2) the game name stays "Spooky Diner Rush", (3) go ahead on this branch. Rule: Stage 2 touches no ad logic and no reward numbers (normal Reopen 55, rewarded 100, interstitial gap 180 s stay exactly as they are). The platform-neutral ad service is NOT part of Stage 2 (it belongs with the Android work, needs the owner's OK first).
+## CrazyGames submission prep, Browser prep (2026-11-03, Claude) - branch `feature/crazygames-submission-prep` (from main b71fb1d), Browser prep DONE, pushed, NO PR yet, NOT merged
+Owner approved the Inspection report and decided: (1) the intro video is OFF in the CrazyGames build only, (2) the game name stays "Spooky Diner Rush", (3) go ahead on this branch. Rule: Browser prep touches no ad logic and no reward numbers (normal Reopen 55, rewarded 100, interstitial gap 180 s stay exactly as they are). The platform-neutral ad service is NOT part of Browser prep (it belongs with the Android work, needs the owner's OK first).
 Plan (tick each when done):
 - [x] 1. Build target: `npm run build:crazygames` = `vite build --mode crazygames --outDir dist-crazygames`; intro video skipped and `intro.mp4` left out of that build. Plain `npm run build` is unchanged (still has the video, used later for Android).
 - [x] 2. `index.html`: `user-select: none` on body (CrazyGames mobile rule).
