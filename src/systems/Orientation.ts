@@ -75,6 +75,14 @@ export function browserEnv(): OrientationEnv {
 }
 
 /**
+ * The text of the portrait overlay. Inside the CrazyGames iframe the page must not try fullscreen or a lock (CrazyGames does both
+ * itself and shows its own rotate prompt), so there it only asks the player to turn the phone.
+ */
+export function rotateMessage(env: Pick<OrientationEnv, 'isIframe' | 'lock'>): string {
+  return !env.isIframe && canLock(env) ? 'Tap to play in landscape' : 'Turn your phone sideways to play';
+}
+
+/**
  * Wire it up: the portrait overlay (`#rotate`) becomes a "Tap to play" button, and the first tap anywhere on a
  * phone enters fullscreen + landscape. If the browser cannot lock (iPhone), the overlay keeps asking to turn the phone.
  */
@@ -83,7 +91,8 @@ export function initOrientation(): void {
   const msg = document.getElementById('rotateMsg');
   const env = browserEnv();
   const TURN = 'Turn your phone sideways to play';
-  if (msg) msg.textContent = canLock(env) ? 'Tap to play in landscape' : TURN;
+  if (msg) msg.textContent = rotateMessage(env);
+  if (env.isIframe) return; // CrazyGames (and any other embed) handles fullscreen and rotation itself
 
   let last = -Infinity; // one tap reaches both the overlay and the page handler: count it once
   const go = (): void => {

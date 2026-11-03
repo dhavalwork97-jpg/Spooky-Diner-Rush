@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { SaveSystem } from '../systems/SaveSystem';
 import { audio } from '../systems/AudioSystem';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
+import { INTRO_VIDEO_ENABLED } from '../build/target';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 const INTRO_URL = 'assets/intro/intro.mp4';
@@ -81,7 +82,7 @@ export class TitleScene extends Phaser.Scene {
 
   /** Starts fetching the video while the player looks at the title; it stays hidden until the tap. */
   private prepareVideo(reduce: boolean): void {
-    if (reduce || typeof document === 'undefined') return;
+    if (reduce || !INTRO_VIDEO_ENABLED || typeof document === 'undefined') return;
     try {
       const v = document.createElement('video');
       v.src = INTRO_URL;

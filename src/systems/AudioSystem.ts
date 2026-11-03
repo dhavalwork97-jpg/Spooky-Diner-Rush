@@ -29,7 +29,24 @@ export class AudioSystem {
       this.master.connect(this.ctx.destination);
       this.applyVolumes();
     }
-    if (this.ctx.state === 'suspended') void this.ctx.resume();
+    if (!this.heldByGame && this.isStopped()) void this.ctx.resume();
+  }
+
+  /** True while the game itself has the sound paused (a pause screen or an ad): a tap must not undo that. */
+  private heldByGame = false;
+
+  /** Browsers stop the context after a call, a lock screen or a tab switch; iOS Safari calls that state 'interrupted'. */
+  private isStopped(): boolean {
+    const state = this.ctx?.state as string | undefined;
+    return state === 'suspended' || state === 'interrupted';
+  }
+
+  /**
+   * Call on every tap or key: restarts sound that the BROWSER stopped (iOS only allows that inside a tap).
+   * Does nothing when the game paused the sound on purpose.
+   */
+  resumeOnGesture(): void {
+    if (this.ctx && !this.heldByGame && this.isStopped()) void this.ctx.resume();
   }
 
   applyVolumes(): void {
@@ -120,11 +137,13 @@ export class AudioSystem {
   }
 
   pauseAll(): void {
+    this.heldByGame = true;
     this.setSizzle(0);
     void this.ctx?.suspend();
   }
 
   resumeAll(): void {
+    this.heldByGame = false;
     void this.ctx?.resume();
   }
 }

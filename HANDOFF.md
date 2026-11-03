@@ -1,5 +1,18 @@
 # HANDOFF
 
+## CrazyGames submission prep, Stage 2 (2026-11-03, Claude) - branch `feature/crazygames-submission-prep` (from main b71fb1d), Stage 2 DONE, pushed, NO PR yet, NOT merged
+Owner approved the Stage 1 report and decided: (1) the intro video is OFF in the CrazyGames build only, (2) the game name stays "Spooky Diner Rush", (3) go ahead on this branch. Rule: Stage 2 touches no ad logic and no reward numbers (normal Reopen 55, rewarded 100, interstitial gap 180 s stay exactly as they are). The platform-neutral ad service is NOT part of Stage 2 (it belongs with the Android work, needs the owner's OK first).
+Plan (tick each when done):
+- [x] 1. Build target: `npm run build:crazygames` = `vite build --mode crazygames --outDir dist-crazygames`; intro video skipped and `intro.mp4` left out of that build. Plain `npm run build` is unchanged (still has the video, used later for Android).
+- [x] 2. `index.html`: `user-select: none` on body (CrazyGames mobile rule).
+- [x] 3. Audio: after an interruption (iOS) a tap resumes the sound, unless the game itself paused it.
+- [x] 4. Rotate overlay inside the CrazyGames iframe: no "Tap to play in landscape" button, no fullscreen/lock attempt (CrazyGames handles both).
+- [x] 5. Tests for 1, 3, 4; run typecheck, tests, build, build:crazygames.
+- [x] 6. Browser check with a fake SDK inside an iframe (800x450 and 1280x720): init order, ads, reopen, no console errors, no intro request.
+- [x] 7. ZIP of `dist-crazygames`, list its contents, check `index.html` is at the ZIP root; update `docs/release.md`.
+Result: typecheck clean, 271 tests (6 new in `tests/crazygames_build.test.ts`), `npm run build` and `npm run build:crazygames` ok. Headless Chromium with a FAKE SDK (route-stubbed script) with the game inside an iframe: load order init, loadingStart, loadingStop, then gameplayStart after the one title tap; no intro.mp4 request, no `<video>`; rewarded error = stays closed (rep 0), normal Reopen = 55 with a midgame ad, rewarded finish = 100, normal Reopen inside the 180 s cooldown = 55 with no new ad request; phone iframes: 0 fullscreen calls, portrait overlay text is the turn-your-phone text; no console errors. ZIP 11.0 MB, 76 files, `index.html` at the root.
+NOT checked: the real CrazyGames SDK / QA tool, a real phone or iPhone (iOS audio resume is unit-tested with a fake AudioContext only), the CrazyGames App safe areas, Safari, a slow connection. Not done on purpose: the platform-neutral ad service (needs owner approval, Android stage).
+
 ## Landscape on phones (2026-11-02, Claude) - branch `feature/mobile-landscape` (from main 4dfa062), pushed, NO PR yet, NOT merged
 Owner: "the game should run in landscape mode directly on mobile devices". A web page cannot rotate the screen silently; Android Chrome allows `screen.orientation.lock('landscape')` only while fullscreen and after a tap.
 - `src/systems/Orientation.ts`: `enterLandscape(env)` = fullscreen then lock, never throws, returns locked / fullscreen / unsupported / skipped; skipped on desktop (coarse pointer and short side under 900 css px only) and inside an iframe (CrazyGames does its own). `initOrientation()` (called first in `main.ts`): the first tap on a phone enters fullscreen + landscape; leaving fullscreen (Back) re-arms the next tap; taps are de-duplicated within 1 s.
