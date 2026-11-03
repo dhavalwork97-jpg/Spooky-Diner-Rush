@@ -1,5 +1,19 @@
 # HANDOFF
 
+## Tap outline box and ghost frame edges (2026-11-03, Claude) - branch `fix/tap-outline` (from `feature/android-capacitor` 778fc7f), DONE, pushed, NO PR yet, NOT merged
+Owner report (browser and Android): outline boxes appear around tapped areas, and the ghost shows a visible rectangular border. Owner wants everything else identical. The AdMob work is on its own branch `feature/android-admob` (only the plugin dependency is committed there so far); this fix does not touch it.
+Root causes (reproduced in headless Chromium, nothing guessed):
+1. `GameScene.selectZone` drew a mustard 4 px rounded box plus a 14 percent cream fill around the WHOLE tapped zone (`this.highlight`, depth 900), fading 300 ms later. It is pure tap feedback, not a CSS focus ring or a browser tap highlight, and it is the same in the browser and the Android WebView.
+2. Ghost box: the six `scare/*.webp` sheets are full-frame art. The ghosts (above all `wildhair_corset_ghost`: ghost box 99.5 percent of the frame width) touch the frame edges and carry a cyan haze (alpha about 27-64 over most of the frame), so the frame edge shows as a rectangle while the face fades in (the losing-patience overlay) and during the scare.
+Plan:
+- [x] 1. `GameScene.ts`: stop drawing the zone box (remove `highlight`); keep sound, label pop, `selectedId`, item/customer selection rings, `?zones` debug outlines.
+- [x] 2. `index.html`: `-webkit-tap-highlight-color: transparent` and no focus outline on page and canvas (hardening for the WebView, cannot be checked on a phone here).
+- [x] 3. `tools/feather_scare_edges.py`: fade the haze and the cut at the frame edges of the scare sheets (alpha only, recorded as `edgeFeather` in each `.anim.json` so it runs once); re-encode the six sheets.
+- [x] 4. Tests, typecheck, build, browser before/after pixel check, `build:android` + `cap sync`.
+Result: 282 tests (2 new in `tests/tapoutline.test.ts`), typecheck, `build`, `build:crazygames`, `build:android` and `cap sync android` clean. Headless Chromium: outline pixels (mustard 0xF6C445 on the grill zone border) 2801 before, 0 after, tap message and sound unchanged; the wild-haired ghost shows no rectangle in the losing-patience overlay or the scare (the full scare frame now has a soft edge); fryer taps start cooking in the browser, CrazyGames and Android bundles (mouse and touch), no page errors. Scare sheets 6.9 MB -> 6.5 MB (re-encoded, alpha only changed; the original PNG sources are not in the repo, so `tools/feather_scare_edges.py` only runs once per sheet).
+Kept on purpose: item and customer selection rings, oven and machine glow, `?zones` debug outlines (key Z).
+NOT checked: a real phone or the Android WebView (no Android SDK here, no APK built). The new CSS (`-webkit-tap-highlight-color: transparent`, no focus outline) is hardening for the WebView and cannot be seen in desktop Chromium.
+
 ## Android packaging with Capacitor, packaging step (2026-11-03, Claude) - branch `feature/android-capacitor` (stacked on `feature/crazygames-submission-prep` 7eedf58, because it reuses its `vite.config.ts`, audio and orientation changes), JS side DONE, native side NOT built here, pushed, NO PR yet, NOT merged
 Owner said "go ahead on the Android packaging step". Rules: no AdMob yet (a later step), no ad logic or reward numbers touched, browser and CrazyGames builds must stay as they are, no signing keys in git. This sandbox has Java 21 and Gradle but NO Android SDK and cannot reach Google's download hosts, so an APK build and any device test are impossible here (say so in the report).
 Plan:
