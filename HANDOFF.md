@@ -1,6 +1,6 @@
 # HANDOFF
 
-## AdMob for the Android app (2026-11-04, Claude) - branch `feature/android-capacitor`, JS side DONE and tested, native side NOT built here, NOTHING COMMITTED OR PUSHED (owner has not authorised a commit; the merge of `origin/main` is still open, `git status` shows "All conflicts fixed but you are still merging")
+## AdMob for the Android app (2026-11-04, Claude) - branch `feature/android-capacitor`, JS side DONE and tested, native side NOT built here, COMMITTED (merge commit f393cfc, owner approved) and pushed on owner approval, NO PR yet, NOT merged
 Owner approved: branch `feature/android-capacitor`, a small shared ads interface, AdMob in an Android-only file, Google TEST ids only (no real ids), reward values and ad timing unchanged. Do not merge `feature/android-admob`; only its dependency was copied.
 Step 0 (done, uncommitted): `origin/main` (03a61f1, PR #30 CrazyGames prep) merged into this branch with `--no-commit`. 7 conflicts resolved by keeping BOTH sides: `.gitignore` (dist-android kept), `package.json` (android scripts kept), `src/build/target.ts` (IS_ANDROID_BUILD kept), `src/main.ts` (android version, one audio listener), `src/systems/AudioSystem.ts` (suspendForBackground kept), `vite.config.ts` (android mode and CrazyGames script drop kept), `HANDOFF.md` (wording "step", not the banned word). No uncommitted work was discarded (the tree was clean before the merge).
 What was built:
@@ -15,7 +15,7 @@ NOT done / NOT verified:
 - NO device or emulator test: no ad (not even a test ad) has been seen. Physical-device testing is PENDING (steps below, also in `docs/android.md`).
 - No lint step exists in this project (no script, no ESLint config), so none was run; I did not add one.
 - REAL AdMob ids are not added (owner approval). Consent form (UMP) for EEA/UK, privacy policy and the Play Data safety form are not done: needed before a public release. Samsung Galaxy Store stays on hold.
-- Not committed or pushed (no authorisation). The work exists only in this working tree until the owner approves a commit.
+- Committed and pushed with owner approval (2026-11-04). No PR, nothing merged into `main`.
 Exact Android testing steps (owner, on the computer with Android Studio; test ads only):
 1. `git checkout feature/android-capacitor`, then `npm ci`.
 2. `npm run typecheck` and `npm test`, then `npm run android:sync`.
