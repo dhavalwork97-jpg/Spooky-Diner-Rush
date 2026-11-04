@@ -40,7 +40,7 @@ One-time: Android Studio installed (brings the Android SDK and a JDK), Node 22 o
    - Watch the rewarded test video to the end and close it: the restaurant reopens at 100 reputation. Close the video BEFORE the end: no reward, the text "No ad available right now. You can still reopen." shows.
    - Airplane mode: no ad, no crash, Reopen still works.
    - Back button while an ad is on screen does nothing; Home and back during an ad does not lose the game.
-   - Optional: `adb logcat | grep -i "Ads"` shows the Mobile Ads SDK; Chrome `chrome://inspect` shows no request to `sdk.crazygames.com`.
+   - Optional: `adb logcat | grep -iE "Ads|AdMob|Capacitor"` shows the Mobile Ads SDK and any ad error. (`chrome://inspect` does not work with this build: `webContentsDebuggingEnabled` is false in `capacitor.config.ts`. The app has no CrazyGames script in `dist-android/index.html`, which `tests/adsafety.test.ts` and the bundle check cover.)
 
 ## Behaviour (what the code does; device test still needed)
 - Landscape only (`sensorLandscape`, both landscape directions), full screen with the system bars hidden (swipe from the edge shows them briefly).
