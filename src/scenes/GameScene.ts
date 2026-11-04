@@ -90,7 +90,6 @@ export class GameScene extends Phaser.Scene {
   private pourIds = 0;
   private custViews = new Map<number, CustomerView>();
   private selectedSlot: number | null = null;
-  private dragTarget: number | null = null;
   private paused = false;
   private speed = 1;
   private lastSave = 0;
@@ -411,22 +410,14 @@ export class GameScene extends Phaser.Scene {
     audio.play('tap');
   }
 
-  private onDrag(pointer: Phaser.Input.Pointer, obj: Phaser.GameObjects.GameObject, dragX: number, dragY: number): void {
+  private onDrag(_pointer: Phaser.Input.Pointer, obj: Phaser.GameObjects.GameObject, dragX: number, dragY: number): void {
     if (!(obj instanceof ItemView)) return;
     obj.setPosition(dragX, dragY);
-    const over = this.customerAt(pointer.worldX, pointer.worldY);
-    const id = over?.id ?? null;
-    if (id !== this.dragTarget) {
-      if (this.dragTarget !== null) this.custViews.get(this.dragTarget)?.setDropHighlight(false);
-      if (id !== null) over?.setDropHighlight(true);
-      this.dragTarget = id;
-    }
+    // Nothing is drawn on the customer under the item (no box or outline); the drop target is found again when the item is released.
   }
 
   private onDragEnd(pointer: Phaser.Input.Pointer, obj: Phaser.GameObjects.GameObject): void {
     if (!(obj instanceof ItemView)) return;
-    if (this.dragTarget !== null) this.custViews.get(this.dragTarget)?.setDropHighlight(false);
-    this.dragTarget = null;
     obj.setDragging(false);
     const moved = Phaser.Math.Distance.Between(pointer.downX, pointer.downY, pointer.upX, pointer.upY);
     const src = obj.source;

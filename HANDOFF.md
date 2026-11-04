@@ -1,5 +1,21 @@
 # HANDOFF
 
+## Drop box removed + new mint ghost customer (2026-11-03/04, Claude) - branch `fix/tap-outline`, DONE in the working tree, NOTHING COMMITTED OR PUSHED (owner has not authorised a commit)
+Owner (17:00): (1) the white box that shows on a customer while an order item is dragged onto them must not be visible; (2) remove the current ghosts (the six scare-sheet ghosts and the vest gentleman) and use the new supplied character for now (`Spooky_characters.zip`: one mint ghost, two animation sheets 256x256 frames at 24 fps: `ghost_idle_happy` 90 frames, `ghost_impatient_anim` 85 frames). Three more characters will follow.
+Update (owner sent the other 3 sheets; they are NOT new characters but the same mint ghost's other animations): angry loop (42 frames), leave angry (130), leave happy (127, 288 px frames). All five clips are converted to 75 percent size (192/216 px; the canvas is a fixed 1280x698 so the ghost is drawn 1:1) by `tools/make_mint_ghost_art.py`, 3.2 MB in total.
+Clip use: calm = happy idle (patient or happy), upset = impatient (patience under half), angry = angry loop (under a quarter), leave happy / leave angry = one-shot reactions played in place when the customer leaves (sped up to about 3 s so the seat is free for the next arrival, fade-out at the end; lazy-loaded; code fallbacks when not loaded: walk out / lunge).
+Plan (tick when done):
+- [x] 1. `CustomerView`: delete the `highlight` rectangle and `setDropHighlight`; `GameScene` drag code stops calling it (drop logic unchanged).
+- [x] 2. Art: all five clips as WebP + `.anim.json` in `public/assets/customers/mint_ghost/`; 6 scare sheets + 7 old cutouts removed; `customers.webp` rebuilt (people blank, mint slot blank, shadow, heart).
+- [x] 3. Code (calm + upset): `CUSTOMER_LOOKS` = 8 people + `mint_ghost`; `CUSTOMER_LOOK_COUNT` 9; `PERSONALITIES`, `FIGURE_W`, `SCARES` (empty).
+- [x] 4. Code (angry + leave clips): LOOK_ART with 5 clips; per-clip origin and scale; mood -> clip; leave clips lazy; remove the additive glow copy for animated ghosts (it glitched).
+- [x] 5. Investigate the rectangular cut seen on a ghost when two customers are on screen (reproduce, find cause, fix).
+- [x] 6. Tests, typecheck, build x3, cap sync, headless check of every clip.
+Result: typecheck clean, 285 tests, `build`, `build:crazygames` (8.2 MB, was 11 MB), `build:android` and `cap sync android` ok. Headless Chromium: all five clips play, moods switch the clip, two ghosts never move in step, no rectangle object on the customers, drop box gone, leave clips load lazily (bug found and fixed: the request ran before `art` was set), leave happy / angry play ~3.2 s then fade and the view is destroyed, reduced motion shows a still frame, Android bundle runs, no page errors.
+The rectangular cut seen on one ghost earlier (2304x2560 sheets with an additive glow copy) was NOT reproduced after dropping the glow copy and halving the sheets; cause not proven (likely the glow copy swapping textures every frame). The small notch on the head in one screenshot was the order bubble's tail.
+NOT checked: a real phone or WebView (frame rate, texture memory), CrazyGames real SDK. `tools/feather_scare_edges.py` is now unused (no scare sheets) and kept for when scare sheets return.
+Shared change (customers/art): affects BOTH releases. Nothing is merged or cherry-picked; transfer notes go in the final report.
+
 ## Tap outline box and ghost frame edges (2026-11-03, Claude) - branch `fix/tap-outline` (from `feature/android-capacitor` 778fc7f), DONE, pushed, NO PR yet, NOT merged
 Owner report (browser and Android): outline boxes appear around tapped areas, and the ghost shows a visible rectangular border. Owner wants everything else identical. The AdMob work is on its own branch `feature/android-admob` (only the plugin dependency is committed there so far); this fix does not touch it.
 Root causes (reproduced in headless Chromium, nothing guessed):

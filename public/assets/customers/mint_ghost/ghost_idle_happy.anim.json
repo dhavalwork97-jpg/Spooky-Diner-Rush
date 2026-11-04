@@ -1,0 +1,13 @@
+{
+  "frames": 90,
+  "columns": 9,
+  "frameWidth": 192,
+  "frameHeight": 192,
+  "fps": 24,
+  "loop": true,
+  "bodyTop": 22,
+  "bodyBottom": 181,
+  "bodyHeight": 159,
+  "bodyWidth": 148,
+  "edgeAlpha": 0
+}
