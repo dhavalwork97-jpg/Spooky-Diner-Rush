@@ -4,8 +4,9 @@ Usage: python3 tools/make_customer_art.py <dir with customer_*.png | existing cu
   --blank-people leaves frames 0-7 empty (same frame numbers, about half the file size): the game only spawns ghosts.
   To bring the people back, re-run with the dir of the eight customer_*.png files (not in the repo; the owner has them) and set CUSTOMER_LOOK_MIN to 0.
   Pass the current public/assets/art/customers.webp as the first argument when the eight people PNGs are not at hand:
-  the 8 people cells are then copied from it (they are not used in game any more) and the ghosts are rebuilt from their cutouts.
-  ghost dir defaults to public/assets/customers/ghosts (the committed ghost cutouts).
+  the 8 people cells are then copied from it (they are not used in game any more).
+  The ghosts are animated and have their own sheets (tools/make_mint_ghost_art.py), so their cells here are blank; the
+  [ghost dir] argument is no longer used and is kept only so old command lines still work.
 
 For each source PNG: drop the faint alpha haze left by background removal (keep only the largest
 connected figure), crop tight to the figure so the bottom edge is the shoes (feet stand on the
@@ -16,8 +17,8 @@ The characters themselves are not redrawn.
 Ghosts keep their soft glow (no component filtering); only stray alpha under 3 is dropped.
 
 Sheet layout: 4 columns x 4 rows of CELL_W x HEIGHT cells.
-Frames 0-7: people in the order of NAMES, frames 8-14: ghosts in the order of GHOSTS (all must match
-CUSTOMER_LOOKS in src/anim/customerMotion.ts), frame 15: contact shadow, frame 16: heart.
+Frames 0-7: people in the order of NAMES, frames 8 on: ghosts in the order of GHOSTS (blank cells; all must match
+CUSTOMER_LOOKS in src/anim/customerMotion.ts), then the contact shadow, then the heart.
 """
 import sys
 from pathlib import Path
@@ -27,7 +28,7 @@ from PIL import Image, ImageDraw, ImageFilter
 from scipy import ndimage
 
 NAMES = ['kid', 'grandma', 'businessman', 'foodie', 'teen', 'chef_fan', 'athlete', 'sleepy']
-GHOSTS = ['monocle_gentleman', 'old_bearded_ghost', 'child_nightgown', 'wildhair_corset_ghost', 'vest_gentleman', 'flame_crown_ghost', 'ragged_dress_girl']
+GHOSTS = ['mint_ghost']  # animated: drawn from its own sheets (tools/make_mint_ghost_art.py), so its cell here stays blank
 HEIGHT = 384
 CELL_W = 192
 COLS = 4
@@ -93,21 +94,26 @@ if __name__ == '__main__':
     dst = Path(args[2]) if len(args) > 2 else Path('public/assets/art/customers.webp')
     cells = []
     widths = []
+    blank_cell = lambda: Image.new('RGBA', (CELL_W, HEIGHT), (0, 0, 0, 0))
     if src.is_file():
         old = Image.open(src).convert('RGBA')
         for i, n in enumerate(NAMES):
             cell = old.crop(((i % COLS) * CELL_W, (i // COLS) * HEIGHT, (i % COLS) * CELL_W + CELL_W, (i // COLS) * HEIGHT + HEIGHT))
-            cells.append(Image.new('RGBA', (CELL_W, HEIGHT), (0, 0, 0, 0)) if blank else cell)
+            cells.append(blank_cell() if blank else cell)
             widths.append(0)
-        figs = [(n, ghost_figure(ghosts / f'{n}.png')) for n in GHOSTS]
+        figs = []
     else:
-        figs = [(n, figure(src / f'customer_{n}.png')) for n in NAMES] + [(n, ghost_figure(ghosts / f'{n}.png')) for n in GHOSTS]
+        figs = [(n, figure(src / f'customer_{n}.png')) for n in NAMES]
     for name, f in figs:
         assert f.width <= CELL_W, (name, f.width)
-        cell = Image.new('RGBA', (CELL_W, HEIGHT), (0, 0, 0, 0))
+        cell = blank_cell()
         cell.paste(f, ((CELL_W - f.width) // 2, 0))
         cells.append(cell)
         widths.append(f.width)
+    # animated ghosts have no still: their cell stays empty (the width is taken from LOOK_ART instead)
+    for n in GHOSTS:
+        cells.append(blank_cell())
+        widths.append(0)
     print('FIGURE_W =', widths)
     cells += [shadow(), heart()]
     rows = (len(cells) + COLS - 1) // COLS

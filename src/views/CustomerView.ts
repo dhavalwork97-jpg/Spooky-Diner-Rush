@@ -22,6 +22,11 @@ import {
   CELL_H,
   CUSTOMER_SHEET,
   FIGURE_W,
+  LEAVE_FADE_MS,
+  LOOK_ART,
+  clipFor,
+  type LookArt,
+  type LookClip,
   LUNGE_MS,
   SCARES,
   SCARE_FADE_MS,
@@ -62,7 +67,7 @@ const MIN_HIT_W = 96;
 /** How far past the screen edge a customer starts or ends their walk (logical px). */
 const EDGE_MARGIN = 70;
 const HEART_MAX = 5;
-/** Scare sheets already asked for (they load lazily, the first time a ghost that has one appears). */
+/** Scare sheets and leave clips already asked for (they load lazily, the first time a ghost that has one appears). */
 const scareRequested = new Set<string>();
 const GLOW_COLOR = 0x8fe8ff;
 const GLOW_ALPHA = 0.3;
@@ -86,13 +91,12 @@ const TYPE_CHIPS: Record<string, { label: string; color: number; text: string }>
  */
 export class CustomerView {
   readonly id: number;
-  readonly body: Phaser.GameObjects.Image;
+  readonly body: Phaser.GameObjects.Sprite;
   private bubble: Phaser.GameObjects.Container;
   private ticks: Phaser.GameObjects.Graphics;
   private bar: Phaser.GameObjects.Graphics;
   private barFrame: Phaser.GameObjects.Image;
   private price: Phaser.GameObjects.Container;
-  private highlight: Phaser.GameObjects.Rectangle;
   private mood: 'normal' | 'worried' | 'angry' | 'happy' = 'normal';
   private x: number;
   private bubbleBaseX: number;
@@ -102,6 +106,11 @@ export class CustomerView {
   private scaleBase: number;
   private shadow: Phaser.GameObjects.Image;
   private shadowW = 1;
+  private shadowH = 1;
+  /** Set for customers drawn from their own animation sheets (the mint ghost); they play `calm` or `upset` by mood. */
+  private art?: LookArt;
+  /** Size of the clip now showing relative to the calm clip (1 for all but the happy leave clip). */
+  private clipScale = 1;
   private persona: Personality;
   private seed: number;
   private look: number;
@@ -137,7 +146,9 @@ export class CustomerView {
     this.look = c.look;
     this.persona = PERSONALITIES[lookKey(c.look)];
     this.hover = this.persona.ghost?.hover ?? 0;
+    this.art = LOOK_ART[lookKey(c.look)]; // before requestLeaveClips, which needs it
     this.requestScare();
+    this.requestLeaveClips();
     this.seed = seedFor(c.id);
     this.deliveredCount = c.delivered.filter(Boolean).length;
     this.enterAt = scene.time.now;
@@ -148,17 +159,22 @@ export class CustomerView {
     // soft contact shadow so the feet sit on the floor
     // Character, shadow and hearts are all frames of one sprite sheet (one texture, one draw batch).
     // The shadow is an image from the sheet, not a Shape: Shapes drawn between sprites corrupted neighbours in testing.
-    this.scaleBase = BODY_H / CELL_H;
+    // a still character is one cell of the shared sheet; an animated one is drawn from its own frames, scaled so its figure is BODY_H tall
+    this.scaleBase = this.art ? BODY_H / this.art.bodyH : BODY_H / CELL_H;
+    this.bodyW = (this.art ? this.art.bodyW : FIGURE_W[lookIndex(c.look)]) * this.scaleBase; // the figure, not the padded cell
+    this.shadowW = this.bodyW / SHADOW_ART_W;
+    this.shadowH = BODY_H / CELL_H; // the shadow is always a cell of the shared sheet
     this.shadow = scene.add.image(this.x, bottom, CUSTOMER_SHEET, SHADOW_FRAME).setOrigin(0.5, 1).setDepth(299);
-    this.shadowW = (this.scaleBase * FIGURE_W[lookIndex(c.look)]) / SHADOW_ART_W;
-    this.shadow.setScale(this.shadowW, this.scaleBase);
-    this.body = scene.add.image(this.x, bottom, CUSTOMER_SHEET, lookIndex(c.look)).setOrigin(0.5, 1).setDepth(300);
+    this.shadow.setScale(this.shadowW, this.shadowH);
+    const originY = this.art ? this.art.calm.footY : 1;
+    this.body = scene.add.sprite(this.x, bottom, this.art ? this.art.calm.key : CUSTOMER_SHEET, this.art ? 0 : lookIndex(c.look)).setOrigin(0.5, originY).setDepth(300);
     this.body.setScale(this.scaleBase);
-    if (this.persona.ghost) {
+    if (this.persona.ghost && !this.art) {
+      // (animated ghosts have the glow painted into their art; an additive copy that swaps sheets every frame also glitched)
       // a soft additive copy over the ghost lifts its colours so it reads as glowing, not washed out
-      this.glow = scene.add.image(this.x, bottom, CUSTOMER_SHEET, lookIndex(c.look)).setOrigin(0.5, 1).setDepth(301).setBlendMode(Phaser.BlendModes.ADD).setTint(GLOW_COLOR).setAlpha(GLOW_ALPHA).setScale(this.scaleBase);
+      this.glow = scene.add.image(this.x, bottom, this.body.texture.key, this.body.frame.name).setOrigin(0.5, originY).setDepth(301).setBlendMode(Phaser.BlendModes.ADD).setTint(GLOW_COLOR).setAlpha(GLOW_ALPHA).setScale(this.scaleBase);
     }
-    this.bodyW = FIGURE_W[lookIndex(c.look)] * this.scaleBase; // the figure, not the padded cell
+    this.showLook();
     // widen the tap area for slim characters (hit area is in texture pixels)
     const hitW = Math.max(this.bodyW, MIN_HIT_W) / this.scaleBase;
     this.body.setInteractive({
@@ -166,12 +182,6 @@ export class CustomerView {
       hitAreaCallback: Phaser.Geom.Rectangle.Contains,
       useHandCursor: true,
     });
-    this.highlight = scene.add
-      .rectangle(this.x, bottom - BODY_H / 2, Math.max(this.bodyW, 70) + 22, BODY_H + 14)
-      .setStrokeStyle(5, 0xffffff, 1)
-      .setFillStyle(0xffffff, 0.12)
-      .setDepth(299)
-      .setVisible(false);
 
     // order bubble above the head
     this.bubbleBaseX = this.x;
@@ -248,10 +258,6 @@ export class CustomerView {
     return { x: this.x, y: this.baseY - BODY_H / 2 };
   }
 
-  setDropHighlight(on: boolean): void {
-    this.highlight.setVisible(on && !this.leaving);
-  }
-
   private drawBar(frac: number): void {
     const g = this.bar;
     g.clear();
@@ -288,7 +294,33 @@ export class CustomerView {
     else if (m === 'angry') this.body.setTint(0xff9a8a);
     else if (m === 'worried') this.body.setTint(0xffe2a0);
     else this.body.clearTint();
+    this.showLook();
     if (m === 'happy') this.celebrate();
+  }
+
+  /** Makes sure a clip's animation exists (they are created once, the first time they are needed). */
+  private ensureClipAnim(clip: LookClip): void {
+    const anims = this.scene.anims;
+    if (anims.exists(clip.key)) return;
+    anims.create({ key: clip.key, frames: anims.generateFrameNumbers(clip.key, { start: 0, end: clip.frames - 1 }), frameRate: clip.fps, repeat: clip.loop ? -1 : 0 });
+  }
+
+  /** Animated customers: happy idle while patient or happy, impatient under half patience, angry under a quarter. Still when motion is reduced. */
+  private showLook(): void {
+    const art = this.art;
+    if (!art) return;
+    const clip = art[clipFor(this.mood)];
+    this.ensureClipAnim(clip);
+    this.clipScale = clip.scale;
+    this.body.setOrigin(0.5, clip.footY);
+    if (SaveSystem.reduceMotion()) {
+      this.body.stop();
+      this.body.setTexture(clip.key, 0);
+      return;
+    }
+    const playing = this.body.anims.isPlaying && this.body.anims.currentAnim?.key === clip.key;
+    // each ghost starts at its own frame, so two of them on screen never move in step
+    if (!playing) this.body.play({ key: clip.key, startFrame: Math.floor((this.seed % 1) * clip.frames) % clip.frames });
   }
 
   private motionOn(): boolean {
@@ -400,7 +432,7 @@ export class CustomerView {
 
   private applyPose(pose: Pose, alpha: number): void {
     this.body.setPosition(this.x + pose.dx, this.baseY + pose.dy - this.hover);
-    this.body.setScale(this.scaleBase * pose.sx, this.scaleBase * pose.sy);
+    this.body.setScale(this.scaleBase * this.clipScale * pose.sx, this.scaleBase * this.clipScale * pose.sy);
     this.body.setAngle(pose.angle);
     this.body.setAlpha(alpha);
     if (this.warn?.visible) {
@@ -418,7 +450,7 @@ export class CustomerView {
     this.glow?.setPosition(this.body.x, this.body.y).setScale(this.body.scaleX, this.body.scaleY).setAngle(pose.angle).setAlpha(alpha * this.glowK);
     // the shadow stays on the floor, follows sideways motion and shrinks while the body is lifted
     const lift = Math.min(1, Math.max(0, -pose.dy + this.hover) / 10);
-    this.shadow.setPosition(this.x + pose.dx, this.baseY).setScale(this.shadowW * (1 - lift * 0.3), this.scaleBase).setAlpha(alpha * (1 - lift * 0.5));
+    this.shadow.setPosition(this.x + pose.dx, this.baseY).setScale(this.shadowW * (1 - lift * 0.3), this.shadowH).setAlpha(alpha * (1 - lift * 0.5));
   }
 
   update(c: Customer, now: number, rush = false): void {
@@ -446,12 +478,17 @@ export class CustomerView {
 
   leave(done: () => void): void {
     this.leaving = true;
-    this.highlight.setVisible(false);
     if (SaveSystem.reduceMotion()) {
       done();
       return;
     }
     this.scene.tweens.add({ targets: [this.bubble, this.price, this.barFrame, this.bar], alpha: 0, duration: 200 });
+    // animated ghosts play their supplied leave clip in place (angry or happy) when it has loaded; otherwise the old exits below
+    const leaveClip = this.art ? (this.mood === 'angry' ? this.art.leaveAngry : this.art.leaveHappy) : undefined;
+    if (leaveClip && this.scene.textures.exists(leaveClip.key)) {
+      this.playLeaveClip(leaveClip, done);
+      return;
+    }
     // an angry ghost scares on the way out: the supplied sheet when it is loaded, otherwise a code-only lunge
     if (this.persona.ghost && this.mood === 'angry') {
       const def = SCARES[lookKey(this.look)];
@@ -469,6 +506,39 @@ export class CustomerView {
       onUpdate: () => this.applyPose(departPose(this.persona, prog.t, this.edgeDist, this.enterDir).pose, 1),
       onComplete: done,
     });
+  }
+
+  /** Ask for the leave clips of an animated ghost in the background, once. */
+  private requestLeaveClips(): void {
+    if (!this.art || SaveSystem.reduceMotion()) return;
+    for (const clip of [this.art.leaveHappy, this.art.leaveAngry]) {
+      if (scareRequested.has(clip.key) || this.scene.textures.exists(clip.key)) continue;
+      scareRequested.add(clip.key);
+      this.scene.load.spritesheet(clip.key, clip.file, { frameWidth: clip.size, frameHeight: clip.size });
+    }
+    if (!this.scene.load.isLoading()) this.scene.load.start();
+  }
+
+  /** Plays a one-shot leave clip in place (the customer stays on their seat), then fades out. */
+  private playLeaveClip(clip: LookClip, done: () => void): void {
+    const sc = this.scene;
+    const b = this.body;
+    this.warn?.setVisible(false);
+    this.ensureClipAnim(clip);
+    this.clipScale = clip.scale;
+    b.clearTint();
+    b.setOrigin(0.5, clip.footY).setAngle(0).setAlpha(1).setScale(this.scaleBase * clip.scale).setPosition(this.x, this.baseY - this.hover);
+    this.shadow.setPosition(this.x, this.baseY).setScale(this.shadowW, this.shadowH).setAlpha(1);
+    let finished = false;
+    const finish = (): void => {
+      if (finished) return;
+      finished = true;
+      sc.tweens.add({ targets: [b, this.shadow], alpha: 0, duration: LEAVE_FADE_MS, onComplete: done });
+    };
+    b.once('animationcomplete', finish);
+    // safety net in case the animation never reports completion
+    this.scareTimer = sc.time.delayedCall((clip.frames / clip.fps) * 1000 + 800, finish);
+    b.play(clip.key);
   }
 
   /** Ask for this ghost's scare sheet in the background, once. */
@@ -518,6 +588,7 @@ export class CustomerView {
     // angry ghosts flare red through the glow copy; the body keeps its own colours
     this.warn?.setVisible(false);
     this.glow?.setTint(0xff5040);
+    if (this.art) this.body.setTint(0xffb0a0); // animated ghosts have no glow copy: the body itself flares red
     this.glowK = 0.55;
     this.exitTween = sc.tweens.add({
       targets: prog,
@@ -554,6 +625,5 @@ export class CustomerView {
     this.price.destroy();
     this.barFrame.destroy();
     this.bar.destroy();
-    this.highlight.destroy();
   }
 }

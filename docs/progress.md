@@ -280,3 +280,7 @@ All numbers live in JSON: `data/upgrades.json`, `data/decor.json`, `data/career.
 
 ## Title screen and intro video (2026-11-01)
 Title scene before every game (logo, chef with ghost, "Tap to play"), tap starts a skippable 10 s intro video (1.5 MB). Falls back to the game on any failure or reduced motion; `?debug` skips it. Details in HANDOFF.md.
+
+## Mint ghost replaces the old ghosts (2026-11-04, branch fix/tap-outline)
+- The only customer is now the mint ghost with five supplied animations: happy idle, impatient (under half patience), angry (under a quarter), and one-shot leave happy / leave angry played in place (sped up to about 3 s, then a fade). The white box that showed on a customer while an order was dragged onto them is gone.
+- Not verified: a real phone (frame rate with five animation sheets, texture memory about 80 MB for the mint ghost sheets), the leave clip timing against how fast the next customer arrives.

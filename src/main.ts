@@ -7,6 +7,7 @@ import { RecipeBookScene } from './scenes/RecipeBookScene';
 import { RestaurantSelectScene } from './scenes/RestaurantSelectScene';
 import { CrazyGames } from './sdk/crazygames';
 import { initOrientation } from './systems/Orientation';
+import { audio } from './systems/AudioSystem';
 
 const start = (): Phaser.Game =>
   new Phaser.Game({
@@ -22,6 +23,11 @@ const start = (): Phaser.Game =>
   });
 
 initOrientation(); // phones: the first tap enters fullscreen and locks landscape
+
+// iOS: sound the browser stopped (call, lock screen) can only restart inside a tap.
+for (const type of ['pointerup', 'touchend', 'click', 'keydown'] as const) {
+  window.addEventListener(type, () => audio.resumeOnGesture(), { passive: true });
+}
 
 // The CrazyGames SDK must be ready before the save data is read in BootScene.
 void CrazyGames.init().then(() => {
