@@ -379,62 +379,52 @@
       "lazy": false
     },
     {
-      "key": "ghost_scare_monocle_gentleman",
+      "key": "mint_ghost_happy",
       "type": "spritesheet",
-      "file": "assets/customers/ghosts/scare/monocle_gentleman_scare.webp",
+      "file": "assets/customers/mint_ghost/ghost_idle_happy.webp",
       "scale": 1,
-      "frameWidth": 208,
-      "frameHeight": 370,
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "mint_ghost_impatient",
+      "type": "spritesheet",
+      "file": "assets/customers/mint_ghost/ghost_impatient.webp",
+      "scale": 1,
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "mint_ghost_angry",
+      "type": "spritesheet",
+      "file": "assets/customers/mint_ghost/ghost_angry.webp",
+      "scale": 1,
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "mint_ghost_leave_angry",
+      "type": "spritesheet",
+      "file": "assets/customers/mint_ghost/ghost_leave_angry.webp",
+      "scale": 1,
+      "frameWidth": 192,
+      "frameHeight": 192,
       "preferFallback": false,
       "lazy": true
     },
     {
-      "key": "ghost_scare_old_bearded_ghost",
+      "key": "mint_ghost_leave_happy",
       "type": "spritesheet",
-      "file": "assets/customers/ghosts/scare/old_bearded_ghost_scare.webp",
+      "file": "assets/customers/mint_ghost/ghost_leave_happy.webp",
       "scale": 1,
-      "frameWidth": 208,
-      "frameHeight": 370,
-      "preferFallback": false,
-      "lazy": true
-    },
-    {
-      "key": "ghost_scare_child_nightgown",
-      "type": "spritesheet",
-      "file": "assets/customers/ghosts/scare/child_nightgown_scare.webp",
-      "scale": 1,
-      "frameWidth": 208,
-      "frameHeight": 370,
-      "preferFallback": false,
-      "lazy": true
-    },
-    {
-      "key": "ghost_scare_wildhair_corset_ghost",
-      "type": "spritesheet",
-      "file": "assets/customers/ghosts/scare/wildhair_corset_ghost_scare.webp",
-      "scale": 1,
-      "frameWidth": 208,
-      "frameHeight": 370,
-      "preferFallback": false,
-      "lazy": true
-    },
-    {
-      "key": "ghost_scare_flame_crown_ghost",
-      "type": "spritesheet",
-      "file": "assets/customers/ghosts/scare/flame_crown_ghost_scare.webp",
-      "scale": 1,
-      "frameWidth": 208,
-      "frameHeight": 370,
-      "preferFallback": false,
-      "lazy": true
-    },
-    {
-      "key": "ghost_scare_ragged_dress_girl",
-      "type": "spritesheet",
-      "file": "assets/customers/ghosts/scare/ragged_dress_girl_scare.webp",
-      "scale": 1,
-      "frameWidth": 208,
-      "frameHeight": 370,
+      "frameWidth": 216,
+      "frameHeight": 216,
       "preferFallback": false,
       "lazy": true
     },

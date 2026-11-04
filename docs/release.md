@@ -10,8 +10,8 @@
 
 ## Size (dist, 2026-11-01)
 - Whole `dist/`: about 11.9 MB. Boot art loaded before play: about 1.2 MB, game script 1.5 MB (about 400 KB gzipped), bundled Fredoka font 3 x 16 KB.
-- Lazy (only when needed): about 9.0 MB in total, of which the six ghost scare sheets are about 7.0 MB (each loads the first time that ghost appears; without it the game uses a code lunge) and the rest is the ice cream and cold drink animations.
-- The ghost cutout PNGs in `public/assets/customers/ghosts/` are only the source for `tools/make_customer_art.py`; the build removes them from `dist/` (`vite.config.ts`).
+- Lazy (only when needed): the two mint ghost leave clips (about 1.8 MB, loaded the first time a ghost appears; without them the ghost walks out or lunges) and the ice cream and cold drink animations.
+- Customers: one mint ghost with five animation sheets in `public/assets/customers/mint_ghost/` (about 3.2 MB, made by `tools/make_mint_ghost_art.py`). The old ghosts and their scare sheets were removed on 2026-11-04 (about 7 MB less).
 
 ## SDK (CrazyGames v3)
 - `index.html` loads `https://sdk.crazygames.com/crazygames-sdk-v3.js`; `src/main.ts` awaits `CrazyGames.init()` (3 s timeout, never throws) before the game starts, so save data comes from the SDK `data` module when it is there and from localStorage otherwise. `gameplayStart/Stop` are called on play and pause or close.
@@ -22,5 +22,5 @@
 - Real phone and tablet testing (thumb feel, frame rate), real sound check, and a slow-connection check.
 
 ## Known limits
-- Only the vest gentleman has no scare clip (code lunge). No scare sound. Happy and eating faces for ghosts need new art.
+- The mint ghost has no scare sheet (the angry leave is its supplied sulk clip). No scare sound. Only one customer character exists for now; more are expected.
 - People customers are blanked in `customers.webp` (frames 0-7 are empty, `CUSTOMER_LOOK_MIN` is 8); to bring them back run the art tool with the eight PNGs and set it to 0.

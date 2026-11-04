@@ -10,14 +10,12 @@ import {
   PERSONALITIES,
   REST,
   SCARES,
+  LOOK_ART,
+  clipFor,
   warnAlpha,
   warnFrame,
   warnScale,
   warnSeverity,
-  SCARE_FRAMES,
-  SCARE_FRAME_H,
-  SCARE_FRAME_W,
-  SCARE_FPS,
   SHADOW_FRAME,
   LUNGE_MS,
   floatPose,
@@ -71,15 +69,15 @@ describe('customer art', () => {
   });
   it('keeps the model look count equal to the art count', () => {
     expect(CUSTOMER_LOOK_COUNT).toBe(CUSTOMER_LOOKS.length);
-    expect(CUSTOMER_LOOKS).toHaveLength(15);
+    expect(CUSTOMER_LOOKS).toHaveLength(9);
   });
   it('maps any look number to a character, even out of range', () => {
     expect(lookKey(0)).toBe('kid');
-    expect(lookKey(15)).toBe('kid');
-    expect(lookKey(8)).toBe('monocle_gentleman');
-    expect(lookKey(-1)).toBe('ragged_dress_girl');
+    expect(lookKey(9)).toBe('kid');
+    expect(lookKey(8)).toBe('mint_ghost');
+    expect(lookKey(-1)).toBe('mint_ghost');
     expect(lookIndex(3)).toBe(3);
-    expect(lookIndex(18)).toBe(3);
+    expect(lookIndex(12)).toBe(3);
   });
   it('the model only produces ghost looks', () => {
     const s = new KitchenState({ level: 8, xp: 0, coins: 0 }, defaultConfig, 7);
@@ -90,8 +88,8 @@ describe('customer art', () => {
       s.customers.length = 0;
     }
     for (const l of seen) expect(l).toBeGreaterThanOrEqual(CUSTOMER_LOOK_MIN), expect(l).toBeLessThan(CUSTOMER_LOOK_COUNT);
-    // customers are ghosts only: all seven appear and no person does
-    expect(seen.size).toBe(7);
+    // customers are ghosts only (one so far: the mint ghost) and no person appears
+    expect(seen.size).toBe(1);
     for (const l of seen) expect(isGhost(l)).toBe(true);
   });
 });
@@ -238,12 +236,13 @@ describe('customer motion', () => {
   });
 });
 
-const GHOST_NAMES = ['monocle_gentleman', 'old_bearded_ghost', 'child_nightgown', 'wildhair_corset_ghost', 'vest_gentleman', 'flame_crown_ghost', 'ragged_dress_girl'] as const;
-const publicFiles = import.meta.glob('../public/assets/customers/ghosts/**/*', { query: '?url', import: 'default' });
-const animJson = import.meta.glob('../public/assets/customers/ghosts/scare/*.anim.json', { eager: true, import: 'default' }) as Record<string, { frameWidth: number; frameHeight: number; frameCount: number; fps: number; peakFrame: number }>;
+const GHOST_NAMES = ['mint_ghost'] as const;
+const mintFiles = import.meta.glob('../public/assets/customers/mint_ghost/*.webp', { query: '?url', import: 'default' });
+const mintMeta = import.meta.glob('../public/assets/customers/mint_ghost/*.anim.json', { eager: true, import: 'default' }) as Record<string, { frames: number; columns: number; frameWidth: number; frameHeight: number; fps: number; loop: boolean; bodyTop: number; bodyBottom: number; bodyHeight: number; bodyWidth: number; edgeAlpha: number }>;
+const oldGhostFiles = import.meta.glob('../public/assets/customers/ghosts/**/*', { query: '?url', import: 'default' });
 
 describe('ghost customers', () => {
-  it('are the last seven looks, flagged as ghosts; people are not', () => {
+  it('are the last looks, flagged as ghosts; people are not', () => {
     GHOST_NAMES.forEach((n, i) => {
       expect(CUSTOMER_LOOKS[8 + i]).toBe(n);
       expect(isGhost(8 + i)).toBe(true);
@@ -251,33 +250,56 @@ describe('ghost customers', () => {
     });
     for (let i = 0; i < 8; i++) expect(isGhost(i)).toBe(false);
   });
-  it('have their cutouts in the specified folder, and no scare PNGs, GIF or white background folder', () => {
-    for (const n of GHOST_NAMES) expect(publicFiles[`../public/assets/customers/ghosts/${n}.png`], n).toBeTruthy();
-    expect(Object.keys(publicFiles).filter((f) => /_scare\.png$|\.gif$|white_bg/.test(f))).toHaveLength(0);
+  it('the old ghosts (cutouts and scare sheets) are gone from the game and the asset list', () => {
+    expect(Object.keys(oldGhostFiles)).toHaveLength(0);
+    expect(assets.filter((a) => /^ghost_scare_/.test(a.key))).toHaveLength(0);
+    expect(CUSTOMER_LOOKS as readonly string[]).not.toContain('vest_gentleman');
   });
-  it('six have a scare sheet whose size, fps and peak frame match the supplied anim.json; vest_gentleman uses the code lunge', () => {
-    expect(Object.keys(SCARES).sort()).toEqual(['child_nightgown', 'flame_crown_ghost', 'monocle_gentleman', 'old_bearded_ghost', 'ragged_dress_girl', 'wildhair_corset_ghost']);
-    expect(SCARES.vest_gentleman).toBeUndefined();
-    expect(SCARES.ragged_dress_girl!.warnMax).toBe(0); // calm spin: no angry face before the full clip
-    for (const [look, def] of Object.entries(SCARES)) {
-      const a = animJson[`../public/assets/customers/ghosts/scare/${look}_scare.anim.json`];
-      expect(a, look).toBeTruthy();
-      expect(a.frameWidth).toBe(SCARE_FRAME_W);
-      expect(a.frameHeight).toBe(SCARE_FRAME_H);
-      expect(a.frameCount).toBe(SCARE_FRAMES);
-      expect(a.fps).toBe(SCARE_FPS);
-      expect(a.peakFrame).toBe(def!.peakFrame);
-      const box = (a as unknown as { ghostBoxFirstFrame: { width: number; centerXFractionOfFrame: number; topYFractionOfFrame: number } }).ghostBoxFirstFrame;
-      expect(def!.boxW).toBe(box.width);
-      expect(def!.boxCx).toBeCloseTo(box.centerXFractionOfFrame, 3);
-      expect(def!.boxTop).toBeCloseTo(box.topYFractionOfFrame, 3);
-      expect(def!.warnMax).toBeLessThan(def!.peakFrame);
-      expect(def!.warnMax).toBeGreaterThanOrEqual(0);
-      expect(publicFiles[`../public/${def!.file}`], look).toBeTruthy();
-      const listed = assets.find((x) => x.key === def!.key) as { lazy?: boolean; file: string } | undefined;
-      expect(listed?.file).toBe(def!.file);
-      expect(listed?.lazy).toBe(true);
+  it('the mint ghost is drawn from its five supplied animation sheets, and the numbers in LOOK_ART match their sidecar files', () => {
+    const art = LOOK_ART.mint_ghost!;
+    expect(art).toBeTruthy();
+    const clips = { ghost_idle_happy: art.calm, ghost_impatient: art.upset, ghost_angry: art.angry, ghost_leave_angry: art.leaveAngry, ghost_leave_happy: art.leaveHappy };
+    const calmMeta = mintMeta['../public/assets/customers/mint_ghost/ghost_idle_happy.anim.json'];
+    for (const [side, clip] of Object.entries(clips)) {
+      const meta = mintMeta[`../public/assets/customers/mint_ghost/${side}.anim.json`];
+      expect(meta, side).toBeTruthy();
+      expect(clip.frames, side).toBe(meta.frames);
+      expect(clip.size, side).toBe(meta.frameWidth);
+      expect(meta.frameHeight).toBe(meta.frameWidth);
+      expect(clip.loop, side).toBe(meta.loop);
+      expect(meta.fps).toBe(24);
+      expect(clip.footY, side).toBeCloseTo(meta.bodyBottom / meta.frameHeight, 3);
+      // every clip draws the ghost's body at the calm clip's size
+      expect(clip.scale * meta.bodyHeight, side).toBeCloseTo(calmMeta.bodyHeight, 0);
+      // the figure never touches the frame edge, so no rectangle can show around it
+      expect(meta.edgeAlpha, side).toBe(0);
+      expect(mintFiles[`../public/${clip.file}`], clip.file).toBeTruthy();
+      const listed = assets.find((x) => x.key === clip.key) as { type: string; file: string; frameWidth: number; frameHeight: number; lazy?: boolean } | undefined;
+      expect(listed?.type).toBe('spritesheet');
+      expect(listed?.file).toBe(clip.file);
+      expect(listed?.frameWidth).toBe(clip.size);
+      expect(listed?.frameHeight).toBe(clip.size);
+      expect(listed?.lazy, side).toBe(clip.lazy);
     }
+    expect(art.bodyH).toBe(calmMeta.bodyHeight);
+    expect(art.bodyW).toBe(calmMeta.bodyWidth);
+    // only the leave clips are loaded on demand; the three looping clips are ready at start
+    expect([art.calm, art.upset, art.angry].every((c) => !c.lazy && c.loop)).toBe(true);
+    expect([art.leaveHappy, art.leaveAngry].every((c) => c.lazy && !c.loop)).toBe(true);
+    // played faster than supplied so the seat is free again soon, but not so fast it looks wrong
+    for (const c of [art.leaveHappy, art.leaveAngry]) {
+      expect(c.frames / c.fps).toBeLessThan(3.5);
+      expect(c.frames / c.fps).toBeGreaterThan(2.5);
+    }
+  });
+  it('the looping clip follows the mood: calm and happy idle, worried impatient, angry angry', () => {
+    expect(clipFor('normal')).toBe('calm');
+    expect(clipFor('happy')).toBe('calm');
+    expect(clipFor('worried')).toBe('upset');
+    expect(clipFor('angry')).toBe('angry');
+  });
+  it('no ghost has a scare sheet now, so an angry ghost leaves with the code-only lunge', () => {
+    expect(Object.keys(SCARES)).toHaveLength(0);
   });
   it('float stays within a few px and a few degrees; calm ghosts do not shimmy', () => {
     for (const n of GHOST_NAMES) {
@@ -293,7 +315,7 @@ describe('ghost customers', () => {
     expect(Math.abs(shimmyPose('angry', 10, 0).dx)).toBeLessThanOrEqual(2.2);
   });
   it('glide and arrival: no hop or squash, ends at rest', () => {
-    const p = PERSONALITIES.child_nightgown;
+    const p = PERSONALITIES.mint_ghost;
     for (let t = 0; t < WALK_MS; t += 11) {
       const q = arrivePose(p, t, 400, -1).pose;
       expect(q.sy).toBe(1);
@@ -318,13 +340,13 @@ describe('ghost customers', () => {
   });
 });
 
-describe('losing-patience expression (scare sheet frames held on the idle ghost)', () => {
+describe('losing-patience expression maths (used again when a ghost gets a scare sheet)', () => {
   it('starts under half patience and gets stronger as patience falls', () => {
     expect(warnSeverity(1)).toBe(0);
     expect(warnSeverity(0.5)).toBe(0);
     expect(warnSeverity(0.25)).toBeCloseTo(0.5);
     expect(warnSeverity(0)).toBe(1);
-    const def = SCARES.monocle_gentleman!;
+    const def = { key: 'k', file: 'f', peakFrame: 38, boxW: 201, boxCx: 0.5, boxTop: 0, warnMax: 22 };
     expect(warnFrame(def, 0)).toBe(0);
     expect(warnFrame(def, 1)).toBe(def.warnMax);
     expect(warnFrame(def, 0.5)).toBeGreaterThan(0);
@@ -333,7 +355,7 @@ describe('losing-patience expression (scare sheet frames held on the idle ghost)
     expect(warnAlpha(0.34)).toBe(1);
   });
   it('scales the overlay so the ghost box matches the idle figure width', () => {
-    const def = SCARES.child_nightgown!;
+    const def = { key: 'k', file: 'f', peakFrame: 26, boxW: 125, boxCx: 0.5, boxTop: 0, warnMax: 14 };
     expect(warnScale(def, 125)).toBeCloseTo(1);
     expect(warnScale(def, 75)).toBeCloseTo(0.6);
   });
