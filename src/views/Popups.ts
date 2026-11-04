@@ -129,6 +129,10 @@ export class LevelUpCard {
   }
 }
 
+/** The optional green (rewarded ad) button: its smallest width and the space kept on each side of its label together. */
+const EXTRA_MIN_W = 460;
+const EXTRA_PAD = 64;
+
 /** Full-screen overlay used for "Closed" (with a Reopen button) and "Paused". */
 export class Overlay {
   private root: Phaser.GameObjects.Container;
@@ -139,6 +143,7 @@ export class Overlay {
   private onPress: (() => void) | null = null;
   private extra: Phaser.GameObjects.Container;
   private extraText: Phaser.GameObjects.Text;
+  private extraGfx: Phaser.GameObjects.Graphics;
   private onExtra: (() => void) | null = null;
 
   constructor(private scene: Phaser.Scene, w: number, h: number) {
@@ -165,11 +170,10 @@ export class Overlay {
     this.button.on('pointerout', () => this.button.setScale(1));
     // Optional second button (a rewarded ad offer): wider, calmer colour, only shown when `show` is given one.
     const eg = scene.add.graphics();
-    eg.fillStyle(0x000000, 0.25).fillRoundedRect(-230, -30, 460, 80, 18);
-    eg.fillStyle(0x2f7d4f, 1).fillRoundedRect(-230, -36, 460, 76, 18);
-    eg.lineStyle(5, INK, 1).strokeRoundedRect(-230, -36, 460, 76, 18);
+    this.extraGfx = eg;
+    this.drawExtra(EXTRA_MIN_W);
     this.extraText = scene.add.text(0, 2, '', { fontFamily: FONT, fontSize: '30px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 }).setOrigin(0.5);
-    this.extra = scene.add.container(w / 2, h / 2 + 190, [eg, this.extraText]).setSize(460, 76).setInteractive({ useHandCursor: true }).setVisible(false);
+    this.extra = scene.add.container(w / 2, h / 2 + 190, [eg, this.extraText]).setSize(EXTRA_MIN_W, 76).setInteractive({ useHandCursor: true }).setVisible(false);
     this.extra.on('pointerdown', () => this.extra.setScale(0.96));
     this.extra.on('pointerout', () => this.extra.setScale(1));
     this.extra.on('pointerup', () => {
@@ -184,6 +188,7 @@ export class Overlay {
     this.extra.setVisible(!!extra);
     if (extra) {
       this.extraText.setText(extra.label);
+      this.fitExtra();
       this.onExtra = extra.onPress;
     }
     this.title.setText(title);
@@ -192,6 +197,23 @@ export class Overlay {
     this.onPress = onPress;
     this.root.setVisible(true).setAlpha(0);
     this.scene.tweens.add({ targets: this.root, alpha: 1, duration: SaveSystem.reduceMotion() ? 0 : 250 });
+  }
+
+  /** The green button is as wide as its label needs (never narrower than the original 460), so long text can never spill out of it. */
+  private drawExtra(width: number): void {
+    const x = -width / 2;
+    this.extraGfx.clear();
+    this.extraGfx.fillStyle(0x000000, 0.25).fillRoundedRect(x, -30, width, 80, 18);
+    this.extraGfx.fillStyle(0x2f7d4f, 1).fillRoundedRect(x, -36, width, 76, 18);
+    this.extraGfx.lineStyle(5, INK, 1).strokeRoundedRect(x, -36, width, 76, 18);
+  }
+
+  private fitExtra(): void {
+    const width = Math.max(EXTRA_MIN_W, Math.ceil(this.extraText.width) + EXTRA_PAD);
+    this.drawExtra(width);
+    this.extra.setSize(width, 76);
+    // the tap area follows the button (a container keeps the hit area it got when it became interactive)
+    (this.extra.input?.hitArea as Phaser.Geom.Rectangle | undefined)?.setSize(width, 76);
   }
 
   setSub(text: string): void {
