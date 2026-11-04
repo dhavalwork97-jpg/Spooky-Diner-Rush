@@ -1,5 +1,6 @@
 // Safe wrapper around the CrazyGames SDK. Every call is a no-op when the SDK is absent,
 // so the game also runs locally and in tests.
+import { AD_GAP_MS, AD_TIMEOUT_MS } from '../ads/timing';
 
 interface CGData {
   getItem(key: string): string | null;
@@ -19,10 +20,8 @@ function sdk(): CGSdk | undefined {
 let playing = false;
 let loading = false;
 let lastAdAt = -Infinity;
-/** Our own spacing between mid-game ads; the SDK enforces its own limits on top of this. */
-export const AD_GAP_MS = 180_000;
-/** An ad that never reports back must not freeze the game. */
-export const AD_TIMEOUT_MS = 90_000;
+// The spacing (180 s) and the timeout live in `src/ads/timing.ts`, shared with the Android ad code.
+export { AD_GAP_MS, AD_TIMEOUT_MS };
 
 export const CrazyGames = {
   /** Initialise the SDK (it must finish before the save data or any other call is used). Never throws; gives up after `ms`. */

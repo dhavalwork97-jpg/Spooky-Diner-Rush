@@ -18,6 +18,7 @@ import { ChefBubble } from '../views/ChefBubble';
 import { MenuButtons, type MenuKind } from '../views/MenuButtons';
 import { audio } from '../systems/AudioSystem';
 import { CrazyGames } from '../sdk/crazygames';
+import { ads } from '../ads';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
 import { nextHint } from '../game/tutorial';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
@@ -738,7 +739,7 @@ export class GameScene extends Phaser.Scene {
           'Too many unhappy customers.\nYour level, XP and coins are safe.',
           'Reopen',
           () => this.breakAd(() => this.state.reopen()),
-          CrazyGames.canShowRewarded() ? { label: 'Watch an ad: reopen at full reputation', onPress: () => this.reviveWithAd() } : undefined,
+          ads.canShowRewarded() ? { label: 'Watch an ad: reopen at full reputation', onPress: () => this.reviveWithAd() } : undefined,
         );
         break;
       case 'reopened':
@@ -983,7 +984,7 @@ export class GameScene extends Phaser.Scene {
 
   // ---------------------------------------------------------------- pause
 
-  /** True while a CrazyGames ad is on screen: the model and sound are frozen. */
+  /** True while an ad (CrazyGames in the browser, AdMob in the Android app) is on screen: the model and sound are frozen. */
   private adActive = false;
   private adPending = false;
 
@@ -994,7 +995,7 @@ export class GameScene extends Phaser.Scene {
   private breakAd(then?: () => void): void {
     if (this.adActive || this.adPending) return;
     this.adPending = true;
-    void CrazyGames.midgameAd(() => {
+    void ads.midgameAd(() => {
       this.adActive = true;
       this.paused = true;
       audio.pauseAll();
@@ -1017,7 +1018,7 @@ export class GameScene extends Phaser.Scene {
   private reviveWithAd(): void {
     if (this.adActive || this.adPending || !this.state.closed) return;
     this.adPending = true;
-    void CrazyGames.rewardedAd(() => {
+    void ads.rewardedAd(() => {
       this.adActive = true;
       this.paused = true;
       audio.pauseAll();

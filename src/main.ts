@@ -6,6 +6,7 @@ import { ShopScene } from './scenes/ShopScene';
 import { RecipeBookScene } from './scenes/RecipeBookScene';
 import { RestaurantSelectScene } from './scenes/RestaurantSelectScene';
 import { CrazyGames } from './sdk/crazygames';
+import { initAds } from './ads';
 import { initOrientation } from './systems/Orientation';
 import { audio } from './systems/AudioSystem';
 import { IS_ANDROID_BUILD } from './build/target';
@@ -37,4 +38,5 @@ void CrazyGames.init().then(() => {
   const game = start();
   // Written with the literal `import.meta.env.MODE` so Vite removes this branch (and the Capacitor files) outside the Android build.
   if (import.meta.env.MODE === 'android') void import('./platform/android').then((m) => m.initAndroid(game));
+  void initAds(); // Android: starts AdMob; browser and CrazyGames: nothing to start (the CrazyGames SDK was initialised above)
 });
