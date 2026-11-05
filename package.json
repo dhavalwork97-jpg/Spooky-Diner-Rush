@@ -15,10 +15,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@capacitor-community/admob": "^8.3.0",
     "@capacitor/android": "^8.6.0",
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.6.0",
+    "capacitor-levelplay-ads": "0.1.42",
     "phaser": "^4.2.1"
   },
   "devDependencies": {

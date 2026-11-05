@@ -1,5 +1,5 @@
 /**
- * Ad timing shared by BOTH platforms. One place, so the browser (CrazyGames) and the Android app (AdMob) can never drift apart.
+ * Ad timing shared by BOTH platforms. One place, so the browser (CrazyGames) and the Android app (LevelPlay) can never drift apart.
  * The reward numbers are NOT here: they stay in the game model (`KitchenState.reopen`: normal 55 reputation, rewarded 100).
  */
 

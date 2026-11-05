@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import manifest from '../android/app/src/main/AndroidManifest.xml?raw';
+import gitignore from '../.gitignore?raw';
+import envExample from '../.env.example?raw';
 import { KitchenState } from '../src/game/KitchenState';
-import { ADMOB_TEST_IDS, ADMOB_TESTING } from '../src/ads/adIds';
 import { AD_GAP_MS } from '../src/ads/timing';
 import { AD_GAP_MS as CG_GAP_MS } from '../src/sdk/crazygames';
 
@@ -41,31 +42,38 @@ describe('reward economy is unchanged', () => {
   });
 });
 
-describe('AdMob stays out of the browser and CrazyGames builds', () => {
-  it('only src/ads/admobAds.ts imports the plugin', () => {
-    expect(where((t) => t.includes('@capacitor-community/admob'))).toEqual(['src/ads/admobAds.ts']);
+describe('LevelPlay stays out of the browser and CrazyGames builds', () => {
+  it('only src/ads/levelplayAds.ts imports the plugin', () => {
+    expect(where((t) => t.includes('capacitor-levelplay-ads'))).toEqual(['src/ads/levelplayAds.ts']);
   });
-  it('admobAds is only reached through a dynamic import behind the android mode check', () => {
-    expect(where((t) => /from ['"]\.\/admobAds['"]|import\(['"]\.\/admobAds['"]\)/.test(t))).toEqual(['src/ads/index.ts']);
+  it('levelplayAds is only reached through a dynamic import behind the android mode check', () => {
+    expect(where((t) => /from ['"]\.\/levelplayAds['"]|import\(['"]\.\/levelplayAds['"]\)/.test(t))).toEqual(['src/ads/index.ts']);
     const index = text('src/ads/index.ts');
-    expect(index).not.toMatch(/^import .*admobAds/m); // no static import
-    expect(index).toMatch(/import\.meta\.env\.MODE === 'android'[\s\S]*import\('\.\/admobAds'\)/);
+    expect(index).not.toMatch(/^import .*levelplayAds/m); // no static import
+    expect(index).toMatch(/import\.meta\.env\.MODE === 'android'[\s\S]*import\('\.\/levelplayAds'\)/);
   });
-  it('the CrazyGames wrapper knows nothing about AdMob', () => {
-    expect(/admob/i.test(text('src/sdk/crazygames.ts'))).toBe(false);
+  it('the LevelPlay ids are read in one Android-only file', () => {
+    expect(where((t) => t.includes('VITE_LEVELPLAY_'))).toEqual(['src/ads/levelplayConfig.ts']);
+    expect(where((t) => t.includes("./levelplayConfig"))).toEqual(['src/ads/levelplayAds.ts']);
+  });
+  it('the CrazyGames wrapper knows nothing about LevelPlay or AdMob', () => {
+    expect(/levelplay|admob/i.test(text('src/sdk/crazygames.ts'))).toBe(false);
+  });
+  it('AdMob is gone from the code and the manifest', () => {
+    expect(where((t) => /admob|ca-app-pub/i.test(t.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')))).toEqual([]);
+    expect(manifest).not.toMatch(/ca-app-pub|APPLICATION_ID/);
   });
 });
 
-describe('test ids only', () => {
-  const GOOGLE_TEST_PUBLISHER = 'ca-app-pub-3940256099942544';
-  it('every AdMob id in the code and the manifest is a Google test id', () => {
-    const ids = [...[...code.values()].flatMap((t) => t.match(/ca-app-pub-\d+[~/]\d+/g) ?? []), ...(manifest.match(/ca-app-pub-\d+[~/]\d+/g) ?? [])];
-    expect(ids.length).toBeGreaterThanOrEqual(3);
-    for (const id of ids) expect(id.startsWith(GOOGLE_TEST_PUBLISHER)).toBe(true);
-    expect(ADMOB_TESTING).toBe(true);
+describe('configuration and permissions', () => {
+  it('local env files are git-ignored and the example holds only placeholders', () => {
+    expect(gitignore).toMatch(/^\.env\.\*\.local$/m);
+    expect(gitignore).toMatch(/^\.env\.local$/m);
+    for (const k of ['APP_KEY', 'REWARDED_ID', 'INTERSTITIAL_ID', 'BANNER_ID']) expect(envExample).toMatch(new RegExp(`VITE_LEVELPLAY_${k}=YOUR_`));
   });
-  it('the manifest app id matches the one in adIds.ts', () => {
-    expect(manifest).toMatch(/com\.google\.android\.gms\.ads\.APPLICATION_ID"\s+android:value="([^"]+)"/);
-    expect(manifest).toContain(`android:value="${ADMOB_TEST_IDS.appId}"`);
+  it('the manifest declares the advertising id permission LevelPlay needs, and nothing else new', () => {
+    expect(manifest).toContain('com.google.android.gms.permission.AD_ID');
+    const perms = [...manifest.matchAll(/uses-permission android:name="([^"]+)"/g)].map((m) => m[1]).sort();
+    expect(perms).toEqual(['android.permission.INTERNET', 'com.google.android.gms.permission.AD_ID']);
   });
 });

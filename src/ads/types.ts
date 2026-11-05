@@ -1,6 +1,6 @@
 /**
  * What the game needs from an ad network. The browser and CrazyGames builds use the CrazyGames wrapper (`src/sdk/crazygames.ts`),
- * the Android app uses AdMob (`src/ads/admobAds.ts`). The game (`GameScene`) only talks to this interface through `ads`
+ * the Android app uses Unity LevelPlay (`src/ads/levelplayAds.ts`). The game (`GameScene`) only talks to this interface through `ads`
  * (`src/ads/index.ts`), so it never knows which network is behind it.
  *
  * Rules every implementation keeps:
@@ -9,7 +9,7 @@
  *  - `rewardedAd` resolves `true` ONLY when the network confirmed the reward was earned. The game grants the reward then, never before.
  */
 export interface AdService {
-  /** True when a mid-game ad may be requested now (network ready and the 180 s spacing is over). */
+  /** True when a mid-game ad may be requested now (network ready, an ad loaded, the 180 s spacing over, the daily cap not reached). */
   canShowAd(now?: number): boolean;
   /** Mid-game ad at a natural break. Resolves true when an ad was shown, false when none was. */
   midgameAd(onStart: () => void, now?: number): Promise<boolean>;
@@ -17,4 +17,13 @@ export interface AdService {
   canShowRewarded(): boolean;
   /** Rewarded ad. Resolves true only when the reward was earned. */
   rewardedAd(onStart: () => void, now?: number): Promise<boolean>;
+}
+
+/**
+ * The banner strip. Only the Android app has one (title screen only); everywhere else both calls do nothing.
+ * Both calls are safe to repeat: there is never more than one banner.
+ */
+export interface BannerService {
+  show(): void;
+  hide(): void;
 }

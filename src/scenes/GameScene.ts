@@ -984,7 +984,7 @@ export class GameScene extends Phaser.Scene {
 
   // ---------------------------------------------------------------- pause
 
-  /** True while an ad (CrazyGames in the browser, AdMob in the Android app) is on screen: the model and sound are frozen. */
+  /** True while an ad (CrazyGames in the browser, LevelPlay in the Android app) is on screen: the model and sound are frozen. */
   private adActive = false;
   private adPending = false;
 
