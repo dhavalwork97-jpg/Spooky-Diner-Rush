@@ -1,5 +1,20 @@
 # HANDOFF
 
+## IN PROGRESS: promotional gameplay recordings for CrazyGames (2026-11-05, Claude) - branch `feature/promo-recordings` (local worktree `../chef-rush-promo`, from `origin/main` 03a61f1), NOTHING COMMITTED OR PUSHED
+
+STATUS 2026-11-05: DONE locally. `node tools/promo/record.mjs --mode=play|title ...` then `bash tools/promo/assemble.sh` (run from artifacts/promotional; needs `vite preview --mode crazygames --port 4173`). Outputs in artifacts/promotional/ (main 57 s, preview 15.8 s, 1920x1080 30 fps, plus screenshots/). Android recording NOT made (no device/emulator here). Nothing committed; videos must not be committed.
+Task (owner brief `4d03a523-attachment.txt`): landscape 16:9 recordings of REAL gameplay: main (45-60 s), preview (15-20 s), Android only if an Android build can be recorded. Output `artifacts/promotional/` (+ `screenshots/`); large videos are NOT committed (no media-storage workflow exists). No gameplay or asset changes. Do not push or merge without owner approval. Browser task, so NOT on `feature/android-capacitor`.
+Findings: official logo = `public/assets/intro/title_logo.webp` (900x679, reads SPOOKY DINER RUSH, used by `TitleScene`); `public/assets/art/logo_chef_rush.webp` is the OLD "Chef Rush" logo, unused, NOT used here. No existing recording scripts. ffmpeg 6.1 and Playwright 1.63 are available. Headless rendering is only a few fps, and Playwright `page.screenshot` and CDP compositor screenshots hang or take 8 s+ under the fake clock, so a live screen recording would be choppy.
+Method (reusable, `tools/promo/`): CrazyGames build (`npm run build:crazygames`, no intro video, SDK script stubbed) served by `vite preview`; Playwright fake clock (`page.clock`) steps the game in exact 1/30 s frames; after each step the frame is read from the game's own canvas inside the same animation-frame task (lossless native 1280x698, no compositor); frames are piped to ffmpeg and scaled to 1920x1080 (letterboxed, never stretched or cropped). Gameplay is driven with real mouse clicks and drags at positions read from `window.__chefRush`. Sound: the game's own WebAudio synthesis is rendered offline at the same virtual timestamps (if that works; otherwise the videos are silent and the report says so).
+Plan:
+- [ ] 1. `tools/promo/record.mjs`: fake-clock frame stepper, canvas grab, ffmpeg pipe, scripted timeline.
+- [ ] 2. Gameplay driver (real mouse input) and a short test run, check frames.
+- [ ] 3. Audio capture via an offline AudioContext shim (time-boxed).
+- [ ] 4. End card from the existing logo and `title_bg.webp` (scaled uniformly, not recoloured or cropped).
+- [ ] 5. Record main and preview, screenshots, verify with ffprobe and frame inspection.
+- [ ] 6. Android: no emulator or device here, so report the limitation and give the phone-recording steps.
+Wording rule: no banned words anywhere (`tests/wording.test.ts`).
+
 ## Drop box removed + new mint ghost customer (2026-11-03/04, Claude) - branch `fix/tap-outline`, DONE in the working tree, NOTHING COMMITTED OR PUSHED (owner has not authorised a commit)
 Owner (17:00): (1) the white box that shows on a customer while an order item is dragged onto them must not be visible; (2) remove the current ghosts (the six scare-sheet ghosts and the vest gentleman) and use the new supplied character for now (`Spooky_characters.zip`: one mint ghost, two animation sheets 256x256 frames at 24 fps: `ghost_idle_happy` 90 frames, `ghost_impatient_anim` 85 frames). Three more characters will follow.
 Update (owner sent the other 3 sheets; they are NOT new characters but the same mint ghost's other animations): angry loop (42 frames), leave angry (130), leave happy (127, 288 px frames). All five clips are converted to 75 percent size (192/216 px; the canvas is a fixed 1280x698 so the ghost is drawn 1:1) by `tools/make_mint_ghost_art.py`, 3.2 MB in total.
