@@ -2,6 +2,7 @@ import { AdEvent, LevelPlayAds } from 'capacitor-levelplay-ads';
 import { AdCooldown } from './cooldown';
 import { DailyCap } from './dailyCap';
 import { readLevelPlayConfig, type LevelPlayConfig } from './levelplayConfig';
+import { adDebug, describeError, enableAdDebug } from './levelplayDebug';
 import { AD_TIMEOUT_MS } from './timing';
 import type { AdService, BannerService } from './types';
 
@@ -75,7 +76,10 @@ function preload(kind: Kind): void {
       .then(() => {
         loaded[kind] = true;
       })
-      .catch(() => scheduleRetry(kind));
+      .catch((e) => {
+        adDebug(`${kind} load error: ${describeError(e)}`);
+        scheduleRetry(kind);
+      });
   } catch {
     scheduleRetry(kind);
   }
@@ -89,7 +93,7 @@ function scheduleRetry(kind: Kind): void {
   }, RETRY_LOAD_MS);
 }
 
-function listen(event: string, fn: () => void): void {
+function listen(event: string, fn: (info?: unknown) => void): void {
   try {
     void LevelPlayAds.addListener(event, fn).catch(() => {
       /* ignore */
@@ -122,17 +126,20 @@ function registerListeners(): void {
           };
     listen(names.loaded, () => {
       loaded[kind] = true;
+      adDebug(`${kind} loaded`);
     });
-    listen(names.loadFailed, () => {
+    listen(names.loadFailed, (info) => {
       loaded[kind] = false;
+      adDebug(`${kind} load failed: ${describeError(info)}`);
       scheduleRetry(kind);
     });
     listen(names.displayed, () => {
       loaded[kind] = false; // this ad is used up
       if (session?.kind === kind) session.displayed();
     });
-    listen(names.displayFailed, () => {
+    listen(names.displayFailed, (info) => {
       loaded[kind] = false;
+      adDebug(`${kind} display failed: ${describeError(info)}`);
       scheduleRetry(kind);
       if (session?.kind === kind) session.failed();
     });
@@ -145,19 +152,24 @@ function registerListeners(): void {
   });
   listen(AdEvent.BannerLoaded, () => {
     bannerCreated = true;
+    adDebug('banner loaded');
   });
+  listen(AdEvent.BannerLoadFailed, (info) => adDebug(`banner load failed: ${describeError(info)}`));
 }
 
 async function attemptInit(): Promise<void> {
   if (!cfg || ready) return;
   try {
+    adDebug(`starting (try ${initAttempts + 1})`);
     await LevelPlayAds.initialize({ appKey: cfg.appKey, isTesting: cfg.testing });
     ready = true;
+    adDebug('SDK started');
     preload('rewarded');
     preload('interstitial');
     if (bannerWanted) showBanner();
-  } catch {
+  } catch (e) {
     ready = false;
+    adDebug(`start FAILED: ${describeError(e)}`);
     if (initAttempts < MAX_INIT_ATTEMPTS) {
       initAttempts += 1;
       initTimer = setTimeout(() => void attemptInit(), INIT_RETRY_MS);
@@ -172,6 +184,7 @@ async function attemptInit(): Promise<void> {
 export async function initLevelPlay(): Promise<boolean> {
   cfg = readLevelPlayConfig();
   if (!cfg) return false;
+  enableAdDebug(cfg.testing);
   registerListeners();
   await attemptInit();
   return true;
@@ -311,8 +324,9 @@ function showBanner(): void {
         // The player left the title screen while the banner was loading: it was shown on load, so hide it again.
         if (!bannerWanted) void LevelPlayAds.hideBanner().catch(() => undefined);
       })
-      .catch(() => {
+      .catch((e) => {
         bannerPending = false;
+        adDebug(`banner error: ${describeError(e)}`);
         if (bannerWanted && bannerRetry === undefined) {
           bannerRetry = setTimeout(() => {
             bannerRetry = undefined;

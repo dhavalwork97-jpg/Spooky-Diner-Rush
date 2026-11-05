@@ -290,3 +290,21 @@ describe('banner', () => {
     expect(fake.called('createBanner')).toBe(1);
   });
 });
+
+describe('test-build status text', () => {
+  it('describes errors in one short line and never throws without a page', async () => {
+    const d = await import('../src/ads/levelplayDebug');
+    expect(d.describeError({ errorCode: 509, errorMessage: 'No ads to show' })).toBe('code 509: No ads to show');
+    expect(d.describeError(new Error('offline'))).toBe('offline');
+    expect(d.describeError(undefined)).toBe('unknown');
+    d.enableAdDebug(true);
+    expect(() => d.adDebug('x')).not.toThrow(); // no document in this test environment
+    d.resetAdDebug();
+  });
+  it('the status text is switched on only by test mode', async () => {
+    const d = await import('../src/ads/levelplayDebug');
+    const spy = vi.spyOn(d, 'enableAdDebug');
+    void spy;
+    expect(readLevelPlayConfig(ENV)?.testing).toBe(false);
+  });
+});

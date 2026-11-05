@@ -50,6 +50,9 @@ One-time: Android Studio installed, Node 22 or newer, a phone with USB debugging
    - Do NOT tap real (non test) ads yourself.
    - Optional: `adb logcat | grep -iE "LevelPlay|ironSource|Capacitor"` shows the SDK messages. (`chrome://inspect` does not work with this build: `webContentsDebuggingEnabled` is false in `capacitor.config.ts`.)
 
+### Status text in test builds
+When `VITE_LEVELPLAY_TEST=true`, a small black text box at the top left of the screen lists lines starting with "LP": whether the SDK started, and the error code and message whenever an ad or banner fails to load or show. It takes no taps. A store build (test line removed) never shows it. If no ad appears, read these lines first; they say whether LevelPlay did not start (key or network) or started but had no ad to give (dashboard setup or no fill).
+
 ### Not done yet (needed before a public release)
 - Consent for players in the EEA, UK and similar regions. The plugin offers three consent providers: Usercentrics (needs an account and a settings id from usercentrics.com; check its pricing), InMobi Choice (needs a code from InMobi) and a built-in dialog that its own notes say is NOT valid for the EU. No provider is chosen or installed.
 - Privacy policy, store data-safety answers about advertising, and a check of the merged manifest permissions.
