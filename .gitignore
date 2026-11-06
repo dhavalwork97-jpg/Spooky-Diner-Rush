@@ -3,3 +3,4 @@ dist
 dist-crazygames
 HANDOFF_PACK.txt
 reply.txt
+.env.android.local
