@@ -90,7 +90,7 @@ export function validateAssets(data: unknown): string[] {
   return errors;
 }
 
-const MOD_KEYS = ['fryerSpeed', 'grillSpeed', 'ovenSpeed', 'patience', 'tips'];
+const MOD_KEYS = ['fryerSpeed', 'grillSpeed', 'ovenSpeed', 'patience', 'tips', 'burnWindow', 'calm'];
 
 /** upgrades.json: unique ids, known mod, at least one tier, cost > 0 and rising, value > 0 and rising. */
 export function validateUpgrades(data: unknown): string[] {

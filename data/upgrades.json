@@ -59,6 +59,29 @@
         { "cost": 200, "value": 1.5 },
         { "cost": 380, "value": 2 }
       ]
+    },
+    {
+      "id": "burn_guard",
+      "name": "Burn guard",
+      "description": "Fries, patties and pizza take longer to burn.",
+      "mod": "burnWindow",
+      "unlockLevel": 7,
+      "tiers": [
+        { "cost": 150, "value": 1.25 },
+        { "cost": 300, "value": 1.5 },
+        { "cost": 500, "value": 1.75 }
+      ]
+    },
+    {
+      "id": "calm_kitchen",
+      "name": "Calm kitchen",
+      "description": "Burnt food costs less reputation (6, then 4).",
+      "mod": "calm",
+      "unlockLevel": 11,
+      "tiers": [
+        { "cost": 250, "value": 1.33 },
+        { "cost": 450, "value": 2 }
+      ]
     }
   ]
 }

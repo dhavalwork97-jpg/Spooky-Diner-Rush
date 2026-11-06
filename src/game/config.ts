@@ -72,10 +72,10 @@ export interface EventDef {
   spawnType?: string;
 }
 /** Which `KitchenState.mods` field an upgrade sets. */
-export type ModKey = 'fryerSpeed' | 'grillSpeed' | 'ovenSpeed' | 'patience' | 'tips';
+export type ModKey = 'fryerSpeed' | 'grillSpeed' | 'ovenSpeed' | 'patience' | 'tips' | 'burnWindow' | 'calm';
 export interface UpgradeTier {
   cost: number;
-  /** The multiplier the mod has once this tier is bought (not an increment). */
+  /** The value the mod has once this tier is bought (not an increment). Most mods multiply; `calm` divides the burn penalty. */
   value: number;
 }
 export interface UpgradeDef {

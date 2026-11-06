@@ -104,6 +104,10 @@ export interface Mods {
   ovenSpeed: number;
   patience: number;
   tips: number;
+  /** Burn Guard: multiplies how long food can sit before it burns. */
+  burnWindow: number;
+  /** Calm Kitchen: the burn reputation penalty is divided by this. */
+  calm: number;
 }
 export interface ActiveEvent {
   def: EventDef;
@@ -156,7 +160,7 @@ export class KitchenState {
   clock = 0;
   event: ActiveEvent | null = null;
   nextEventIn: number;
-  mods: Mods = { fryerSpeed: 1, grillSpeed: 1, ovenSpeed: 1, patience: 1, tips: 1 };
+  mods: Mods = { fryerSpeed: 1, grillSpeed: 1, ovenSpeed: 1, patience: 1, tips: 1, burnWindow: 1, calm: 1 };
 
   private nextId = 1;
   nextArrival = 1; // first customer arrives at about second 1
@@ -200,7 +204,7 @@ export class KitchenState {
 
   private burnWindow(base: number): number {
     const s = this.cfg.recipes.settings;
-    return burnWindowFor(base, this.level, s.beginnerMaxLevel, s.beginnerBurnBonus);
+    return burnWindowFor(base, this.level, s.beginnerMaxLevel, s.beginnerBurnBonus) * this.mods.burnWindow;
   }
   private emit(e: GameEvent) {
     this.events.push(e);
@@ -315,7 +319,7 @@ export class KitchenState {
   private onBurnt(where: 'vat' | 'burner' | 'oven', index: number): void {
     this.emit({ type: 'burnt', where, index });
     this.streak = 0;
-    this.addReputation(-this.cfg.recipes.settings.burnReputationPenalty);
+    this.addReputation(-Math.round(this.cfg.recipes.settings.burnReputationPenalty / this.mods.calm));
   }
 
   private updateCustomers(dt: number): void {
