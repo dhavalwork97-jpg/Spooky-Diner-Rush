@@ -14,6 +14,8 @@ const ROW_H = 104;
 const ROW_TOP = 118;
 const BTN_W = 200;
 const BTN_H = 92;
+/** The panel fits five rows; more upgrades go on further pages. */
+const PAGE_SIZE = 5;
 
 export interface ShopData {
   state: KitchenState;
@@ -34,6 +36,7 @@ export class ShopScene extends Phaser.Scene {
   private note!: Phaser.GameObjects.Text;
   private closing = false;
   private tab: 'upgrades' | 'decor' = 'upgrades';
+  private page = 0;
 
   constructor() {
     super('Shop');
@@ -44,6 +47,7 @@ export class ShopScene extends Phaser.Scene {
     this.onClose = data.onClose;
     this.closing = false;
     this.tab = 'upgrades';
+    this.page = 0;
     this.rows = [];
   }
 
@@ -111,13 +115,22 @@ export class ShopScene extends Phaser.Scene {
     (['upgrades', 'decor'] as const).forEach((t, i) => {
       const on = this.tab === t;
       const label = t === 'upgrades' ? 'Upgrades' : 'Decor';
-      this.rows.push(this.makeButton(x0 + 300 + i * 170, 52, label, 160, 60, on ? ORANGE : 0x9aa7b5, () => {
+      this.rows.push(this.makeButton(x0 + 280 + i * 146, 52, label, 140, 60, on ? ORANGE : 0x9aa7b5, () => {
         if (this.tab !== t) {
           this.tab = t;
           this.refresh();
         }
       }));
     });
+
+    const pages = Math.max(1, Math.ceil(s.cfg.upgrades.upgrades.length / PAGE_SIZE));
+    if (this.tab === 'upgrades' && pages > 1) {
+      const next = (this.page + 1) % pages;
+      this.rows.push(this.makeButton(x0 + 280 + 2 * 146, 52, this.page + 1 < pages ? 'More' : 'Back', 140, 60, 0x2ba6a0, () => {
+        this.page = next;
+        this.refresh();
+      }));
+    }
 
     if (this.tab === 'upgrades') this.drawUpgradeRows(x0);
     else this.drawDecorRows(x0);
@@ -153,7 +166,7 @@ export class ShopScene extends Phaser.Scene {
     const s = this.state;
     const ups = s.cfg.upgrades.upgrades;
     const owned = SaveSystem.data.owned;
-    ups.forEach((u, i) => {
+    ups.slice(this.page * PAGE_SIZE, (this.page + 1) * PAGE_SIZE).forEach((u, i) => {
       const { y, g } = this.rowBase(i, x0);
       const tier = tierOf(ups, owned, u.id);
       const label = buyLabel(ups, owned, u.id, s.level, s.coins);
