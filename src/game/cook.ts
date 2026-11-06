@@ -16,6 +16,25 @@ export function cookPhase(elapsed: number, readyAfter: number, burnWindow: numbe
   return 'ready';
 }
 
+/**
+ * Moves a cooking clock forward by `dt` real seconds.
+ *
+ * The clock counts "cook seconds". A speed upgrade (`cookRate` above 1) makes the food finish sooner, so it only
+ * applies while the food is still cooking. Once the food is ready the clock runs at `afterRate` (1 unless an event
+ * says otherwise), so the real time the player has between ready, warning, danger and burnt does not shrink
+ * when cooking gets faster. Burn Guard is what lengthens that window.
+ *
+ * If one step crosses the ready line, the part of the step before it runs at `cookRate` and the rest at `afterRate`.
+ */
+export function advanceCook(t: number, dt: number, cookRate: number, readyAfter: number, afterRate = 1): number {
+  if (!(cookRate > 0)) return t; // a stopped station stays where it is
+  if (t >= readyAfter) return t + dt * afterRate;
+  const toReady = readyAfter - t;
+  const step = dt * cookRate;
+  if (step < toReady) return t + step;
+  return readyAfter + (dt - toReady / cookRate) * afterRate;
+}
+
 /** Early levels get a longer burn window so beginners are not punished. */
 export function burnWindowFor(base: number, level: number, beginnerMaxLevel: number, bonus: number): number {
   return level <= beginnerMaxLevel ? base + bonus : base;
