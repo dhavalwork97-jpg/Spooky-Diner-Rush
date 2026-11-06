@@ -1,4 +1,4 @@
-import { burnWindowFor, cookPhase, isEdible, type CookPhase } from './cook';
+import { advanceCook, burnWindowFor, cookPhase, isEdible, type CookPhase } from './cook';
 import { defaultConfig, levelDef, xpForLevel, type EventDef, type FriedKind, type GameConfig, type ItemKind } from './config';
 import { makeRng, randInt, randRange, type Rng } from './rng';
 
@@ -258,7 +258,7 @@ export class KitchenState {
     this.vats.forEach((v, i) => {
       if (!v) return;
       const fry = this.cfg.recipes.items[v.kind];
-      v.t += dt * this.mods.fryerSpeed;
+      v.t = advanceCook(v.t, dt, this.mods.fryerSpeed, fry.readyAfter!);
       const phase = cookPhase(v.t, fry.readyAfter!, this.burnWindow(fry.burnWindow));
       if (phase !== v.phase) {
         v.phase = phase;
@@ -269,7 +269,8 @@ export class KitchenState {
     const pizza = this.cfg.recipes.items.pizza;
     this.ovens.forEach((o, i) => {
       if (!o) return;
-      o.t += dt * this.mods.ovenSpeed * (this.event?.def.ovenSpeed ?? 1);
+      const eventRate = this.event?.def.ovenSpeed ?? 1; // the Slow oven event slows the whole bake, as before
+      o.t = advanceCook(o.t, dt, this.mods.ovenSpeed * eventRate, pizza.readyAfter!, eventRate);
       const phase = cookPhase(o.t, pizza.readyAfter!, this.burnWindow(pizza.burnWindow));
       if (phase !== o.phase) {
         o.phase = phase;
@@ -306,7 +307,7 @@ export class KitchenState {
     const burger = this.cfg.recipes.items.burger;
     this.burners.forEach((p, i) => {
       if (!p) return;
-      p.t += dt * this.mods.grillSpeed;
+      p.t = advanceCook(p.t, dt, this.mods.grillSpeed, burger.sideSeconds!);
       const phase = cookPhase(p.t, burger.sideSeconds!, this.burnWindow(burger.burnWindow));
       if (phase !== p.phase) {
         p.phase = phase;

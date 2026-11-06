@@ -133,11 +133,12 @@ describe('buyLabel', () => {
 describe('Burn Guard and Calm Kitchen', () => {
   const guard = U.find((u) => u.id === 'burn_guard')!;
   const calm = U.find((u) => u.id === 'calm_kitchen')!;
+  const settings = defaultConfig.recipes.settings;
 
   it('are in the shop with the agreed levels, tiers and prices', () => {
     expect(guard.unlockLevel).toBe(7);
     expect(guard.tiers.map((t) => t.cost)).toEqual([150, 300, 500]);
-    expect(guard.tiers.map((t) => t.value)).toEqual([1.25, 1.5, 1.75]);
+    expect(guard.tiers.map((t) => t.value)).toEqual([1.15, 1.3, 1.45]);
     expect(calm.unlockLevel).toBe(11);
     expect(calm.tiers.map((t) => t.cost)).toEqual([250, 450]);
   });
@@ -148,36 +149,112 @@ describe('Burn Guard and Calm Kitchen', () => {
     expect(m.calm).toBe(1);
   });
 
-  const fryAt = (mods: ReturnType<typeof modsFor>, seconds: number) => {
+  /** A kitchen at Lv 8 (past the beginner burn bonus) with one batch started on the given station. */
+  const kitchen = (mods: ReturnType<typeof modsFor>) => {
     const s = new KitchenState({ level: 8, xp: 0, coins: 0 }, defaultConfig, 1);
     s.mods = mods;
-    s.startFry('fries');
-    for (let t = 0; t < seconds; t += 0.1) s.update(0.1);
     return s;
   };
+  /** Seconds until the station reports `burnt`, and every phase it went through on the way. */
+  const burnTime = (mods: ReturnType<typeof modsFor>, station: 'vat' | 'burner' | 'oven') => {
+    const s = kitchen(mods);
+    if (station === 'vat') s.startFry('fries');
+    else if (station === 'burner') s.startPatty();
+    else s.startPizza();
+    const phases: string[] = [];
+    for (let t = 0; t < 40; t += 0.05) {
+      s.update(0.05);
+      const phase = (station === 'vat' ? s.vats[0] : station === 'burner' ? s.burners[0] : s.ovens[0])?.phase ?? '';
+      if (phase && phases[phases.length - 1] !== phase) phases.push(phase);
+      if (phase === 'burnt') return { t: t + 0.05, phases };
+    }
+    return { t: Infinity, phases };
+  };
+  const readyAfter = { vat: settings && defaultConfig.recipes.items.fries.readyAfter!, burner: defaultConfig.recipes.items.burger.sideSeconds!, oven: defaultConfig.recipes.items.pizza.readyAfter! };
+  const window = { vat: defaultConfig.recipes.items.fries.burnWindow, burner: defaultConfig.recipes.items.burger.burnWindow, oven: defaultConfig.recipes.items.pizza.burnWindow };
 
-  it('Burn Guard gives food more time before it burns', () => {
-    // fries are ready at 5 s with a 4 s burn window: burnt at about 9 s. At x1.75 the window is 7 s: burnt at about 12 s.
-    const top = modsFor(U, { burn_guard: 3 });
-    expect(fryAt(NO_MODS, 9.6).vats[0]?.phase).toBe('burnt');
-    expect(fryAt(top, 9.6).vats[0]?.phase).not.toBe('burnt');
-    expect(fryAt(top, 12.6).vats[0]?.phase).toBe('burnt');
+  it.each(['vat', 'burner', 'oven'] as const)('Burn Guard stretches the %s burn window by exactly its tier, never removes it', (station) => {
+    const base = burnTime(NO_MODS, station).t;
+    expect(base).toBeCloseTo(readyAfter[station] + window[station], 0);
+    guard.tiers.forEach((tier, i) => {
+      const r = burnTime(modsFor(U, { burn_guard: i + 1 }), station);
+      expect(r.t).toBeCloseTo(readyAfter[station] + window[station] * tier.value, 0);
+      expect(r.t).toBeGreaterThan(base);
+      expect(r.t).toBeLessThan(Infinity); // food still burns
+      // warning and danger are still shown on the way to burnt
+      expect(r.phases).toEqual(['cooking', 'ready', 'warning', 'danger', 'burnt']);
+    });
   });
 
-  it('Calm Kitchen lowers the reputation lost to a burn: 8, then 6, then 4', () => {
-    const lost = (owned: Record<string, number>) => {
-      const s = fryAt(modsFor(U, owned), 0);
-      const rep = s.reputation;
-      for (let t = 0; t < 14; t += 0.1) s.update(0.1);
-      expect(s.vats[0]?.phase).toBe('burnt');
-      return rep - s.reputation;
+  it('Burn Guard leaves ice cream and drinks alone', () => {
+    const iceBase = defaultConfig.recipes.items.icecream;
+    const melt = (mods: ReturnType<typeof modsFor>) => {
+      const s = new KitchenState({ level: 12, xp: 0, coins: 0 }, defaultConfig, 1);
+      s.mods = mods;
+      s.tapIceCream();
+      let t = 0;
+      while (s.cones.some(Boolean) && t < 60) (s.update(0.05), (t += 0.05));
+      return t;
     };
-    expect(lost({})).toBe(defaultConfig.recipes.settings.burnReputationPenalty);
-    expect(lost({ calm_kitchen: 1 })).toBe(6);
-    expect(lost({ calm_kitchen: 2 })).toBe(4);
+    expect(melt(modsFor(U, { burn_guard: 3 }))).toBeCloseTo(melt(NO_MODS), 1);
+    expect(melt(NO_MODS)).toBeCloseTo(iceBase.readyAfter! + iceBase.burnWindow, 0);
   });
 
-  it('do not touch the Reopen reputation', () => {
+  /** Reputation lost when the only thing that happens is one burnt batch. */
+  const burnLoss = (owned: Record<string, number>) => {
+    const s = kitchen(modsFor(U, owned));
+    s.startFry('fries');
+    const rep = s.reputation;
+    for (let t = 0; t < 20; t += 0.05) s.update(0.05);
+    expect(s.vats[0]?.phase).toBe('burnt');
+    return rep - s.reputation;
+  };
+
+  it('Calm Kitchen lowers the reputation lost to a burn: 8, then 7, then 6', () => {
+    expect(burnLoss({})).toBe(settings.burnReputationPenalty);
+    expect(burnLoss({ calm_kitchen: 1 })).toBe(7);
+    expect(burnLoss({ calm_kitchen: 2 })).toBe(6);
+  });
+
+  it('Calm Kitchen touches nothing but the burn penalty', () => {
+    const top = modsFor(U, { calm_kitchen: 2 });
+    // an angry departure costs the same, customers wait the same
+    const walkOut = (mods: ReturnType<typeof modsFor>) => {
+      const s = kitchen(mods);
+      s.spawnCustomer();
+      const patience = s.customers[0].patienceMax;
+      const rep = s.reputation;
+      for (let t = 0; t < 120 && s.reputation === rep; t += 0.05) s.update(0.05);
+      return { patience, lost: rep - s.reputation };
+    };
+    expect(walkOut(top)).toEqual(walkOut(NO_MODS));
+    expect(walkOut(NO_MODS).lost).toBeGreaterThan(0);
+    // Reopen is fixed by the economy rules: 55 normally, 100 after a rewarded ad
+    const closeAndReopen = (mods: ReturnType<typeof modsFor>, full: boolean) => {
+      const s = kitchen(mods);
+      s.reputation = 1;
+      s.startFry('fries'); // the burn takes the last reputation and closes the store
+      for (let t = 0; t < 20 && !s.closed; t += 0.05) s.update(0.05);
+      expect(s.closed).toBe(true);
+      s.reopen(full);
+      return s.reputation;
+    };
+    for (const mods of [NO_MODS, top]) {
+      expect(closeAndReopen(mods, false)).toBe(55);
+      expect(closeAndReopen(mods, true)).toBe(100);
+    }
     expect(defaultConfig.xp.reputation.reopenTo).toBe(55);
+  });
+
+  it('Calm Kitchen leaves the coin penalty for throwing food away alone', () => {
+    const trash = (owned: Record<string, number>) => {
+      const s = new KitchenState({ level: 8, xp: 0, coins: 50 }, defaultConfig, 1);
+      s.mods = modsFor(U, owned);
+      s.startFry('fries');
+      for (let t = 0; t < 20; t += 0.05) s.update(0.05);
+      s.tapFryer(0); // clean up the burnt batch
+      return s.coins;
+    };
+    expect(trash({ calm_kitchen: 2 })).toBe(trash({}));
   });
 });
