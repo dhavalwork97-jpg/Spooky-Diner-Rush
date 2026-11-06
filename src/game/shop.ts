@@ -10,7 +10,7 @@ export type BuyResult =
   | { ok: true; owned: Owned; coins: number; cost: number; tier: number }
   | { ok: false; reason: BuyBlock };
 
-export const NO_MODS: Mods = { fryerSpeed: 1, grillSpeed: 1, ovenSpeed: 1, patience: 1, tips: 1 };
+export const NO_MODS: Mods = { fryerSpeed: 1, grillSpeed: 1, ovenSpeed: 1, patience: 1, tips: 1, burnWindow: 1, calm: 1 };
 
 export function find(upgrades: UpgradeDef[], id: string): UpgradeDef | undefined {
   return upgrades.find((u) => u.id === id);

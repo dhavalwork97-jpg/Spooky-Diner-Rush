@@ -129,3 +129,55 @@ describe('buyLabel', () => {
     expect(buyLabel(U, {}, 'nope', 10, 99).enabled).toBe(false);
   });
 });
+
+describe('Burn Guard and Calm Kitchen', () => {
+  const guard = U.find((u) => u.id === 'burn_guard')!;
+  const calm = U.find((u) => u.id === 'calm_kitchen')!;
+
+  it('are in the shop with the agreed levels, tiers and prices', () => {
+    expect(guard.unlockLevel).toBe(7);
+    expect(guard.tiers.map((t) => t.cost)).toEqual([150, 300, 500]);
+    expect(guard.tiers.map((t) => t.value)).toEqual([1.25, 1.5, 1.75]);
+    expect(calm.unlockLevel).toBe(11);
+    expect(calm.tiers.map((t) => t.cost)).toEqual([250, 450]);
+  });
+
+  it('an older save without them changes nothing', () => {
+    const m = modsFor(U, { fryer_speed: 2, tips: 1 });
+    expect(m.burnWindow).toBe(1);
+    expect(m.calm).toBe(1);
+  });
+
+  const fryAt = (mods: ReturnType<typeof modsFor>, seconds: number) => {
+    const s = new KitchenState({ level: 8, xp: 0, coins: 0 }, defaultConfig, 1);
+    s.mods = mods;
+    s.startFry('fries');
+    for (let t = 0; t < seconds; t += 0.1) s.update(0.1);
+    return s;
+  };
+
+  it('Burn Guard gives food more time before it burns', () => {
+    // fries are ready at 5 s with a 4 s burn window: burnt at about 9 s. At x1.75 the window is 7 s: burnt at about 12 s.
+    const top = modsFor(U, { burn_guard: 3 });
+    expect(fryAt(NO_MODS, 9.6).vats[0]?.phase).toBe('burnt');
+    expect(fryAt(top, 9.6).vats[0]?.phase).not.toBe('burnt');
+    expect(fryAt(top, 12.6).vats[0]?.phase).toBe('burnt');
+  });
+
+  it('Calm Kitchen lowers the reputation lost to a burn: 8, then 6, then 4', () => {
+    const lost = (owned: Record<string, number>) => {
+      const s = fryAt(modsFor(U, owned), 0);
+      const rep = s.reputation;
+      for (let t = 0; t < 14; t += 0.1) s.update(0.1);
+      expect(s.vats[0]?.phase).toBe('burnt');
+      return rep - s.reputation;
+    };
+    expect(lost({})).toBe(defaultConfig.recipes.settings.burnReputationPenalty);
+    expect(lost({ calm_kitchen: 1 })).toBe(6);
+    expect(lost({ calm_kitchen: 2 })).toBe(4);
+  });
+
+  it('do not touch the Reopen reputation', () => {
+    expect(defaultConfig.xp.reputation.reopenTo).toBe(55);
+  });
+});
