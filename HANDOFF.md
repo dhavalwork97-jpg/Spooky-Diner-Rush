@@ -547,3 +547,16 @@ Start from the latest `main`, inspect the current repository and docs first, and
 - Checks: typecheck clean, 399 tests pass (33 files), npm run build + build:crazygames OK.
 - Still NOT done (step 4): animated views (pans, oven, plates, customers, drinks), drag-to-serve input, sounds, tutorial hints, reduced motion. Taco scene is a plain shell: no dish pictures, no customers drawn yet.
 - NOT committed (waiting for user).
+
+
+## STEP 4 plan (views for the Taco scene; each sub-step committed only when the user says so)
+- 4a: src/views/TacoViews.ts - pans, oven slots, plates drawn from model state (cook sheets, oven shell sheet, build sheets, finished dish sprites). Textures loaded in TacoScene.preload from the anim.json files.
+- 4b: customers (mint ghost, 5 seats from customerWindow) with order bubbles + drag a finished plate to the right customer (model.serve) + invalid-drop feedback.
+- 4c: drinks (dispenser cups 3 lanes x 2 drinks, fill/ready cups, drag to customer via serveFromPour).
+- 4d: polish: ring/phase cues, sounds, reduced motion, tutorial hint, balance pass; then both builds + browser smoke.
+- Status: 4a DONE (food resized to fit pans/plates), uncommitted (src/views/TacoViews.ts + TacoScene wiring; typecheck clean; headless browser check: raw/cooked/burnt proteins in pans and the tortilla shell on a plate draw in the right places). 4b next. Not yet checked: crispy shell/melt/press views, finished-dish sprites, sizes of items.
+
+- 4b DONE, uncommitted: src/views/TacoCustomers.ts (mint ghost in 5 seats, order bubbles with dish/drink icons and a tick for delivered items, patience bar, calm/impatient/angry loops, hop on complete, fade on leave) + TacoScene drag-to-serve (drag a finished plate; a tap says 'Drag it to a customer'; +coins floating text; wrong-drop messages). Browser check (headless): built a chicken soft taco, dragged it, delivery ticked off the order.
+- Not done in 4b: lazy leave clips (ghost_leave_happy/angry) are not used, ghosts just fade; no sounds yet. 4c next: drinks (cups, fill, serveFromPour).
+
+- Art swap (uncommitted): user supplied Gemini cook sheets (green background, 3168x1344, 4x2) for chicken, shrimp, fish, veggies. Converted with tools/taco_source/import_cook_sheet.py (chroma key, resize to 1712x782, 428x391 cells, base anchored at y=372; 'loose' mode for non-veggies). Replaced public/assets/taco/animations/cook_<protein>_sheet.webp. The ready frame is now one piece. anim.json files unchanged (same frame size/count). Originals are in git history.

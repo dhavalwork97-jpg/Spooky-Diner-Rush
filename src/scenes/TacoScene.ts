@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
 import { fitBackground, logicalToNorm, type BackgroundPlacement } from '../kitchen/zones';
 import { TacoKitchenState } from '../game/taco/TacoKitchenState';
-import { defaultTacoConfig } from '../game/taco/tacoConfig';
+import { defaultTacoConfig, type TacoZone } from '../game/taco/tacoConfig';
 import { hitTestTaco, tapZone } from '../game/taco/tacoZones';
 import { modsFor } from '../game/shop';
 import type { RestaurantSelectData } from './RestaurantSelectScene';
 import { SaveSystem } from '../systems/SaveSystem';
+import { loadTacoArt, spriteKey, TacoViews } from '../views/TacoViews';
+import { TacoCustomers } from '../views/TacoCustomers';
 import { audio } from '../systems/AudioSystem';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 
@@ -24,6 +26,10 @@ export class TacoScene extends Phaser.Scene {
   private status!: Phaser.GameObjects.Text;
   private note!: Phaser.GameObjects.Text;
   private noteUntil = 0;
+  private views!: TacoViews;
+  private customers!: TacoCustomers;
+  /** A finished dish being dragged from a plate to a customer. */
+  private drag: { plate: number; img: Phaser.GameObjects.Image; sx: number; sy: number; moved: boolean; zone: TacoZone } | null = null;
   private lastSave = 0;
   private panelOpen = false;
 
@@ -35,6 +41,7 @@ export class TacoScene extends Phaser.Scene {
     const a = defaultTacoConfig.art;
     this.load.image('taco_back', `${a.folder}/${a.back}.webp`);
     this.load.image('taco_front', `${a.folder}/${a.front}.webp`);
+    loadTacoArt(this, defaultTacoConfig);
     this.load.on('loaderror', (file: Phaser.Loader.File) => console.error(`Missing asset: ${file.key} (${file.url})`));
   }
 
@@ -51,6 +58,8 @@ export class TacoScene extends Phaser.Scene {
     this.state = new TacoKitchenState({ level: save.level, xp: save.xp, coins: save.coins });
     this.state.mods = modsFor(this.state.cfg.upgrades.upgrades, save.owned);
 
+    this.views = new TacoViews(this, this.bg, this.state);
+    this.customers = new TacoCustomers(this, this.bg, this.state);
     this.status = this.add.text(16, 12, '', { fontFamily: FONT, fontSize: '26px', color: '#FFF3D6', stroke: '#2B1B17', strokeThickness: 5 }).setDepth(40);
     this.note = this.add.text(LOGICAL_WIDTH / 2, LOGICAL_HEIGHT - 40, '', { fontFamily: FONT, fontSize: '30px', color: '#FFE08A', stroke: '#2B1B17', strokeThickness: 6 }).setOrigin(0.5).setDepth(40);
 
@@ -58,6 +67,8 @@ export class TacoScene extends Phaser.Scene {
     if (new URLSearchParams(location.search).has('debug')) this.drawZones();
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.onTap(p));
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(p));
+    this.input.on('pointerup', (p: Phaser.Input.Pointer) => this.onRelease(p));
     this.lastSave = performance.now();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.saveNow());
   }
@@ -67,10 +78,16 @@ export class TacoScene extends Phaser.Scene {
     this.state.update(Math.min(delta, 100) / 1000);
     for (const e of this.state.events) {
       if (e.type === 'invalid') this.say(e.message);
+      else if (e.type === 'orderDone') {
+        this.customers.celebrate(e.customer);
+        this.floatText(e.customer, `+${e.coins}`);
+      } else if (e.type === 'wrongDrop') this.say(e.penalty ? 'Not what they ordered' : 'Drop it on a customer who ordered it');
       else if (e.type === 'levelUp') this.say(`Level ${e.level}!`);
       else if (e.type === 'closed') this.say('Closed: reputation ran out');
     }
     this.state.events = [];
+    this.views.sync();
+    this.customers.sync();
     const s = this.state;
     this.status.setText(`Lv ${s.level}   Coins ${s.coins}   Rep ${Math.round(s.reputation)}   Customers ${s.customers.length}`);
     if (this.noteUntil && performance.now() > this.noteUntil) {
@@ -84,7 +101,45 @@ export class TacoScene extends Phaser.Scene {
     if (this.panelOpen || this.state.closed) return;
     const n = logicalToNorm(p.worldX, p.worldY, this.bg);
     const z = hitTestTaco(defaultTacoConfig.zones, n.x, n.y, TAP_SLOP);
-    if (z) tapZone(this.state, z);
+    if (!z) return;
+    // A finished dish on a plate is dragged to a customer instead of tapped.
+    if (z.action === 'plate') {
+      const item = this.state.plates[z.index ?? 0]?.item;
+      if (item && !item.building && item.dish) {
+        const d = this.state.dishDef(item.dish);
+        if (d) {
+          const img = this.add.image(p.worldX, p.worldY, spriteKey(d.sprite)).setDepth(50).setAlpha(0.95);
+          img.setScale(90 / img.width);
+          this.drag = { plate: z.index ?? 0, img, sx: p.worldX, sy: p.worldY, moved: false, zone: z };
+          return;
+        }
+      }
+    }
+    tapZone(this.state, z);
+  }
+
+  private onMove(p: Phaser.Input.Pointer): void {
+    const d = this.drag;
+    if (!d) return;
+    d.img.setPosition(p.worldX, p.worldY);
+    if (Math.hypot(p.worldX - d.sx, p.worldY - d.sy) > 12) d.moved = true;
+  }
+
+  private onRelease(p: Phaser.Input.Pointer): void {
+    const d = this.drag;
+    if (!d) return;
+    this.drag = null;
+    d.img.destroy();
+    if (!d.moved) return tapZone(this.state, d.zone); // a tap, not a drag: the model says "Drag it to a customer"
+    const target = this.customers.customerAt(p.worldX, p.worldY);
+    if (target) this.state.serve(d.plate, target.id);
+  }
+
+  private floatText(customerId: number, text: string): void {
+    const at = this.customers.headOf(customerId);
+    if (!at) return;
+    const t = this.add.text(at.x, at.y - 40, text, { fontFamily: FONT, fontSize: '32px', color: '#FFE08A', stroke: '#2B1B17', strokeThickness: 6 }).setOrigin(0.5).setDepth(45);
+    this.tweens.add({ targets: t, y: t.y - 50, alpha: 0, duration: 1100, onComplete: () => t.destroy() });
   }
 
   private say(text: string): void {
