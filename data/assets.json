@@ -451,6 +451,14 @@
       "scale": 1,
       "preferFallback": false,
       "lazy": true
+    },
+    {
+      "key": "taco_thumb",
+      "type": "image",
+      "file": "assets/taco/background/thumb.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": false
     }
   ]
 }

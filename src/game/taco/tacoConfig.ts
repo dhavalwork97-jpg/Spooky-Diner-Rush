@@ -52,6 +52,20 @@ export interface DrinkDef {
   /** Row of `drink_cups_sheet` (frame = row * 5 + fill level 0-4). */
   sheetRow: number;
 }
+export type ZoneAction = 'protein' | 'pan' | 'oven' | 'ingredient' | 'plate' | 'drinks' | 'cup' | 'trash';
+/** A tap area on the kitchen art, as a 0-1 rectangle of the background image. */
+export interface TacoZone {
+  id: string;
+  action: ZoneAction;
+  /** Protein, ingredient step id or drink id, depending on the action. */
+  arg?: string;
+  /** Pan, oven slot, plate or cup lane number (from 0). */
+  index?: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 export interface TacoConfig {
   restaurant: { id: string; name: string; unlockLevel: number; cost: number };
   settings: TacoSettings;
@@ -60,6 +74,17 @@ export interface TacoConfig {
   drinks: DrinkDef[];
   stepLabels: Record<string, string>;
   dishes: DishDef[];
+  /** The two background layers (customers are drawn between them) under public/<folder>/<name>.webp. */
+  art: { folder: string; back: string; front: string; width: number; height: number };
+  /** Where customers stand behind the ledge and where a dish can be dropped to serve (all 0-1 of the background). */
+  customerWindow: {
+    slots: { id: string; x: number; bottomY: number }[];
+    bandTop: number;
+    bandBottom: number;
+    bubbleY: number;
+    dropZone: { x: number; y: number; width: number; height: number };
+  };
+  zones: TacoZone[];
 }
 
 export const defaultTacoConfig: TacoConfig = tacoJson as unknown as TacoConfig;

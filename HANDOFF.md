@@ -1,6 +1,14 @@
 # HANDOFF
 
-## STEP 2 in progress (2026-11-07, Claude): data + pure TacoKitchenState + tests - owner approved Option A in plain words ("yes for the separate taco kitchen model"). Same branch `feature/taco-truck`. Commit/push to this branch only when a step is done and the owner has said so (standing rule); no merge, no PR.
+## STEP 3 in progress (2026-11-07, Claude): wire the Taco Truck into the game - same branch `feature/taco-truck`; step 2 is committed and pushed (38e2684); step 3 files are NOT committed until the owner says so.
+Findings that shape step 3: `GameScene` (1091 lines) builds the burger `KitchenState` directly and is started with `{ restaurantId }`; `RestaurantSelectScene` lists playable restaurants from `data/restaurants.json` (zones, background, fixed station list in `src/kitchen/zones.ts`) plus `restaurant_menu.json` "coming soon" cards (taco_truck is there with unlockLevel 10, must become 15); `SaveSystem` has `lastRestaurant` but no owned-restaurant list; `layout.ts` hardcodes burger positions (1699 x 948 art, 4 seats). The taco screen therefore needs its own scene, not a branch inside `GameScene`.
+Order (each part tested before the next):
+- [ ] 3a. Save: `restaurants: string[]` (owned playable restaurants, default `['burger_diner']`, old saves load fine) + pure `checkPurchase` / `purchase` (Lv 15, 2,000 coins, deduct once) in `src/game/restaurants.ts`; tests.
+- [ ] 3b. Data: taco entry in `data/restaurants.json` (background layers, zones from `tools/taco_source/taco_fiesta_hotspots.json`, new taco station types in `zones.ts`), assets listed in `data/assets.json`, validator tests; restaurant_menu stops listing taco.
+- [ ] 3c. Select screen: Taco Truck card with states locked (Lv 15) / buy (2,000 coins) / ready; buying saves and spends coins; `scene.start('Taco', ...)`.
+- [ ] 3d. Minimal `TacoScene` scaffold registered in `main.ts`: both background layers, tap zones wired to `TacoKitchenState`, a back button. Real views and the 18 animations are STEP 4.
+
+## Done (committed 38e2684): STEP 2 (2026-11-07, Claude): data + pure TacoKitchenState + tests - owner approved Option A in plain words ("yes for the separate taco kitchen model"). Same branch `feature/taco-truck`. Commit/push to this branch only when a step is done and the owner has said so (standing rule); no merge, no PR.
 Design (first-pass numbers, all in `data/taco.json`, owner to tune):
 - New files only: `data/taco.json`, `src/game/taco/tacoConfig.ts` (types, `defaultTacoConfig`, `stepKind`), `src/game/taco/TacoKitchenState.ts` (no Phaser), `tests/taco*.test.ts`, `tests/helpers/tacoBot.ts`. The burger model, its data and its tests are NOT edited. Shared systems are reused by passing the normal `GameConfig` (xp, combo, customers, waves, events, progression) and the shared `Mods` (pans use `grillSpeed`, oven uses `ovenSpeed`, plus `burnWindow`, `calm`, `patience`, `tips`).
 - Plates: 2 (the two pass-counter plates). Pans 4 (cook proteins AND press burritos), oven slots 2 (crispy shells AND melt nachos), drinks 2 dispensers x 3 lanes (horchata, agua de jamaica), 5 customer seats.
@@ -528,3 +536,14 @@ Start from the latest `main`, inspect the current repository and docs first, and
 - Double coins, slow oven and lunch rush visuals
 - Sound
 - Phone performance
+
+
+## STEP 3c/3d progress (uncommitted, branch feature/taco-truck)
+- 3a done: restaurants.ts buy rules, SaveSystem.restaurants, menu json (tests/restaurant_purchase.test.ts).
+- 3b done: data/taco.json zones/art/customerWindow, tacoZones.ts hit-test + tapZone, generator tools/taco_source/make_taco_data.py.
+- 3c done (typecheck clean): taco_thumb in data/assets.json, Taco Truck card + Buy button in RestaurantSelectScene, GameScene.onPick routes taco_truck to scene 'Taco'.
+- 3d DONE: src/scenes/TacoScene.ts (background layers, zone taps, text status, Restaurants button, ?debug zone outlines), registered in main.ts. Fixed: art names in taco.json have no extension, scene adds .webp.
+- Verified (headless Chromium smoke, NOT a real device): Lv16 save with 5000 coins -> card shows "2,000 coins"/Buy -> Buy leaves 3000 coins, saves restaurants + lastRestaurant -> Play opens Taco scene with art, zones line up, tap gives "Start a dish on a plate first".
+- Checks: typecheck clean, 399 tests pass (33 files), npm run build + build:crazygames OK.
+- Still NOT done (step 4): animated views (pans, oven, plates, customers, drinks), drag-to-serve input, sounds, tutorial hints, reduced motion. Taco scene is a plain shell: no dish pictures, no customers drawn yet.
+- NOT committed (waiting for user).

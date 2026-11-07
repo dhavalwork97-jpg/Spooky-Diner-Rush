@@ -812,7 +812,7 @@ export class GameScene extends Phaser.Scene {
         this.syncDecor();
         this.scene.resume();
       },
-      onPick: (id: string) => this.scene.start('Game', { restaurantId: id }),
+      onPick: (id: string) => (id === 'taco_truck' ? this.scene.start('Taco') : this.scene.start('Game', { restaurantId: id })),
     };
     this.scene.launch(key, data);
     this.scene.pause();

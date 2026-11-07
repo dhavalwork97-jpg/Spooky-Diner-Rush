@@ -510,5 +510,363 @@
    "sheet": "nachos_veggies",
    "sprite": "nachos_veggies"
   }
+ ],
+ "art": {
+  "folder": "assets/taco/background",
+  "back": "kitchen_street_back",
+  "front": "kitchen_front",
+  "width": 2754,
+  "height": 1536
+ },
+ "customerWindow": {
+  "slots": [
+   {
+    "id": "customer_slot_1",
+    "x": 0.3195,
+    "bottomY": 0.3626
+   },
+   {
+    "id": "customer_slot_2",
+    "x": 0.3994,
+    "bottomY": 0.3626
+   },
+   {
+    "id": "customer_slot_3",
+    "x": 0.4793,
+    "bottomY": 0.3626
+   },
+   {
+    "id": "customer_slot_4",
+    "x": 0.5592,
+    "bottomY": 0.3626
+   },
+   {
+    "id": "customer_slot_5",
+    "x": 0.6391,
+    "bottomY": 0.3626
+   }
+  ],
+  "bandTop": 0.1289,
+  "bandBottom": 0.3626,
+  "bubbleY": 0.14,
+  "dropZone": {
+   "x": 0.2727,
+   "y": 0.1289,
+   "width": 0.4655,
+   "height": 0.2337
+  }
+ },
+ "zones": [
+  {
+   "id": "griddle_raw_chicken",
+   "action": "protein",
+   "arg": "chicken",
+   "x": 0.5679,
+   "y": 0.4342,
+   "width": 0.0668,
+   "height": 0.0924
+  },
+  {
+   "id": "griddle_raw_shrimp",
+   "action": "protein",
+   "arg": "shrimp",
+   "x": 0.6481,
+   "y": 0.4401,
+   "width": 0.0614,
+   "height": 0.0853
+  },
+  {
+   "id": "griddle_raw_fish",
+   "action": "protein",
+   "arg": "fish",
+   "x": 0.5664,
+   "y": 0.5169,
+   "width": 0.069,
+   "height": 0.0931
+  },
+  {
+   "id": "griddle_raw_veggies",
+   "action": "protein",
+   "arg": "veggies",
+   "x": 0.65,
+   "y": 0.5221,
+   "width": 0.0668,
+   "height": 0.0859
+  },
+  {
+   "id": "pan_1",
+   "action": "pan",
+   "index": 0,
+   "x": 0.7607,
+   "y": 0.5312,
+   "width": 0.0726,
+   "height": 0.0807
+  },
+  {
+   "id": "pan_2",
+   "action": "pan",
+   "index": 1,
+   "x": 0.8508,
+   "y": 0.5273,
+   "width": 0.0741,
+   "height": 0.0807
+  },
+  {
+   "id": "pan_3",
+   "action": "pan",
+   "index": 2,
+   "x": 0.7596,
+   "y": 0.4805,
+   "width": 0.061,
+   "height": 0.0677
+  },
+  {
+   "id": "pan_4",
+   "action": "pan",
+   "index": 3,
+   "x": 0.8475,
+   "y": 0.4798,
+   "width": 0.061,
+   "height": 0.0677
+  },
+  {
+   "id": "oven_slot_left",
+   "action": "oven",
+   "index": 0,
+   "x": 0.3976,
+   "y": 0.7975,
+   "width": 0.0581,
+   "height": 0.0749
+  },
+  {
+   "id": "oven_slot_right",
+   "action": "oven",
+   "index": 1,
+   "x": 0.4593,
+   "y": 0.7975,
+   "width": 0.0617,
+   "height": 0.0749
+  },
+  {
+   "id": "tortilla_flour_tortillas",
+   "action": "ingredient",
+   "arg": "tortilla_flour_tortillas",
+   "x": 0.3758,
+   "y": 0.5182,
+   "width": 0.0646,
+   "height": 0.0801
+  },
+  {
+   "id": "topping_lettuce",
+   "action": "ingredient",
+   "arg": "topping_lettuce",
+   "x": 0.1943,
+   "y": 0.4173,
+   "width": 0.0773,
+   "height": 0.1009
+  },
+  {
+   "id": "topping_tomato_slices",
+   "action": "ingredient",
+   "arg": "topping_tomato_slices",
+   "x": 0.2796,
+   "y": 0.3965,
+   "width": 0.0697,
+   "height": 0.1152
+  },
+  {
+   "id": "cooler_cheese",
+   "action": "ingredient",
+   "arg": "cooler_cheese",
+   "x": 0.1707,
+   "y": 0.6471,
+   "width": 0.0777,
+   "height": 0.1081
+  },
+  {
+   "id": "topping_shredded_bowl",
+   "action": "ingredient",
+   "arg": "topping_shredded_bowl",
+   "x": 0.2349,
+   "y": 0.5326,
+   "width": 0.0523,
+   "height": 0.0729
+  },
+  {
+   "id": "topping_crema",
+   "action": "ingredient",
+   "arg": "topping_crema",
+   "x": 0.4706,
+   "y": 0.5182,
+   "width": 0.0643,
+   "height": 0.099
+  },
+  {
+   "id": "cooler_limes",
+   "action": "ingredient",
+   "arg": "cooler_limes",
+   "x": 0.1605,
+   "y": 0.8145,
+   "width": 0.0683,
+   "height": 0.0924
+  },
+  {
+   "id": "topping_guacamole",
+   "action": "ingredient",
+   "arg": "topping_guacamole",
+   "x": 0.4706,
+   "y": 0.4271,
+   "width": 0.0643,
+   "height": 0.099
+  },
+  {
+   "id": "topping_salsa_red_bowl",
+   "action": "ingredient",
+   "arg": "topping_salsa_red_bowl",
+   "x": 0.2905,
+   "y": 0.5326,
+   "width": 0.053,
+   "height": 0.0729
+  },
+  {
+   "id": "steam_white_rice",
+   "action": "ingredient",
+   "arg": "steam_white_rice",
+   "x": 0.695,
+   "y": 0.6693,
+   "width": 0.0599,
+   "height": 0.0475
+  },
+  {
+   "id": "steam_beans",
+   "action": "ingredient",
+   "arg": "steam_beans",
+   "x": 0.6307,
+   "y": 0.6693,
+   "width": 0.0603,
+   "height": 0.0475
+  },
+  {
+   "id": "tortilla_corn_tortillas",
+   "action": "ingredient",
+   "arg": "tortilla_corn_tortillas",
+   "x": 0.3784,
+   "y": 0.4316,
+   "width": 0.0643,
+   "height": 0.0801
+  },
+  {
+   "id": "steam_jalapenos",
+   "action": "ingredient",
+   "arg": "steam_jalapenos",
+   "x": 0.6968,
+   "y": 0.7227,
+   "width": 0.0672,
+   "height": 0.043
+  },
+  {
+   "id": "pass_slot_1",
+   "action": "plate",
+   "index": 0,
+   "x": 0.7938,
+   "y": 0.7292,
+   "width": 0.0857,
+   "height": 0.082
+  },
+  {
+   "id": "pass_slot_2",
+   "action": "plate",
+   "index": 1,
+   "x": 0.8802,
+   "y": 0.7259,
+   "width": 0.0857,
+   "height": 0.082
+  },
+  {
+   "id": "drink_dispenser_agua",
+   "action": "drinks",
+   "arg": "horchata",
+   "x": 0.0,
+   "y": 0.4909,
+   "width": 0.1416,
+   "height": 0.4798
+  },
+  {
+   "id": "drink_dispenser_taco",
+   "action": "drinks",
+   "arg": "agua_de_jamaica",
+   "x": 0.0505,
+   "y": 0.1634,
+   "width": 0.138,
+   "height": 0.3587
+  },
+  {
+   "id": "drink_dispenser_agua_cup_1",
+   "action": "cup",
+   "arg": "horchata",
+   "index": 0,
+   "x": 0.0174,
+   "y": 0.7207,
+   "width": 0.0349,
+   "height": 0.097
+  },
+  {
+   "id": "drink_dispenser_agua_cup_2",
+   "action": "cup",
+   "arg": "horchata",
+   "index": 1,
+   "x": 0.0545,
+   "y": 0.7207,
+   "width": 0.0349,
+   "height": 0.097
+  },
+  {
+   "id": "drink_dispenser_agua_cup_3",
+   "action": "cup",
+   "arg": "horchata",
+   "index": 2,
+   "x": 0.0911,
+   "y": 0.7207,
+   "width": 0.0349,
+   "height": 0.097
+  },
+  {
+   "id": "drink_dispenser_taco_cup_1",
+   "action": "cup",
+   "arg": "agua_de_jamaica",
+   "index": 0,
+   "x": 0.0719,
+   "y": 0.4004,
+   "width": 0.0283,
+   "height": 0.0762
+  },
+  {
+   "id": "drink_dispenser_taco_cup_2",
+   "action": "cup",
+   "arg": "agua_de_jamaica",
+   "index": 1,
+   "x": 0.1049,
+   "y": 0.4004,
+   "width": 0.0283,
+   "height": 0.0762
+  },
+  {
+   "id": "drink_dispenser_taco_cup_3",
+   "action": "cup",
+   "arg": "agua_de_jamaica",
+   "index": 2,
+   "x": 0.1365,
+   "y": 0.4004,
+   "width": 0.0283,
+   "height": 0.0762
+  },
+  {
+   "id": "trash_bin",
+   "action": "trash",
+   "x": 0.565,
+   "y": 0.7728,
+   "width": 0.0443,
+   "height": 0.1979
+  }
  ]
 }
