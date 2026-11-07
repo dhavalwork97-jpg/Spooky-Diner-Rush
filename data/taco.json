@@ -1,0 +1,514 @@
+{
+ "restaurant": {
+  "id": "taco_truck",
+  "name": "Taco Truck",
+  "unlockLevel": 15,
+  "cost": 2000
+ },
+ "settings": {
+  "pans": 4,
+  "ovenSlots": 2,
+  "plateSlots": 2,
+  "seats": 5,
+  "drinkLanes": 3,
+  "drinkChance": 0.25,
+  "maxOrderSize": 3,
+  "patienceMult": 1.15,
+  "arrivalGapMult": 1.15
+ },
+ "proteins": {
+  "chicken": {
+   "readyAfter": 8,
+   "burnWindow": 5
+  },
+  "shrimp": {
+   "readyAfter": 5,
+   "burnWindow": 4
+  },
+  "fish": {
+   "readyAfter": 6,
+   "burnWindow": 4
+  },
+  "veggies": {
+   "readyAfter": 4,
+   "burnWindow": 5
+  }
+ },
+ "timed": {
+  "crispy_shell": {
+   "readyAfter": 7,
+   "burnWindow": 4
+  },
+  "melt": {
+   "readyAfter": 5,
+   "burnWindow": 4
+  },
+  "press": {
+   "readyAfter": 4,
+   "burnWindow": 4
+  }
+ },
+ "drinks": [
+  {
+   "id": "horchata",
+   "name": "Horchata",
+   "unlockLevel": 15,
+   "price": 12,
+   "xp": 14,
+   "fillSeconds": 5,
+   "dispenser": "drink_dispenser_agua",
+   "sheetRow": 0
+  },
+  {
+   "id": "agua_de_jamaica",
+   "name": "Agua de jamaica",
+   "unlockLevel": 15,
+   "price": 12,
+   "xp": 14,
+   "fillSeconds": 5,
+   "dispenser": "drink_dispenser_taco",
+   "sheetRow": 1
+  }
+ ],
+ "stepLabels": {
+  "tortilla_flour_tortillas": "a flour tortilla",
+  "tortilla_corn_tortillas": "corn chips",
+  "crispy_shell": "a crispy shell",
+  "protein:chicken": "cooked chicken",
+  "protein:shrimp": "cooked shrimp",
+  "protein:fish": "cooked fish",
+  "protein:veggies": "cooked veggies",
+  "topping_lettuce": "lettuce",
+  "topping_tomato_slices": "tomato",
+  "topping_shredded_bowl": "shredded cabbage",
+  "topping_salsa_red_bowl": "red salsa",
+  "topping_crema": "crema",
+  "topping_guacamole": "guacamole",
+  "cooler_cheese": "cheese",
+  "cooler_limes": "lime",
+  "steam_white_rice": "rice",
+  "steam_beans": "beans",
+  "steam_jalapenos": "jalapenos",
+  "action:wrap": "wrapping",
+  "pan:press": "pressing in a pan",
+  "action:cut": "cutting",
+  "oven:melt": "melting in the oven"
+ },
+ "dishes": [
+  {
+   "id": "chicken_soft_taco",
+   "name": "Chicken soft taco",
+   "kind": "soft_taco",
+   "protein": "chicken",
+   "unlockLevel": 15,
+   "price": 34,
+   "xp": 40,
+   "steps": [
+    "tortilla_flour_tortillas",
+    "protein:chicken",
+    "topping_lettuce",
+    "topping_tomato_slices",
+    "cooler_cheese"
+   ],
+   "frames": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "sheet": "taco_soft_chicken_build",
+   "sprite": "taco_soft_chicken"
+  },
+  {
+   "id": "shrimp_soft_taco",
+   "name": "Shrimp soft taco",
+   "kind": "soft_taco",
+   "protein": "shrimp",
+   "unlockLevel": 16,
+   "price": 34,
+   "xp": 40,
+   "steps": [
+    "tortilla_flour_tortillas",
+    "protein:shrimp",
+    "topping_shredded_bowl",
+    "topping_crema"
+   ],
+   "frames": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "sheet": "taco_soft_shrimp_build",
+   "sprite": "taco_soft_shrimp"
+  },
+  {
+   "id": "fish_soft_taco",
+   "name": "Fish soft taco",
+   "kind": "soft_taco",
+   "protein": "fish",
+   "unlockLevel": 16,
+   "price": 34,
+   "xp": 40,
+   "steps": [
+    "tortilla_flour_tortillas",
+    "protein:fish",
+    "topping_shredded_bowl",
+    "cooler_limes"
+   ],
+   "frames": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "sheet": "taco_soft_fish_build",
+   "sprite": "taco_soft_fish"
+  },
+  {
+   "id": "veggies_soft_taco",
+   "name": "Veggie soft taco",
+   "kind": "soft_taco",
+   "protein": "veggies",
+   "unlockLevel": 15,
+   "price": 34,
+   "xp": 40,
+   "steps": [
+    "tortilla_flour_tortillas",
+    "protein:veggies",
+    "topping_guacamole",
+    "topping_salsa_red_bowl"
+   ],
+   "frames": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "sheet": "taco_soft_veggies_build",
+   "sprite": "taco_soft_veggies"
+  },
+  {
+   "id": "chicken_taco",
+   "name": "Chicken crispy taco",
+   "kind": "crispy_taco",
+   "protein": "chicken",
+   "unlockLevel": 17,
+   "price": 44,
+   "xp": 50,
+   "steps": [
+    "crispy_shell",
+    "protein:chicken",
+    "topping_lettuce",
+    "topping_tomato_slices",
+    "cooler_cheese"
+   ],
+   "frames": null,
+   "sheet": null,
+   "sprite": "taco_chicken"
+  },
+  {
+   "id": "shrimp_taco",
+   "name": "Shrimp crispy taco",
+   "kind": "crispy_taco",
+   "protein": "shrimp",
+   "unlockLevel": 18,
+   "price": 44,
+   "xp": 50,
+   "steps": [
+    "crispy_shell",
+    "protein:shrimp",
+    "topping_shredded_bowl",
+    "topping_crema"
+   ],
+   "frames": null,
+   "sheet": null,
+   "sprite": "taco_shrimp"
+  },
+  {
+   "id": "fish_taco",
+   "name": "Fish crispy taco",
+   "kind": "crispy_taco",
+   "protein": "fish",
+   "unlockLevel": 18,
+   "price": 44,
+   "xp": 50,
+   "steps": [
+    "crispy_shell",
+    "protein:fish",
+    "topping_shredded_bowl",
+    "cooler_limes"
+   ],
+   "frames": null,
+   "sheet": null,
+   "sprite": "taco_fish"
+  },
+  {
+   "id": "veggies_taco",
+   "name": "Veggie crispy taco",
+   "kind": "crispy_taco",
+   "protein": "veggies",
+   "unlockLevel": 17,
+   "price": 44,
+   "xp": 50,
+   "steps": [
+    "crispy_shell",
+    "protein:veggies",
+    "topping_guacamole",
+    "topping_salsa_red_bowl"
+   ],
+   "frames": null,
+   "sheet": null,
+   "sprite": "taco_veggie"
+  },
+  {
+   "id": "chicken_burrito",
+   "name": "Chicken burrito",
+   "kind": "burrito",
+   "protein": "chicken",
+   "unlockLevel": 19,
+   "price": 62,
+   "xp": 70,
+   "steps": [
+    "tortilla_flour_tortillas",
+    "steam_white_rice",
+    "steam_beans",
+    "cooler_cheese",
+    "protein:chicken",
+    "action:wrap",
+    "pan:press",
+    "action:cut"
+   ],
+   "frames": [
+    0,
+    1,
+    1,
+    1,
+    1,
+    4,
+    5,
+    6
+   ],
+   "sheet": "burrito_chicken",
+   "sprite": "burrito_chicken"
+  },
+  {
+   "id": "shrimp_burrito",
+   "name": "Shrimp burrito",
+   "kind": "burrito",
+   "protein": "shrimp",
+   "unlockLevel": 20,
+   "price": 62,
+   "xp": 70,
+   "steps": [
+    "tortilla_flour_tortillas",
+    "steam_white_rice",
+    "steam_beans",
+    "cooler_cheese",
+    "protein:shrimp",
+    "action:wrap",
+    "pan:press",
+    "action:cut"
+   ],
+   "frames": [
+    0,
+    1,
+    1,
+    1,
+    1,
+    4,
+    5,
+    6
+   ],
+   "sheet": "burrito_shrimp",
+   "sprite": "burrito_shrimp"
+  },
+  {
+   "id": "fish_burrito",
+   "name": "Fish burrito",
+   "kind": "burrito",
+   "protein": "fish",
+   "unlockLevel": 20,
+   "price": 62,
+   "xp": 70,
+   "steps": [
+    "tortilla_flour_tortillas",
+    "steam_white_rice",
+    "steam_beans",
+    "cooler_cheese",
+    "protein:fish",
+    "action:wrap",
+    "pan:press",
+    "action:cut"
+   ],
+   "frames": [
+    0,
+    1,
+    1,
+    1,
+    1,
+    4,
+    5,
+    6
+   ],
+   "sheet": "burrito_fish",
+   "sprite": "burrito_fish"
+  },
+  {
+   "id": "veggies_burrito",
+   "name": "Veggie burrito",
+   "kind": "burrito",
+   "protein": "veggies",
+   "unlockLevel": 19,
+   "price": 62,
+   "xp": 70,
+   "steps": [
+    "tortilla_flour_tortillas",
+    "steam_white_rice",
+    "steam_beans",
+    "cooler_cheese",
+    "protein:veggies",
+    "action:wrap",
+    "pan:press",
+    "action:cut"
+   ],
+   "frames": [
+    0,
+    1,
+    1,
+    1,
+    1,
+    4,
+    5,
+    6
+   ],
+   "sheet": "burrito_veggies",
+   "sprite": "burrito_veggies"
+  },
+  {
+   "id": "chicken_nachos",
+   "name": "Chicken nachos",
+   "kind": "nachos",
+   "protein": "chicken",
+   "unlockLevel": 21,
+   "price": 70,
+   "xp": 78,
+   "steps": [
+    "tortilla_corn_tortillas",
+    "cooler_cheese",
+    "oven:melt",
+    "protein:chicken",
+    "steam_jalapenos",
+    "topping_salsa_red_bowl",
+    "topping_crema",
+    "topping_guacamole"
+   ],
+   "frames": [
+    0,
+    1,
+    2,
+    3,
+    3,
+    3,
+    3,
+    4
+   ],
+   "sheet": "nachos_chicken",
+   "sprite": "nachos_chicken"
+  },
+  {
+   "id": "shrimp_nachos",
+   "name": "Shrimp nachos",
+   "kind": "nachos",
+   "protein": "shrimp",
+   "unlockLevel": 22,
+   "price": 70,
+   "xp": 78,
+   "steps": [
+    "tortilla_corn_tortillas",
+    "cooler_cheese",
+    "oven:melt",
+    "protein:shrimp",
+    "steam_jalapenos",
+    "topping_salsa_red_bowl",
+    "topping_crema",
+    "topping_guacamole"
+   ],
+   "frames": [
+    0,
+    1,
+    2,
+    3,
+    3,
+    3,
+    3,
+    4
+   ],
+   "sheet": "nachos_shrimp",
+   "sprite": "nachos_shrimp"
+  },
+  {
+   "id": "fish_nachos",
+   "name": "Fish nachos",
+   "kind": "nachos",
+   "protein": "fish",
+   "unlockLevel": 22,
+   "price": 70,
+   "xp": 78,
+   "steps": [
+    "tortilla_corn_tortillas",
+    "cooler_cheese",
+    "oven:melt",
+    "protein:fish",
+    "steam_jalapenos",
+    "topping_salsa_red_bowl",
+    "topping_crema",
+    "topping_guacamole"
+   ],
+   "frames": [
+    0,
+    1,
+    2,
+    3,
+    3,
+    3,
+    3,
+    4
+   ],
+   "sheet": "nachos_fish",
+   "sprite": "nachos_fish"
+  },
+  {
+   "id": "veggies_nachos",
+   "name": "Veggie nachos",
+   "kind": "nachos",
+   "protein": "veggies",
+   "unlockLevel": 21,
+   "price": 70,
+   "xp": 78,
+   "steps": [
+    "tortilla_corn_tortillas",
+    "cooler_cheese",
+    "oven:melt",
+    "protein:veggies",
+    "steam_jalapenos",
+    "topping_salsa_red_bowl",
+    "topping_crema",
+    "topping_guacamole"
+   ],
+   "frames": [
+    0,
+    1,
+    2,
+    3,
+    3,
+    3,
+    3,
+    4
+   ],
+   "sheet": "nachos_veggies",
+   "sprite": "nachos_veggies"
+  }
+ ]
+}
