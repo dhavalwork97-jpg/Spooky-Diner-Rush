@@ -992,24 +992,33 @@ export class GameScene extends Phaser.Scene {
    * also when no ad was shown (no SDK, cooldown, error), so it can never block the player.
    */
   private breakAd(then?: () => void): void {
-    if (this.adActive || this.adPending) return;
+    // Never swallow `then`: a Reopen tap while an ad is already pending/active used to do nothing (Closed screen stuck).
+    if (this.adActive || this.adPending) {
+      if (then) this.afterAd.push(then);
+      return;
+    }
     this.adPending = true;
     void CrazyGames.midgameAd(() => {
       this.adActive = true;
       this.paused = true;
       audio.pauseAll();
       CrazyGames.gameplayStop();
-    }).then((shown) => {
+    }).then(() => {
       this.adPending = false;
-      if (shown) {
+      // Always undo what the ad start did, whatever the result (timeout, error), or the game stays frozen.
+      if (this.adActive) {
         this.adActive = false;
         this.paused = false;
         audio.resumeAll();
         if (!this.state.closed) CrazyGames.gameplayStart();
       }
       then?.();
+      const queued = this.afterAd.splice(0);
+      for (const f of queued) f();
     });
   }
+
+  private afterAd: (() => void)[] = [];
 
   private adDue = false;
 
