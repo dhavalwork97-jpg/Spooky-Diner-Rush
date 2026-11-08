@@ -1,0 +1,52 @@
+{
+ "size": 128,
+ "stepIcons": {
+  "crispy_shell": "icon_crispy_shell",
+  "tortilla_flour_tortillas": "icon_flour_tortilla",
+  "tortilla_corn_tortillas (treated as chips)": "icon_chips",
+  "tortilla_corn_tortillas": "icon_corn_tortilla",
+  "steam_white_rice": "icon_rice",
+  "steam_beans": "icon_beans",
+  "cooler_cheese": "icon_cheese",
+  "protein:chicken": "icon_protein_chicken",
+  "protein:shrimp": "icon_protein_shrimp",
+  "protein:fish": "icon_protein_fish",
+  "protein:veggies": "icon_protein_veggies",
+  "topping_lettuce": "icon_lettuce",
+  "topping_tomato_slices": "icon_tomato",
+  "topping_shredded_bowl": "icon_shredded_cabbage",
+  "topping_salsa_red_bowl": "icon_salsa",
+  "topping_crema": "icon_crema",
+  "topping_guacamole": "icon_guacamole",
+  "cooler_limes": "icon_lime",
+  "steam_jalapenos": "icon_jalapeno",
+  "action:wrap": "icon_wrap",
+  "pan:press": "icon_press_pan",
+  "action:cut": "icon_knife",
+  "oven:melt": "icon_melt"
+ },
+ "dishIcons": {
+  "chicken_taco": "icon_taco_chicken",
+  "shrimp_taco": "icon_taco_shrimp",
+  "fish_taco": "icon_taco_fish",
+  "veggies_taco": "icon_taco_veggies",
+  "chicken_burrito": "icon_burrito_chicken",
+  "shrimp_burrito": "icon_burrito_shrimp",
+  "fish_burrito": "icon_burrito_fish",
+  "veggies_burrito": "icon_burrito_veggies",
+  "chicken_nachos": "icon_nachos_chicken",
+  "shrimp_nachos": "icon_nachos_shrimp",
+  "fish_nachos": "icon_nachos_fish",
+  "veggies_nachos": "icon_nachos_veggies",
+  "chicken_soft_taco": "icon_taco_soft_chicken",
+  "shrimp_soft_taco": "icon_taco_soft_shrimp",
+  "fish_soft_taco": "icon_taco_soft_fish",
+  "veggies_soft_taco": "icon_taco_soft_veggies",
+  "veggie_taco": "icon_taco_veggies"
+ },
+ "drinkIcons": {
+  "horchata": "icon_drink_horchata",
+  "agua_de_jamaica": "icon_drink_jamaica"
+ },
+ "note": "Use stepIcons[<step id from suggestedMenu>] for each step in an order bubble, dishIcons[<dish id>] for the dish, drinkIcons for drinks. Each is a 128x128 transparent PNG, also in icons_atlas (Phaser atlas)."
+}

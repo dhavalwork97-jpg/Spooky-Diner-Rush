@@ -40,9 +40,11 @@ describe('Lv 11-20 balance simulation', () => {
       expect(r.levelTimes[20]).toBeLessThan(3000);
     }
     // Drinks and ice cream are served from the machine (no plate step), so the bot is about 7 s faster than before: 1793 s.
+    // Speed upgrades now only shorten cooking (advanceCook), which brings the 150-seed mean to about 1734 s; the owner accepted
+    // this faster pace on 2026-11-07, so the floor is 1700 s.
     // The floor applies to the average of 150 seeds instead of each of 4 runs.
     const mean = fastMany.reduce((n, r) => n + r.levelTimes[20]!, 0) / fastMany.length;
-    expect(mean).toBeGreaterThan(1750);
+    expect(mean).toBeGreaterThan(1700);
   });
 
   it('the climb is gradual: close rate never falls and the ramp stays inside 2.5x of Lv 6-10 (average bot) by Lv 20', () => {

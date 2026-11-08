@@ -306,6 +306,8 @@ export class StoryCard {
 
   constructor(private scene: Phaser.Scene, w: number, h: number) {
     const dim = scene.add.rectangle(w / 2, h / 2, w, h, 0x1a0f0c, 0.6).setInteractive();
+    // Failsafe: a tap on the dim also closes the card once it is ready, so it can never trap the player.
+    dim.on('pointerup', () => this.close());
     const chef = scene.add.image(-258, 24, 'chef');
     chef.setScale(220 / chef.height);
     this.titleText = scene.add
@@ -347,8 +349,8 @@ export class StoryCard {
     if (!SaveSystem.reduceMotion()) {
       this.root.setAlpha(0);
       this.card.setScale(0.9);
-      this.scene.tweens.add({ targets: this.root, alpha: 1, duration: 220 });
-      this.scene.tweens.add({ targets: this.card, scale: 1, duration: 280, ease: 'Back.Out' });
+      this.scene.tweens.add({ targets: this.root, alpha: 1, duration: 220, onComplete: () => this.root.setAlpha(1) });
+      this.scene.tweens.add({ targets: this.card, scale: 1, duration: 280, ease: 'Back.Out', onComplete: () => this.card.setScale(1) });
     }
   }
 

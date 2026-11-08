@@ -9,3 +9,9 @@ export const INTRO_VIDEO_ENABLED: boolean = !IS_CRAZYGAMES_BUILD;
 
 /** The Capacitor Android app (`npm run build:android`). Native code handles rotation, fullscreen, Back and app pause there. */
 export const IS_ANDROID_BUILD: boolean = import.meta.env.MODE === 'android';
+
+/**
+ * Ads are off for the CrazyGames basic launch (no ads are served then). Turn them on for the full launch by building
+ * with `VITE_ENABLE_ADS=true`. Tests (mode "test") keep them on so the ad logic stays covered.
+ */
+export const ADS_ENABLED: boolean = import.meta.env.VITE_ENABLE_ADS === 'true' || import.meta.env.MODE === 'test';

@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
 import { CREAM, INK, LEAF, ORANGE } from '../art/builders';
 import type { RestaurantDef } from '../data/validate';
-import { restaurantCards } from '../game/restaurants';
+import type { GameConfig } from '../game/config';
+import { purchaseRestaurant, restaurantCards, type PlayableRestaurant } from '../game/restaurants';
+import { defaultTacoConfig } from '../game/taco/tacoConfig';
 import { SaveSystem } from '../systems/SaveSystem';
 import { audio } from '../systems/AudioSystem';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
-import type { ShopData } from './ShopScene';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 const PANEL_W = 1040;
@@ -13,15 +14,30 @@ const CARD_W = 300;
 const CARD_H = 420;
 const GAP = 40;
 
-export interface RestaurantSelectData extends ShopData {
+export interface RestaurantSelectData {
+  /** The player's Lv and coins (the diner's or the Taco Truck's kitchen state both fit). Buying spends `coins` here and in the save. */
+  state: { level: number; coins: number; cfg: GameConfig };
+  /** Called after the panel closes (the game scene resumes itself here). */
+  onClose: () => void;
   /** Called with the id of another open restaurant the player picked; the game scene restarts in it. */
   onPick: (id: string) => void;
   current: string;
 }
 
+const COIN_FORMAT = new Intl.NumberFormat('en-US');
+
+/** The Taco Truck is not in restaurants.json (its zones live in data/taco.json), so its card is built from the taco data. */
+const TACO_CARD: PlayableRestaurant = {
+  id: defaultTacoConfig.restaurant.id,
+  name: defaultTacoConfig.restaurant.name,
+  unlockLevel: defaultTacoConfig.restaurant.unlockLevel,
+  background: 'taco_thumb',
+  cost: defaultTacoConfig.restaurant.cost,
+};
+
 /**
  * Restaurant select: one card per restaurant. Open ones can be picked, locked ones show "Lv N",
- * and not-yet-built ones show "Coming soon". Only burger_diner is playable today.
+ * the Taco Truck can be bought once the Lv is reached, and not-yet-built ones show "Coming soon".
  */
 export class RestaurantSelectScene extends Phaser.Scene {
   private d!: RestaurantSelectData;
@@ -47,8 +63,8 @@ export class RestaurantSelectScene extends Phaser.Scene {
     g.lineStyle(5, INK, 1).strokeRoundedRect(x0, 8, PANEL_W, h - 24, 24);
     this.add.text(x0 + 32, 44, 'Restaurants', { fontFamily: FONT, fontSize: '44px', color: '#F28C28', stroke: '#2B1B17', strokeThickness: 7 }).setOrigin(0, 0.5);
 
-    const playable = this.registry.get('restaurants') as RestaurantDef[];
-    const cards = restaurantCards(playable, this.d.state.cfg.restaurantMenu.comingSoon, this.d.state.level, this.d.current);
+    const playable = [...(this.registry.get('restaurants') as RestaurantDef[]), TACO_CARD];
+    const cards = restaurantCards(playable, this.d.state.cfg.restaurantMenu.comingSoon, this.d.state.level, this.d.current, SaveSystem.data.restaurants);
     const total = cards.length * CARD_W + (cards.length - 1) * GAP;
     const left = (w - total) / 2;
     cards.forEach((c, i) => {
@@ -63,17 +79,21 @@ export class RestaurantSelectScene extends Phaser.Scene {
       if (c.background && this.textures.exists(c.background)) {
         const img = this.add.image(cx, top + 110, c.background);
         img.setScale((CARD_W - 28) / img.width);
-        if (!live) img.setTint(0x777777).setAlpha(0.7);
+        if (!live && c.state !== 'buy') img.setTint(0x777777).setAlpha(0.7);
       } else {
         art.fillStyle(0x3b2a24, 1).fillRoundedRect(cx - CARD_W / 2 + 14, top + 14, CARD_W - 28, 190, 12);
         this.add.text(cx, top + 110, '?', { fontFamily: FONT, fontSize: '96px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 8 }).setOrigin(0.5);
       }
       this.add.text(cx, top + 240, c.name, { fontFamily: FONT, fontSize: '32px', color: '#2B1B17' }).setOrigin(0.5);
-      const status = c.state === 'soon' ? 'Coming soon' : c.state === 'locked' ? `Unlocks at Lv ${c.unlockLevel}` : c.current ? 'Playing now' : 'Ready';
+      const status =
+        c.state === 'soon' ? 'Coming soon' : c.state === 'locked' ? `Unlocks at Lv ${c.unlockLevel}` : c.state === 'buy' ? `${COIN_FORMAT.format(c.cost ?? 0)} coins` : c.current ? 'Playing now' : 'Ready';
       this.add.text(cx, top + 282, status, { fontFamily: FONT, fontSize: '22px', color: '#5a463e' }).setOrigin(0.5);
       if (live) {
         const label = c.current ? 'Continue' : 'Play';
         this.makeButton(cx, top + 352, label, 220, 92, ORANGE, () => this.pick(c.id, c.current));
+      } else if (c.state === 'buy') {
+        const afford = this.d.state.coins >= (c.cost ?? 0);
+        this.makeButton(cx, top + 352, afford ? 'Buy' : 'Need coins', 220, 92, afford ? ORANGE : 0x8a7a70, () => this.buy(c.id, c.cost ?? 0, c.unlockLevel));
       }
     });
 
@@ -100,6 +120,27 @@ export class RestaurantSelectScene extends Phaser.Scene {
       audio.play('click');
       onPress();
     });
+  }
+
+  /** Buy a restaurant: the pure rule in src/game/restaurants.ts decides; this only passes the result into the model and the save. */
+  private buy(id: string, cost: number, unlockLevel: number): void {
+    if (this.closing) return;
+    const save = SaveSystem.data;
+    const s = this.d.state;
+    const r = { level: s.level, coins: s.coins, restaurants: [...save.restaurants], tacoStep: save.tacoStep, tacoXp: save.tacoXp };
+    const check = purchaseRestaurant({ id, unlockLevel, cost }, r);
+    if (!check.ok) {
+      audio.play('click');
+      return;
+    }
+    s.coins = r.coins;
+    save.coins = r.coins;
+    save.restaurants = r.restaurants;
+    save.tacoStep = r.tacoStep ?? save.tacoStep;
+    save.tacoXp = r.tacoXp ?? save.tacoXp;
+    SaveSystem.save();
+    audio.play('click');
+    this.scene.restart(this.d); // draw the cards again: the Taco Truck now says Play
   }
 
   private pick(id: string, current: boolean): void {

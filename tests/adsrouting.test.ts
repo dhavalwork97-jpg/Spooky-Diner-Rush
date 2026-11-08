@@ -33,6 +33,7 @@ afterEach(() => {
 describe('browser and CrazyGames builds use CrazyGames only', () => {
   for (const mode of ['production', 'crazygames']) {
     it(`mode "${mode}": ads go to the CrazyGames SDK, AdMob is never touched`, async () => {
+      vi.stubEnv('VITE_ENABLE_ADS', 'true'); // browser ads are switched off by default for the CrazyGames basic launch; this test is about routing
       const { ads, initAds } = await loadAds(mode);
       await initAds();
       expect(ads.canShowRewarded()).toBe(true);

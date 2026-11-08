@@ -1,0 +1,33 @@
+name: Verify Chef Rush
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "fix/**"]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+        if: always()
+      - name: Build CrazyGames release
+        id: crazygames
+        run: npm run build:crazygames
+        if: always()
+      - name: Upload CrazyGames submission files
+        uses: actions/upload-artifact@v4
+        if: always() && steps.crazygames.outcome == 'success'
+        with:
+          name: Chef-Rush-CrazyGames
+          path: dist-crazygames/
+          if-no-files-found: error
+          retention-days: 14

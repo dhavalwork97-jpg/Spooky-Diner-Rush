@@ -8,6 +8,7 @@ import { Atmosphere } from '../anim/atmosphere';
 import { SaveSystem } from '../systems/SaveSystem';
 import { modsFor } from '../game/shop';
 import { titleEarnedAt } from '../game/career';
+import { localDateKey } from '../game/extras';
 import { ChefTalk } from '../game/chef';
 import { dueStory, seenAfter } from '../game/story';
 import type { RestaurantSelectData } from './RestaurantSelectScene';
@@ -126,6 +127,9 @@ export class GameScene extends Phaser.Scene {
       const sp = Number(params.get('speed'));
       if (sp > 0) this.speed = Math.min(20, sp);
     }
+    // Optional extras: Mastery badges and today's Daily Special (burger diner only, where this scene runs).
+    this.dayKey = localDateKey();
+    this.state.enableExtras(save.mastery, this.dayKey, save.specialDay === this.dayKey);
 
     this.syncDecor();
     this.fx = new ParticlePool(this, 140);
@@ -711,6 +715,22 @@ export class GameScene extends Phaser.Scene {
         this.saveNow();
         break;
       }
+      case 'masteryUp': {
+        const name = this.state.cfg.recipes.items[e.item].name;
+        this.toast.show(`${e.tier} badge: ${name} +${e.coins} coins`);
+        audio.play('ding');
+        this.flyCoins({ x: 640, y: 150 }, 4);
+        this.saveNow();
+        break;
+      }
+      case 'specialDone': {
+        const cv = this.custViews.get(e.customer);
+        const at = cv ? { x: cv.center.x + 78, y: cv.center.y - 60 } : { x: 640, y: 120 };
+        this.floatText(at.x, at.y, `Special! +${e.bonus}`, '#F6C445');
+        audio.play('ding');
+        this.saveNow();
+        break;
+      }
       case 'angryLeave':
         audio.play('wrong');
         this.cameras.main.shake(SaveSystem.reduceMotion() ? 0 : 120, 0.002);
@@ -813,7 +833,7 @@ export class GameScene extends Phaser.Scene {
         this.syncDecor();
         this.scene.resume();
       },
-      onPick: (id: string) => this.scene.start('Game', { restaurantId: id }),
+      onPick: (id: string) => (id === 'taco_truck' ? this.scene.start('Taco') : this.scene.start('Game', { restaurantId: id })),
     };
     this.scene.launch(key, data);
     this.scene.pause();
@@ -974,10 +994,15 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** The player's calendar day when this visit started (for the Daily Special). */
+  private dayKey = '';
+
   private saveNow(): void {
     SaveSystem.data.level = this.state.level;
     SaveSystem.data.xp = this.state.xp;
     SaveSystem.data.coins = this.state.coins;
+    SaveSystem.data.mastery = Object.fromEntries(Object.entries(this.state.mastery).filter(([, n]) => (n ?? 0) > 0)) as Record<string, number>;
+    if (this.state.special?.done) SaveSystem.data.specialDay = this.dayKey;
     SaveSystem.save();
     this.lastSave = performance.now();
   }
@@ -993,23 +1018,37 @@ export class GameScene extends Phaser.Scene {
    * also when no ad was shown (no SDK, cooldown, error), so it can never block the player.
    */
   private breakAd(then?: () => void): void {
-    if (this.adActive || this.adPending) return;
+    // Never swallow `then`: a Reopen tap while an ad is already pending/active used to do nothing (Closed screen stuck).
+    if (this.adActive || this.adPending) {
+      // Repeated taps are one intent; never queue duplicate Reopen actions.
+      if (then && this.afterAd.length === 0) this.afterAd.push(then);
+      return;
+    }
     this.adPending = true;
     void ads.midgameAd(() => {
       this.adActive = true;
       this.paused = true;
       audio.pauseAll();
       CrazyGames.gameplayStop();
-    }).then((shown) => {
+    }).then(() => {
       this.adPending = false;
-      if (shown) {
+      // Always undo what the ad start did, whatever the result (timeout, error), or the game stays frozen.
+      if (this.adActive) {
         this.adActive = false;
         this.paused = false;
         audio.resumeAll();
         if (!this.state.closed) CrazyGames.gameplayStart();
       }
       then?.();
+      this.flushAfterAd();
     });
+  }
+
+  private afterAd: (() => void)[] = [];
+
+  private flushAfterAd(): void {
+    const queued = this.afterAd.splice(0, 1);
+    for (const action of queued) action();
   }
 
   private adDue = false;
@@ -1030,8 +1069,13 @@ export class GameScene extends Phaser.Scene {
         this.paused = false;
         audio.resumeAll();
       }
-      if (finished) this.state.reopen(true);
-      else this.overlay.setSub('No ad available right now.\nYou can still reopen.');
+      if (finished) {
+        this.state.reopen(true);
+        this.afterAd.length = 0; // The rewarded revive already completed the queued Reopen intent.
+      } else {
+        this.overlay.setSub('No ad available right now.\nYou can still reopen.');
+        this.flushAfterAd();
+      }
     });
   }
 

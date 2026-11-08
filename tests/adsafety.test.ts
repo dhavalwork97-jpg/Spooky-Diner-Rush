@@ -33,7 +33,7 @@ describe('reward economy is unchanged', () => {
   });
   it('the reward is granted in one place only, after the ad result (GameScene)', () => {
     expect(where((t) => /\.reopen\(true\)/.test(t))).toEqual(['src/scenes/GameScene.ts']);
-    expect(text('src/scenes/GameScene.ts')).toMatch(/if \(finished\) this\.state\.reopen\(true\)/);
+    expect(text('src/scenes/GameScene.ts')).toMatch(/if \(finished\) \{?\s*this\.state\.reopen\(true\)/);
     // the ad code only reports "earned or not": it never touches reputation or reopen
     const adCode = [...code].filter(([p]) => p.startsWith('src/ads/')).map(([, t]) => t.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, ''));
     expect(adCode.length).toBeGreaterThan(3);
