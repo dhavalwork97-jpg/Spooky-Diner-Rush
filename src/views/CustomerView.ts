@@ -211,6 +211,13 @@ export class CustomerView {
     const tagText = scene.add.text(0, 0, 'Rush', { fontFamily: FONT, fontSize: '12px', color: '#FFF4DC' }).setOrigin(0.5);
     this.rushTag = scene.add.container(-BUBBLE_W / 2 + 22, tagY, [tagBg, tagText]);
     this.bubble.add(this.rushTag);
+    if (c.special) {
+      // gold "Special" tag above the others: today's Daily Special order
+      const spBg = scene.add.graphics();
+      spBg.fillStyle(0xf6c445, 1).fillRoundedRect(-30, -8, 60, 16, 6).lineStyle(2, INK, 1).strokeRoundedRect(-30, -8, 60, 16, 6);
+      const spText = scene.add.text(0, 0, 'Special', { fontFamily: FONT, fontSize: '12px', color: '#3A2412' }).setOrigin(0.5);
+      this.bubble.add(scene.add.container(0, tagY - 20, [spBg, spText]));
+    }
     if (c.type !== 'regular') {
       const chip = TYPE_CHIPS[c.type];
       if (chip) {

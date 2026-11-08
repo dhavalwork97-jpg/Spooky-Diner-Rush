@@ -2,7 +2,9 @@ import Phaser from 'phaser';
 import { CREAM, INK } from '../art/builders';
 import type { GameConfig, ItemKind } from '../game/config';
 import { recipeEntries } from '../game/recipebook';
+import { defaultExtras, masteryProgress } from '../game/extras';
 import { audio } from '../systems/AudioSystem';
+import { SaveSystem } from '../systems/SaveSystem';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 import type { ShopData } from './ShopScene';
 
@@ -54,6 +56,11 @@ export class RecipeBookScene extends Phaser.Scene {
       this.add.text(x0 + 160, y + 14, e.name, { fontFamily: FONT, fontSize: '32px', color: '#2B1B17' });
       const stats = e.locked ? `Unlocks at Lv ${e.unlockLevel}` : `${e.price} coins  ·  ${e.xp} XP`;
       this.add.text(x0 + 160, y + 56, stats, { fontFamily: FONT, fontSize: '22px', color: '#5a463e' });
+      if (!e.locked && this.level >= defaultExtras.mastery.fromLevel) {
+        const p = masteryProgress(defaultExtras, SaveSystem.data.mastery[e.id] ?? 0);
+        const line = p.next ? `${p.badge ? `${p.badge} badge  ·  ` : ''}${p.next.remaining} more quick serves for ${p.next.name}` : 'Gold badge';
+        this.add.text(x0 + 160, y + 88, line, { fontFamily: FONT, fontSize: '18px', color: p.badge ? '#B8730F' : '#7a665e' });
+      }
       const how = e.locked ? '' : e.steps.map((s, n) => `${n + 1}. ${s}`).join('\n');
       this.add.text(x0 + 470, y + 12, how, { fontFamily: FONT, fontSize: '20px', color: '#2B1B17', lineSpacing: 4, wordWrap: { width: PANEL_W - 470 - 50 + 20 } });
     });

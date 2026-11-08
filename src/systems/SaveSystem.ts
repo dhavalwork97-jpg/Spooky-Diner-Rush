@@ -20,6 +20,10 @@ export interface SaveData {
   /** Taco Truck menu step (1-10) and the XP towards the next one. Separate from Lv: buying the truck late still starts at 1. Saves from before this existed get a step worked out from Lv if the truck is already owned. */
   tacoStep: number;
   tacoXp: number;
+  /** Mastery badges: item id -> number of fast serves (see src/game/extras.ts). Missing in older saves. */
+  mastery: Record<string, number>;
+  /** Day (YYYY-MM-DD, player's own clock) the Daily Special was last served, or '' for never. */
+  specialDay: string;
   settings: { reduceMotion: boolean | null; musicVolume: number; sfxVolume: number; muted: boolean };
 }
 
@@ -38,6 +42,8 @@ export function defaultSave(): SaveData {
     restaurants: ['burger_diner'],
     tacoStep: 1,
     tacoXp: 0,
+    mastery: {},
+    specialDay: '',
     settings: { reduceMotion: null, musicVolume: 0.6, sfxVolume: 0.8, muted: false },
   };
 }
@@ -93,6 +99,19 @@ function cleanOwned(v: unknown): Record<string, number> {
   return out;
 }
 
+/** Keep only id -> whole-number count (1 to 100000) pairs. */
+function cleanCounts(v: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+  for (const [k, t] of Object.entries(v as Record<string, unknown>)) {
+    if (k.length === 0 || k.length > 64 || typeof t !== 'number' || !Number.isFinite(t)) continue;
+    const n = Math.floor(t);
+    if (n >= 1) out[k] = Math.min(n, 100000);
+    if (Object.keys(out).length >= MAX_LIST) break;
+  }
+  return out;
+}
+
 /** Merge unknown input over defaults so old or corrupt saves never crash the game. */
 export function parseSave(raw: string | null): SaveData {
   const base = defaultSave();
@@ -115,6 +134,8 @@ export function parseSave(raw: string | null): SaveData {
       restaurants: ownedRestaurants(p.restaurants),
       tacoStep: typeof p.tacoStep === 'number' && Number.isFinite(p.tacoStep) ? clampStep(p.tacoStep) : cleanIds(p.restaurants).includes('taco_truck') ? stepFromLevel(Math.max(1, Math.floor(num(p.level, base.level, 1)))) : 1,
       tacoXp: num(p.tacoXp, 0),
+      mastery: cleanCounts(p.mastery),
+      specialDay: typeof p.specialDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.specialDay) ? p.specialDay : '',
       settings: {
         reduceMotion: typeof p.settings?.reduceMotion === 'boolean' ? p.settings.reduceMotion : null,
         musicVolume: Math.min(1, num(p.settings?.musicVolume, base.settings.musicVolume)),

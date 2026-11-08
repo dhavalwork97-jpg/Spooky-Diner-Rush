@@ -71,3 +71,20 @@ describe('save v2', () => {
     expect(parseSave(null).version).toBe(2);
   });
 });
+
+describe('extras save fields', () => {
+  it('default to empty and survive a round trip', () => {
+    const d = parseSave(null);
+    expect(d.mastery).toEqual({});
+    expect(d.specialDay).toBe('');
+    const r = parseSave(JSON.stringify({ ...d, mastery: { burger: 12 }, specialDay: '2026-11-08' }));
+    expect(r.mastery).toEqual({ burger: 12 });
+    expect(r.specialDay).toBe('2026-11-08');
+  });
+  it('clean junk', () => {
+    const r = parseSave(JSON.stringify({ mastery: { burger: -3, fries: 'x', soda: 7.9, big: 1e9 }, specialDay: 'tomorrow' }));
+    expect(r.mastery).toEqual({ soda: 7, big: 100000 });
+    expect(r.specialDay).toBe('');
+    expect(parseSave(JSON.stringify({ mastery: [1, 2] })).mastery).toEqual({});
+  });
+});

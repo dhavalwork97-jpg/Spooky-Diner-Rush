@@ -658,3 +658,17 @@ Next: B Mastery badges, C Daily Special (diner extras; shared save fields). Need
 
 ### Taco leave animation (2026-11-08)
 TacoCustomers now lazy-loads ghost_leave_happy/angry and plays the matching clip in place when the model removes a customer (angry flag remembered from the last model mood); falls back to the old fade if the sheet has not loaded; reduced motion removes instantly. Checked in headless Chromium (no errors, leave clip seen); not checked on a phone.
+## In progress: diner extras (branch feature/diner-extras, from main; owner approved 2026-11-08)
+Owner approved: Mastery badges + Daily Special first (existing art only), no gates, no new ad placements, no change to ad/reward economy.
+Plan (small steps, update after each):
+ B1. data/extras.json + src/game/extras.ts (pure): badge tiers (Bronze/Silver/Gold per item: fast-served counts 10/40/100, coins 40/120/300), Daily Special rules (from Lv 15; +50% coins; special customer appears after 3 serves), localDateKey, dailySpecialFor(dateKey, available items) deterministic.
+ B2. KitchenState: public `mastery` counts and `special` order; credit on fast completed orders from Lv 16 (events 'masteryUp'); special customer spawns after warm-up using a separate path so existing RNG draws are unchanged; bonus on completion (event 'specialDone'); angry leave re-queues the special.
+ B3. SaveSystem: `mastery` and `dailySpecial {date, done}` (additive, sanitised). GameScene: load/save them, floating text on badge and special, "Special" tag over that customer (code-drawn, no new art). Recipe Book rows show badge progress.
+ B4. Tests, typecheck, both builds; HANDOFF update; stop for owner review (no commit until told).
+Words to avoid in code/UI/docs: shift, stage, star(s).
+
+### Diner extras status (feature/diner-extras, NOT committed, awaiting owner review)
+B1-B4 done: data/extras.json, src/game/extras.ts, KitchenState (enableExtras, mastery, special, masteryUp/specialDone events, Customer.special), SaveSystem (mastery, specialDay), GameScene wiring + toasts, gold "Special" tag in CustomerView, badge progress line in RecipeBookScene.
+Tests: tests/extras.test.ts, tests/extras_state.test.ts, save.test.ts additions all pass. typecheck, build, build:crazygames OK.
+Known pre-existing failures (also on clean main): tests/sim_late.test.ts "fast bot reaches Lv 20" (mean 1734 < 1750) and flaky 5 s timeout in balance_upgrades.test.ts.
+Not done: real-device look at the Special tag and Recipe Book line; transfer to feature/android-capacitor needs owner approval; SaveSystem will conflict-merge with feature/taco-truck (both add save fields).
