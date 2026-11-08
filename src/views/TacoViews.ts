@@ -53,6 +53,11 @@ const PAN_FLIPPED = [true, false, true, false];
 const PAN_PROTEIN = 'chicken';
 /** A pan with its handle is about this much wider than the pan's tap zone (which covers the bowl). */
 const PAN_WIDTH_PER_ZONE = 1.23;
+/** The two back pans are drawn a little smaller and higher, and behind the front pair, so pans and handles never cover each other. */
+const BACK_PAN_SCALE = 0.9;
+const BACK_PAN_LIFT = 0.025; // of the kitchen height
+/** Sheet whose empty pan frame is used for every idle pan (a clean, dry pan). */
+const EMPTY_PAN_SHEET = 'fish';
 const panMetas = new Map<string, SheetMeta>(Object.values(metas).filter((m) => m.panBox).map((m) => [m.key, m]));
 
 /** Oven shell frame (1 folded, 2 warm, 3 golden ready, 4 burnt). */
@@ -60,6 +65,12 @@ export function shellFrame(phase: CookPhase, t: number, readyAfter: number): num
   if (phase === 'burnt') return 4;
   if (phase === 'cooking') return t < readyAfter * 0.5 ? 1 : 2;
   return 3;
+}
+
+/** Frame of a cup in `drink_cups_sheet`: row per drink, column 0 empty .. 4 full. A filling cup shows levels 1-3, a ready cup is full. */
+export function cupFrame(sheetRow: number, phase: CookPhase, t: number, fillSeconds: number): number {
+  const level = phase === 'cooking' ? Math.min(3, 1 + Math.floor((t / fillSeconds) * 3)) : 4;
+  return sheetRow * 5 + level;
 }
 
 interface Slot {
@@ -77,6 +88,8 @@ export class TacoViews {
   private panBase: (Slot | null)[];
   private ovens: (Slot | null)[];
   private plates: (Slot | null)[];
+  /** Cups in the dispensers, keyed `<drink>:<lane>`. */
+  private cups = new Map<string, Slot>();
 
   constructor(private scene: Phaser.Scene, private bg: BackgroundPlacement, private s: TacoKitchenState) {
     this.pans = s.pans.map(() => null);
@@ -106,6 +119,7 @@ export class TacoViews {
           food = this.itemFace(p.what.item, ready ? 5 : 4, ready ? p.phase : 'cooking');
         }
       }
+      if (baseFrame === 0) panProtein = EMPTY_PAN_SHEET;
       if (zone) this.putPan(this.panBase, i, zone, `pan_${PAN_COLOURS[i] ?? 'red'}_${panProtein}`, baseFrame, `${i}:${panProtein}:${baseFrame}`, phase, PAN_FLIPPED[i] ?? false);
       this.put(this.pans, i, 'pan', food);
     });
@@ -117,11 +131,47 @@ export class TacoViews {
         this.put(this.ovens, i, 'oven', this.itemFace(o.what.item, 3, o.phase));
       }
     });
+    this.syncCups();
     s.plates.forEach((pl, i) => this.put(this.plates, i, 'plate', pl.item ? this.itemFace(pl.item, null, 'ready') : null));
   }
 
   destroy(): void {
     for (const list of [this.pans, this.panBase, this.ovens, this.plates]) list.forEach((x) => x?.img.destroy());
+    this.cups.forEach((c) => c.img.destroy());
+    this.cups.clear();
+  }
+
+  /** Cups: a filling or full cup sits in its dispenser lane; an empty lane shows nothing. Tint/flicker is not needed: a cup never spoils. */
+  private syncCups(): void {
+    const s = this.s;
+    for (const drink of s.taco.drinks) {
+      s.pours[drink.id]?.forEach((p, lane) => {
+        const key = `${drink.id}:${lane}`;
+        const cur = this.cups.get(key);
+        if (!p) {
+          if (cur) {
+            cur.img.destroy();
+            this.cups.delete(key);
+          }
+          return;
+        }
+        const z = s.taco.zones.find((q) => q.action === 'cup' && q.arg === drink.id && q.index === lane);
+        if (!z) return;
+        const frame = cupFrame(drink.sheetRow, p.phase, p.t, drink.fillSeconds);
+        let slot = cur;
+        if (!slot) {
+          // The cup's bottom-centre sits on the bottom-centre of its zone; its height is the zone's height.
+          const img = this.scene.add.image(0, 0, sheetKey('drink_cups'), frame).setOrigin(0.5, 0.9854).setDepth(DEPTH);
+          img.setScale((z.height * this.bg.height * 1.04) / img.height);
+          img.setPosition(this.bg.x + (z.x + z.width / 2) * this.bg.width, this.bg.y + (z.y + z.height) * this.bg.height);
+          slot = { img, key: String(frame) };
+          this.cups.set(key, slot);
+        } else if (slot.key !== String(frame)) {
+          slot.img.setFrame(frame);
+          slot.key = String(frame);
+        }
+      });
+    }
   }
 
   /** What an item looks like: the finished dish sprite, or its build sheet frame (`forceFrame` overrides the frame). */
@@ -150,16 +200,18 @@ export class TacoViews {
       slot?.img.destroy();
       const img = this.scene.add.image(0, 0, sheetKey(name), frame)
         .setOrigin(0, 0)
-        .setDepth(DEPTH - 1)
+        .setDepth(z.height > 0.075 ? DEPTH - 1 : DEPTH - 2)
         .setFlipX(flip);
       slot = { img, key };
       list[i] = slot;
     }
-    const scale = (z.width * this.bg.width * PAN_WIDTH_PER_ZONE) / box.w;
+    const back = z.height <= 0.075;
+    const scale = ((z.width * this.bg.width * PAN_WIDTH_PER_ZONE) / box.w) * (back ? BACK_PAN_SCALE : 1);
+    const lift = back ? BACK_PAN_LIFT * this.bg.height : 0;
     slot.img.setScale(scale);
     // Mirrored pans line their right edge up with the zone's right edge, so the handle sticks out to the left.
     const left = flip ? this.bg.x + (z.x + z.width) * this.bg.width - (meta.frameWidth - box.x) * scale : this.bg.x + z.x * this.bg.width - box.x * scale;
-    slot.img.setPosition(left, this.bg.y + z.y * this.bg.height - box.y * scale);
+    slot.img.setPosition(left, this.bg.y + z.y * this.bg.height - box.y * scale - lift);
     slot.img.setTint(phase === 'danger' ? 0xffb080 : 0xffffff);
   }
 
@@ -191,7 +243,9 @@ export class TacoViews {
     // Pan and oven food sits low-centre in the bowl; plate items sit near the bottom of their zone.
     const front = z.height > 0.075; // the two front pans are drawn bigger and lower than the back pair
     const baseline = kind === 'plate' ? 0.9 : kind === 'pan' && front ? 0.88 : 0.8;
-    slot.img.setPosition(this.bg.x + (z.x + z.width / 2) * this.bg.width, this.bg.y + (z.y + z.height * baseline) * this.bg.height);
+    const lift = kind === 'pan' && !front ? BACK_PAN_LIFT : 0;
+    slot.img.setDepth(kind === 'pan' && !front ? DEPTH - 1.5 : DEPTH);
+    slot.img.setPosition(this.bg.x + (z.x + z.width / 2) * this.bg.width, this.bg.y + (z.y + z.height * baseline - lift) * this.bg.height);
     slot.img.setTint(face.phase === 'danger' ? 0xffb080 : 0xffffff);
   }
 }

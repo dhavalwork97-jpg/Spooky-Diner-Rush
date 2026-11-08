@@ -6,7 +6,7 @@ import { hitTestTaco, tapZone } from '../game/taco/tacoZones';
 import { modsFor } from '../game/shop';
 import type { RestaurantSelectData } from './RestaurantSelectScene';
 import { SaveSystem } from '../systems/SaveSystem';
-import { loadTacoArt, spriteKey, TacoViews } from '../views/TacoViews';
+import { loadTacoArt, sheetKey, spriteKey, TacoViews } from '../views/TacoViews';
 import { TacoCustomers } from '../views/TacoCustomers';
 import { audio } from '../systems/AudioSystem';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
@@ -29,7 +29,7 @@ export class TacoScene extends Phaser.Scene {
   private views!: TacoViews;
   private customers!: TacoCustomers;
   /** A finished dish being dragged from a plate to a customer. */
-  private drag: { plate: number; img: Phaser.GameObjects.Image; sx: number; sy: number; moved: boolean; zone: TacoZone } | null = null;
+  private drag: { plate: number; img: Phaser.GameObjects.Image; sx: number; sy: number; moved: boolean; zone: TacoZone; cup?: { drink: string; lane: number } } | null = null;
   private lastSave = 0;
   private panelOpen = false;
 
@@ -115,6 +115,17 @@ export class TacoScene extends Phaser.Scene {
         }
       }
     }
+    // A full cup is dragged from its dispenser to a customer; a half-filled cup cannot be picked up.
+    if (z.action === 'cup') {
+      const drink = this.state.taco.drinks.find((x) => x.id === z.arg);
+      const lane = z.index ?? 0;
+      if (drink && this.state.pourReady(drink.id, lane)) {
+        const img = this.add.image(p.worldX, p.worldY, sheetKey('drink_cups'), drink.sheetRow * 5 + 4).setDepth(50).setAlpha(0.95);
+        img.setScale(110 / img.height);
+        this.drag = { plate: -1, img, sx: p.worldX, sy: p.worldY, moved: false, zone: z, cup: { drink: drink.id, lane } };
+      }
+      return;
+    }
     tapZone(this.state, z);
   }
 
@@ -132,7 +143,9 @@ export class TacoScene extends Phaser.Scene {
     d.img.destroy();
     if (!d.moved) return tapZone(this.state, d.zone); // a tap, not a drag: the model says "Drag it to a customer"
     const target = this.customers.customerAt(p.worldX, p.worldY);
-    if (target) this.state.serve(d.plate, target.id);
+    if (!target) return;
+    if (d.cup) this.state.serveFromPour(d.cup.drink, d.cup.lane, target.id);
+    else this.state.serve(d.plate, target.id);
   }
 
   private floatText(customerId: number, text: string): void {
