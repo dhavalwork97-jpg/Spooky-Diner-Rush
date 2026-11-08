@@ -4,7 +4,7 @@ import { SaveSystem } from './SaveSystem';
  * All sound is synthesized with WebAudio, no files. The context is created and resumed
  * on the first user gesture so browser autoplay rules are respected.
  */
-type Sfx = 'tap' | 'ding' | 'coin' | 'burn' | 'levelUp' | 'click' | 'drop' | 'wrong' | 'pop' | 'close';
+export type Sfx = 'tap' | 'ding' | 'coin' | 'burn' | 'levelUp' | 'click' | 'drop' | 'wrong' | 'pop' | 'close';
 
 export class AudioSystem {
   private ctx: AudioContext | null = null;

@@ -566,3 +566,8 @@ Start from the latest `main`, inspect the current repository and docs first, and
 ## Step 4c drinks (done, uncommitted)
 TacoViews.syncCups draws a cup per dispenser lane from model.pours (cupFrame helper: levels 1-3 filling, 4 full); TacoScene lets a full cup be dragged from its lane to a customer (serveFromPour); half-filled cups cannot be picked up. Test: tests/taco_cups.test.ts. Checked with headless screenshots (cups fill, drag works). Remaining step 4d: sounds, reduced motion, leave animations, tutorial hint, balance; thumb.webp regeneration.
 Pan layout fix: back pans drawn behind the front pair, 10% smaller and lifted 2.5% of the kitchen height (BACK_PAN_SCALE/BACK_PAN_LIFT in TacoViews); idle pans use the clean empty frame of the fish sheet.
+
+## Step 4d (partly done, uncommitted)
+Done: sounds (src/views/TacoSounds.ts sfxFor maps kitchen events to existing sfx; played in TacoScene.update; test tests/taco_sounds.test.ts), reduced motion in TacoCustomers (no hop/fade), taco thumb.webp regenerated with empty pans.
+Not done: lazy leave clips (ghosts just fade), tutorial hint, balance pass, real-device test, Android/browser branch transfer plan.
+

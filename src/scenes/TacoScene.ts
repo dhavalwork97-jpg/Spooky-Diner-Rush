@@ -9,6 +9,7 @@ import { SaveSystem } from '../systems/SaveSystem';
 import { loadTacoArt, sheetKey, spriteKey, TacoViews } from '../views/TacoViews';
 import { TacoCustomers } from '../views/TacoCustomers';
 import { audio } from '../systems/AudioSystem';
+import { sfxFor } from '../views/TacoSounds';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
@@ -77,6 +78,8 @@ export class TacoScene extends Phaser.Scene {
     if (this.panelOpen) return;
     this.state.update(Math.min(delta, 100) / 1000);
     for (const e of this.state.events) {
+      const sfx = sfxFor(e);
+      if (sfx) audio.play(sfx);
       if (e.type === 'invalid') this.say(e.message);
       else if (e.type === 'orderDone') {
         this.customers.celebrate(e.customer);

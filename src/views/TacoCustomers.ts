@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { LOOK_ART, clipFor, type LookClip } from '../anim/customerMotion';
 import type { BackgroundPlacement } from '../kitchen/zones';
 import type { TacoCustomer, TacoKitchenState } from '../game/taco/TacoKitchenState';
+import { SaveSystem } from '../systems/SaveSystem';
 import { sheetKey, spriteKey } from './TacoViews';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
@@ -76,7 +77,7 @@ export class TacoCustomers {
   /** A short happy hop when an order is complete. */
   celebrate(id: number): void {
     const v = this.views.get(id);
-    if (!v) return;
+    if (!v || SaveSystem.reduceMotion()) return; // the floating +coins text still shows
     this.scene.tweens.add({ targets: v.body, y: v.bottomY - 22, duration: 140, yoyo: true, ease: 'Quad.easeOut' });
   }
 
@@ -105,8 +106,10 @@ export class TacoCustomers {
     const bar = this.scene.add.graphics().setDepth(UI_DEPTH);
     const v: View = { id: c.id, body, bubble, bubbleKey: '', bar, clip: calm.key, x, bottomY, leaving: false };
     this.views.set(c.id, v);
-    body.setAlpha(0);
-    this.scene.tweens.add({ targets: body, alpha: 1, duration: 250 });
+    if (!SaveSystem.reduceMotion()) {
+      body.setAlpha(0);
+      this.scene.tweens.add({ targets: body, alpha: 1, duration: 250 });
+    }
     return v;
   }
 
@@ -176,6 +179,11 @@ export class TacoCustomers {
     v.leaving = true;
     v.bubble.setVisible(false);
     v.bar.clear();
+    if (SaveSystem.reduceMotion()) {
+      this.kill(v);
+      this.views.delete(v.id);
+      return;
+    }
     this.scene.tweens.add({
       targets: v.body,
       alpha: 0,
