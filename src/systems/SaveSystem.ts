@@ -22,12 +22,17 @@ export interface SaveData {
 const KEY = 'chef-rush-save';
 
 /**
- * Isolated local tester profile. The DEV guard is compile-time replaced by Vite,
- * so tester mode cannot be enabled in production/CrazyGames builds.
+ * Isolated tester profile. Local development is allowed automatically; production-mode
+ * builds require an explicit Vercel Preview-only environment flag. CrazyGames mode is excluded.
  * Its data is intentionally memory-only and never reads or writes a real save.
  */
+const PREVIEW_TESTER_ENABLED =
+  import.meta.env.PROD &&
+  import.meta.env.MODE !== 'crazygames' &&
+  import.meta.env.VITE_ENABLE_TESTER_MODE === 'true';
+
 const TESTER_MODE =
-  import.meta.env.DEV &&
+  (import.meta.env.DEV || PREVIEW_TESTER_ENABLED) &&
   typeof window !== 'undefined' &&
   new URLSearchParams(window.location.search).get('tester') === '1';
 
