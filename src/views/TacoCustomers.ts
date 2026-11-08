@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { LOOK_ART, clipFor, type LookClip } from '../anim/customerMotion';
+import { LEAVE_FADE_MS, LOOK_ART, clipFor, type LookClip } from '../anim/customerMotion';
 import type { BackgroundPlacement } from '../kitchen/zones';
 import type { TacoCustomer, TacoKitchenState } from '../game/taco/TacoKitchenState';
 import { SaveSystem } from '../systems/SaveSystem';
@@ -15,6 +15,8 @@ const CUP_FULL_COLUMN = 4;
 /** The ghost body is drawn about this fraction of the customer band's height. */
 const BODY_FRACTION = 0.8;
 const art = LOOK_ART.mint_ghost!;
+/** Leave clips already asked for, so each is requested once. */
+const leaveRequested = new Set<string>();
 
 interface View {
   id: number;
@@ -26,6 +28,8 @@ interface View {
   x: number;
   bottomY: number;
   leaving: boolean;
+  /** Last mood seen, so the right leave clip plays once the model removes the customer. */
+  angry: boolean;
 }
 
 /** The five seats of the Taco Truck, drawn with the supplied mint ghost. Reads the model; never changes it. */
@@ -104,7 +108,8 @@ export class TacoCustomers {
     body.play({ key: calm.key, startFrame: Math.floor(Math.random() * calm.frames) });
     const bubble = this.scene.add.container(x, bottomY - this.bodyH - 6).setDepth(UI_DEPTH);
     const bar = this.scene.add.graphics().setDepth(UI_DEPTH);
-    const v: View = { id: c.id, body, bubble, bubbleKey: '', bar, clip: calm.key, x, bottomY, leaving: false };
+    const v: View = { id: c.id, body, bubble, bubbleKey: '', bar, clip: calm.key, x, bottomY, leaving: false, angry: false };
+    this.requestLeaveClips();
     this.views.set(c.id, v);
     if (!SaveSystem.reduceMotion()) {
       body.setAlpha(0);
@@ -122,6 +127,7 @@ export class TacoCustomers {
       v.clip = clip.key;
       v.body.play(clip.key);
     }
+    v.angry = c.mood === 'angry';
     const done = c.mood === 'happy';
     const key = done ? 'done' : c.items.map((it, i) => `${it}${c.delivered[i] ? '+' : '-'}`).join(',');
     if (key !== v.bubbleKey) this.drawBubble(v, c, done);
@@ -184,6 +190,12 @@ export class TacoCustomers {
       this.views.delete(v.id);
       return;
     }
+    // The supplied leave clip (happy or angry) plays in place once it has loaded; until then the customer just floats away and fades.
+    const clip = v.angry ? art.leaveAngry : art.leaveHappy;
+    if (this.scene.textures.exists(clip.key)) {
+      this.playLeaveClip(v, clip);
+      return;
+    }
     this.scene.tweens.add({
       targets: v.body,
       alpha: 0,
@@ -194,6 +206,40 @@ export class TacoCustomers {
         this.views.delete(v.id);
       },
     });
+  }
+
+  /** Ask for the two leave clips in the background, once. They are big, so they load after the scene starts. */
+  private requestLeaveClips(): void {
+    if (SaveSystem.reduceMotion()) return;
+    for (const clip of [art.leaveHappy, art.leaveAngry]) {
+      if (leaveRequested.has(clip.key) || this.scene.textures.exists(clip.key)) continue;
+      leaveRequested.add(clip.key);
+      this.scene.load.spritesheet(clip.key, clip.file, { frameWidth: clip.size, frameHeight: clip.size });
+    }
+    if (!this.scene.load.isLoading()) this.scene.load.start();
+  }
+
+  private playLeaveClip(v: View, clip: LookClip): void {
+    const b = v.body;
+    this.ensureAnim(clip);
+    b.setOrigin(0.5, clip.footY).setAlpha(1).setPosition(v.x, v.bottomY).setScale((this.bodyH / art.bodyH) * clip.scale);
+    let finished = false;
+    const finish = (): void => {
+      if (finished) return;
+      finished = true;
+      this.scene.tweens.add({
+        targets: b,
+        alpha: 0,
+        duration: LEAVE_FADE_MS,
+        onComplete: () => {
+          this.kill(v);
+          this.views.delete(v.id);
+        },
+      });
+    };
+    b.once('animationcomplete', finish);
+    this.scene.time.delayedCall((clip.frames / clip.fps) * 1000 + 800, finish); // safety net if the clip never reports completion
+    b.play(clip.key);
   }
 
   private kill(v: View): void {
