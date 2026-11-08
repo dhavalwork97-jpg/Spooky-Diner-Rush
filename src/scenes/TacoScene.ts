@@ -12,6 +12,8 @@ import { audio } from '../systems/AudioSystem';
 import { sfxFor } from '../views/TacoSounds';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 
+/** Save id for the one-time first-visit hint. */
+const TACO_HINT_ID = 'taco_hint';
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 const SAVE_EVERY_MS = 5000;
 /** Extra reach (0-1 of the art) for taps that miss every zone, so a finger can hit small zones. */
@@ -66,6 +68,12 @@ export class TacoScene extends Phaser.Scene {
 
     this.makeButton(LOGICAL_WIDTH - 150, 40, 'Restaurants', 260, 56, () => this.openRestaurants());
     if (new URLSearchParams(location.search).has('debug')) this.drawZones();
+    // First visit only: one line that explains the loop. It is remembered in the save, like the diner's story pages.
+    if (!save.seenStory.includes(TACO_HINT_ID)) {
+      this.say('Tap a protein, then a pan. Build the dish on a plate, then drag it to the customer.', 9000);
+      save.seenStory.push(TACO_HINT_ID);
+      SaveSystem.save();
+    }
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.onTap(p));
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(p));
@@ -158,9 +166,9 @@ export class TacoScene extends Phaser.Scene {
     this.tweens.add({ targets: t, y: t.y - 50, alpha: 0, duration: 1100, onComplete: () => t.destroy() });
   }
 
-  private say(text: string): void {
+  private say(text: string, ms = 1800): void {
     this.note.setText(text);
-    this.noteUntil = performance.now() + 1800;
+    this.noteUntil = performance.now() + ms;
   }
 
   private saveNow(): void {

@@ -571,3 +571,5 @@ Pan layout fix: back pans drawn behind the front pair, 10% smaller and lifted 2.
 Done: sounds (src/views/TacoSounds.ts sfxFor maps kitchen events to existing sfx; played in TacoScene.update; test tests/taco_sounds.test.ts), reduced motion in TacoCustomers (no hop/fade), taco thumb.webp regenerated with empty pans.
 Not done: lazy leave clips (ghosts just fade), tutorial hint, balance pass, real-device test, Android/browser branch transfer plan.
 
+
+Step 4d update: first-visit hint added (TacoScene, one line shown 9 s, id 'taco_hint' stored in save.seenStory so it shows once). Balance: tests/taco_sim.test.ts bot simulation already covers pace/close rates and passes (fast/average/casual bots reach Lv 16+). Still open: leave animations (ghosts just fade), real-device test.
