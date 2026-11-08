@@ -148,6 +148,16 @@ export class GameScene extends Phaser.Scene {
     this.buildMuteButton();
     this.menuButtons = new MenuButtons(this, (k: MenuKind) => (k === 'shop' ? this.openShop() : k === 'book' ? this.openRecipeBook() : this.openRestaurants()));
 
+    if (SaveSystem.isTesterMode()) {
+      this.add.text(18, 86, 'DEVELOPER TEST MODE  •  LEVEL 15  •  5,000 STARTING COINS', {
+        fontFamily: FONT, fontSize: '18px', color: '#FFF4DC', backgroundColor: '#2B1B17', padding: { x: 10, y: 7 },
+      }).setDepth(2000);
+      const reset = this.add.text(LOGICAL_WIDTH - 18, 86, 'RESET TEST', {
+        fontFamily: FONT, fontSize: '18px', color: '#FFF4DC', backgroundColor: '#8B3A2B', padding: { x: 10, y: 7 },
+      }).setOrigin(1, 0).setDepth(2000).setInteractive({ useHandCursor: true });
+      reset.on('pointerdown', () => window.location.reload());
+    }
+
     this.label = this.add
       .text(0, 0, '', { fontFamily: FONT, fontSize: '24px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 })
       .setOrigin(0.5, 1)
