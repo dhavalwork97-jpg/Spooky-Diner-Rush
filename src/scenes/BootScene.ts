@@ -64,7 +64,8 @@ export class BootScene extends Phaser.Scene {
     const start = pickStartRestaurant(restaurants, SaveSystem.data.lastRestaurant, SaveSystem.data.level);
     // Canvas text does not redraw when a font arrives later, so wait for the bundled font (a missing file only delays by the timeout).
     // The title screen (with the intro video) comes before every game; ?debug starts straight in, as the test scripts expect.
-    const next = new URLSearchParams(location.search).has('debug') ? 'Game' : 'Title';
+    const params = new URLSearchParams(location.search);
+    const next = params.has('debug') || SaveSystem.isTesterMode() ? 'Game' : 'Title';
     const go = (): void => {
       CrazyGames.loadingStop();
       void this.scene.start(next, { restaurantId: start });
