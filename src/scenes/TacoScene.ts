@@ -64,6 +64,15 @@ export class TacoScene extends Phaser.Scene {
     this.note = this.add.text(LOGICAL_WIDTH / 2, LOGICAL_HEIGHT - 40, '', { fontFamily: FONT, fontSize: '30px', color: '#FFE08A', stroke: '#2B1B17', strokeThickness: 6 }).setOrigin(0.5).setDepth(40);
 
     this.makeButton(LOGICAL_WIDTH - 150, 40, 'Restaurants', 260, 56, () => this.openRestaurants());
+    if (SaveSystem.isTesterMode()) {
+      this.add.text(18, 16, 'DEVELOPER TEST MODE', {
+        fontFamily: FONT, fontSize: '18px', color: '#FFF4DC', backgroundColor: '#2B1B17', padding: { x: 10, y: 7 },
+      }).setDepth(50);
+      const reset = this.add.text(LOGICAL_WIDTH - 18, 82, 'RESET TEST', {
+        fontFamily: FONT, fontSize: '18px', color: '#FFF4DC', backgroundColor: '#8B3A2B', padding: { x: 10, y: 7 },
+      }).setOrigin(1, 0).setDepth(50).setInteractive({ useHandCursor: true });
+      reset.on('pointerdown', () => window.location.reload());
+    }
     if (new URLSearchParams(location.search).has('debug')) this.drawZones();
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.onTap(p));
