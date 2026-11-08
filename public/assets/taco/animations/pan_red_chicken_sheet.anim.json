@@ -1,0 +1,25 @@
+{
+ "key": "pan_red_chicken",
+ "image": "pan_red_chicken_sheet.webp",
+ "frameWidth": 560,
+ "frameHeight": 480,
+ "columns": 4,
+ "rows": 2,
+ "frameCount": 7,
+ "frameLabels": [
+  "empty",
+  "raw",
+  "sizzling",
+  "browning",
+  "flipping",
+  "cooked_ready",
+  "burnt"
+ ],
+ "panBox": {
+  "x": 60,
+  "y": 184,
+  "w": 400,
+  "h": 286
+ },
+ "note": "Pan and food drawn together; panBox is the pan (bowl and handle) in every frame. Frames 1-3 cook, 5 ready, 6 burnt."
+}
