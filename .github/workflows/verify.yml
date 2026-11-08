@@ -19,5 +19,15 @@ jobs:
       - run: npm test
       - run: npm run build
         if: always()
-      - run: npm run build:crazygames
+      - name: Build CrazyGames release
+        id: crazygames
+        run: npm run build:crazygames
         if: always()
+      - name: Upload CrazyGames submission files
+        uses: actions/upload-artifact@v4
+        if: always() && steps.crazygames.outcome == 'success'
+        with:
+          name: Chef-Rush-CrazyGames
+          path: dist-crazygames/
+          if-no-files-found: error
+          retention-days: 14
