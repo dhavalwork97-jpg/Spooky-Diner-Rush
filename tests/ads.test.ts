@@ -73,6 +73,20 @@ describe('CrazyGames ads and loading', () => {
     expect(await p).toBe(true);
   });
 
+  it('stops waiting when no ad starts, and ignores a late start', async () => {
+    vi.useFakeTimers();
+    let late: (() => void) | undefined;
+    install((_t, cb) => {
+      late = cb.adStarted;
+    });
+    const start = vi.fn();
+    const p = CrazyGames.midgameAd(start);
+    await vi.advanceTimersByTimeAsync(9_000);
+    expect(await p).toBe(false);
+    late?.();
+    expect(start).not.toHaveBeenCalled();
+  });
+
   it('sends loadingStart and loadingStop once each', () => {
     const game = { loadingStart: vi.fn(), loadingStop: vi.fn() };
     install(() => undefined, game);

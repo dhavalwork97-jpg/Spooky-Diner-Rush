@@ -992,23 +992,37 @@ export class GameScene extends Phaser.Scene {
    * also when no ad was shown (no SDK, cooldown, error), so it can never block the player.
    */
   private breakAd(then?: () => void): void {
-    if (this.adActive || this.adPending) return;
+    // Never swallow `then`: a Reopen tap while an ad is already pending/active used to do nothing (Closed screen stuck).
+    if (this.adActive || this.adPending) {
+      // Repeated taps are one intent; never queue duplicate Reopen actions.
+      if (then && this.afterAd.length === 0) this.afterAd.push(then);
+      return;
+    }
     this.adPending = true;
     void CrazyGames.midgameAd(() => {
       this.adActive = true;
       this.paused = true;
       audio.pauseAll();
       CrazyGames.gameplayStop();
-    }).then((shown) => {
+    }).then(() => {
       this.adPending = false;
-      if (shown) {
+      // Always undo what the ad start did, whatever the result (timeout, error), or the game stays frozen.
+      if (this.adActive) {
         this.adActive = false;
         this.paused = false;
         audio.resumeAll();
         if (!this.state.closed) CrazyGames.gameplayStart();
       }
       then?.();
+      this.flushAfterAd();
     });
+  }
+
+  private afterAd: (() => void)[] = [];
+
+  private flushAfterAd(): void {
+    const queued = this.afterAd.splice(0, 1);
+    for (const action of queued) action();
   }
 
   private adDue = false;
@@ -1029,8 +1043,13 @@ export class GameScene extends Phaser.Scene {
         this.paused = false;
         audio.resumeAll();
       }
-      if (finished) this.state.reopen(true);
-      else this.overlay.setSub('No ad available right now.\nYou can still reopen.');
+      if (finished) {
+        this.state.reopen(true);
+        this.afterAd.length = 0; // The rewarded revive already completed the queued Reopen intent.
+      } else {
+        this.overlay.setSub('No ad available right now.\nYou can still reopen.');
+        this.flushAfterAd();
+      }
     });
   }
 
