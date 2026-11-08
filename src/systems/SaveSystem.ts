@@ -21,6 +21,16 @@ export interface SaveData {
 
 const KEY = 'chef-rush-save';
 
+/**
+ * Isolated local tester profile. The DEV guard is compile-time replaced by Vite,
+ * so tester mode cannot be enabled in production/CrazyGames builds.
+ * Its data is intentionally memory-only and never reads or writes a real save.
+ */
+const TESTER_MODE =
+  import.meta.env.DEV &&
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('tester') === '1';
+
 export function defaultSave(): SaveData {
   return {
     version: 2,
@@ -121,11 +131,22 @@ export function parseSave(raw: string | null): SaveData {
 
 export const SaveSystem = {
   data: defaultSave(),
+  /** True only for a local Vite development session opened with ?tester=1. */
+  isTesterMode(): boolean {
+    return TESTER_MODE;
+  },
   load(): SaveData {
+    if (TESTER_MODE) {
+      // Fresh profile on every page load: never read or mutate the player's real save.
+      this.data = { ...defaultSave(), level: 15, coins: 5000 };
+      return this.data;
+    }
     this.data = parseSave(read(KEY));
     return this.data;
   },
   save(): void {
+    // Tester purchases and gameplay stay in memory and are discarded on refresh.
+    if (TESTER_MODE) return;
     write(KEY, JSON.stringify(this.data));
   },
   /** Reduced motion: explicit setting wins, otherwise follow the OS preference. */
