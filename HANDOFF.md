@@ -1,3 +1,72 @@
+# CURRENT HANDOFF — 2026-11-08 (READ THIS FIRST)
+
+This section is the authoritative current status for the next Claude/Codex session. Older dated sections below are retained as project history; where they say work is uncommitted, in progress, or still awaiting a merge, use this current section instead.
+
+## Current repository and release state
+
+- Repository: `dhavalwork97-jpg/Chef-Rush`
+- Working branch for the released game: `main`
+- Latest verified release source commit: `35dcf70ffcaf6c26a462294b4b12bb55b4b64199`.
+- The Burn Guard / Calm Kitchen feature branch `feat/burn-guard-calm-kitchen` has no unique work still waiting to be merged; its final upgrade values and implementation are already present on `main`. Do not create a redundant merge.
+- The speed-upgrade reaction-window fix is also present on `main`: `src/game/cook.ts` exports `advanceCook`, `src/game/KitchenState.ts` imports and uses it, and `tests/speed_upgrades.test.ts` is present. This supersedes the older “NOT committed” note below.
+
+## Changes now on main
+
+### Burn Guard and Calm Kitchen
+- Burn Guard unlocks at Lv 7; costs 150 / 300 / 500 and applies burn-window multipliers 1.15× / 1.30× / 1.45× to fryer vats, grill burners and oven.
+- Calm Kitchen unlocks at Lv 11; costs 250 / 450 and reduces only the burnt-dish reputation penalty (divisors 1.14× / 1.33×).
+- Food can still burn. Calm Kitchen does not change patience, angry departures, trash penalties or Reopen rewards. Neither upgrade affects drinks or ice cream.
+- The upgrade description is “Fried food, patties and pizza take longer to burn.”
+
+### Speed upgrades: preserve the player's reaction window
+- `advanceCook(t, dt, cookRate, readyAfter, afterRate)` applies the speed multiplier only until food is ready. After readiness, the clock advances at its normal rate (or the existing Slow Oven event rate).
+- Applied to fryer vats, grill burners and oven. Drinks and ice cream are untouched.
+- Warning and danger remain at 50% and 75% of the burn window; Burn Guard still extends that window.
+- Regression coverage is in `tests/speed_upgrades.test.ts`, including station timing, Burn Guard + speed, Slow Oven behavior and seeded simulations.
+- Recorded 60-seed comparison from the implementation work: speed-only close-rate increase fell from +62% to +17% for the fast bot, +24% to +8% for the average bot, and +14% to -1% for the casual bot. A residual fast-bot grill-speed effect was observed in the earlier simulation; do not claim bot balance is fully solved. Human playtesting is still needed.
+
+### Basic Launch / stability patch
+- PR #31 was merged to `main` (release source commit above).
+- Ads default to disabled unless explicitly enabled for an approved test/configuration.
+- Ad-start timeout/recovery safeguards and late-callback handling were added.
+- Duplicate queued Reopen actions are prevented.
+- Story-popup overlay/tween cleanup was added.
+- CI workflow includes the standard build, CrazyGames build and CrazyGames artifact upload.
+
+## CrazyGames package generated and verified
+
+- GitHub Actions run: https://github.com/dhavalwork97-jpg/Chef-Rush/actions/runs/42447994131
+- Run head: `ce32d028c06702462e5d667c8a6051d6b2af9a40`.
+- Artifact: `Chef-Rush-CrazyGames` (artifact ID `13604437362`), generated from `dist-crazygames/`; artifact retention ends 2026-11-22.
+- The downloaded submission ZIP was inspected: archive integrity check passed, 60 files, `index.html` is at the ZIP root (not nested), and built assets are present.
+- Verified ZIP SHA-256: `01bdbf85a8f1502e33ddf66892919e7bc69bf2cc5e2a43c7c37fe782f3b2c548`.
+- Local verified copy created in the working session: `/mnt/data/Chef-Rush-CrazyGames-Submission.zip`. This path is a session artifact, not a repository file; regenerate/download the Actions artifact if it is unavailable in a later session.
+- Release notes: [RELEASE_NOTES_CRAZYGAMES.md](RELEASE_NOTES_CRAZYGAMES.md).
+- The package has been prepared, not uploaded to the CrazyGames portal. Do not claim portal submission or approval.
+
+## Verification and known failures
+
+- In GitHub Actions run `42447994131`: `npm ci` passed; `npm run build` passed; CrazyGames build passed; artifact upload passed.
+- The `npm test` step failed, so the overall workflow conclusion is **failure**, despite successful build/package steps.
+- The full test suite has known late-game simulation/timeout failures. Earlier investigation reproduced the known failures on the untouched baseline. Do not weaken or delete assertions merely to turn CI green; first reproduce on the current `main`, inspect the exact failing test output, and distinguish regression from baseline instability.
+- The ZIP passed `unzip -t`; no CrazyGames portal upload, CrazyGames SDK live test, real Android device test or human-player balance playthrough is recorded as completed.
+
+## Next safe actions
+
+1. Keep `main` unchanged while reviewing the current full-test failure output and reproducing it locally/current-main; preserve all existing assertions.
+2. Do a real human playthrough focused on speed upgrades, Burn Guard / Calm Kitchen, late-game difficulty and Lv 20 pacing. The bot results are not a substitute.
+3. Submit the verified ZIP through the CrazyGames portal and record the portal result separately.
+4. Only make a focused follow-up patch if testing identifies a reproducible defect; create a backup branch before risky main changes and document verification limits.
+
+## Handoff rules
+
+- Inspect the current `main` head, working tree and recent commits before making edits. Do not assume this document's historical branch names are still active.
+- Do not modify unrelated gameplay, art, ads, saves or economy while addressing a narrow issue.
+- Never report a merge, deployment, portal submission or test pass without checking its actual result.
+- Update this file and `docs/progress.md` after any further approved milestone or release patch, including exact branch/commit, commands and results, known failures, and what was not tested.
+
+---
+
 # HANDOFF
 
 ## In progress: SPEED UPGRADES must not shorten the player's reaction window (2026-11-06, Claude) - branch `feat/burn-guard-calm-kitchen`, NOTHING committed or pushed (owner said: do not commit, push or merge)
