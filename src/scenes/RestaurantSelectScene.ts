@@ -127,7 +127,7 @@ export class RestaurantSelectScene extends Phaser.Scene {
     if (this.closing) return;
     const save = SaveSystem.data;
     const s = this.d.state;
-    const r = { level: s.level, coins: s.coins, restaurants: [...save.restaurants] };
+    const r = { level: s.level, coins: s.coins, restaurants: [...save.restaurants], tacoStep: save.tacoStep, tacoXp: save.tacoXp };
     const check = purchaseRestaurant({ id, unlockLevel, cost }, r);
     if (!check.ok) {
       audio.play('click');
@@ -136,6 +136,8 @@ export class RestaurantSelectScene extends Phaser.Scene {
     s.coins = r.coins;
     save.coins = r.coins;
     save.restaurants = r.restaurants;
+    save.tacoStep = r.tacoStep ?? save.tacoStep;
+    save.tacoXp = r.tacoXp ?? save.tacoXp;
     SaveSystem.save();
     audio.play('click');
     this.scene.restart(this.d); // draw the cards again: the Taco Truck now says Play

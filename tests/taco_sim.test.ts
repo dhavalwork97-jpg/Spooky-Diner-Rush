@@ -6,7 +6,7 @@ const fast = [1, 2, 3, 4].map((seed) => playTaco(seed, 0.8, SEC));
 const average = [1, 2, 3].map((seed) => playTaco(seed, 1.3, SEC));
 const casual = [1, 2].map((seed) => playTaco(seed, 2.0, SEC));
 // Every dish, including nachos (Lv 21-22), gets served by a bot that starts with everything unlocked.
-const everything = [1, 2, 3, 4].map((seed) => playTaco(seed, 0.8, 1200, { level: 22 }));
+const everything = [1, 2, 3, 4].map((seed) => playTaco(seed, 0.8, 1200, { level: 22, menuStep: 10 }));
 
 describe('Taco Truck bot simulation (first pass)', () => {
   it('prints the table', () => {
@@ -18,7 +18,7 @@ describe('Taco Truck bot simulation (first pass)', () => {
   });
 
   it('a fast bot is neither stuck nor crushed: it serves a lot and closes about as often as in the diner', () => {
-    // Measured (4 seeds): 90-96 served, 13-14 closes in 1500 s; closes/min 0.43 (Lv 15-17) and 0.69 (Lv 18-20). The diner is 0.56 and 0.70.
+    // Measured (4 seeds) with menu steps: 110-120 served, 10-11 closes in 1500 s; closes/min 0.14 (Lv 15-17, the gentle first steps) and 0.63 (Lv 18-20, the full menu). The bot buys no upgrades.
     for (const r of fast) {
       expect(r.s.served).toBeGreaterThan(60);
       expect(r.s.level).toBeGreaterThanOrEqual(18);
@@ -26,7 +26,8 @@ describe('Taco Truck bot simulation (first pass)', () => {
     }
     expect(tacoCloseRate(fast, 15, 17)).toBeLessThan(0.9);
     expect(tacoCloseRate(fast, 18, 20)).toBeLessThan(1.2);
-    expect(tacoCloseRate(fast, 15, 17)).toBeGreaterThan(0.1);
+    expect(tacoCloseRate(fast, 15, 17)).toBeLessThan(0.3); // the first menu steps are gentle
+    expect(tacoCloseRate(fast, 18, 20)).toBeGreaterThan(0.2); // the full menu still bites
   });
 
   it('slower players still progress (average and casual bots reach Lv 16)', () => {

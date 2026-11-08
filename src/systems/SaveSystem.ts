@@ -1,4 +1,5 @@
 import { CrazyGames } from '../sdk/crazygames';
+import { clampStep, stepFromLevel } from '../game/taco/tacoMenu';
 
 export interface SaveData {
   /** 2 since Milestone 4. Version 1 saves load fine and get the new fields from defaults. */
@@ -16,6 +17,9 @@ export interface SaveData {
   lastRestaurant: string;
   /** Restaurants the player owns (the diner always). Older saves have none of this and get just the diner. */
   restaurants: string[];
+  /** Taco Truck menu step (1-10) and the XP towards the next one. Separate from Lv: buying the truck late still starts at 1. Saves from before this existed get a step worked out from Lv if the truck is already owned. */
+  tacoStep: number;
+  tacoXp: number;
   settings: { reduceMotion: boolean | null; musicVolume: number; sfxVolume: number; muted: boolean };
 }
 
@@ -32,6 +36,8 @@ export function defaultSave(): SaveData {
     seenStory: [],
     lastRestaurant: 'burger_diner',
     restaurants: ['burger_diner'],
+    tacoStep: 1,
+    tacoXp: 0,
     settings: { reduceMotion: null, musicVolume: 0.6, sfxVolume: 0.8, muted: false },
   };
 }
@@ -107,6 +113,8 @@ export function parseSave(raw: string | null): SaveData {
           ? p.lastRestaurant
           : base.lastRestaurant,
       restaurants: ownedRestaurants(p.restaurants),
+      tacoStep: typeof p.tacoStep === 'number' && Number.isFinite(p.tacoStep) ? clampStep(p.tacoStep) : cleanIds(p.restaurants).includes('taco_truck') ? stepFromLevel(Math.max(1, Math.floor(num(p.level, base.level, 1)))) : 1,
+      tacoXp: num(p.tacoXp, 0),
       settings: {
         reduceMotion: typeof p.settings?.reduceMotion === 'boolean' ? p.settings.reduceMotion : null,
         musicVolume: Math.min(1, num(p.settings?.musicVolume, base.settings.musicVolume)),

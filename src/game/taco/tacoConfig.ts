@@ -16,8 +16,7 @@ export interface TacoSettings {
   /** Chance that one item of an order is a drink. */
   drinkChance: number;
   maxOrderSize: number;
-  /** First-pass ease for a new restaurant: more patience and slightly slower arrivals than the diner at the same Lv. */
-  patienceMult: number;
+  /** First-pass ease for a new restaurant: slightly slower arrivals than the diner's table at the same step (patience and seats ease through `ramp`). */
   arrivalGapMult: number;
 }
 export interface TimedDef {
@@ -29,7 +28,8 @@ export interface DishDef {
   name: string;
   kind: DishKind;
   protein: Protein;
-  unlockLevel: number;
+  /** Menu step (1-10) at which the dish joins the menu. Not the global Lv. */
+  unlockStep: number;
   price: number;
   xp: number;
   /** Steps in order, using the pack's ids (`protein:chicken`, `topping_lettuce`, `action:wrap`, `pan:press`, `oven:melt` ...). */
@@ -44,7 +44,7 @@ export interface DishDef {
 export interface DrinkDef {
   id: string;
   name: string;
-  unlockLevel: number;
+  unlockStep: number;
   price: number;
   xp: number;
   fillSeconds: number;
@@ -66,11 +66,19 @@ export interface TacoZone {
   width: number;
   height: number;
 }
+export interface TacoRamp {
+  step: number;
+  seats: number;
+  orderSize: [number, number];
+  patienceMult: number;
+}
 export interface TacoConfig {
   restaurant: { id: string; name: string; unlockLevel: number; cost: number };
   settings: TacoSettings;
   proteins: Record<Protein, TimedDef>;
   timed: { crispy_shell: TimedDef; melt: TimedDef; press: TimedDef };
+  /** How busy the truck is at each menu step: seats in use, order size and the patience bonus. */
+  ramp: TacoRamp[];
   drinks: DrinkDef[];
   stepLabels: Record<string, string>;
   dishes: DishDef[];
@@ -101,25 +109,25 @@ export function stepKind(id: string, index: number): StepKind {
   return index === 0 ? 'base' : 'ingredient';
 }
 
-/** Dishes the player can make at this level. */
-export function unlockedDishes(cfg: TacoConfig, level: number): DishDef[] {
-  return cfg.dishes.filter((d) => d.unlockLevel <= level);
+/** Dishes the player can make at this menu step. */
+export function unlockedDishes(cfg: TacoConfig, step: number): DishDef[] {
+  return cfg.dishes.filter((d) => d.unlockStep <= step);
 }
 
 /** Unlocked dishes whose first steps are exactly `placed`. A dish in progress can still become any of these. */
-export function candidateDishes(cfg: TacoConfig, level: number, placed: readonly string[]): DishDef[] {
-  return unlockedDishes(cfg, level).filter((d) => placed.length <= d.steps.length && placed.every((s, i) => d.steps[i] === s));
+export function candidateDishes(cfg: TacoConfig, step: number, placed: readonly string[]): DishDef[] {
+  return unlockedDishes(cfg, step).filter((d) => placed.length <= d.steps.length && placed.every((s, i) => d.steps[i] === s));
 }
 
 /** The dish finished by exactly these steps, if any. */
-export function finishedDish(cfg: TacoConfig, level: number, placed: readonly string[]): DishDef | undefined {
-  return candidateDishes(cfg, level, placed).find((d) => d.steps.length === placed.length);
+export function finishedDish(cfg: TacoConfig, step: number, placed: readonly string[]): DishDef | undefined {
+  return candidateDishes(cfg, step, placed).find((d) => d.steps.length === placed.length);
 }
 
 /** Step ids that could come next after `placed` (unique, in menu order). */
-export function nextStepIds(cfg: TacoConfig, level: number, placed: readonly string[]): string[] {
+export function nextStepIds(cfg: TacoConfig, step: number, placed: readonly string[]): string[] {
   const out: string[] = [];
-  for (const d of candidateDishes(cfg, level, placed)) {
+  for (const d of candidateDishes(cfg, step, placed)) {
     const next = d.steps[placed.length];
     if (next !== undefined && !out.includes(next)) out.push(next);
   }
@@ -127,8 +135,8 @@ export function nextStepIds(cfg: TacoConfig, level: number, placed: readonly str
 }
 
 /** What to draw for a dish in progress: the unique dish if the steps so far decide it, else the first candidate (frame 0 looks alike). */
-export function buildView(cfg: TacoConfig, level: number, placed: readonly string[]): { dish: string | null; sheet: string | null; frame: number | null } {
-  const c = candidateDishes(cfg, level, placed);
+export function buildView(cfg: TacoConfig, step: number, placed: readonly string[]): { dish: string | null; sheet: string | null; frame: number | null } {
+  const c = candidateDishes(cfg, step, placed);
   const d = c.find((x) => x.sheet) ?? c[0];
   if (!d) return { dish: null, sheet: null, frame: null };
   const frame = d.frames && placed.length > 0 ? d.frames[placed.length - 1] : null;

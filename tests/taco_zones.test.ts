@@ -22,7 +22,7 @@ describe('taco zones data', () => {
     }
   });
   it('every zone points at something the kitchen really has', () => {
-    const s = tacoAt(22);
+    const s = tacoAt(10);
     for (const z of cfg.zones) {
       if (z.action === 'pan') expect(z.index).toBeLessThan(cfg.settings.pans);
       if (z.action === 'oven') expect(z.index).toBeLessThan(cfg.settings.ovenSlots);
@@ -75,7 +75,7 @@ describe('taps by position', () => {
 
 describe('playing only by tapping zones', () => {
   it('a chicken soft taco is made from zone taps and served to the customer', () => {
-    const s = quiet(tacoAt(15));
+    const s = quiet(tacoAt(2));
     const tap = (id: string) => tapZone(s, zone(id));
     s.spawnCustomer();
     const c = s.customers[0];
@@ -90,7 +90,7 @@ describe('playing only by tapping zones', () => {
     expect(s.serve(0, c.id)).toBe(true);
   });
   it('plates, oven and drinks work by zone too', () => {
-    const s = quiet(tacoAt(22));
+    const s = quiet(tacoAt(10));
     const tap = (id: string) => tapZone(s, zone(id));
     tap('oven_slot_left');
     expect(s.ovens[0]?.what.kind).toBe('shell');

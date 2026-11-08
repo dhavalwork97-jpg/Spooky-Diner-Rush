@@ -2,6 +2,7 @@ import { advanceCook, cookPhase, isEdible, type CookPhase } from '../cook';
 import { defaultConfig, levelDef, xpForLevel, type EventDef, type GameConfig } from '../config';
 import { CUSTOMER_LOOK_COUNT, CUSTOMER_LOOK_MIN, type ActiveEvent, type Mods, type SaveSlice } from '../KitchenState';
 import { makeRng, randInt, randRange, type Rng } from '../rng';
+import { clampStep, levelForStep, MAX_MENU_STEP, rampFor, stepFromLevel, stepXpNeeded } from './tacoMenu';
 import {
   buildView,
   defaultTacoConfig,
@@ -94,6 +95,7 @@ export type TacoEvent =
   | { type: 'angryLeave'; customer: number }
   | { type: 'leave'; customer: number }
   | { type: 'levelUp'; level: number; coins: number; unlocks: string[] }
+  | { type: 'menuGrew'; added: string[] }
   | { type: 'closed' }
   | { type: 'reopened' }
   | { type: 'invalid'; message: string };
@@ -101,12 +103,19 @@ export type TacoEvent =
 const LEAVE_DELAY = 0.9;
 const ARRIVE_GRACE = 0.7;
 
+/** What the Taco Truck needs from the save: the shared Lv, XP and coins, plus its own menu step (see tacoMenu.ts). Without a step it is worked out from Lv, as for saves from before menu steps. */
+export type TacoSaveSlice = SaveSlice & { menuStep?: number; menuXp?: number };
+
 export class TacoKitchenState {
   readonly cfg: GameConfig;
   readonly taco: TacoConfig;
   level: number;
   xp: number;
   coins: number;
+  /** Which dishes are on the menu and how busy the truck is (1-10). Separate from the global Lv. */
+  menuStep: number;
+  /** XP earned towards the next menu step. */
+  menuXp: number;
   reputation: number;
   closed = false;
   pans: (Pan | null)[];
@@ -129,10 +138,12 @@ export class TacoKitchenState {
   private nextId = 1;
   private rng: Rng;
 
-  constructor(save: SaveSlice = { level: 15, xp: 0, coins: 0 }, cfg: GameConfig = defaultConfig, taco: TacoConfig = defaultTacoConfig, seed = Date.now()) {
+  constructor(save: TacoSaveSlice = { level: 15, xp: 0, coins: 0 }, cfg: GameConfig = defaultConfig, taco: TacoConfig = defaultTacoConfig, seed = Date.now()) {
     this.cfg = cfg;
     this.taco = taco;
     this.level = save.level;
+    this.menuStep = clampStep(save.menuStep ?? stepFromLevel(save.level));
+    this.menuXp = Math.max(0, save.menuXp ?? 0);
     this.xp = save.xp;
     this.coins = save.coins;
     this.reputation = cfg.xp.reputation.start;
@@ -148,8 +159,15 @@ export class TacoKitchenState {
   get xpNeeded(): number {
     return xpForLevel(this.cfg, this.level);
   }
+  /** XP needed for the next menu step (0 once every dish is on the menu). */
+  get menuXpNeeded(): number {
+    return this.menuStep >= MAX_MENU_STEP ? 0 : stepXpNeeded(this.cfg, this.menuStep);
+  }
+  /** Customer table for the current menu step: the diner's tuned curve at 14 + step, with this truck's own seats, order size and patience bonus. */
   get levelInfo() {
-    return levelDef(this.cfg, this.level);
+    const base = levelDef(this.cfg, levelForStep(this.menuStep));
+    const ramp = rampFor(this.taco, this.menuStep);
+    return { ...base, maxCustomers: Math.min(base.maxCustomers, ramp.seats), orderSize: ramp.orderSize };
   }
   drainEvents(): TacoEvent[] {
     const e = this.events;
@@ -158,17 +176,17 @@ export class TacoKitchenState {
   }
   /** Dishes the player can make now. */
   get dishes(): DishDef[] {
-    return unlockedDishes(this.taco, this.level);
+    return unlockedDishes(this.taco, this.menuStep);
   }
   get drinks(): DrinkDef[] {
-    return this.taco.drinks.filter((d) => d.unlockLevel <= this.level);
+    return this.taco.drinks.filter((d) => d.unlockStep <= this.menuStep);
   }
   dishDef(id: string): DishDef | undefined {
     return this.taco.dishes.find((d) => d.id === id);
   }
   /** What to draw for the dish on a plate (sheet, frame) while it is being built. */
   view(item: TacoItem) {
-    return buildView(this.taco, this.level, item.placed);
+    return buildView(this.taco, this.menuStep, item.placed);
   }
 
   private emit(e: TacoEvent) {
@@ -191,7 +209,7 @@ export class TacoKitchenState {
     return this.plates.filter((p) => p.item?.building);
   }
   private nextSteps(item: TacoItem): string[] {
-    return nextStepIds(this.taco, this.level, item.placed);
+    return nextStepIds(this.taco, this.menuStep, item.placed);
   }
   /** The oldest plate whose dish can take this step next. */
   private acceptor(step: string): TacoPlate | undefined {
@@ -355,7 +373,7 @@ export class TacoKitchenState {
     }
     const price = Math.round(items.reduce((sum, k) => sum + this.itemDef(k).price, 0) * type.payMult);
     const closes = Math.min(this.closesAtLevel.get(this.level) ?? 0, 3);
-    const patienceMax = info.patience * this.taco.settings.patienceMult * type.patienceMult * this.mods.patience * (1 + 0.1 * closes);
+    const patienceMax = info.patience * rampFor(this.taco, this.menuStep).patienceMult * type.patienceMult * this.mods.patience * (1 + 0.1 * closes);
     const c: TacoCustomer = {
       id: this.nextId++,
       seat,
@@ -379,8 +397,8 @@ export class TacoKitchenState {
   /** Put a raw protein from the griddle into the first free pan. */
   startProtein(protein: Protein): void {
     if (this.closed) return;
-    const unlock = Math.min(...this.taco.dishes.filter((d) => d.protein === protein).map((d) => d.unlockLevel));
-    if (this.level < unlock) return this.invalid(`${this.label(`protein:${protein}`)} unlocks at Lv ${unlock}`);
+    const unlock = Math.min(...this.taco.dishes.filter((d) => d.protein === protein).map((d) => d.unlockStep));
+    if (this.menuStep < unlock) return this.invalid(`${this.label(`protein:${protein}`)} is not on the menu yet`);
     const i = this.pans.findIndex((p) => !p);
     if (i < 0) return this.invalid('All the pans are busy');
     this.pans[i] = { t: 0, phase: 'cooking', what: { kind: 'protein', protein } };
@@ -423,8 +441,7 @@ export class TacoKitchenState {
     const o = this.ovens[index];
     if (!o) {
       if (!this.startOf('crispy_shell')) {
-        const unlock = Math.min(...this.taco.dishes.filter((d) => d.steps[0] === 'crispy_shell').map((d) => d.unlockLevel));
-        return this.invalid(`Crispy shells unlock at Lv ${unlock}`);
+        return this.invalid('Crispy shells are not on the menu yet');
       }
       this.ovens[index] = { t: 0, phase: 'cooking', what: { kind: 'shell' } };
       this.emit({ type: 'ovenStart', slot: index, what: 'shell' });
@@ -459,7 +476,7 @@ export class TacoKitchenState {
     if (this.closed) return;
     const def = this.taco.drinks.find((d) => d.id === drinkId);
     if (!def) return;
-    if (this.level < def.unlockLevel) return this.invalid(`${def.name} unlocks at Lv ${def.unlockLevel}`);
+    if (this.menuStep < def.unlockStep) return this.invalid(`${def.name} is not on the menu yet`);
     const lanes = this.pours[def.id];
     const lane = lanes.findIndex((p) => !p);
     if (lane < 0) return this.invalid(lanes.some((p) => p?.phase === 'ready') ? `Drag the full ${def.name} to a customer` : 'Cups are still filling');
@@ -523,7 +540,7 @@ export class TacoKitchenState {
 
   private afterStep(plate: TacoPlate): void {
     const item = plate.item!;
-    const done = finishedDish(this.taco, this.level, item.placed);
+    const done = finishedDish(this.taco, this.menuStep, item.placed);
     if (done) {
       item.building = false;
       item.dish = done.id;
@@ -668,14 +685,28 @@ export class TacoKitchenState {
   }
 
   private addXp(amount: number): void {
+    this.addMenuXp(amount);
     this.xp += amount;
     while (this.xp >= this.xpNeeded) {
       this.xp -= this.xpNeeded;
       this.level++;
       const reward = this.cfg.xp.levelUpCoins.base + this.cfg.xp.levelUpCoins.perLevel * this.level;
       this.coins += reward;
-      this.emit({ type: 'levelUp', level: this.level, coins: reward, unlocks: this.levelInfo.unlocks });
+      this.emit({ type: 'levelUp', level: this.level, coins: reward, unlocks: [] });
     }
+  }
+
+  /** The same XP also moves the truck's menu forward. New dishes are announced by name, never by a number. */
+  private addMenuXp(amount: number): void {
+    if (this.menuStep >= MAX_MENU_STEP) return;
+    this.menuXp += amount;
+    while (this.menuStep < MAX_MENU_STEP && this.menuXp >= this.menuXpNeeded) {
+      this.menuXp -= this.menuXpNeeded;
+      this.menuStep++;
+      const added = [...this.taco.dishes.filter((d) => d.unlockStep === this.menuStep).map((d) => d.name), ...this.taco.drinks.filter((d) => d.unlockStep === this.menuStep).map((d) => d.name)];
+      this.emit({ type: 'menuGrew', added });
+    }
+    if (this.menuStep >= MAX_MENU_STEP) this.menuXp = 0;
   }
 
   // ----- reputation and closing -----

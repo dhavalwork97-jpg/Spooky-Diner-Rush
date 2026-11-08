@@ -20,7 +20,7 @@ describe('buying the Taco Truck', () => {
   it('at Lv 15 with exactly 2,000 coins it succeeds once, spends 2,000 and cannot be bought again', () => {
     const save = { level: 15, coins: 2000, restaurants: ['burger_diner'] };
     expect(purchaseRestaurant(taco, save)).toEqual({ ok: true });
-    expect(save).toEqual({ level: 15, coins: 0, restaurants: ['burger_diner', 'taco_truck'] });
+    expect(save).toEqual({ level: 15, coins: 0, restaurants: ['burger_diner', 'taco_truck'], tacoStep: 1, tacoXp: 0 }); // the truck starts at its first dishes
     expect(purchaseRestaurant(taco, save)).toEqual({ ok: false, reason: 'owned' });
     expect(save.coins).toBe(0);
   });

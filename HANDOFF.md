@@ -573,3 +573,16 @@ Not done: lazy leave clips (ghosts just fade), tutorial hint, balance pass, real
 
 
 Step 4d update: first-visit hint added (TacoScene, one line shown 9 s, id 'taco_hint' stored in save.seenStory so it shows once). Balance: tests/taco_sim.test.ts bot simulation already covers pace/close rates and passes (fast/average/casual bots reach Lv 16+). Still open: leave animations (ghosts just fade), real-device test.
+
+## In progress: progression redesign (approved by owner 2026-11-08)
+Owner approved: (1) Taco Truck content is keyed to a restaurant-local MENU STEP (1-10), not global Lv; (2) optional diner extras: Mastery badges + Daily Special FIRST (existing art only); (3) no second visible number: the player sees "Dishes n/16" and a "New on the menu" note, never "Rank"/"stage"/"shift"/"stars" (wording rule). Global Lv/XP/coins unchanged; buying stays optional; price stays 2,000; XP curve unchanged.
+Plan, branch feature/taco-truck, small steps (update after each):
+ A1. data/taco.json: dishes/drinks get `unlockStep` (replaces `unlockLevel`; restaurant.unlockLevel 15 stays as the BUY gate) + `ramp` per step (seats, orderSize, patienceMult). New schedule: 1 veggie soft+Horchata, 2 chicken soft+Agua, 3 shrimp+fish soft, 4 crispy veggie+chicken, 5 crispy shrimp+fish, 6 veggie burrito, 7 chicken burrito, 8 shrimp+fish burritos, 9 nachos veggie+chicken, 10 nachos shrimp+fish.
+ A2. src/game/taco/tacoMenu.ts (pure): MAX_STEP, stepFromLevel (legacy saves), stepXpNeeded = xpForLevel(14+step), rampFor.
+ A3. TacoKitchenState: `menuStep`, `menuXp`; dishes/drinks/build use menuStep; customer difficulty from levelDef(14+step) + ramp; global level/XP/coins still earned as before; emit `menuStep` event.
+ A4. SaveSystem: optional `tacoStep`, `tacoXp` (missing + Taco already owned => derived from level so no tester loses dishes; missing + not owned => 1); purchaseRestaurant sets step 1 on buying Taco.
+ A5. TacoScene: pass/save step, status "Dishes n/16", note on new dish. Tests updated + new tests. Then B: Mastery badges, C: Daily Special (separate small steps, each reviewed).
+
+### Progress (2026-11-08): A1-A5 DONE, uncommitted, on feature/taco-truck
+Menu step is live: data/taco.json (unlockStep + ramp), src/game/taco/tacoMenu.ts, TacoKitchenState (menuStep/menuXp, 'menuGrew' event, levelInfo from diner table at 14+step with ramp), SaveSystem (tacoStep/tacoXp; legacy owners derive from Lv), purchaseRestaurant sets step 1, TacoScene (saves step, status "Dishes n/16", "New on the menu: ..." note, "Lv N!" wording). Tests: tests/taco_menu.test.ts (new), taco*.test.ts moved to steps. Bot sim now: fast bot Lv16 at ~2.5 min, closes/min 0.00 (first steps) and 0.57 (full menu); XP pace is a little faster early because the gentle start causes fewer lost customers (ramp then tightened 2026-11-08: step 1 = 3 seats, patience x1.2; step 2-3 = 4 seats, x1.15; step 4+ = 5 seats; fast bot closes/min 0.14 early, 0.63 full menu). Known flaky: tests/balance_upgrades.test.ts 5 s timeout.
+Next: B Mastery badges, C Daily Special (diner extras; shared save fields). Needs owner decision on branch (shared gameplay: main vs android transfer approval).

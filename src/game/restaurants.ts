@@ -64,10 +64,15 @@ export function checkPurchase(price: RestaurantPrice, level: number, coins: numb
 }
 
 /** Buy a restaurant: spends the coins once and adds it to the owned list. Changes `save` only when the purchase is allowed. */
-export function purchaseRestaurant(price: RestaurantPrice, save: { level: number; coins: number; restaurants: string[] }): PurchaseCheck {
+export function purchaseRestaurant(price: RestaurantPrice, save: { level: number; coins: number; restaurants: string[]; tacoStep?: number; tacoXp?: number }): PurchaseCheck {
   const check = checkPurchase(price, save.level, save.coins, save.restaurants);
   if (!check.ok) return check;
   save.coins -= price.cost;
   save.restaurants = [...save.restaurants, price.id];
+  // A new truck starts with its first dishes whatever the global Lv is, so a late buyer gets the gentle start too.
+  if (price.id === 'taco_truck') {
+    save.tacoStep = 1;
+    save.tacoXp = 0;
+  }
   return check;
 }

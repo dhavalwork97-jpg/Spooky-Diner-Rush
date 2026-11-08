@@ -2,7 +2,8 @@ import { TacoKitchenState } from '../../src/game/taco/TacoKitchenState';
 import { stepKind, type Protein } from '../../src/game/taco/tacoConfig';
 import { defaultConfig } from '../../src/game/config';
 
-export const tacoAt = (level: number, seed = 1) => new TacoKitchenState({ level, xp: 0, coins: 0 }, defaultConfig, undefined, seed);
+/** A kitchen at a menu step (1-10; 10 = every dish). The global Lv is separate and defaults to 15. */
+export const tacoAt = (step: number, seed = 1, level = 15) => new TacoKitchenState({ level, xp: 0, coins: 0, menuStep: step }, defaultConfig, undefined, seed);
 
 /** Quiet kitchen: no customers and no events unless a test asks for them. */
 export function quiet(s: TacoKitchenState): TacoKitchenState {

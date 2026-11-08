@@ -58,7 +58,7 @@ export class TacoScene extends Phaser.Scene {
     layer('taco_front', 20);
 
     const save = SaveSystem.data;
-    this.state = new TacoKitchenState({ level: save.level, xp: save.xp, coins: save.coins });
+    this.state = new TacoKitchenState({ level: save.level, xp: save.xp, coins: save.coins, menuStep: save.tacoStep, menuXp: save.tacoXp });
     this.state.mods = modsFor(this.state.cfg.upgrades.upgrades, save.owned);
 
     this.views = new TacoViews(this, this.bg, this.state);
@@ -93,14 +93,15 @@ export class TacoScene extends Phaser.Scene {
         this.customers.celebrate(e.customer);
         this.floatText(e.customer, `+${e.coins}`);
       } else if (e.type === 'wrongDrop') this.say(e.penalty ? 'Not what they ordered' : 'Drop it on a customer who ordered it');
-      else if (e.type === 'levelUp') this.say(`Level ${e.level}!`);
+      else if (e.type === 'levelUp') this.say(`Lv ${e.level}!`);
+      else if (e.type === 'menuGrew') this.say(`New on the menu: ${e.added.join(', ')}`, 4000);
       else if (e.type === 'closed') this.say('Closed: reputation ran out');
     }
     this.state.events = [];
     this.views.sync();
     this.customers.sync();
     const s = this.state;
-    this.status.setText(`Lv ${s.level}   Coins ${s.coins}   Rep ${Math.round(s.reputation)}   Customers ${s.customers.length}`);
+    this.status.setText(`Lv ${s.level}   Coins ${s.coins}   Rep ${Math.round(s.reputation)}   Dishes ${s.dishes.length}/${s.taco.dishes.length}   Customers ${s.customers.length}`);
     if (this.noteUntil && performance.now() > this.noteUntil) {
       this.note.setText('');
       this.noteUntil = 0;
@@ -175,6 +176,8 @@ export class TacoScene extends Phaser.Scene {
     SaveSystem.data.level = this.state.level;
     SaveSystem.data.xp = this.state.xp;
     SaveSystem.data.coins = this.state.coins;
+    SaveSystem.data.tacoStep = this.state.menuStep;
+    SaveSystem.data.tacoXp = this.state.menuXp;
     SaveSystem.save();
     this.lastSave = performance.now();
   }

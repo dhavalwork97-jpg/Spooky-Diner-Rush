@@ -129,8 +129,8 @@ export interface TacoRun {
   seconds: number;
 }
 
-export function playTaco(seed: number, reaction: number, seconds: number, opts: { level?: number; mods?: Partial<Mods>; cfg?: GameConfig } = {}): TacoRun {
-  const s = new TacoKitchenState({ level: opts.level ?? 15, xp: 0, coins: 0 }, opts.cfg ?? defaultConfig, undefined, seed);
+export function playTaco(seed: number, reaction: number, seconds: number, opts: { level?: number; menuStep?: number; mods?: Partial<Mods>; cfg?: GameConfig } = {}): TacoRun {
+  const s = new TacoKitchenState({ level: opts.level ?? 15, xp: 0, coins: 0, menuStep: opts.menuStep ?? (opts.level === undefined ? 1 : undefined) }, opts.cfg ?? defaultConfig, undefined, seed);
   Object.assign(s.mods, opts.mods);
   const run: TacoRun = { s, levelTimes: { [s.level]: 0 }, burnt: 0, angry: 0, served: new Map(), seconds };
   const dt = 0.1;
