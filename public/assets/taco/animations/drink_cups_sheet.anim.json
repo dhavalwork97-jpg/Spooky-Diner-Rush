@@ -1,0 +1,28 @@
+{
+ "key": "drink_cups",
+ "image": "drink_cups_sheet.webp",
+ "frameWidth": 225,
+ "frameHeight": 342,
+ "columns": 5,
+ "rows": 2,
+ "frameCount": 10,
+ "rowsMeaning": [
+  "horchata",
+  "agua_de_jamaica"
+ ],
+ "columnsMeaning": [
+  "empty",
+  "25%",
+  "50%",
+  "75%",
+  "full"
+ ],
+ "frameIndex": "row*5+level",
+ "anchorPx": {
+  "x": 112,
+  "y": 337
+ },
+ "originX": 0.5,
+ "originY": 0.9854,
+ "note": "Translucent glass (about 40% opacity) with opaque outline and liquid, so the dispenser tray shows through. Anchor = bottom-centre of the cup. Scale to roughly 80x122 (taco dispenser) or 95x152 (agua dispenser) game px."
+}

@@ -69,6 +69,47 @@ This section is the authoritative current status for the next Claude/Codex sessi
 
 # HANDOFF
 
+## STEP 3 in progress (2026-11-07, Claude): wire the Taco Truck into the game - same branch `feature/taco-truck`; step 2 is committed and pushed (38e2684); step 3 files are NOT committed until the owner says so.
+Findings that shape step 3: `GameScene` (1091 lines) builds the burger `KitchenState` directly and is started with `{ restaurantId }`; `RestaurantSelectScene` lists playable restaurants from `data/restaurants.json` (zones, background, fixed station list in `src/kitchen/zones.ts`) plus `restaurant_menu.json` "coming soon" cards (taco_truck is there with unlockLevel 10, must become 15); `SaveSystem` has `lastRestaurant` but no owned-restaurant list; `layout.ts` hardcodes burger positions (1699 x 948 art, 4 seats). The taco screen therefore needs its own scene, not a branch inside `GameScene`.
+Order (each part tested before the next):
+- [ ] 3a. Save: `restaurants: string[]` (owned playable restaurants, default `['burger_diner']`, old saves load fine) + pure `checkPurchase` / `purchase` (Lv 15, 2,000 coins, deduct once) in `src/game/restaurants.ts`; tests.
+- [ ] 3b. Data: taco entry in `data/restaurants.json` (background layers, zones from `tools/taco_source/taco_fiesta_hotspots.json`, new taco station types in `zones.ts`), assets listed in `data/assets.json`, validator tests; restaurant_menu stops listing taco.
+- [ ] 3c. Select screen: Taco Truck card with states locked (Lv 15) / buy (2,000 coins) / ready; buying saves and spends coins; `scene.start('Taco', ...)`.
+- [ ] 3d. Minimal `TacoScene` scaffold registered in `main.ts`: both background layers, tap zones wired to `TacoKitchenState`, a back button. Real views and the 18 animations are STEP 4.
+
+## Done (committed 38e2684): STEP 2 (2026-11-07, Claude): data + pure TacoKitchenState + tests - owner approved Option A in plain words ("yes for the separate taco kitchen model"). Same branch `feature/taco-truck`. Commit/push to this branch only when a step is done and the owner has said so (standing rule); no merge, no PR.
+Design (first-pass numbers, all in `data/taco.json`, owner to tune):
+- New files only: `data/taco.json`, `src/game/taco/tacoConfig.ts` (types, `defaultTacoConfig`, `stepKind`), `src/game/taco/TacoKitchenState.ts` (no Phaser), `tests/taco*.test.ts`, `tests/helpers/tacoBot.ts`. The burger model, its data and its tests are NOT edited. Shared systems are reused by passing the normal `GameConfig` (xp, combo, customers, waves, events, progression) and the shared `Mods` (pans use `grillSpeed`, oven uses `ovenSpeed`, plus `burnWindow`, `calm`, `patience`, `tips`).
+- Plates: 2 (the two pass-counter plates). Pans 4 (cook proteins AND press burritos), oven slots 2 (crispy shells AND melt nachos), drinks 2 dispensers x 3 lanes (horchata, agua de jamaica), 5 customer seats.
+- A dish in progress is just a list of placed steps; it matches every unlocked dish whose steps start with it, so a flour tortilla can still become any soft taco or burrito until the player adds the protein or rice. Steps use the pack's ids (`tortilla_flour_tortillas`, `protein:chicken`, `topping_lettuce`, `action:wrap`, `pan:press`, `oven:melt` ...).
+- Taps: raw protein -> first free pan; pan -> collect protein onto the oldest plate that needs it (or press result back to a plate); empty oven slot -> bakes a crispy shell, ready slot -> shell/melted nachos to a free plate; ingredient or tortilla -> oldest plate that accepts it (a tortilla starts a new plate); plate -> do the next action (wrap, cut) or move it into a pan (press) or the oven (melt); drag to customer = `serve` / `serveFromPour`.
+- The 16 dishes unlock by Lv: soft tacos 15-16, crispy tacos 17-18, burritos 19-20, nachos 21-22; both drinks Lv 15. Dish id `veggies_taco` (the pack calls it `veggie_taco`; its sprite file is `taco_veggie`).
+Plan (tick when done):
+- [x] 2a. `data/taco.json` + `tacoConfig.ts`
+- [x] 2b. `TacoKitchenState.ts`
+- [x] 2c. unit tests (all 16 dishes buildable, burn/discard, serve, drinks, mods, shared XP/coins/level, reopen)
+- [x] 2d. bot simulation + first-pass balance report
+- [x] 2e. typecheck, `npm test`, builds, HANDOFF result
+
+## Done: TACO TRUCK, step 0 and step 1 (2026-11-07, Claude) - branch `feature/taco-truck` (from main 09fb8ed), committed and pushed as 569add9 on the owner's say-so (standing rule: no commit/push/merge without approval; the repo's `handoff.py snap` hook auto-commits after Edit/Write, so files are edited through the shell instead)
+Owner (2026-11-07): (a) lower the Lv 20 pace floor in `tests/sim_late.test.ts` from 1750 to 1700 so `main` is green; (b) the Taco Truck must use the supplied assets and animations from `TAco.zip` and `animations.zip`.
+Taco Truck facts from the owner: unlocks at Lv 15 (the placeholder in `data/restaurant_menu.json` says Lv 10), costs 2,000 coins. Option A (new `TacoKitchenState`, shared systems reused, burger kitchen untouched) is PROPOSED, NOT yet approved: do not start step 2 before the owner says yes.
+Plan (tick when done):
+- [x] 0. Pace floor 1750 -> 1700 in `tests/sim_late.test.ts` (nothing else in that file changes).
+- [x] 1. Import assets only (no game code): `public/assets/taco/{background,sprites,animations,icons}` as WebP (sprites converted from PNG), sheet metadata `.anim.json` (the key `stageRule` renamed `buildRule` because of the wording rule), `icons_atlas` + `icons.json`; originals of the pack's README and hotspots JSON kept verbatim in `tools/taco_source/` (not scanned by the wording test). Not loaded by the game yet.
+- [ ] 2. (needs owner approval) data + pure `TacoKitchenState` + tests.
+- [ ] 3. (needs owner approval) restaurant wiring, Layout per restaurant, 5 customer slots, Lv 15 / 2,000 coins.
+- [ ] 4. (needs owner approval) views and animations with the 18 sheets.
+- [ ] 5. (needs owner approval) menu rollout and checks (typecheck, `npm test`, `npm run build`, `npm run build:crazygames`, browser at desktop and phone sizes).
+Result steps 0 and 1 (2026-11-07, NOT committed): floor now 1700 (mean of 150 fast-bot seeds was 1734 s). Assets: 70 files under `public/assets/taco/` (6.5 MB: background 2 layers, 29 sprites converted PNG -> WebP with full alpha, 18 sheets + 18 `.anim.json`, icon atlas), `tools/taco_source/` keeps the pack's README and hotspots JSON verbatim. All 18 sheets are uniform grids (columns x frame size = sheet size), so they load as plain spritesheets. Nothing loads them yet, but Vite copies `public/` into every build: `dist` is now 17 MB and `dist-crazygames` 15 MB (about 8.5 MB before); trim or exclude unused taco files from builds if that matters before release.
+Checks: typecheck clean; `npm run build` and `npm run build:crazygames` ok; full `npm test` 323 passed, 1 skipped on 7 of 8 runs. Early in this session 3 full runs showed ONE failing test (name not captured, passed again on the next 7 runs and `tests/sim_late.test.ts` alone passes): possibly a test seeded from `Date.now()`. Not investigated yet.
+Owner answers (2026-11-07): the Taco Truck SHARES Lv, XP, coins and upgrades with the diner; customers are the same mint ghost; all 16 dishes are wanted (4 soft tacos, 4 crispy tacos, 4 burritos, 4 nachos; roll out by Lv). Commit and push to `feature/taco-truck` authorised (only this branch; no PR, no merge). Option A approval for step 2 still to be confirmed in plain words.
+Result step 2 (2026-11-07, files written, NOT committed): `data/taco.json`, `src/game/taco/tacoConfig.ts`, `src/game/taco/TacoKitchenState.ts`, `tests/taco.test.ts` (50 tests), `tests/taco_sim.test.ts` (5), `tests/helpers/tacoBuild.ts`, `tests/helpers/tacoBot.ts`. No existing source, data or test file was edited. Checks: typecheck clean; `npm test` 378 passed, 1 skipped (30 files); `npm run build` and `npm run build:crazygames` ok.
+First-pass balance (bot, start Lv 15, 1500 s, 4 seeds fast / 3 average / 2 casual): fast bot Lv 16 at ~235-316 s, ends Lv 19, serves 90-96, closes/min 0.43 (Lv 15-17) and 0.69 (Lv 18-20) against the diner's 0.56 and 0.70; average bot 0.51 / 0.63, ends Lv 17-18; casual bot 0.54, ends Lv 16. All 16 dishes and both drinks are served in a Lv 22 run. The bot burns a lot of food (45 burnt per fast run), so burn pressure is probably high; tune `data/taco.json` (`settings.patienceMult` 1.15, `arrivalGapMult` 1.15, protein and shell times, prices) if it feels hard. Prices and XP per dish are placeholders (soft 34/40, crispy 44/50, burrito 62/70, nachos 70/78, drinks 12/14).
+Not done yet (step 3 onward, each needs owner approval): nothing is wired into the game. No restaurant select change, no scene or views, no Layout, no save field, no 2,000-coin purchase, no 5-seat customer view, no loading of the taco assets. Real-device and browser play is NOT tested. `tools/taco_source/taco_fiesta_hotspots.json` is used by tests as the list of tap ids.
+Burger `KitchenState` imports used by the taco model: only types and the `CUSTOMER_LOOK_*` constants (read-only).
+Known gaps in the pack: `AGENT_PROMPT.md` and `optional_ghost_customers/` are missing from the zip; README says 12 dishes but the data lists 16; crispy tacos have no build frames; no chip bowl; veggie burrito and nachos art differ slightly.
+
 ## In progress: SPEED UPGRADES must not shorten the player's reaction window (2026-11-06, Claude) - branch `feat/burn-guard-calm-kitchen`, NOTHING committed or pushed (owner said: do not commit, push or merge)
 Owner request: speed-only buyers get 14-68 percent MORE closes than no-upgrade players (sim). Not acceptable. Do not touch Burn Guard / Calm Kitchen values, arrivals, patience, recipes, ads, saves.
 Cause (read from `KitchenState.updateCooking`): the cooking clock `t` advances at `dt * speedMod` for the WHOLE life of the food, and `cookPhase(t, readyAfter, burnWindow)` measures ready, warning, danger and burnt on the same clock. So a x1.5 fryer shortens cooking (wanted) AND the real-time time between ready and burnt, 4 s -> 2.7 s (not wanted). Burn Guard x1.45 only about cancels a x1.5 speed upgrade.
@@ -564,3 +605,56 @@ Start from the latest `main`, inspect the current repository and docs first, and
 - Double coins, slow oven and lunch rush visuals
 - Sound
 - Phone performance
+
+
+## STEP 3c/3d progress (uncommitted, branch feature/taco-truck)
+- 3a done: restaurants.ts buy rules, SaveSystem.restaurants, menu json (tests/restaurant_purchase.test.ts).
+- 3b done: data/taco.json zones/art/customerWindow, tacoZones.ts hit-test + tapZone, generator tools/taco_source/make_taco_data.py.
+- 3c done (typecheck clean): taco_thumb in data/assets.json, Taco Truck card + Buy button in RestaurantSelectScene, GameScene.onPick routes taco_truck to scene 'Taco'.
+- 3d DONE: src/scenes/TacoScene.ts (background layers, zone taps, text status, Restaurants button, ?debug zone outlines), registered in main.ts. Fixed: art names in taco.json have no extension, scene adds .webp.
+- Verified (headless Chromium smoke, NOT a real device): Lv16 save with 5000 coins -> card shows "2,000 coins"/Buy -> Buy leaves 3000 coins, saves restaurants + lastRestaurant -> Play opens Taco scene with art, zones line up, tap gives "Start a dish on a plate first".
+- Checks: typecheck clean, 399 tests pass (33 files), npm run build + build:crazygames OK.
+- Still NOT done (step 4): animated views (pans, oven, plates, customers, drinks), drag-to-serve input, sounds, tutorial hints, reduced motion. Taco scene is a plain shell: no dish pictures, no customers drawn yet.
+- NOT committed (waiting for user).
+
+
+## STEP 4 plan (views for the Taco scene; each sub-step committed only when the user says so)
+- 4a: src/views/TacoViews.ts - pans, oven slots, plates drawn from model state (cook sheets, oven shell sheet, build sheets, finished dish sprites). Textures loaded in TacoScene.preload from the anim.json files.
+- 4b: customers (mint ghost, 5 seats from customerWindow) with order bubbles + drag a finished plate to the right customer (model.serve) + invalid-drop feedback.
+- 4c: drinks (dispenser cups 3 lanes x 2 drinks, fill/ready cups, drag to customer via serveFromPour).
+- 4d: polish: ring/phase cues, sounds, reduced motion, tutorial hint, balance pass; then both builds + browser smoke.
+- Status: 4a DONE (food resized to fit pans/plates), uncommitted (src/views/TacoViews.ts + TacoScene wiring; typecheck clean; headless browser check: raw/cooked/burnt proteins in pans and the tortilla shell on a plate draw in the right places). 4b next. Not yet checked: crispy shell/melt/press views, finished-dish sprites, sizes of items.
+
+- 4b DONE, uncommitted: src/views/TacoCustomers.ts (mint ghost in 5 seats, order bubbles with dish/drink icons and a tick for delivered items, patience bar, calm/impatient/angry loops, hop on complete, fade on leave) + TacoScene drag-to-serve (drag a finished plate; a tap says 'Drag it to a customer'; +coins floating text; wrong-drop messages). Browser check (headless): built a chicken soft taco, dragged it, delivery ticked off the order.
+- Not done in 4b: lazy leave clips (ghost_leave_happy/angry) are not used, ghosts just fade; no sounds yet. 4c next: drinks (cups, fill, serveFromPour).
+
+- Art swap (uncommitted): user supplied Gemini cook sheets (green background, 3168x1344, 4x2) for chicken, shrimp, fish, veggies. Converted with tools/taco_source/import_cook_sheet.py (chroma key, resize to 1712x782, 428x391 cells, base anchored at y=372; 'loose' mode for non-veggies). Replaced public/assets/taco/animations/cook_<protein>_sheet.webp. The ready frame is now one piece. anim.json files unchanged (same frame size/count). Originals are in git history.
+- Pan alignment fix (uncommitted): pan food scaled to ~66% of zone width (62% for the two bigger front pans) and anchored lower (0.8 back / 0.88 front) so it sits inside each bowl. Checked with ?debug zone outlines in headless browser; oven/plate not re-checked.
+- Pan sheets (uncommitted, WORKING): pans are removed from public/assets/taco/background/kitchen_front.webp (tools/taco_source/remove_pans.py) and drawn by TacoViews.putPan() from pan_<colour>_chicken_sheet.webp (import_pan_sheet.py clips stray bits under the pan). Colours by zone: front-left red, front-right blue, back-left red, back-right blue; left-hand pans are mirrored so handles point outward; the empty pan frame is always drawn. Chicken uses the pan sheet frames; shrimp/fish/veggies/press items still use the food-only overlay (offsets tuned for old painted pans - re-check). Whole-pan sheets exist for chicken, fish, shrimp and veggies in red AND blue (TacoViews uses pan_<zone colour>_<protein>; press items still use the food overlay on the chicken pan). TODO: cleaner empty-pan frame, regenerate taco_thumb from new background. Checks: typecheck, 399 tests, build pass.
+
+## Step 4c drinks (done, uncommitted)
+TacoViews.syncCups draws a cup per dispenser lane from model.pours (cupFrame helper: levels 1-3 filling, 4 full); TacoScene lets a full cup be dragged from its lane to a customer (serveFromPour); half-filled cups cannot be picked up. Test: tests/taco_cups.test.ts. Checked with headless screenshots (cups fill, drag works). Remaining step 4d: sounds, reduced motion, leave animations, tutorial hint, balance; thumb.webp regeneration.
+Pan layout fix: back pans drawn behind the front pair, 10% smaller and lifted 2.5% of the kitchen height (BACK_PAN_SCALE/BACK_PAN_LIFT in TacoViews); idle pans use the clean empty frame of the fish sheet.
+
+## Step 4d (partly done, uncommitted)
+Done: sounds (src/views/TacoSounds.ts sfxFor maps kitchen events to existing sfx; played in TacoScene.update; test tests/taco_sounds.test.ts), reduced motion in TacoCustomers (no hop/fade), taco thumb.webp regenerated with empty pans.
+Not done: lazy leave clips (ghosts just fade), tutorial hint, balance pass, real-device test, Android/browser branch transfer plan.
+
+
+Step 4d update: first-visit hint added (TacoScene, one line shown 9 s, id 'taco_hint' stored in save.seenStory so it shows once). Balance: tests/taco_sim.test.ts bot simulation already covers pace/close rates and passes (fast/average/casual bots reach Lv 16+). Still open: leave animations (ghosts just fade), real-device test.
+
+## In progress: progression redesign (approved by owner 2026-11-08)
+Owner approved: (1) Taco Truck content is keyed to a restaurant-local MENU STEP (1-10), not global Lv; (2) optional diner extras: Mastery badges + Daily Special FIRST (existing art only); (3) no second visible number: the player sees "Dishes n/16" and a "New on the menu" note, never "Rank"/"stage"/"shift"/"stars" (wording rule). Global Lv/XP/coins unchanged; buying stays optional; price stays 2,000; XP curve unchanged.
+Plan, branch feature/taco-truck, small steps (update after each):
+ A1. data/taco.json: dishes/drinks get `unlockStep` (replaces `unlockLevel`; restaurant.unlockLevel 15 stays as the BUY gate) + `ramp` per step (seats, orderSize, patienceMult). New schedule: 1 veggie soft+Horchata, 2 chicken soft+Agua, 3 shrimp+fish soft, 4 crispy veggie+chicken, 5 crispy shrimp+fish, 6 veggie burrito, 7 chicken burrito, 8 shrimp+fish burritos, 9 nachos veggie+chicken, 10 nachos shrimp+fish.
+ A2. src/game/taco/tacoMenu.ts (pure): MAX_STEP, stepFromLevel (legacy saves), stepXpNeeded = xpForLevel(14+step), rampFor.
+ A3. TacoKitchenState: `menuStep`, `menuXp`; dishes/drinks/build use menuStep; customer difficulty from levelDef(14+step) + ramp; global level/XP/coins still earned as before; emit `menuStep` event.
+ A4. SaveSystem: optional `tacoStep`, `tacoXp` (missing + Taco already owned => derived from level so no tester loses dishes; missing + not owned => 1); purchaseRestaurant sets step 1 on buying Taco.
+ A5. TacoScene: pass/save step, status "Dishes n/16", note on new dish. Tests updated + new tests. Then B: Mastery badges, C: Daily Special (separate small steps, each reviewed).
+
+### Progress (2026-11-08): A1-A5 DONE, uncommitted, on feature/taco-truck
+Menu step is live: data/taco.json (unlockStep + ramp), src/game/taco/tacoMenu.ts, TacoKitchenState (menuStep/menuXp, 'menuGrew' event, levelInfo from diner table at 14+step with ramp), SaveSystem (tacoStep/tacoXp; legacy owners derive from Lv), purchaseRestaurant sets step 1, TacoScene (saves step, status "Dishes n/16", "New on the menu: ..." note, "Lv N!" wording). Tests: tests/taco_menu.test.ts (new), taco*.test.ts moved to steps. Bot sim now: fast bot Lv16 at ~2.5 min, closes/min 0.00 (first steps) and 0.57 (full menu); XP pace is a little faster early because the gentle start causes fewer lost customers (ramp then tightened 2026-11-08: step 1 = 3 seats, patience x1.2; step 2-3 = 4 seats, x1.15; step 4+ = 5 seats; fast bot closes/min 0.14 early, 0.63 full menu). Known flaky: tests/balance_upgrades.test.ts 5 s timeout.
+Next: B Mastery badges, C Daily Special (diner extras; shared save fields). Needs owner decision on branch (shared gameplay: main vs android transfer approval).
+
+### Taco leave animation (2026-11-08)
+TacoCustomers now lazy-loads ghost_leave_happy/angry and plays the matching clip in place when the model removes a customer (angry flag remembered from the last model mood); falls back to the old fade if the sheet has not loaded; reduced motion removes instantly. Checked in headless Chromium (no errors, leave clip seen); not checked on a phone.

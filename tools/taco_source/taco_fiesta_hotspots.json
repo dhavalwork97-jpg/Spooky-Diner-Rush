@@ -1,0 +1,1506 @@
+{
+ "imageSize": {
+  "w": 2754,
+  "h": 1536
+ },
+ "coordinateNote": "All px values are in the 2754x1536 background image. 'n' = normalised 0-1 (use for any screen size).",
+ "layers": {
+  "back": "background/kitchen_street_back.png",
+  "front": "background/kitchen_front.png",
+  "fullOriginal": "background/kitchen_full_original.png",
+  "drawOrder": [
+   "kitchen_street_back (depth 0)",
+   "customers (depth 10)",
+   "kitchen_front (depth 20)",
+   "dynamic station sprites, dishes, UI, order bubbles (depth 30+)"
+  ],
+  "note": "Back + front composite equals the original image exactly. Customers must be drawn between them."
+ },
+ "window": {
+  "openingPolygonPx": [
+   [
+    750,
+    102
+   ],
+   [
+    854,
+    196
+   ],
+   [
+    1924,
+    198
+   ],
+   [
+    2031,
+    102
+   ],
+   [
+    2033,
+    557
+   ],
+   [
+    751,
+    557
+   ]
+  ],
+  "ledgeTopY": 557,
+  "hatchBottomY": 198,
+  "visibleCustomerBand": {
+   "y0": 198,
+   "y1": 557,
+   "height": 359
+  },
+  "customerSlots": [
+   {
+    "id": "customer_slot_1",
+    "x": 880,
+    "bottomY": 557,
+    "n": {
+     "x": 0.3195,
+     "y": 0.3626
+    }
+   },
+   {
+    "id": "customer_slot_2",
+    "x": 1100,
+    "bottomY": 557,
+    "n": {
+     "x": 0.3994,
+     "y": 0.3626
+    }
+   },
+   {
+    "id": "customer_slot_3",
+    "x": 1320,
+    "bottomY": 557,
+    "n": {
+     "x": 0.4793,
+     "y": 0.3626
+    }
+   },
+   {
+    "id": "customer_slot_4",
+    "x": 1540,
+    "bottomY": 557,
+    "n": {
+     "x": 0.5592,
+     "y": 0.3626
+    }
+   },
+   {
+    "id": "customer_slot_5",
+    "x": 1760,
+    "bottomY": 557,
+    "n": {
+     "x": 0.6391,
+     "y": 0.3626
+    }
+   }
+  ],
+  "maxCustomersAtOnce": 5,
+  "customerGuidance": "Anchor customers bottom-centre at slot x, bottom well below ledgeTopY so the ledge hides the lower body (a bust shot). Scale so the head top sits near y=235. Keep slots 4-5 clear of the sauce bottles if you want an unobstructed face (bottles are at x~1845-1990).",
+  "orderBubbleAnchorY": 215,
+  "serveDropZonePx": {
+   "x": 751,
+   "y": 198,
+   "w": 1282,
+   "h": 359
+  }
+ },
+ "hotspots": [
+  {
+   "id": "menu_board",
+   "type": "decor",
+   "x": 444,
+   "y": 102,
+   "w": 208,
+   "h": 274,
+   "cx": 548,
+   "cy": 239,
+   "n": {
+    "x": 0.1612,
+    "y": 0.0664,
+    "w": 0.0755,
+    "h": 0.1784
+   }
+  },
+  {
+   "id": "utensil_rail",
+   "type": "decor",
+   "x": 2122,
+   "y": 276,
+   "w": 348,
+   "h": 301,
+   "cx": 2296,
+   "cy": 426,
+   "n": {
+    "x": 0.7705,
+    "y": 0.1797,
+    "w": 0.1264,
+    "h": 0.196
+   }
+  },
+  {
+   "id": "drink_dispenser_taco",
+   "type": "drink_dispenser",
+   "x": 139,
+   "y": 251,
+   "w": 380,
+   "h": 551,
+   "cx": 329,
+   "cy": 526,
+   "n": {
+    "x": 0.0505,
+    "y": 0.1634,
+    "w": 0.138,
+    "h": 0.3587
+   },
+   "note": "Serves agua_de_jamaica. (Id naming is historical: the striped dispenser is horchata, the orange taco dispenser is agua de jamaica.)",
+   "drink": "agua_de_jamaica"
+  },
+  {
+   "id": "drink_dispenser_taco_cup_1",
+   "type": "drink_cup_slot",
+   "x": 198,
+   "y": 615,
+   "w": 78,
+   "h": 117,
+   "cx": 237,
+   "cy": 673,
+   "n": {
+    "x": 0.0719,
+    "y": 0.4004,
+    "w": 0.0283,
+    "h": 0.0762
+   },
+   "parent": "drink_dispenser_taco",
+   "bakedInArt": false,
+   "note": "Cup was removed from the background; draw the cup sprite here. Hold on the dispenser to fill (frames 0..4). Anchor = bottom-centre.",
+   "cleared": true,
+   "cupAnchor": {
+    "x": 238,
+    "y": 732
+   },
+   "cupSize": {
+    "w": 80,
+    "h": 122
+   },
+   "drink": "agua_de_jamaica",
+   "cupSprites": "animations/drink_cups_sheet (frameIndex = row*5 + level; row 0 horchata, row 1 jamaica; levels 0-4 = empty,25,50,75,full)"
+  },
+  {
+   "id": "drink_dispenser_taco_cup_2",
+   "type": "drink_cup_slot",
+   "x": 289,
+   "y": 615,
+   "w": 78,
+   "h": 117,
+   "cx": 328,
+   "cy": 673,
+   "n": {
+    "x": 0.1049,
+    "y": 0.4004,
+    "w": 0.0283,
+    "h": 0.0762
+   },
+   "parent": "drink_dispenser_taco",
+   "bakedInArt": false,
+   "note": "Cup was removed from the background; draw the cup sprite here. Hold on the dispenser to fill (frames 0..4). Anchor = bottom-centre.",
+   "cleared": true,
+   "cupAnchor": {
+    "x": 327,
+    "y": 732
+   },
+   "cupSize": {
+    "w": 80,
+    "h": 122
+   },
+   "drink": "agua_de_jamaica",
+   "cupSprites": "animations/drink_cups_sheet (frameIndex = row*5 + level; row 0 horchata, row 1 jamaica; levels 0-4 = empty,25,50,75,full)"
+  },
+  {
+   "id": "drink_dispenser_taco_cup_3",
+   "type": "drink_cup_slot",
+   "x": 376,
+   "y": 615,
+   "w": 78,
+   "h": 117,
+   "cx": 415,
+   "cy": 673,
+   "n": {
+    "x": 0.1365,
+    "y": 0.4004,
+    "w": 0.0283,
+    "h": 0.0762
+   },
+   "parent": "drink_dispenser_taco",
+   "bakedInArt": false,
+   "note": "Cup was removed from the background; draw the cup sprite here. Hold on the dispenser to fill (frames 0..4). Anchor = bottom-centre.",
+   "cleared": true,
+   "cupAnchor": {
+    "x": 416,
+    "y": 732
+   },
+   "cupSize": {
+    "w": 80,
+    "h": 122
+   },
+   "drink": "agua_de_jamaica",
+   "cupSprites": "animations/drink_cups_sheet (frameIndex = row*5 + level; row 0 horchata, row 1 jamaica; levels 0-4 = empty,25,50,75,full)"
+  },
+  {
+   "id": "drink_dispenser_agua",
+   "type": "drink_dispenser",
+   "x": 0,
+   "y": 754,
+   "w": 390,
+   "h": 737,
+   "cx": 195,
+   "cy": 1122,
+   "n": {
+    "x": 0.0,
+    "y": 0.4909,
+    "w": 0.1416,
+    "h": 0.4798
+   },
+   "note": "Serves horchata. (Id naming is historical: the striped dispenser is horchata, the orange taco dispenser is agua de jamaica.)",
+   "drink": "horchata"
+  },
+  {
+   "id": "drink_dispenser_agua_cup_1",
+   "type": "drink_cup_slot",
+   "x": 48,
+   "y": 1107,
+   "w": 96,
+   "h": 149,
+   "cx": 96,
+   "cy": 1181,
+   "n": {
+    "x": 0.0174,
+    "y": 0.7207,
+    "w": 0.0349,
+    "h": 0.097
+   },
+   "parent": "drink_dispenser_agua",
+   "bakedInArt": false,
+   "note": "Cup was removed from the background; draw the cup sprite here. Hold on the dispenser to fill (frames 0..4). Anchor = bottom-centre.",
+   "cleared": true,
+   "cupAnchor": {
+    "x": 96,
+    "y": 1258
+   },
+   "cupSize": {
+    "w": 95,
+    "h": 152
+   },
+   "drink": "horchata",
+   "cupSprites": "animations/drink_cups_sheet (frameIndex = row*5 + level; row 0 horchata, row 1 jamaica; levels 0-4 = empty,25,50,75,full)"
+  },
+  {
+   "id": "drink_dispenser_agua_cup_2",
+   "type": "drink_cup_slot",
+   "x": 150,
+   "y": 1107,
+   "w": 96,
+   "h": 149,
+   "cx": 198,
+   "cy": 1181,
+   "n": {
+    "x": 0.0545,
+    "y": 0.7207,
+    "w": 0.0349,
+    "h": 0.097
+   },
+   "parent": "drink_dispenser_agua",
+   "bakedInArt": false,
+   "note": "Cup was removed from the background; draw the cup sprite here. Hold on the dispenser to fill (frames 0..4). Anchor = bottom-centre.",
+   "cleared": true,
+   "cupAnchor": {
+    "x": 197,
+    "y": 1258
+   },
+   "cupSize": {
+    "w": 95,
+    "h": 152
+   },
+   "drink": "horchata",
+   "cupSprites": "animations/drink_cups_sheet (frameIndex = row*5 + level; row 0 horchata, row 1 jamaica; levels 0-4 = empty,25,50,75,full)"
+  },
+  {
+   "id": "drink_dispenser_agua_cup_3",
+   "type": "drink_cup_slot",
+   "x": 251,
+   "y": 1107,
+   "w": 96,
+   "h": 149,
+   "cx": 299,
+   "cy": 1181,
+   "n": {
+    "x": 0.0911,
+    "y": 0.7207,
+    "w": 0.0349,
+    "h": 0.097
+   },
+   "parent": "drink_dispenser_agua",
+   "bakedInArt": false,
+   "note": "Cup was removed from the background; draw the cup sprite here. Hold on the dispenser to fill (frames 0..4). Anchor = bottom-centre.",
+   "cleared": true,
+   "cupAnchor": {
+    "x": 299,
+    "y": 1258
+   },
+   "cupSize": {
+    "w": 95,
+    "h": 152
+   },
+   "drink": "horchata",
+   "cupSprites": "animations/drink_cups_sheet (frameIndex = row*5 + level; row 0 horchata, row 1 jamaica; levels 0-4 = empty,25,50,75,full)"
+  },
+  {
+   "id": "toppings_tray",
+   "type": "station",
+   "x": 460,
+   "y": 663,
+   "w": 540,
+   "h": 299,
+   "cx": 730,
+   "cy": 812,
+   "n": {
+    "x": 0.167,
+    "y": 0.4316,
+    "w": 0.1961,
+    "h": 0.1947
+   }
+  },
+  {
+   "id": "topping_lettuce",
+   "type": "ingredient_source",
+   "x": 535,
+   "y": 641,
+   "w": 213,
+   "h": 155,
+   "cx": 641,
+   "cy": 718,
+   "n": {
+    "x": 0.1943,
+    "y": 0.4173,
+    "w": 0.0773,
+    "h": 0.1009
+   },
+   "parent": "toppings_tray",
+   "spriteHint": "lettuce",
+   "interaction": "tap/drag to add to dish"
+  },
+  {
+   "id": "topping_tomato_slices",
+   "type": "ingredient_source",
+   "x": 770,
+   "y": 609,
+   "w": 192,
+   "h": 177,
+   "cx": 866,
+   "cy": 697,
+   "n": {
+    "x": 0.2796,
+    "y": 0.3965,
+    "w": 0.0697,
+    "h": 0.1152
+   },
+   "parent": "toppings_tray",
+   "spriteHint": "tomato",
+   "interaction": "tap/drag to add to dish"
+  },
+  {
+   "id": "topping_greens_bowl",
+   "type": "ingredient_source",
+   "x": 490,
+   "y": 818,
+   "w": 146,
+   "h": 112,
+   "cx": 563,
+   "cy": 874,
+   "n": {
+    "x": 0.1779,
+    "y": 0.5326,
+    "w": 0.053,
+    "h": 0.0729
+   },
+   "parent": "toppings_tray",
+   "spriteHint": "cilantro",
+   "interaction": "tap/drag to add to dish"
+  },
+  {
+   "id": "topping_shredded_bowl",
+   "type": "ingredient_source",
+   "x": 647,
+   "y": 818,
+   "w": 144,
+   "h": 112,
+   "cx": 719,
+   "cy": 874,
+   "n": {
+    "x": 0.2349,
+    "y": 0.5326,
+    "w": 0.0523,
+    "h": 0.0729
+   },
+   "parent": "toppings_tray",
+   "spriteHint": "lettuce",
+   "interaction": "tap/drag to add to dish"
+  },
+  {
+   "id": "topping_salsa_red_bowl",
+   "type": "ingredient_source",
+   "x": 800,
+   "y": 818,
+   "w": 146,
+   "h": 112,
+   "cx": 873,
+   "cy": 874,
+   "n": {
+    "x": 0.2905,
+    "y": 0.5326,
+    "w": 0.053,
+    "h": 0.0729
+   },
+   "parent": "toppings_tray",
+   "spriteHint": "salsa_bowl",
+   "interaction": "tap/drag to add to dish"
+  },
+  {
+   "id": "cooler_tray",
+   "type": "station",
+   "x": 374,
+   "y": 984,
+   "w": 524,
+   "h": 507,
+   "cx": 636,
+   "cy": 1237,
+   "n": {
+    "x": 0.1358,
+    "y": 0.6406,
+    "w": 0.1903,
+    "h": 0.3301
+   }
+  },
+  {
+   "id": "cooler_cheese",
+   "type": "ingredient_source",
+   "x": 470,
+   "y": 994,
+   "w": 214,
+   "h": 166,
+   "cx": 577,
+   "cy": 1077,
+   "n": {
+    "x": 0.1707,
+    "y": 0.6471,
+    "w": 0.0777,
+    "h": 0.1081
+   },
+   "parent": "cooler_tray",
+   "spriteHint": "cheese",
+   "interaction": "tap/drag to add to dish"
+  },
+  {
+   "id": "cooler_green_peppers",
+   "type": "ingredient_source",
+   "x": 652,
+   "y": 994,
+   "w": 203,
+   "h": 166,
+   "cx": 753,
+   "cy": 1077,
+   "n": {
+    "x": 0.2367,
+    "y": 0.6471,
+    "w": 0.0737,
+    "h": 0.1081
+   },
+   "parent": "cooler_tray",
+   "spriteHint": "jalapeno",
+   "interaction": "tap/drag to add to dish"
+  },
+  {
+   "id": "cooler_salsa_bowl",
+   "type": "ingredient_source",
+   "x": 631,
+   "y": 1229,
+   "w": 203,
+   "h": 166,
+   "cx": 732,
+   "cy": 1312,
+   "n": {
+    "x": 0.2291,
+    "y": 0.8001,
+    "w": 0.0737,
+    "h": 0.1081
+   },
+   "parent": "cooler_tray",
+   "spriteHint": "salsa_bowl",
+   "interaction": "tap/drag to add to dish"
+  },
+  {
+   "id": "tortilla_warmer",
+   "type": "station",
+   "x": 989,
+   "y": 679,
+   "w": 262,
+   "h": 283,
+   "cx": 1120,
+   "cy": 820,
+   "n": {
+    "x": 0.3591,
+    "y": 0.4421,
+    "w": 0.0951,
+    "h": 0.1842
+   }
+  },
+  {
+   "id": "tortilla_corn_tortillas",
+   "type": "ingredient_source",
+   "x": 1042,
+   "y": 663,
+   "w": 177,
+   "h": 123,
+   "cx": 1130,
+   "cy": 724,
+   "n": {
+    "x": 0.3784,
+    "y": 0.4316,
+    "w": 0.0643,
+    "h": 0.0801
+   },
+   "parent": "tortilla_warmer",
+   "spriteHint": "corn_tortillas",
+   "interaction": "tap to take a tortilla (start of taco/burrito)"
+  },
+  {
+   "id": "tortilla_flour_tortillas",
+   "type": "ingredient_source",
+   "x": 1035,
+   "y": 796,
+   "w": 178,
+   "h": 123,
+   "cx": 1124,
+   "cy": 857,
+   "n": {
+    "x": 0.3758,
+    "y": 0.5182,
+    "w": 0.0646,
+    "h": 0.0801
+   },
+   "parent": "tortilla_warmer",
+   "spriteHint": "flour_tortillas",
+   "interaction": "tap to take a tortilla (start of taco/burrito)"
+  },
+  {
+   "id": "shell_plate",
+   "type": "station",
+   "x": 1256,
+   "y": 674,
+   "w": 257,
+   "h": 283,
+   "cx": 1384,
+   "cy": 815,
+   "n": {
+    "x": 0.4561,
+    "y": 0.4388,
+    "w": 0.0933,
+    "h": 0.1842
+   },
+   "note": "Sauce stand: guacamole and crema bowls on two silver plates."
+  },
+  {
+   "id": "griddle",
+   "type": "cook_station",
+   "x": 1518,
+   "y": 663,
+   "w": 519,
+   "h": 305,
+   "cx": 1777,
+   "cy": 815,
+   "n": {
+    "x": 0.5512,
+    "y": 0.4316,
+    "w": 0.1885,
+    "h": 0.1986
+   },
+   "note": "Raw-meat supply (static art). Four raw items = four proteins. Not a cooking surface."
+  },
+  {
+   "id": "stove",
+   "type": "cook_station",
+   "x": 2015,
+   "y": 641,
+   "w": 551,
+   "h": 407,
+   "cx": 2290,
+   "cy": 844,
+   "n": {
+    "x": 0.7317,
+    "y": 0.4173,
+    "w": 0.2001,
+    "h": 0.265
+   },
+   "note": "Optional second cook station (two pans), not required for the first slice."
+  },
+  {
+   "id": "shell_oven",
+   "type": "cook_station",
+   "x": 984,
+   "y": 962,
+   "w": 561,
+   "h": 529,
+   "cx": 1264,
+   "cy": 1226,
+   "n": {
+    "x": 0.3573,
+    "y": 0.6263,
+    "w": 0.2037,
+    "h": 0.3444
+   }
+  },
+  {
+   "id": "shell_oven_opening",
+   "type": "decor",
+   "x": 1042,
+   "y": 1037,
+   "w": 455,
+   "h": 315,
+   "cx": 1269,
+   "cy": 1194,
+   "n": {
+    "x": 0.3784,
+    "y": 0.6751,
+    "w": 0.1652,
+    "h": 0.2051
+   },
+   "parent": "shell_oven"
+  },
+  {
+   "id": "oven_slot_left",
+   "type": "cook_slot",
+   "x": 1095,
+   "y": 1225,
+   "w": 160,
+   "h": 115,
+   "cx": 1175,
+   "cy": 1282,
+   "n": {
+    "x": 0.3976,
+    "y": 0.7975,
+    "w": 0.0581,
+    "h": 0.0749
+   },
+   "parent": "shell_oven",
+   "bakedInArt": false,
+   "note": "Oven tray is now empty. Place the oven_taco_shell animation here (scale so the shell is about 150 px wide; anchor bottom-centre at spriteAnchor).",
+   "animation": "animations/oven_taco_shell_sheet",
+   "cleared": true,
+   "spriteAnchor": {
+    "x": 1175,
+    "y": 1335
+   }
+  },
+  {
+   "id": "oven_slot_right",
+   "type": "cook_slot",
+   "x": 1265,
+   "y": 1225,
+   "w": 170,
+   "h": 115,
+   "cx": 1350,
+   "cy": 1282,
+   "n": {
+    "x": 0.4593,
+    "y": 0.7975,
+    "w": 0.0617,
+    "h": 0.0749
+   },
+   "parent": "shell_oven",
+   "bakedInArt": false,
+   "note": "Oven tray is now empty. Place the oven_taco_shell animation here (scale so the shell is about 150 px wide; anchor bottom-centre at spriteAnchor).",
+   "animation": "animations/oven_taco_shell_sheet",
+   "cleared": true,
+   "spriteAnchor": {
+    "x": 1350,
+    "y": 1335
+   }
+  },
+  {
+   "id": "steam_table",
+   "type": "station",
+   "x": 1695,
+   "y": 1021,
+   "w": 443,
+   "h": 454,
+   "cx": 1916,
+   "cy": 1248,
+   "n": {
+    "x": 0.6155,
+    "y": 0.6647,
+    "w": 0.1609,
+    "h": 0.2956
+   }
+  },
+  {
+   "id": "steam_beans",
+   "type": "ingredient_source",
+   "x": 1737,
+   "y": 1028,
+   "w": 166,
+   "h": 73,
+   "cx": 1820,
+   "cy": 1064,
+   "n": {
+    "x": 0.6307,
+    "y": 0.6693,
+    "w": 0.0603,
+    "h": 0.0475
+   },
+   "parent": "steam_table",
+   "spriteHint": "beans_bowl",
+   "interaction": "tap/drag to add to burrito/taco"
+  },
+  {
+   "id": "steam_white_rice",
+   "type": "ingredient_source",
+   "x": 1914,
+   "y": 1028,
+   "w": 165,
+   "h": 73,
+   "cx": 1996,
+   "cy": 1064,
+   "n": {
+    "x": 0.695,
+    "y": 0.6693,
+    "w": 0.0599,
+    "h": 0.0475
+   },
+   "parent": "steam_table",
+   "spriteHint": "rice",
+   "interaction": "tap/drag to add to burrito/taco"
+  },
+  {
+   "id": "steam_mexican_rice",
+   "type": "ingredient_source",
+   "x": 1743,
+   "y": 1112,
+   "w": 165,
+   "h": 64,
+   "cx": 1825,
+   "cy": 1144,
+   "n": {
+    "x": 0.6329,
+    "y": 0.724,
+    "w": 0.0599,
+    "h": 0.0417
+   },
+   "parent": "steam_table",
+   "spriteHint": "rice",
+   "interaction": "tap/drag to add to burrito/taco"
+  },
+  {
+   "id": "steam_jalapenos",
+   "type": "ingredient_source",
+   "x": 1919,
+   "y": 1110,
+   "w": 185,
+   "h": 66,
+   "cx": 2011,
+   "cy": 1143,
+   "n": {
+    "x": 0.6968,
+    "y": 0.7227,
+    "w": 0.0672,
+    "h": 0.043
+   },
+   "parent": "steam_table",
+   "spriteHint": "jalapeno",
+   "interaction": "tap/drag to add to burrito/taco"
+  },
+  {
+   "id": "trash_bin",
+   "type": "trash",
+   "x": 1556,
+   "y": 1187,
+   "w": 122,
+   "h": 304,
+   "cx": 1617,
+   "cy": 1339,
+   "n": {
+    "x": 0.565,
+    "y": 0.7728,
+    "w": 0.0443,
+    "h": 0.1979
+   },
+   "note": "Drop burnt or wrong items here."
+  },
+  {
+   "id": "pass_counter",
+   "type": "serve_area",
+   "x": 2154,
+   "y": 1069,
+   "w": 540,
+   "h": 332,
+   "cx": 2424,
+   "cy": 1235,
+   "n": {
+    "x": 0.7821,
+    "y": 0.696,
+    "w": 0.1961,
+    "h": 0.2161
+   }
+  },
+  {
+   "id": "pass_slot_1",
+   "type": "finished_item_slot",
+   "x": 2186,
+   "y": 1120,
+   "w": 236,
+   "h": 126,
+   "cx": 2304,
+   "cy": 1183,
+   "n": {
+    "x": 0.7938,
+    "y": 0.7292,
+    "w": 0.0857,
+    "h": 0.082
+   },
+   "parent": "pass_counter",
+   "bakedInArt": false,
+   "note": "Empty orange plate is painted in the background (assembly spot). Draw the dish on top, centred on spriteAnchor.",
+   "cleared": true,
+   "spriteAnchor": {
+    "x": 2304,
+    "y": 1183
+   }
+  },
+  {
+   "id": "pass_slot_2",
+   "type": "finished_item_slot",
+   "x": 2424,
+   "y": 1115,
+   "w": 236,
+   "h": 126,
+   "cx": 2542,
+   "cy": 1178,
+   "n": {
+    "x": 0.8802,
+    "y": 0.7259,
+    "w": 0.0857,
+    "h": 0.082
+   },
+   "parent": "pass_counter",
+   "bakedInArt": false,
+   "note": "Empty orange plate is painted in the background (assembly spot). Draw the dish on top, centred on spriteAnchor.",
+   "cleared": true,
+   "spriteAnchor": {
+    "x": 2542,
+    "y": 1178
+   }
+  },
+  {
+   "id": "sauce_mustard",
+   "type": "ingredient_source",
+   "x": 1844,
+   "y": 433,
+   "w": 70,
+   "h": 168,
+   "cx": 1879,
+   "cy": 517,
+   "n": {
+    "x": 0.6696,
+    "y": 0.2819,
+    "w": 0.0254,
+    "h": 0.1094
+   },
+   "spriteHint": "mustard_bottle",
+   "interaction": "tap to add sauce"
+  },
+  {
+   "id": "sauce_ketchup",
+   "type": "ingredient_source",
+   "x": 1919,
+   "y": 444,
+   "w": 70,
+   "h": 168,
+   "cx": 1954,
+   "cy": 528,
+   "n": {
+    "x": 0.6968,
+    "y": 0.2891,
+    "w": 0.0254,
+    "h": 0.1094
+   },
+   "spriteHint": "ketchup_bottle",
+   "interaction": "tap to add sauce",
+   "note": "Sauce bottles sit in the FRONT layer (customers can stand behind them)."
+  },
+  {
+   "id": "pan_1",
+   "type": "cook_slot",
+   "parent": "stove",
+   "x": 2095,
+   "y": 816,
+   "w": 200,
+   "h": 124,
+   "cx": 2195,
+   "cy": 878,
+   "n": {
+    "x": 0.7607,
+    "y": 0.5312,
+    "w": 0.0726,
+    "h": 0.0807
+   },
+   "row": "front",
+   "panColor": "red",
+   "cookItemAnchor": {
+    "x": 2195,
+    "y": 876
+   },
+   "cookItemMaxSize": {
+    "w": 150,
+    "h": 90
+   },
+   "bakedInArt": false,
+   "note": "Empty pan is painted into the background. Draw the cooking meat on top at cookItemAnchor."
+  },
+  {
+   "id": "pan_2",
+   "type": "cook_slot",
+   "parent": "stove",
+   "x": 2343,
+   "y": 810,
+   "w": 204,
+   "h": 124,
+   "cx": 2445,
+   "cy": 872,
+   "n": {
+    "x": 0.8508,
+    "y": 0.5273,
+    "w": 0.0741,
+    "h": 0.0807
+   },
+   "row": "front",
+   "panColor": "blue",
+   "cookItemAnchor": {
+    "x": 2445,
+    "y": 870
+   },
+   "cookItemMaxSize": {
+    "w": 150,
+    "h": 90
+   },
+   "bakedInArt": false,
+   "note": "Empty pan is painted into the background. Draw the cooking meat on top at cookItemAnchor."
+  },
+  {
+   "id": "pan_3",
+   "type": "cook_slot",
+   "parent": "stove",
+   "x": 2092,
+   "y": 738,
+   "w": 168,
+   "h": 104,
+   "cx": 2176,
+   "cy": 790,
+   "n": {
+    "x": 0.7596,
+    "y": 0.4805,
+    "w": 0.061,
+    "h": 0.0677
+   },
+   "row": "back",
+   "panColor": "blue",
+   "cookItemAnchor": {
+    "x": 2176,
+    "y": 775
+   },
+   "cookItemMaxSize": {
+    "w": 120,
+    "h": 66
+   },
+   "bakedInArt": false,
+   "note": "Empty pan is painted into the background. Draw the cooking meat on top at cookItemAnchor. Back-row pan: front pans overlap its lower part, so keep the item in the visible upper band (y 738-816)."
+  },
+  {
+   "id": "pan_4",
+   "type": "cook_slot",
+   "parent": "stove",
+   "x": 2334,
+   "y": 737,
+   "w": 168,
+   "h": 104,
+   "cx": 2418,
+   "cy": 789,
+   "n": {
+    "x": 0.8475,
+    "y": 0.4798,
+    "w": 0.061,
+    "h": 0.0677
+   },
+   "row": "back",
+   "panColor": "red",
+   "cookItemAnchor": {
+    "x": 2418,
+    "y": 775
+   },
+   "cookItemMaxSize": {
+    "w": 120,
+    "h": 66
+   },
+   "bakedInArt": false,
+   "note": "Empty pan is painted into the background. Draw the cooking meat on top at cookItemAnchor. Back-row pan: front pans overlap its lower part, so keep the item in the visible upper band (y 738-816)."
+  },
+  {
+   "id": "griddle_raw_chicken",
+   "type": "ingredient_source",
+   "parent": "griddle",
+   "x": 1564,
+   "y": 667,
+   "w": 184,
+   "h": 142,
+   "cx": 1656,
+   "cy": 738,
+   "n": {
+    "x": 0.5679,
+    "y": 0.4342,
+    "w": 0.0668,
+    "h": 0.0924
+   },
+   "protein": "chicken",
+   "spriteRaw": "sprites/raw_chicken.png",
+   "spriteCooked": "sprites/cooked_chicken.png",
+   "cookAnimation": "animations/cook_chicken_sheet",
+   "staticSupplyArt": true,
+   "interaction": "tap/drag: a copy of the raw item flies to the first free pan. The painted item stays (unlimited supply)."
+  },
+  {
+   "id": "griddle_raw_shrimp",
+   "type": "ingredient_source",
+   "parent": "griddle",
+   "x": 1785,
+   "y": 676,
+   "w": 169,
+   "h": 131,
+   "cx": 1869,
+   "cy": 741,
+   "n": {
+    "x": 0.6481,
+    "y": 0.4401,
+    "w": 0.0614,
+    "h": 0.0853
+   },
+   "protein": "shrimp",
+   "spriteRaw": "sprites/raw_shrimp.png",
+   "spriteCooked": "sprites/cooked_shrimp.png",
+   "cookAnimation": "animations/cook_shrimp_sheet",
+   "staticSupplyArt": true,
+   "interaction": "tap/drag: a copy of the raw item flies to the first free pan. The painted item stays (unlimited supply)."
+  },
+  {
+   "id": "griddle_raw_fish",
+   "type": "ingredient_source",
+   "parent": "griddle",
+   "x": 1560,
+   "y": 794,
+   "w": 190,
+   "h": 143,
+   "cx": 1655,
+   "cy": 865,
+   "n": {
+    "x": 0.5664,
+    "y": 0.5169,
+    "w": 0.069,
+    "h": 0.0931
+   },
+   "protein": "fish",
+   "spriteRaw": "sprites/raw_fish.png",
+   "spriteCooked": "sprites/cooked_fish.png",
+   "cookAnimation": "animations/cook_fish_sheet",
+   "staticSupplyArt": true,
+   "interaction": "tap/drag: a copy of the raw item flies to the first free pan. The painted item stays (unlimited supply)."
+  },
+  {
+   "id": "griddle_raw_veggies",
+   "type": "ingredient_source",
+   "parent": "griddle",
+   "x": 1790,
+   "y": 802,
+   "w": 184,
+   "h": 132,
+   "cx": 1882,
+   "cy": 868,
+   "n": {
+    "x": 0.65,
+    "y": 0.5221,
+    "w": 0.0668,
+    "h": 0.0859
+   },
+   "protein": "veggies",
+   "spriteRaw": "sprites/raw_veggies.png",
+   "spriteCooked": "sprites/cooked_veggies.png",
+   "cookAnimation": "animations/cook_veggies_sheet",
+   "staticSupplyArt": true,
+   "interaction": "tap/drag: a copy of the raw item flies to the first free pan. The painted item stays (unlimited supply)."
+  },
+  {
+   "id": "topping_guacamole",
+   "type": "ingredient_source",
+   "parent": "shell_plate",
+   "x": 1296,
+   "y": 656,
+   "w": 177,
+   "h": 152,
+   "cx": 1384,
+   "cy": 732,
+   "n": {
+    "x": 0.4706,
+    "y": 0.4271,
+    "w": 0.0643,
+    "h": 0.099
+   },
+   "spriteHint": "guacamole_bowl",
+   "interaction": "tap/drag to add guacamole"
+  },
+  {
+   "id": "topping_crema",
+   "type": "ingredient_source",
+   "parent": "shell_plate",
+   "x": 1296,
+   "y": 796,
+   "w": 177,
+   "h": 152,
+   "cx": 1384,
+   "cy": 872,
+   "n": {
+    "x": 0.4706,
+    "y": 0.5182,
+    "w": 0.0643,
+    "h": 0.099
+   },
+   "spriteHint": "crema_bowl",
+   "interaction": "tap/drag to add crema (creamy sauce)"
+  },
+  {
+   "id": "cooler_limes",
+   "type": "ingredient_source",
+   "parent": "cooler_tray",
+   "x": 442,
+   "y": 1251,
+   "w": 188,
+   "h": 142,
+   "cx": 536,
+   "cy": 1322,
+   "n": {
+    "x": 0.1605,
+    "y": 0.8145,
+    "w": 0.0683,
+    "h": 0.0924
+   },
+   "spriteHint": "lime_pile",
+   "interaction": "tap/drag to add a lime wedge"
+  }
+ ],
+ "cookingFlow": {
+  "summary": "The griddle is a raw-meat supply (unlimited). Tap a raw item -> it moves to the first free pan -> cooks (raw, sizzling, browning, cooked, burnt) -> tap the cooked item to collect it -> add to the dish.",
+  "rawSources": [
+   "chicken",
+   "shrimp",
+   "fish",
+   "veggies"
+  ],
+  "pans": [
+   "pan_1",
+   "pan_2",
+   "pan_3",
+   "pan_4"
+  ],
+  "cookStages": [
+   "raw",
+   "sizzling",
+   "browning",
+   "cooked_ready",
+   "burnt",
+   "gone"
+  ],
+  "animation": "animations/cook_<protein>_sheet (chicken, shrimp, fish, veggies; 7 frames each)",
+  "burntHandling": "Tap burnt item -> trash_bin (-score or customer penalty, your choice).",
+  "depthOrder": "pan_3/pan_4 (back row) are painted beneath pan_1/pan_2; cooking items in back pans must not overlap the front pans' rims.",
+  "note": "No pork or beef on this menu."
+ },
+ "version": 8,
+ "ovenFlow": {
+  "summary": "Tap a tortilla (corn or flour) -> it goes into a free oven slot -> animations/oven_taco_shell_sheet plays slowly -> frame 4 = crispy shell ready, tap to move it to a pass-counter plate; frame 5 = burnt (trash). Soft tacos skip the oven.",
+  "slots": [
+   "oven_slot_left",
+   "oven_slot_right"
+  ],
+  "frames": [
+   "raw_tortilla",
+   "folded_pale",
+   "warm",
+   "golden_crispy_ready",
+   "burnt_smoking"
+  ]
+ },
+ "suggestedMenu": [
+  {
+   "id": "chicken_soft_taco",
+   "tier": "early (no oven)",
+   "finishedSprite": "sprites/taco_soft_chicken.png",
+   "buildSheet": "animations/taco_soft_chicken_build_sheet",
+   "steps": [
+    "tortilla_flour_tortillas",
+    "protein:chicken",
+    "topping_lettuce",
+    "topping_tomato_slices",
+    "cooler_cheese"
+   ],
+   "stageRule": "after completing step k show build-sheet frame k-1",
+   "note": "Soft flour tortilla taco: skips the oven, so it is the simplest dish for the first levels."
+  },
+  {
+   "id": "shrimp_soft_taco",
+   "tier": "early (no oven)",
+   "finishedSprite": "sprites/taco_soft_shrimp.png",
+   "buildSheet": "animations/taco_soft_shrimp_build_sheet",
+   "steps": [
+    "tortilla_flour_tortillas",
+    "protein:shrimp",
+    "topping_shredded_bowl",
+    "topping_crema"
+   ],
+   "stageRule": "after completing step k show build-sheet frame k-1",
+   "note": "Soft flour tortilla taco: skips the oven, so it is the simplest dish for the first levels."
+  },
+  {
+   "id": "fish_soft_taco",
+   "tier": "early (no oven)",
+   "finishedSprite": "sprites/taco_soft_fish.png",
+   "buildSheet": "animations/taco_soft_fish_build_sheet",
+   "steps": [
+    "tortilla_flour_tortillas",
+    "protein:fish",
+    "topping_shredded_bowl",
+    "cooler_limes"
+   ],
+   "stageRule": "after completing step k show build-sheet frame k-1",
+   "note": "Soft flour tortilla taco: skips the oven, so it is the simplest dish for the first levels."
+  },
+  {
+   "id": "veggies_soft_taco",
+   "tier": "early (no oven)",
+   "finishedSprite": "sprites/taco_soft_veggies.png",
+   "buildSheet": "animations/taco_soft_veggies_build_sheet",
+   "steps": [
+    "tortilla_flour_tortillas",
+    "protein:veggies",
+    "topping_guacamole",
+    "topping_salsa_red_bowl"
+   ],
+   "stageRule": "after completing step k show build-sheet frame k-1",
+   "note": "Soft flour tortilla taco: skips the oven, so it is the simplest dish for the first levels."
+  },
+  {
+   "id": "chicken_taco",
+   "finishedSprite": "sprites/taco_chicken.png",
+   "steps": [
+    "crispy_shell",
+    "protein:chicken",
+    "topping_lettuce",
+    "topping_tomato_slices",
+    "cooler_cheese"
+   ]
+  },
+  {
+   "id": "shrimp_taco",
+   "finishedSprite": "sprites/taco_shrimp.png",
+   "steps": [
+    "crispy_shell",
+    "protein:shrimp",
+    "topping_shredded_bowl",
+    "topping_crema"
+   ]
+  },
+  {
+   "id": "fish_taco",
+   "finishedSprite": "sprites/taco_fish.png",
+   "steps": [
+    "crispy_shell",
+    "protein:fish",
+    "topping_shredded_bowl",
+    "cooler_limes"
+   ]
+  },
+  {
+   "id": "veggie_taco",
+   "finishedSprite": "sprites/taco_veggie.png",
+   "steps": [
+    "crispy_shell",
+    "protein:veggies",
+    "topping_guacamole",
+    "topping_salsa_red_bowl"
+   ]
+  },
+  {
+   "id": "chicken_burrito",
+   "finishedSprite": "sprites/burrito_chicken.png",
+   "animation": "animations/burrito_chicken_sheet",
+   "steps": [
+    "tortilla_flour_tortillas",
+    "steam_white_rice",
+    "steam_beans",
+    "cooler_cheese",
+    "protein:chicken",
+    "action:wrap",
+    "pan:press",
+    "action:cut"
+   ],
+   "note": "Frames: tortilla, fillings, sides_folded, end_folded, rolled, grilled_steaming (pan press), cut_in_half. Wrap = one tap, press in a free pan, cut = one tap."
+  },
+  {
+   "id": "shrimp_burrito",
+   "finishedSprite": "sprites/burrito_shrimp.png",
+   "animation": "animations/burrito_shrimp_sheet",
+   "steps": [
+    "tortilla_flour_tortillas",
+    "steam_white_rice",
+    "steam_beans",
+    "cooler_cheese",
+    "protein:shrimp",
+    "action:wrap",
+    "pan:press",
+    "action:cut"
+   ],
+   "note": "Frames: tortilla, fillings, sides_folded, end_folded, rolled, grilled_steaming (pan press), cut_in_half. Wrap = one tap, press in a free pan, cut = one tap."
+  },
+  {
+   "id": "fish_burrito",
+   "finishedSprite": "sprites/burrito_fish.png",
+   "animation": "animations/burrito_fish_sheet",
+   "steps": [
+    "tortilla_flour_tortillas",
+    "steam_white_rice",
+    "steam_beans",
+    "cooler_cheese",
+    "protein:fish",
+    "action:wrap",
+    "pan:press",
+    "action:cut"
+   ],
+   "note": "Frames: tortilla, fillings, sides_folded, end_folded, rolled, grilled_steaming (pan press), cut_in_half. Wrap = one tap, press in a free pan, cut = one tap."
+  },
+  {
+   "id": "veggies_burrito",
+   "finishedSprite": "sprites/burrito_veggies.png",
+   "animation": "animations/burrito_veggies_sheet",
+   "steps": [
+    "tortilla_flour_tortillas",
+    "steam_white_rice",
+    "steam_beans",
+    "cooler_cheese",
+    "protein:veggies",
+    "action:wrap",
+    "pan:press",
+    "action:cut"
+   ],
+   "note": "Frames: tortilla, fillings, sides_folded, end_folded, rolled, grilled_steaming (pan press), cut_in_half. Wrap = one tap, press in a free pan, cut = one tap."
+  },
+  {
+   "id": "chicken_nachos",
+   "finishedSprite": "sprites/nachos_chicken.png",
+   "animation": "animations/nachos_chicken_sheet",
+   "steps": [
+    "tortilla_corn_tortillas (treated as chips)",
+    "cooler_cheese",
+    "oven:melt",
+    "protein:chicken",
+    "steam_jalapenos",
+    "topping_salsa_red_bowl",
+    "topping_crema",
+    "topping_guacamole"
+   ],
+   "note": "Frames: chips, cheese_raw, cheese_melted (oven step, shares the two oven slots with taco shells), protein_and_toppings, finished. The kitchen has no chip bowl, so the corn tortilla stack stands in for chips."
+  },
+  {
+   "id": "shrimp_nachos",
+   "finishedSprite": "sprites/nachos_shrimp.png",
+   "animation": "animations/nachos_shrimp_sheet",
+   "steps": [
+    "tortilla_corn_tortillas (treated as chips)",
+    "cooler_cheese",
+    "oven:melt",
+    "protein:shrimp",
+    "steam_jalapenos",
+    "topping_salsa_red_bowl",
+    "topping_crema",
+    "topping_guacamole"
+   ],
+   "note": "Frames: chips, cheese_raw, cheese_melted (oven step, shares the two oven slots with taco shells), protein_and_toppings, finished. The kitchen has no chip bowl, so the corn tortilla stack stands in for chips."
+  },
+  {
+   "id": "fish_nachos",
+   "finishedSprite": "sprites/nachos_fish.png",
+   "animation": "animations/nachos_fish_sheet",
+   "steps": [
+    "tortilla_corn_tortillas (treated as chips)",
+    "cooler_cheese",
+    "oven:melt",
+    "protein:fish",
+    "steam_jalapenos",
+    "topping_salsa_red_bowl",
+    "topping_crema",
+    "topping_guacamole"
+   ],
+   "note": "Frames: chips, cheese_raw, cheese_melted (oven step, shares the two oven slots with taco shells), protein_and_toppings, finished. The kitchen has no chip bowl, so the corn tortilla stack stands in for chips."
+  },
+  {
+   "id": "veggies_nachos",
+   "finishedSprite": "sprites/nachos_veggies.png",
+   "animation": "animations/nachos_veggies_sheet",
+   "steps": [
+    "tortilla_corn_tortillas (treated as chips)",
+    "cooler_cheese",
+    "oven:melt",
+    "protein:veggies",
+    "steam_jalapenos",
+    "topping_salsa_red_bowl",
+    "topping_crema",
+    "topping_guacamole"
+   ],
+   "note": "Frames: chips, cheese_raw, cheese_melted (oven step, shares the two oven slots with taco shells), protein_and_toppings, finished. The kitchen has no chip bowl, so the corn tortilla stack stands in for chips."
+  }
+ ],
+ "clearedBakedArt": [
+  "oven tacos and holders",
+  "pass-counter tacos (plates kept, now empty)",
+  "drink cups in both dispensers",
+  "shell/tortilla plates replaced by guacamole and crema bowls",
+  "nuggets replaced by limes"
+ ],
+ "remainingBakedArt": [],
+ "allIngredientSourcesPresent": true,
+ "drinks": {
+  "sprites": "animations/drink_cups_sheet",
+  "rows": [
+   "horchata",
+   "agua_de_jamaica"
+  ],
+  "levels": [
+   "empty",
+   "25%",
+   "50%",
+   "75%",
+   "full"
+  ],
+  "dispensers": {
+   "drink_dispenser_agua": "horchata (striped dispenser)",
+   "drink_dispenser_taco": "agua_de_jamaica (orange taco dispenser)"
+  },
+  "flow": "Place an empty cup under the spout, hold the tap on the dispenser to fill (5 levels), release at full, drag the cup onto the customer."
+ },
+ "icons": "icons/icons.json (step ids -> 128x128 icons; also icons_atlas)"
+}
