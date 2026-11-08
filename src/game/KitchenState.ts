@@ -1,6 +1,7 @@
 import { advanceCook, burnWindowFor, cookPhase, isEdible, type CookPhase } from './cook';
 import { defaultConfig, levelDef, xpForLevel, type EventDef, type FriedKind, type GameConfig, type ItemKind } from './config';
 import { makeRng, randInt, randRange, type Rng } from './rng';
+import { dailySpecialFor, defaultExtras, tiersEarned, type Extras } from './extras';
 
 /**
  * All gameplay state lives here. It has no Phaser code and no animation code:
@@ -61,6 +62,8 @@ export interface Customer {
   type: string;
   mood: 'waiting' | 'happy' | 'angry';
   leaveIn: number; // seconds until removal once happy or angry
+  /** True for today's Daily Special customer. */
+  special?: boolean;
 }
 
 export type GameEvent =
@@ -90,6 +93,8 @@ export type GameEvent =
   | { type: 'eventEnd'; id: string }
   | { type: 'streakBonus'; xp: number }
   | { type: 'orderDone'; customer: number; coins: number; tip: number; xp: number; fast: boolean; rush: boolean; combo: number; mult: number }
+  | { type: 'masteryUp'; item: ItemKind; tier: string; coins: number }
+  | { type: 'specialDone'; customer: number; bonus: number }
   | { type: 'angryLeave'; customer: number }
   | { type: 'leave'; customer: number }
   | { type: 'levelUp'; level: number; coins: number; unlocks: string[] }
@@ -162,6 +167,16 @@ export class KitchenState {
   nextEventIn: number;
   mods: Mods = { fryerSpeed: 1, grillSpeed: 1, ovenSpeed: 1, patience: 1, tips: 1, burnWindow: 1, calm: 1 };
 
+  /** Optional extras (Mastery badges, Daily Special). Off until `enableExtras` is called, so plain games and tests are unchanged. */
+  extrasOn = false;
+  /** Fast serves per item, for Mastery badges. Saved by the scene. */
+  mastery: Partial<Record<ItemKind, number>> = {};
+  /** Today's special order and whether it is already done. */
+  special: { items: ItemKind[]; done: boolean } | null = null;
+  private extras: Extras = defaultExtras;
+  private servedToday = 0;
+  private specialQueued = false;
+
   private nextId = 1;
   nextArrival = 1; // first customer arrives at about second 1
   private rng: Rng;
@@ -185,6 +200,16 @@ export class KitchenState {
       ...Array.from({ length: s.sideSlots }, (_, i): Slot => ({ index: s.plateSlots + i, row: 'side', item: null })),
       ...Array.from({ length: s.pizzaSlots }, (_, i): Slot => ({ index: s.plateSlots + s.sideSlots + i, row: 'pizza', item: null })),
     ];
+  }
+
+  /** Turn on the optional extras. `mastery` is the saved fast-serve count per item; `specialDone` says today's special was already served. */
+  enableExtras(mastery: Partial<Record<ItemKind, number>>, dateKey: string, specialDone: boolean, extras: Extras = defaultExtras): void {
+    this.extrasOn = true;
+    this.extras = extras;
+    this.mastery = { ...mastery };
+    const ds = extras.dailySpecial;
+    this.special = this.level >= ds.fromLevel ? { items: dailySpecialFor(dateKey, this.levelInfo.items, ds.size), done: specialDone } : null;
+    if (this.special && this.special.items.length === 0) this.special = null;
   }
 
   get xpNeeded(): number {
@@ -333,6 +358,7 @@ export class KitchenState {
           c.mood = 'angry';
           c.leaveIn = LEAVE_DELAY;
           this.emit({ type: 'angryLeave', customer: c.id });
+          if (c.special) this.specialQueued = true; // missed it: the special comes back with the next customer
           this.streak = 0;
           this.breakCombo();
           this.addReputation(-this.cfg.xp.reputation.angryLeave * this.cfg.customers.types[c.type].repMult);
@@ -390,6 +416,13 @@ export class KitchenState {
       const wantBurger = this.level >= 2 && this.burgersServed === 0 && i === 0;
       items.push(wantBurger ? 'burger' : info.items[randInt(this.rng, 0, info.items.length - 1)]);
     }
+    // Daily Special: swap in today's order once it is due. This happens after every random draw above, so the random sequence is unchanged.
+    const special = this.extrasOn && this.specialQueued && this.special !== null && !this.special.done;
+    if (special) {
+      items.length = 0;
+      items.push(...this.special!.items);
+      this.specialQueued = false;
+    }
     const price = Math.round(items.reduce((sum, k) => sum + this.cfg.recipes.items[k].price, 0) * type.payMult);
     const closes = Math.min(this.closesAtLevel.get(this.level) ?? 0, 3);
     const patienceMax = info.patience * type.patienceMult * this.mods.patience * (1 + 0.1 * closes);
@@ -406,6 +439,7 @@ export class KitchenState {
       type: typeKey,
       mood: 'waiting',
       leaveIn: 0,
+      ...(special ? { special: true } : {}),
     };
     this.customers.push(c);
     this.emit({ type: 'arrive', customer: c.id });
@@ -675,12 +709,40 @@ export class KitchenState {
     this.addReputation(this.cfg.xp.reputation.serveGain + (this.combo >= cc.comboReputationFrom ? cc.comboReputationGain : 0));
     this.emit({ type: 'orderDone', customer: c.id, coins, tip, xp, fast, rush, combo: this.combo, mult });
     this.addXp(xp);
+    this.awardExtras(c, fast, coins);
     this.streak++;
     if (this.streak >= cc.streak.servesNeeded) {
       this.streak = 0;
       this.emit({ type: 'streakBonus', xp: cc.streak.bonusXp });
       this.addXp(cc.streak.bonusXp);
     }
+  }
+
+  /** Mastery badges and the Daily Special. Does nothing unless extras are on. */
+  private awardExtras(c: Customer, fast: boolean, coins: number): void {
+    if (!this.extrasOn) return;
+    const m = this.extras.mastery;
+    if (fast && this.level >= m.fromLevel) {
+      for (const kind of c.items) {
+        const before = this.mastery[kind] ?? 0;
+        const after = before + 1;
+        this.mastery[kind] = after;
+        const gained = tiersEarned(this.extras, after) - tiersEarned(this.extras, before);
+        if (gained > 0) {
+          const tier = m.tiers[tiersEarned(this.extras, after) - 1];
+          this.coins += tier.coins;
+          this.emit({ type: 'masteryUp', item: kind, tier: tier.name, coins: tier.coins });
+        }
+      }
+    }
+    const sp = this.special;
+    if (!sp || sp.done) return;
+    if (c.special) {
+      const bonus = Math.round(coins * this.extras.dailySpecial.bonus);
+      sp.done = true;
+      this.coins += bonus;
+      this.emit({ type: 'specialDone', customer: c.id, bonus });
+    } else if (++this.servedToday >= this.extras.dailySpecial.afterServes) this.specialQueued = true;
   }
 
   private breakCombo(): void {

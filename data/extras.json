@@ -1,0 +1,16 @@
+{
+  "mastery": {
+    "fromLevel": 16,
+    "tiers": [
+      { "id": "bronze", "name": "Bronze", "serves": 10, "coins": 40 },
+      { "id": "silver", "name": "Silver", "serves": 40, "coins": 120 },
+      { "id": "gold", "name": "Gold", "serves": 100, "coins": 300 }
+    ]
+  },
+  "dailySpecial": {
+    "fromLevel": 15,
+    "bonus": 0.5,
+    "afterServes": 3,
+    "size": 3
+  }
+}

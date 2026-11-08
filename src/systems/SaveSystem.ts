@@ -14,6 +14,10 @@ export interface SaveData {
   seenStory: string[];
   /** Last restaurant played (see data/restaurants.json). */
   lastRestaurant: string;
+  /** Mastery badges: item id -> number of fast serves (see src/game/extras.ts). Missing in older saves. */
+  mastery: Record<string, number>;
+  /** Day (YYYY-MM-DD, player's own clock) the Daily Special was last served, or '' for never. */
+  specialDay: string;
   settings: { reduceMotion: boolean | null; musicVolume: number; sfxVolume: number; muted: boolean };
 }
 
@@ -29,6 +33,8 @@ export function defaultSave(): SaveData {
     decor: [],
     seenStory: [],
     lastRestaurant: 'burger_diner',
+    mastery: {},
+    specialDay: '',
     settings: { reduceMotion: null, musicVolume: 0.6, sfxVolume: 0.8, muted: false },
   };
 }
@@ -78,6 +84,19 @@ function cleanOwned(v: unknown): Record<string, number> {
   return out;
 }
 
+/** Keep only id -> whole-number count (1 to 100000) pairs. */
+function cleanCounts(v: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+  for (const [k, t] of Object.entries(v as Record<string, unknown>)) {
+    if (k.length === 0 || k.length > 64 || typeof t !== 'number' || !Number.isFinite(t)) continue;
+    const n = Math.floor(t);
+    if (n >= 1) out[k] = Math.min(n, 100000);
+    if (Object.keys(out).length >= MAX_LIST) break;
+  }
+  return out;
+}
+
 /** Merge unknown input over defaults so old or corrupt saves never crash the game. */
 export function parseSave(raw: string | null): SaveData {
   const base = defaultSave();
@@ -97,6 +116,8 @@ export function parseSave(raw: string | null): SaveData {
         typeof p.lastRestaurant === 'string' && p.lastRestaurant.length > 0 && p.lastRestaurant.length <= 64
           ? p.lastRestaurant
           : base.lastRestaurant,
+      mastery: cleanCounts(p.mastery),
+      specialDay: typeof p.specialDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.specialDay) ? p.specialDay : '',
       settings: {
         reduceMotion: typeof p.settings?.reduceMotion === 'boolean' ? p.settings.reduceMotion : null,
         musicVolume: Math.min(1, num(p.settings?.musicVolume, base.settings.musicVolume)),
