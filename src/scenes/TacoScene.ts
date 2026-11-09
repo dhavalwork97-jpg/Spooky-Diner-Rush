@@ -11,6 +11,8 @@ import type { RestaurantSelectData } from './RestaurantSelectScene';
 import type { BookRow, RecipeBookData } from './RecipeBookScene';
 import { SaveSystem } from '../systems/SaveSystem';
 import { CrazyGames } from '../sdk/crazygames';
+import { ads } from '../ads';
+import { reopenWithAd } from '../game/reopenWithAd';
 import { loadTacoArt, sheetKey, spriteKey, TacoViews } from '../views/TacoViews';
 import { TacoCustomers } from '../views/TacoCustomers';
 import { Hud } from '../views/Hud';
@@ -283,7 +285,7 @@ export class TacoScene extends Phaser.Scene {
           'Too many unhappy customers.\nYour level, XP and coins are safe.',
           'Reopen',
           () => this.breakAd(() => this.state.reopen()),
-          CrazyGames.canShowRewarded() ? { label: 'Watch an ad: reopen at full reputation', onPress: () => this.reviveWithAd() } : undefined,
+          ads.canShowRewarded() ? { label: 'Watch an ad: reopen at full reputation', onPress: () => this.reviveWithAd() } : undefined,
         );
         break;
       case 'reopened':
@@ -299,11 +301,11 @@ export class TacoScene extends Phaser.Scene {
 
   // ---------------------------------------------------------------- ads (same flow as the diner's Closed screen)
 
-  /** The interstitial that comes before a normal Reopen. CrazyGames decides if one is shown (its own cooldown applies); `then` always runs. */
+  /** The interstitial that comes before a normal Reopen. The ad network of this build decides if one is shown (its own spacing applies); `then` always runs. */
   private breakAd(then?: () => void): void {
     if (this.adActive || this.adPending) return;
     this.adPending = true;
-    void CrazyGames.midgameAd(() => this.adStarted()).then((shown) => {
+    void ads.midgameAd(() => this.adStarted()).then((shown) => {
       this.adPending = false;
       if (shown) this.adEnded();
       then?.();
@@ -314,11 +316,13 @@ export class TacoScene extends Phaser.Scene {
   private reviveWithAd(): void {
     if (this.adActive || this.adPending || !this.state.closed) return;
     this.adPending = true;
-    void CrazyGames.rewardedAd(() => this.adStarted()).then((finished) => {
-      this.adPending = false;
-      if (this.adActive) this.adEnded();
-      if (finished) this.state.reopen(true);
-      else this.overlay.setSub('No ad available right now.\nYou can still reopen.');
+    void reopenWithAd(this.state, ads, {
+      onStart: () => this.adStarted(),
+      onAdOver: () => {
+        this.adPending = false;
+        if (this.adActive) this.adEnded();
+      },
+      onNoReward: () => this.overlay.setSub('No ad available right now.\nYou can still reopen.'),
     });
   }
 
