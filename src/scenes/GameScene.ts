@@ -17,6 +17,8 @@ import { decorKey } from '../art/builders';
 import { makeRng } from '../game/rng';
 import { ChefBubble } from '../views/ChefBubble';
 import { MenuButtons, type MenuKind } from '../views/MenuButtons';
+import { MuteButton } from '../views/MuteButton';
+import { arcTo, flyCoins } from '../anim/fly';
 import { audio } from '../systems/AudioSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { ads } from '../ads';
@@ -81,8 +83,6 @@ export class GameScene extends Phaser.Scene {
   private chefTalk!: ChefTalk;
   /** Model clock when the chef last spoke, for the idle tip. */
   private chefLastAt = 0;
-  private muteBtn!: Phaser.GameObjects.Container;
-  private muteLine!: Phaser.GameObjects.Graphics;
 
   private items = new Map<number, ItemView>();
   /** A grab area over each finished cup or cone, keyed `dispenser0`, `icecream1`... */
@@ -151,7 +151,7 @@ export class GameScene extends Phaser.Scene {
     this.storyCard = new StoryCard(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.chef = new ChefBubble(this, this.layout);
     this.chefTalk = new ChefTalk(this.state.cfg.chef, makeRng(Date.now()));
-    this.buildMuteButton();
+    new MuteButton(this);
     this.menuButtons = new MenuButtons(this, (k: MenuKind) => (k === 'shop' ? this.openShop() : k === 'book' ? this.openRecipeBook() : this.openRestaurants()));
 
     this.label = this.add
@@ -485,27 +485,7 @@ export class GameScene extends Phaser.Scene {
   // ---------------------------------------------------------------- events
 
   private arc(obj: Phaser.GameObjects.Components.Transform, to: { x: number; y: number }, ms: number, height: number, done?: () => void): void {
-    if (SaveSystem.reduceMotion()) {
-      obj.setPosition(to.x, to.y);
-      done?.();
-      return;
-    }
-    const x0 = obj.x;
-    const y0 = obj.y;
-    this.tweens.addCounter({
-      from: 0,
-      to: 1,
-      duration: ms,
-      ease: 'Sine.InOut',
-      onUpdate: (t) => {
-        const p = t.getValue() ?? 0;
-        obj.setPosition(x0 + (to.x - x0) * p, y0 + (to.y - y0) * p - Math.sin(p * Math.PI) * height);
-      },
-      onComplete: () => {
-        obj.setPosition(to.x, to.y);
-        done?.();
-      },
-    });
+    arcTo(this, obj, to, ms, height, done);
   }
 
   private slotPos(i: number): { x: number; y: number } {
@@ -882,38 +862,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private flyCoins(from: { x: number; y: number }, count: number): void {
-    const target = { x: this.hud.coinIcon.x, y: this.hud.coinIcon.y };
-    for (let i = 0; i < count; i++) {
-      this.time.delayedCall(SaveSystem.reduceMotion() ? 0 : i * 70, () => {
-        const coin = this.add.image(from.x, from.y, 'coin').setDepth(1000);
-        coin.setScale(30 / coin.width);
-        this.arc(coin, target, 480, 70, () => {
-          coin.destroy();
-          if (i === count - 1) pop(this, this.hud.coinIcon, 'coinicon', 1.25, 180);
-        });
-      });
-    }
-  }
-
-  // ---------------------------------------------------------------- mute button
-
-  private buildMuteButton(): void {
-    const g = this.add.graphics();
-    g.fillStyle(0x000000, 0.2).fillCircle(0, 4, 24);
-    g.fillStyle(0xfff4dc, 1).fillCircle(0, 0, 24);
-    g.lineStyle(4, 0x2b1b17, 1).strokeCircle(0, 0, 24);
-    const note = this.add.text(0, -1, '♪', { fontFamily: FONT, fontSize: '30px', color: '#2B1B17' }).setOrigin(0.5);
-    this.muteLine = this.add.graphics();
-    this.muteLine.lineStyle(5, 0xd9382b, 1).beginPath().moveTo(-16, 16).lineTo(16, -16).strokePath();
-    this.muteLine.setVisible(SaveSystem.data.settings.muted);
-    // 88 px hit area around a smaller visual
-    this.muteBtn = this.add.container(1232, 112, [g, note, this.muteLine]).setDepth(850).setSize(88, 88).setInteractive({ useHandCursor: true });
-    this.muteBtn.on('pointerdown', () => {
-      audio.unlock();
-      audio.setMuted(!SaveSystem.data.settings.muted);
-      this.muteLine.setVisible(SaveSystem.data.settings.muted);
-      audio.play('click');
-    });
+    flyCoins(this, this.hud.coinIcon, from, count);
   }
 
   // ---------------------------------------------------------------- loop
