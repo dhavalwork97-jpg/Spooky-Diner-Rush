@@ -3,6 +3,8 @@ import type { BackgroundPlacement } from '../kitchen/zones';
 import type { CookPhase } from '../game/cook';
 import type { TacoItem, TacoKitchenState } from '../game/taco/TacoKitchenState';
 import type { TacoConfig, TacoZone } from '../game/taco/tacoConfig';
+import { SaveSystem } from '../systems/SaveSystem';
+import { arcTo } from '../anim/fly';
 
 /** Sheet metadata (frame size, columns) read from the .anim.json files shipped with the art. */
 interface SheetMeta {
@@ -30,6 +32,11 @@ export function loadTacoArt(scene: Phaser.Scene, cfg: TacoConfig): void {
     scene.load.spritesheet(sheetKey(m.key), `${ANIM_DIR}/${m.image}`, { frameWidth: m.frameWidth, frameHeight: m.frameHeight });
   }
   const sprites = new Set(cfg.dishes.map((d) => d.sprite));
+  // Raw and cooked proteins are the food that flies between the griddle, the pans and the plates.
+  for (const p of Object.keys(cfg.proteins)) {
+    sprites.add(`raw_${p}`);
+    sprites.add(`cooked_${p}`);
+  }
   for (const s of sprites) scene.load.image(spriteKey(s), `${SPRITE_DIR}/${s}.webp`);
 }
 
@@ -136,9 +143,93 @@ export class TacoViews {
   }
 
   destroy(): void {
+    for (const list of [this.pans, this.panBase, this.ovens, this.plates]) list.forEach((x) => x && this.scene.tweens.killTweensOf(x.img));
     for (const list of [this.pans, this.panBase, this.ovens, this.plates]) list.forEach((x) => x?.img.destroy());
     this.cups.forEach((c) => c.img.destroy());
     this.cups.clear();
+    this.dying.forEach((d) => d.destroy());
+    this.dying.clear();
+  }
+
+  /** Images fading out. Kept so a scene change can destroy them at once and nothing keeps animating. */
+  private dying = new Set<Phaser.GameObjects.Image>();
+
+  /** New food or a new step pops in (a small grow with a soft overshoot) instead of appearing. */
+  private appear(img: Phaser.GameObjects.Image, finalScale: number): void {
+    if (SaveSystem.reduceMotion()) return;
+    img.setScale(finalScale * 0.72).setAlpha(0);
+    this.scene.tweens.add({ targets: img, scale: finalScale, alpha: 1, duration: 170, ease: 'Back.Out' });
+  }
+
+  /** Remove an image with a short fade (no fade in reduced motion). */
+  private release(img: Phaser.GameObjects.Image, ms = 120): void {
+    this.scene.tweens.killTweensOf(img);
+    if (SaveSystem.reduceMotion()) {
+      img.destroy();
+      return;
+    }
+    this.dying.add(img);
+    this.scene.tweens.add({
+      targets: img,
+      alpha: 0,
+      duration: ms,
+      onComplete: () => {
+        this.dying.delete(img);
+        img.destroy();
+      },
+    });
+  }
+
+  /** Centre and size of a tap zone in logical pixels, for pointers, rings and flights. */
+  spot(zone: TacoZone): { x: number; y: number; w: number; h: number } {
+    const w = zone.width * this.bg.width;
+    const h = zone.height * this.bg.height;
+    return { x: this.bg.x + zone.x * this.bg.width + w / 2, y: this.bg.y + zone.y * this.bg.height + h / 2, w, h };
+  }
+
+  /** Where the plate's food sits, so flights land on it. */
+  plateSpot(plate: number): { x: number; y: number } | null {
+    const z = this.zones('plate').find((q) => q.index === plate);
+    return z ? this.spot(z) : null;
+  }
+
+  /** Dim a plate's dish while the player carries it to a customer. */
+  setCarried(plate: number, carried: boolean): void {
+    const img = this.plates[plate]?.img;
+    if (img) img.setAlpha(carried ? 0.35 : 1);
+  }
+
+  /** Tap feedback: the tapped food or appliance pops, and a soft ring spreads from the tap and fades. */
+  tapFeedback(zone: TacoZone): void {
+    if (SaveSystem.reduceMotion()) return;
+    const sp = this.spot(zone);
+    const list = zone.action === 'plate' ? this.plates : zone.action === 'pan' ? this.pans : zone.action === 'oven' ? this.ovens : null;
+    const slot = list?.[zone.index ?? 0];
+    if (slot) this.scene.tweens.add({ targets: slot.img, scaleX: slot.img.scaleX * 1.08, scaleY: slot.img.scaleY * 1.08, duration: 70, yoyo: true, ease: 'Sine.Out' });
+    const r = Math.max(18, Math.min(sp.w, sp.h) * 0.42);
+    const ring = this.scene.add.circle(sp.x, sp.y, r, 0xfff4dc, 0.12).setStrokeStyle(4, 0xfff4dc, 0.85).setDepth(45);
+    this.scene.tweens.add({ targets: ring, scale: 1.7, alpha: 0, duration: 260, ease: 'Quad.Out', onComplete: () => ring.destroy() });
+  }
+
+  /** A piece of food flies from one spot to another and is gone: raw food to its pan, cooked food to the plate. */
+  fly(texture: string, frame: number | undefined, from: { x: number; y: number }, to: { x: number; y: number }, size: number, ms = 300, height = 46, done?: () => void): void {
+    if (SaveSystem.reduceMotion() || !this.scene.textures.exists(texture)) {
+      done?.();
+      return;
+    }
+    const img = this.scene.add.image(from.x, from.y, texture, frame).setDepth(48);
+    img.setScale(size / Math.max(img.width, img.height));
+    this.dying.add(img);
+    arcTo(this.scene, img, to, ms, height, () => {
+      this.dying.delete(img);
+      img.destroy();
+      done?.();
+    });
+  }
+
+  /** The zone for an action (and optional arg or index), for flights that start or end at a station. */
+  find(action: TacoZone['action'], match: { arg?: string; index?: number }): TacoZone | undefined {
+    return this.s.taco.zones.find((z) => z.action === action && (match.arg === undefined || z.arg === match.arg) && (match.index === undefined || z.index === match.index));
   }
 
   /** Cups: a filling or full cup sits in its dispenser lane; an empty lane shows nothing. Tint/flicker is not needed: a cup never spoils. */
@@ -197,11 +288,16 @@ export class TacoViews {
     const box = meta.panBox!;
     let slot = list[i];
     if (!slot || slot.key !== key) {
-      slot?.img.destroy();
+      // The old pan picture fades out while the new one fades in, so food browning in a pan changes smoothly and never flickers.
+      if (slot) this.release(slot.img, 140);
       const img = this.scene.add.image(0, 0, sheetKey(name), frame)
         .setOrigin(0, 0)
         .setDepth(z.height > 0.075 ? DEPTH - 1 : DEPTH - 2)
         .setFlipX(flip);
+      if (slot && !SaveSystem.reduceMotion()) {
+        img.setAlpha(0);
+        this.scene.tweens.add({ targets: img, alpha: 1, duration: 140 });
+      }
       slot = { img, key };
       list[i] = slot;
     }
@@ -219,7 +315,7 @@ export class TacoViews {
     const cur = list[i];
     if (!face) {
       if (cur) {
-        cur.img.destroy();
+        this.release(cur.img);
         list[i] = null;
       }
       return;
@@ -229,7 +325,7 @@ export class TacoViews {
     if (!z) return;
     let slot = cur;
     if (!slot || slot.key !== key) {
-      slot?.img.destroy();
+      if (slot) this.release(slot.img);
       const img = face.sprite ? this.scene.add.image(0, 0, spriteKey(face.sprite)) : this.scene.add.image(0, 0, sheetKey(face.sheet!), face.frame);
       img.setDepth(DEPTH).setOrigin(0.5, 0.95);
       slot = { img, key };
@@ -239,6 +335,7 @@ export class TacoViews {
       const zw = z.width * this.bg.width;
       const scale = kind === 'plate' ? (zw * 0.8) / img.width : (zw * (kind === 'pan' && z.height > 0.075 ? 0.62 : 0.66)) / (img.width * 0.75);
       img.setScale(scale);
+      this.appear(img, scale);
     }
     // Pan and oven food sits low-centre in the bowl; plate items sit near the bottom of their zone.
     const front = z.height > 0.075; // the two front pans are drawn bigger and lower than the back pair

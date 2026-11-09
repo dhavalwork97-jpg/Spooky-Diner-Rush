@@ -1,10 +1,21 @@
 import Phaser from 'phaser';
-import type { KitchenState } from '../game/KitchenState';
 import { INK, LEAF, MUSTARD, NAVY, ORANGE, TOMATO } from '../art/builders';
 import { SaveSystem } from '../systems/SaveSystem';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 const D = 800;
+
+/** What the HUD reads. The diner's `KitchenState` and the Taco Truck's `TacoKitchenState` both fit, so every restaurant shares this one HUD. */
+export interface HudSource {
+  level: number;
+  xp: number;
+  xpNeeded: number;
+  coins: number;
+  reputation: number;
+  combo: number;
+  comboMultiplier: number;
+  cfg: { combo: { maxCombo: number } };
+}
 
 /** Level badge ("Lv N" only), XP bar, reputation bar, coin counter. Read-only view of the model. */
 export class Hud {
@@ -19,7 +30,7 @@ export class Hud {
   private comboText: Phaser.GameObjects.Text;
   private comboShown = 0;
 
-  constructor(private scene: Phaser.Scene, state: KitchenState) {
+  constructor(private scene: Phaser.Scene, state: HudSource) {
     this.g = scene.add.graphics().setDepth(D);
     this.shownLevel = state.level;
     this.coinsShown = state.coins;
@@ -59,7 +70,7 @@ export class Hud {
     this.scene.tweens.add({ targets: this.lvText, scale: 1.5, duration: 160, yoyo: true, ease: 'Back.Out' });
   }
 
-  update(state: KitchenState, dtSec: number): void {
+  update(state: HudSource, dtSec: number): void {
     // XP bar fills smoothly; on a level change it fills to the end, then restarts
     const target = state.xp / state.xpNeeded;
     if (state.level !== this.shownLevel) {

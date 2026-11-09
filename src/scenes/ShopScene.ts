@@ -17,8 +17,11 @@ const BTN_H = 92;
 /** The panel fits five rows; more upgrades go on further pages. */
 const PAGE_SIZE = 5;
 
+/** What the Shop reads and writes. The diner's and the Taco Truck's kitchen states both fit: Lv, coins and upgrades are shared. */
+export type ShopState = Pick<KitchenState, 'cfg' | 'level' | 'coins' | 'mods'>;
+
 export interface ShopData {
-  state: KitchenState;
+  state: ShopState;
   /** Called after the shop closes (the game scene resumes itself here). */
   onClose: () => void;
 }
@@ -28,7 +31,7 @@ export interface ShopData {
  * src/game/shop.ts; this scene only draws and passes the result back into the model and save.
  */
 export class ShopScene extends Phaser.Scene {
-  private state!: KitchenState;
+  private state!: ShopState;
   private onClose!: () => void;
   private rows: Phaser.GameObjects.GameObject[] = [];
   private coinText!: Phaser.GameObjects.Text;
