@@ -1,3 +1,20 @@
+# IN PROGRESS — 2026-11-09 — Android two-provider ads (branch `android-two-provider`, from `origin/feature/android-capacitor`)
+
+Approved by the owner: AdMob for Google Play / other store builds, Unity LevelPlay for independent (direct) distribution, one `ads` door, same package name `com.spookydinerrush.game`, Samsung Galaxy Store stays ON HOLD. NOTHING here is committed or pushed; the owner must authorize that.
+
+Plan (tick each step when done):
+- [x] 1. Two Vite modes: `android-play` (AdMob only) and `android-direct` (LevelPlay only). Both write `dist-android` (Capacitor `webDir` unchanged) and both drop the CrazyGames script. New scripts `build:android-play`, `build:android-direct`, `android:sync:play`, `android:sync:direct` (old `build:android` / `android:sync` removed, docs and `tests/android.test.ts` updated on purpose).
+- [x] 2. Bring the LevelPlay provider over from `origin/feat/unity-levelplay-ads` as a SECOND provider (not a branch merge): `levelplayAds.ts`, `levelplayConfig.ts`, `levelplayDebug.ts`, `dailyCap.ts`, tests, fake, `.env.example`, `.gitignore` lines, `BannerService` type, title banner (direct build only), `AD_ID` permission. AdMob files stay as they are.
+- [x] 3. `src/ads/index.ts`: choose the provider by the literal build mode so Vite removes the other one from the bundle.
+- [x] 4. Shared `src/game/reopenWithAd.ts`: the ONE place that calls `state.reopen(true)`, only after the ad network confirmed the reward. GameScene uses it; `tests/adsafety.test.ts` guard is updated to point at it (deliberate, owner-approved). Reward numbers (55 / 100 / 180 s) untouched.
+- [x] 5. Tests: typecheck, full suite, build every mode, bundle check (no AdMob in direct, no LevelPlay in play, neither in browser or CrazyGames).
+- [x] 6. Docs: `docs/android.md` and this file.
+- [ ] 7. (WAITING for the owner: commit these changes first, then) move the Taco Truck commits (`8d5f25a`, `e846de8` on `feature/taco-truck`) here; TacoScene must use `ads.*` and the shared helper, not CrazyGames calls.
+
+Results (2026-11-09): typecheck clean. Full suite: 5 fail before the test updates, then all ad, routing, safety, android, levelplay and new reopenWithAd tests pass; the only failures left are `tests/balance_upgrades.test.ts` (3 simulation tests that time out at 5 s; no game logic was changed here, so this is the known late-game simulation baseline, not caused by this work). Builds ok for `dist`, `dist-crazygames`, `android-play`, `android-direct`. Bundle check: dist and dist-crazygames have no AdMob, LevelPlay, banner or env names; android-play has AdMob only (chunk `admobAds-*.js`); android-direct has LevelPlay only (chunk `levelplayAds-*.js`); no CrazyGames script tag in either Android `index.html`. NOT done: `cap sync`, Gradle, APK, any device test (no Android SDK here). Nothing committed.
+
+Known risk: a JS mode split does not remove the other SDK from the APK. Both native SDKs are in both APKs until Gradle product flavors are added; that needs Android Studio and cannot be built or tested in the cloud workspace.
+
 # CURRENT HANDOFF — 2026-11-08 (READ THIS FIRST)
 
 This section is the authoritative current status for the next Claude/Codex session. Older dated sections below are retained as project history; where they say work is uncommitted, in progress, or still awaiting a merge, use this current section instead.

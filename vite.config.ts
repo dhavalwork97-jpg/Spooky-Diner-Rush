@@ -20,7 +20,7 @@ const dropIntroVideo = (outDir: string) => ({
   },
 });
 
-/** The Android app must never load the CrazyGames SDK (browser ads only; the app uses Google AdMob, see src/ads). */
+/** The Android app must never load the CrazyGames SDK (browser ads only; the app uses AdMob or LevelPlay, see src/ads). */
 const dropCrazyGamesScript = {
   name: 'drop-crazygames-script',
   transformIndexHtml: (html: string): string => html.replace(/<script src="https:\/\/sdk\.crazygames\.com\/[^"]*"><\/script>\s*/, ''),
@@ -28,7 +28,7 @@ const dropCrazyGamesScript = {
 
 export default defineConfig(({ mode }) => {
   const crazygames = mode === 'crazygames';
-  const android = mode === 'android';
+  const android = mode === 'android-play' || mode === 'android-direct';
   const outDir = crazygames ? 'dist-crazygames' : android ? 'dist-android' : 'dist';
   return {
     base: './',

@@ -37,10 +37,11 @@ describe('Android project setup', () => {
   it('the normal and test builds are not the Android build', () => {
     expect(IS_ANDROID_BUILD).toBe(false);
   });
-  it('Capacitor serves the folder that `vite build --mode android` writes', () => {
+  it('Capacitor serves the folder that both Android builds (`vite build --mode android-play` and `--mode android-direct`) write', () => {
     expect(capacitorConfig.webDir).toBe('dist-android');
     expect(read('vite.config.ts')).toContain("'dist-android'");
-    expect(read('package.json')).toContain('vite build --mode android');
+    expect(read('package.json')).toContain('vite build --mode android-play');
+    expect(read('package.json')).toContain('vite build --mode android-direct');
   });
   it('the app is locked to landscape and the app id matches the Gradle project', () => {
     expect(read('android/app/src/main/AndroidManifest.xml')).toContain('android:screenOrientation="sensorLandscape"');

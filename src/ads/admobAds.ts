@@ -6,8 +6,8 @@ import { AD_TIMEOUT_MS } from './timing';
 import type { AdService } from './types';
 
 /**
- * Google AdMob for the Android app. ANDROID BUILD ONLY: this file (and the AdMob plugin) is loaded through a dynamic import behind
- * `import.meta.env.MODE === 'android'` in `src/ads/index.ts`, so the browser and CrazyGames builds contain none of it.
+ * Google AdMob for the Android app. ANDROID STORE BUILD ONLY: this file (and the AdMob plugin) is loaded through a dynamic import behind
+ * `import.meta.env.MODE === 'android-play'` in `src/ads/index.ts`, so the browser, CrazyGames and Android direct builds contain none of it.
  * Test ad ids only (see `adIds.ts`). The reward itself is NOT decided here: this file only reports whether it was earned.
  */
 

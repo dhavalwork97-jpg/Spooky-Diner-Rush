@@ -6,3 +6,5 @@ HANDOFF_PACK.txt
 reply.txt
 .env.android.local
 dist-android
+.env.local
+.env.*.local

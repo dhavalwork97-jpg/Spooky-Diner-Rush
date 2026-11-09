@@ -3,6 +3,7 @@ import { SaveSystem } from '../systems/SaveSystem';
 import { audio } from '../systems/AudioSystem';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 import { INTRO_VIDEO_ENABLED } from '../build/target';
+import { banner } from '../ads';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 const INTRO_URL = 'assets/intro/intro.mp4';
@@ -42,6 +43,7 @@ export class TitleScene extends Phaser.Scene {
 
   create(): void {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanup, this);
+    banner.show(); // Android direct build only (does nothing everywhere else); hidden again in cleanup()
     if (!ART.every((k) => this.textures.exists(k) && this.textures.get(k).key !== '__MISSING')) {
       this.begin(); // the art failed to load: never block the game on it
       return;
@@ -161,6 +163,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private cleanup(): void {
+    banner.hide(); // the banner is for the title screen only; it must never reach the kitchen
     const v = this.video;
     this.video = null;
     if (!v) return;

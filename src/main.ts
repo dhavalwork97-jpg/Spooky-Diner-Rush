@@ -38,6 +38,6 @@ void CrazyGames.init().then(() => {
   CrazyGames.loadingStart();
   const game = start();
   // Written with the literal `import.meta.env.MODE` so Vite removes this branch (and the Capacitor files) outside the Android build.
-  if (import.meta.env.MODE === 'android') void import('./platform/android').then((m) => m.initAndroid(game));
-  void initAds(); // Android: starts AdMob; browser and CrazyGames: nothing to start (the CrazyGames SDK was initialised above)
+  if (import.meta.env.MODE === 'android-play' || import.meta.env.MODE === 'android-direct') void import('./platform/android').then((m) => m.initAndroid(game));
+  void initAds(); // Android: starts AdMob (play build) or LevelPlay (direct build); browser and CrazyGames: nothing to start (the CrazyGames SDK was initialised above)
 });

@@ -44,4 +44,6 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Unity LevelPlay (direct build, Android 13 / API 33+): lets the ad SDK read the advertising ID. A player can reset or turn it off in Android settings. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 </manifest>

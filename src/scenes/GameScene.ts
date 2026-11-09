@@ -20,6 +20,7 @@ import { MenuButtons, type MenuKind } from '../views/MenuButtons';
 import { audio } from '../systems/AudioSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { ads } from '../ads';
+import { reopenWithAd } from '../game/reopenWithAd';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
 import { nextHint } from '../game/tutorial';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
@@ -1057,25 +1058,28 @@ export class GameScene extends Phaser.Scene {
   private reviveWithAd(): void {
     if (this.adActive || this.adPending || !this.state.closed) return;
     this.adPending = true;
-    void ads.rewardedAd(() => {
-      this.adActive = true;
-      this.paused = true;
-      audio.pauseAll();
-      CrazyGames.gameplayStop();
-    }).then((finished) => {
-      this.adPending = false;
-      if (this.adActive) {
-        this.adActive = false;
-        this.paused = false;
-        audio.resumeAll();
-      }
-      if (finished) {
-        this.state.reopen(true);
+    void reopenWithAd(this.state, ads, {
+      onStart: () => {
+        this.adActive = true;
+        this.paused = true;
+        audio.pauseAll();
+        CrazyGames.gameplayStop();
+      },
+      onAdOver: () => {
+        this.adPending = false;
+        if (this.adActive) {
+          this.adActive = false;
+          this.paused = false;
+          audio.resumeAll();
+        }
+      },
+      onRewarded: () => {
         this.afterAd.length = 0; // The rewarded revive already completed the queued Reopen intent.
-      } else {
+      },
+      onNoReward: () => {
         this.overlay.setSub('No ad available right now.\nYou can still reopen.');
         this.flushAfterAd();
-      }
+      },
     });
   }
 
