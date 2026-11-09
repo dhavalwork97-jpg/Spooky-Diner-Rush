@@ -85,6 +85,9 @@ export class TacoScene extends Phaser.Scene {
   private drag: Drag | null = null;
   private lastSave = 0;
   private panelOpen = false;
+  /** An ad is loading or playing: the truck is frozen (same idea as the diner's `paused`). */
+  private adActive = false;
+  private adPending = false;
 
   constructor() {
     super('Taco');
@@ -102,6 +105,8 @@ export class TacoScene extends Phaser.Scene {
     this.panelOpen = false;
     this.drag = null;
     this.tutorialOn = false;
+    this.adActive = false;
+    this.adPending = false;
     const a = defaultTacoConfig.art;
     this.bg = fitBackground(LOGICAL_WIDTH, LOGICAL_HEIGHT, a.width, a.height);
     const layer = (key: string, depth: number) =>
@@ -172,7 +177,7 @@ export class TacoScene extends Phaser.Scene {
 
   override update(_time: number, delta: number): void {
     const real = Math.min(delta, 100) / 1000;
-    if (!this.storyCard.isShowing) this.state.update(real);
+    if (!this.storyCard.isShowing && !this.adActive) this.state.update(real);
     for (const e of this.state.drainEvents()) this.handle(e);
     this.views.sync();
     this.customers.sync();
@@ -271,8 +276,15 @@ export class TacoScene extends Phaser.Scene {
         this.banner.hide();
         audio.setSizzle(0);
         CrazyGames.gameplayStop();
-        // Same screen as the diner's, with the normal Reopen. (The diner's extra "watch an ad" button is not added here: it needs approval.)
-        this.overlay.show('Closed', 'Too many unhappy customers.\nYour level, XP and coins are safe.', 'Reopen', () => this.state.reopen());
+        // The same Closed screen and buttons as the diner: Reopen (55 reputation) and, when an ad can play, the rewarded full reopen (100).
+        // The reputation numbers live in the kitchen model's `reopen`; nothing is calculated here.
+        this.overlay.show(
+          'Closed',
+          'Too many unhappy customers.\nYour level, XP and coins are safe.',
+          'Reopen',
+          () => this.breakAd(() => this.state.reopen()),
+          CrazyGames.canShowRewarded() ? { label: 'Watch an ad: reopen at full reputation', onPress: () => this.reviveWithAd() } : undefined,
+        );
         break;
       case 'reopened':
         this.overlay.hide();
@@ -283,6 +295,43 @@ export class TacoScene extends Phaser.Scene {
         this.toast.show(e.message);
         break;
     }
+  }
+
+  // ---------------------------------------------------------------- ads (same flow as the diner's Closed screen)
+
+  /** The interstitial that comes before a normal Reopen. CrazyGames decides if one is shown (its own cooldown applies); `then` always runs. */
+  private breakAd(then?: () => void): void {
+    if (this.adActive || this.adPending) return;
+    this.adPending = true;
+    void CrazyGames.midgameAd(() => this.adStarted()).then((shown) => {
+      this.adPending = false;
+      if (shown) this.adEnded();
+      then?.();
+    });
+  }
+
+  /** Rewarded reopen: the full reopen is granted only after the ad finished. */
+  private reviveWithAd(): void {
+    if (this.adActive || this.adPending || !this.state.closed) return;
+    this.adPending = true;
+    void CrazyGames.rewardedAd(() => this.adStarted()).then((finished) => {
+      this.adPending = false;
+      if (this.adActive) this.adEnded();
+      if (finished) this.state.reopen(true);
+      else this.overlay.setSub('No ad available right now.\nYou can still reopen.');
+    });
+  }
+
+  private adStarted(): void {
+    this.adActive = true;
+    audio.pauseAll();
+    CrazyGames.gameplayStop();
+  }
+
+  private adEnded(): void {
+    this.adActive = false;
+    audio.resumeAll();
+    if (!this.state.closed) CrazyGames.gameplayStart();
   }
 
   // ---------------------------------------------------------------- tutorial
@@ -308,7 +357,7 @@ export class TacoScene extends Phaser.Scene {
   private onTap(p: Phaser.Input.Pointer, over: unknown[]): void {
     audio.unlock();
     audio.startMusic();
-    if (over.length > 0 || this.panelOpen || this.state.closed || this.overlay.visible || this.storyCard.isShowing) return;
+    if (over.length > 0 || this.adActive || this.panelOpen || this.state.closed || this.overlay.visible || this.storyCard.isShowing) return;
     if (window.innerWidth < 900 && window.innerHeight > window.innerWidth * 1.1) return; // the "rotate your device" screen is up
     const n = logicalToNorm(p.worldX, p.worldY, this.bg);
     const z = hitTestTaco(defaultTacoConfig.zones, n.x, n.y, TAP_SLOP);
