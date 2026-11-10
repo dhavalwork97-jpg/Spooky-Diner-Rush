@@ -1,25 +1,94 @@
 {
  "key": "pan_red_shrimp",
  "image": "pan_red_shrimp_sheet.webp",
- "frameWidth": 560,
- "frameHeight": 480,
+ "frameWidth": 277,
+ "frameHeight": 356,
  "columns": 4,
- "rows": 2,
- "frameCount": 7,
+ "rows": 6,
+ "frameCount": 23,
  "frameLabels": [
   "empty",
-  "raw",
-  "sizzling",
-  "browning",
-  "flipping",
-  "cooked_ready",
-  "burnt"
+  "raw_0_src0",
+  "raw_1_src2",
+  "raw_2_src3",
+  "raw_4_src6",
+  "raw_6_src7",
+  "raw_7_src1",
+  "mid_0_src8",
+  "mid_1_src9",
+  "mid_2_src10",
+  "mid_3_src11",
+  "mid_4_src13",
+  "mid_5_src12",
+  "mid_6_src15",
+  "mid_7_src14",
+  "cooked_0_src16",
+  "cooked_1_src17",
+  "cooked_2_src18",
+  "cooked_3_src19",
+  "cooked_4_src20",
+  "cooked_5_src21",
+  "cooked_6_src23",
+  "burnt_0_from16"
  ],
  "panBox": {
-  "x": 60,
-  "y": 205,
-  "w": 400,
-  "h": 265
+  "x": 8,
+  "y": 132,
+  "w": 262,
+  "h": 214
  },
- "note": "Pan and food drawn together; panBox is the pan (bowl and handle) in every frame. Frames 1-3 cook, 5 ready, 6 burnt."
+ "stir": {
+  "looks": [
+   "raw",
+   "mid",
+   "cooked",
+   "burnt"
+  ],
+  "loop": 8,
+  "fps": 10,
+  "empty": 0,
+  "clips": {
+   "raw": [
+    1,
+    2,
+    3,
+    3,
+    4,
+    4,
+    5,
+    6
+   ],
+   "mid": [
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14
+   ],
+   "cooked": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    15
+   ],
+   "burnt": [
+    22,
+    22,
+    22,
+    22,
+    22,
+    22,
+    22,
+    22
+   ]
+  }
+ },
+ "note": "Pan and food drawn together; panBox is the pan (bowl and handle) in every frame. Each look in stir.clips is an 8-step stir/toss loop with the same timeline (rest, lift, up, peak, peak, falling, landing, rest); looks cross-fade step for step. Made by tools/make_stir_sheets.py."
 }

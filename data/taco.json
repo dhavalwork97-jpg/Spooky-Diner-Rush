@@ -8,7 +8,7 @@
  "settings": {
   "pans": 4,
   "ovenSlots": 2,
-  "plateSlots": 2,
+  "plateSlots": 4,
   "seats": 5,
   "drinkLanes": 3,
   "drinkChance": 0.25,
@@ -572,37 +572,37 @@
    "id": "griddle_raw_chicken",
    "action": "protein",
    "arg": "chicken",
-   "x": 0.5679,
-   "y": 0.4342,
-   "width": 0.0668,
-   "height": 0.0924
+   "x": 0.5582,
+   "y": 0.4458,
+   "width": 0.0811,
+   "height": 0.0968
   },
   {
    "id": "griddle_raw_shrimp",
    "action": "protein",
    "arg": "shrimp",
-   "x": 0.6481,
-   "y": 0.4401,
-   "width": 0.0614,
-   "height": 0.0853
+   "x": 0.6539,
+   "y": 0.4458,
+   "width": 0.079,
+   "height": 0.0927
   },
   {
    "id": "griddle_raw_fish",
    "action": "protein",
    "arg": "fish",
-   "x": 0.5664,
-   "y": 0.5169,
-   "width": 0.069,
-   "height": 0.0931
+   "x": 0.5698,
+   "y": 0.5321,
+   "width": 0.0668,
+   "height": 0.0865
   },
   {
    "id": "griddle_raw_veggies",
    "action": "protein",
    "arg": "veggies",
-   "x": 0.65,
-   "y": 0.5221,
-   "width": 0.0668,
-   "height": 0.0859
+   "x": 0.6548,
+   "y": 0.5341,
+   "width": 0.0708,
+   "height": 0.0863
   },
   {
    "id": "pan_1",
@@ -779,18 +779,36 @@
    "id": "pass_slot_1",
    "action": "plate",
    "index": 0,
-   "x": 0.7938,
-   "y": 0.7292,
-   "width": 0.0857,
+   "x": 0.7855,
+   "y": 0.709,
+   "width": 0.0475,
    "height": 0.082
   },
   {
    "id": "pass_slot_2",
    "action": "plate",
    "index": 1,
-   "x": 0.8802,
-   "y": 0.7259,
-   "width": 0.0857,
+   "x": 0.833,
+   "y": 0.709,
+   "width": 0.0475,
+   "height": 0.082
+  },
+  {
+   "id": "pass_slot_3",
+   "action": "plate",
+   "index": 2,
+   "x": 0.8805,
+   "y": 0.709,
+   "width": 0.0475,
+   "height": 0.082
+  },
+  {
+   "id": "pass_slot_4",
+   "action": "plate",
+   "index": 3,
+   "x": 0.928,
+   "y": 0.709,
+   "width": 0.0475,
    "height": 0.082
   },
   {

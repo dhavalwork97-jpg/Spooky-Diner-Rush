@@ -49,7 +49,7 @@ describe('Taco Truck bot simulation (first pass)', () => {
       expect(s.coins).toBeGreaterThanOrEqual(0);
       expect(s.reputation).toBeGreaterThanOrEqual(0);
       expect(s.reputation).toBeLessThanOrEqual(100);
-      expect(s.plates).toHaveLength(2);
+      expect(s.plates).toHaveLength(4);
       expect(s.customers.length).toBeLessThanOrEqual(5);
       for (const lanes of Object.values(s.pours)) expect(lanes).toHaveLength(3);
     }

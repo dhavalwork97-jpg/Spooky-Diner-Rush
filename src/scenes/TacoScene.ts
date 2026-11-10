@@ -119,7 +119,7 @@ export class TacoScene extends Phaser.Scene {
     this.state.mods = modsFor(this.state.cfg.upgrades.upgrades, save.owned);
 
     this.fx = new ParticlePool(this, 140);
-    this.views = new TacoViews(this, this.bg, this.state);
+    this.views = new TacoViews(this, this.bg, this.state, this.fx);
     this.customers = new TacoCustomers(this, this.bg, this.state);
 
     // The shared interface, built exactly as in the diner (same classes, same positions, same depths).

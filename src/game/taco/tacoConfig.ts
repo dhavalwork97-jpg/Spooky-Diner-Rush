@@ -8,7 +8,7 @@ export type DishKind = 'soft_taco' | 'crispy_taco' | 'burrito' | 'nachos';
 export interface TacoSettings {
   pans: number;
   ovenSlots: number;
-  /** The two orange plates on the pass counter: every dish in progress sits on one. */
+  /** The orange plates on the pass counter (four, drawn by TacoViews): every dish in progress sits on one. */
   plateSlots: number;
   seats: number;
   /** Cups each dispenser can fill at once. */
