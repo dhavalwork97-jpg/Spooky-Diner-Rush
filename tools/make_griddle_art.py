@@ -60,6 +60,7 @@ def cut_raw_sprites(rgb0):
     food[:int(h * 0.11)] = 0; food[int(h * 0.76):] = 0; food[:, :int(w * 0.12)] = 0; food[:, int(w * 0.89):] = 0
     food = cv2.morphologyEx(food, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
     food = cv2.morphologyEx(food, cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8))
+    boxes = {}
     for name, (qx, qy) in dict(chicken=(0, 0), shrimp=(1, 0), fish=(0, 1), veggies=(1, 1)).items():
         sub = np.zeros_like(food)
         sub[int(h * (0.08 if qy == 0 else 0.45)):int(h * (0.45 if qy == 0 else 0.77)), int(w * (0.07 if qx == 0 else 0.50)):int(w * (0.50 if qx == 0 else 0.93))] = 1
@@ -79,6 +80,7 @@ def cut_raw_sprites(rgb0):
         filled = cv2.erode(filled, np.ones((3, 3), np.uint8))
         alpha = cv2.GaussianBlur(filled.astype(np.float32), (0, 0), 1.6)
         ys, xs = np.where(filled > 0)
+        boxes[name] = (int(xs.min()), int(xs.max()) + 1, int(ys.min()), int(ys.max()) + 1)  # the food itself (used for the tap zones)
         x0, x1, y0, y1 = max(xs.min() - 6, 0), xs.max() + 7, max(ys.min() - 6, 0), ys.max() + 7
         rgba = np.dstack([rgb0, (alpha * 255).astype(np.uint8)])[y0:y1, x0:x1]
         im = Image.fromarray(rgba, 'RGBA')
@@ -87,6 +89,7 @@ def cut_raw_sprites(rgb0):
         out = ROOT / f'public/assets/taco/sprites/raw_{name}.webp'
         im.save(out, quality=92, method=6)
         print('sprite', out.name, im.size, out.stat().st_size // 1024, 'KB')
+    return boxes
 
 def main():
     debug = Path(sys.argv[sys.argv.index('--debug') + 1]) if '--debug' in sys.argv else None
@@ -98,7 +101,7 @@ def main():
     rgb = np.array(Image.open(NEW).convert('RGB'))
     rgb, a = key_green(rgb)
     rgb = remove_sparkle(rgb, a)
-    cut_raw_sprites(rgb)
+    food_boxes = cut_raw_sprites(rgb)  # food bbox per protein, in the uncropped keyed picture
     ys, xs = np.where(a > 0.5)
     x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
     print('new griddle bbox', x0, y0, x1, y1, 'ratio %.3f' % ((x1 - x0) / (y1 - y0)))
@@ -128,28 +131,15 @@ def main():
     res.save(TARGET, quality=96, method=6)
     print('saved', TARGET.relative_to(ROOT), res.size, TARGET.stat().st_size // 1024, 'KB')
 
-    # re-measure the four food clusters (non-dark, non-steel pixels inside the black plate) in background coordinates
-    gray = rgb.mean(axis=2)
-    sat = rgb.max(axis=2).astype(int) - rgb.min(axis=2).astype(int)
-    h2, w2 = gray.shape
-    plate = np.zeros((h2, w2), bool)
-    plate[int(h2 * 0.10):int(h2 * 0.78), int(w2 * 0.07):int(w2 * 0.93)] = True
-    food = plate & ((gray > 110) | (sat > 60))
-    food = cv2.morphologyEx(food.astype(np.uint8), cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
-    food = cv2.dilate(food, np.ones((15, 15), np.uint8))
+    # tap zones = the four food clusters (the same cleaned masks the raw_* sprites are cut with) mapped onto the background, padded like the old zones
     zones = {}
-    for name, (qx, qy) in dict(chicken=(0, 0), shrimp=(1, 0), fish=(0, 1), veggies=(1, 1)).items():
-        sub = np.zeros_like(food)
-        sub[int(h2 * (0.10 if qy == 0 else 0.45)):int(h2 * (0.45 if qy == 0 else 0.78)),
-            int(w2 * (0.07 if qx == 0 else 0.50)):int(w2 * (0.50 if qx == 0 else 0.93))] = 1
-        yz, xz = np.where((food & sub) > 0)
-        bx0, bx1, by0, by1 = xz.min(), xz.max() + 1, yz.min(), yz.max() + 1
-        # to background pixels, then pad like the old zones (12 px sides, 8 px top and bottom)
+    for name, (bx0, bx1, by0, by1) in food_boxes.items():
+        bx0, bx1, by0, by1 = bx0 - x0, bx1 - x0, by0 - y0, by1 - y0   # into the cropped griddle
         gx0, gx1 = px + bx0 * s, px + bx1 * s
         gy0, gy1 = py + by0 * s, py + by1 * s
-        gx0, gx1, gy0, gy1 = gx0 - 12, gx1 + 12, gy0 - 8, gy1 + 8
+        gx0, gx1, gy0, gy1 = gx0 - 12, gx1 + 12, gy0 - 8, gy1 + 8   # 12 px sides, 8 px top and bottom
         zones[name] = dict(x=round(gx0 / W, 4), y=round(gy0 / H, 4), width=round((gx1 - gx0) / W, 4), height=round((gy1 - gy0) / H, 4))
-        print(name, zones[name])
+        print(name, {k: float(v) for k, v in zones[name].items()})
     txt = TACO.read_text()
     for name, z in zones.items():
         pat = re.compile(r'("id": "griddle_raw_%s",.*?"x": )[\d.]+(,\s*"y": )[\d.]+(,\s*"width": )[\d.]+(,\s*"height": )[\d.]+' % name, re.S)

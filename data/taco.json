@@ -572,37 +572,37 @@
    "id": "griddle_raw_chicken",
    "action": "protein",
    "arg": "chicken",
-   "x": 0.5582,
-   "y": 0.4458,
-   "width": 0.0811,
-   "height": 0.0968
+   "x": 0.5717,
+   "y": 0.4402,
+   "width": 0.067,
+   "height": 0.0907
   },
   {
    "id": "griddle_raw_shrimp",
    "action": "protein",
    "arg": "shrimp",
-   "x": 0.6539,
-   "y": 0.4458,
-   "width": 0.079,
-   "height": 0.0927
+   "x": 0.6545,
+   "y": 0.4374,
+   "width": 0.0662,
+   "height": 0.0998
   },
   {
    "id": "griddle_raw_fish",
    "action": "protein",
    "arg": "fish",
-   "x": 0.5698,
-   "y": 0.5321,
-   "width": 0.0668,
-   "height": 0.0865
+   "x": 0.5696,
+   "y": 0.5318,
+   "width": 0.0672,
+   "height": 0.0871
   },
   {
    "id": "griddle_raw_veggies",
    "action": "protein",
    "arg": "veggies",
-   "x": 0.6548,
-   "y": 0.5341,
-   "width": 0.0708,
-   "height": 0.0863
+   "x": 0.6554,
+   "y": 0.5353,
+   "width": 0.0695,
+   "height": 0.0839
   },
   {
    "id": "pan_1",

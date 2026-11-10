@@ -1,5 +1,6 @@
 
-## DONE (uncommitted, awaiting owner review): TASK C (burrito press) + TASK D (nachos melt)  [owner add-on, same rules: no commit, no gameplay/economy changes]
+## NOTE (after commit 298ac33): griddle tap zones re-measured from the cleaned food masks (chicken/shrimp zones were ~45 px too wide); data/taco.json + tools/make_griddle_art.py changed, UNCOMMITTED until the owner says so.
+## DONE (committed + pushed as 298ac33): TASK C (burrito press) + TASK D (nachos melt)  [owner add-on, same rules: no commit, no gameplay/economy changes]
 Branch note: this worktree is on local branch `taco-art`. Everything stays UNCOMMITTED until the owner says so.
 Plan (tick as done):
 - [x] C0 (done, stir sheets rebuilt byte-identical). Shared helpers: move green keying, despill, cell cutting, registration, IoU, premultiplied scaling, blue-pan turn, sheet/json writing and memory table out of tools/make_stir_sheets.py into tools/art_common.py. Re-run make_stir_sheets.py and check the 8 pan sheets come out byte-identical.
