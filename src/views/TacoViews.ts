@@ -6,6 +6,8 @@ import type { TacoConfig, TacoZone } from '../game/taco/tacoConfig';
 import { SaveSystem } from '../systems/SaveSystem';
 import { arcTo } from '../anim/fly';
 import type { ParticlePool } from '../anim/ParticlePool';
+import type { Ring } from './Ring';
+import { ovenDoorTarget, TacoOvenDoor, type OvenDoorClips } from './TacoOvenDoor';
 
 /** Sheet metadata (frame size, columns) read from the .anim.json files shipped with the art. */
 interface SheetMeta {
@@ -19,6 +21,9 @@ interface SheetMeta {
   panBox?: { x: number; y: number; w: number; h: number };
   /** Pan-with-food sheets: the stir loops. `clips[look][step]` is the sheet frame shown at loop step `step` (0..loop-1) while the food is in that look. */
   stir?: { looks: string[]; loop: number; fps: number; empty: number; clips: Record<string, number[]> };
+  /** Oven door sheet: named clips of frames and their speeds (see TacoOvenDoor). */
+  clips?: OvenDoorClips;
+  clipFps?: { close?: number; open?: number };
 }
 const metas = import.meta.glob('../../public/assets/taco/animations/*.anim.json', { eager: true, import: 'default' }) as Record<string, SheetMeta>;
 const ANIM_DIR = 'assets/taco/animations';
@@ -62,6 +67,12 @@ const PAN_WIDTH_PER_ZONE = 1.23;
 /** The two back pans are drawn a little smaller and higher, and behind the front pair, so pans and handles never cover each other. */
 const BACK_PAN_SCALE = 0.9;
 const BACK_PAN_LIFT = 0.025; // of the kitchen height
+/** Cook timer rings (fractions of the kitchen height; radii in logical px). */
+const RING_ABOVE = 0.035;
+const RING_BELOW = 0.037;
+const PAN_RING_R = 17;
+const OVEN_RING_Y = 0.648;
+const OVEN_RING_R = 18;
 /** Sheet whose empty pan frame is used for every idle pan (a clean, dry pan). */
 const EMPTY_PAN_SHEET = 'fish';
 const panMetas = new Map<string, SheetMeta>(Object.values(metas).filter((m) => m.panBox).map((m) => [m.key, m]));
@@ -167,6 +178,7 @@ export function meltBlend(clips: Record<string, number[]>, phase: CookPhase, t: 
   return { a: at(bl.a), b: at(bl.b), f: bl.f };
 }
 const meltMeta = Object.values(metas).find((m) => m.key === 'nachos_melt');
+const ovenDoorMeta = Object.values(metas).find((m) => m.key === 'oven_door_taco');
 /** Oven shell: folded > warm > golden by cooking progress. Frames 1, 2, 3 of the oven sheet. */
 const SHELL_KEYS: readonly [number, number][] = [[0.12, 1], [0.6, 2], [1, 3]];
 /** Share of the burn window before the food starts to darken towards the burnt picture. */
@@ -186,6 +198,9 @@ export function cupFrame(sheetRow: number, phase: CookPhase, t: number, fillSeco
   const level = phase === 'cooking' ? Math.min(3, 1 + Math.floor((t / fillSeconds) * 3)) : 4;
   return sheetRow * 5 + level;
 }
+
+/** Makes one cook timer (the scene supplies it, so this file stays free of the Phaser runtime for tests). */
+export type RingFactory = (x: number, y: number, radius: number) => Ring;
 
 interface Slot {
   img: Phaser.GameObjects.Image;
@@ -213,8 +228,13 @@ export class TacoViews {
   private pressPlates: (Phaser.GameObjects.Image | null)[] = [];
   /** Cups in the dispensers, keyed `<drink>:<lane>`. */
   private cups = new Map<string, Slot>();
+  /** The oven door (one body, both slots). Inactive when its sheet is missing. */
+  private door: TacoOvenDoor;
+  /** One cook timer per pan and per oven slot (none on the griddle). They only read the slot's phase and `t`. */
+  private panRings: (Ring | null)[] = [];
+  private ovenRings: (Ring | null)[] = [];
 
-  constructor(private scene: Phaser.Scene, private bg: BackgroundPlacement, private s: TacoKitchenState, private fx?: ParticlePool) {
+  constructor(private scene: Phaser.Scene, private bg: BackgroundPlacement, private s: TacoKitchenState, private fx?: ParticlePool, private makeRing?: RingFactory) {
     this.pans = s.pans.map(() => null);
     this.panBase = s.pans.map(() => null);
     this.ovens = s.ovens.map(() => null);
@@ -222,6 +242,40 @@ export class TacoViews {
     this.panOver = s.pans.map(() => null);
     this.nextSteam = s.pans.map(() => 0);
     this.buildPlateBase();
+    this.door = new TacoOvenDoor(scene, bg, ovenDoorMeta);
+    this.buildRings();
+  }
+
+  /** Where each timer sits: back pans above the pan (on the stove rail), front pans below it (over the knobs, so no ring sits on another pan), ovens above the oven body. */
+  private buildRings(): void {
+    if (!this.makeRing) return;
+    const make = this.makeRing;
+    const at = (z: TacoZone, fy: number, r: number): Ring => make(this.bg.x + (z.x + z.width / 2) * this.bg.width, this.bg.y + fy * this.bg.height, r);
+    for (const z of this.zones('pan')) {
+      const front = z.height > 0.075;
+      this.panRings[z.index ?? 0] = at(z, front ? z.y + z.height + RING_BELOW : z.y - RING_ABOVE - BACK_PAN_LIFT, PAN_RING_R);
+    }
+    for (const z of this.zones('oven')) this.ovenRings[z.index ?? 0] = at(z, OVEN_RING_Y, OVEN_RING_R);
+  }
+
+  /** Timers from the model: progress is `t / readyAfter` of the item's own configured time; phase is the model's phase. */
+  private syncRings(): void {
+    const s = this.s;
+    const now = this.scene.time.now;
+    s.pans.forEach((p, i) => {
+      const ring = this.panRings[i];
+      if (!ring) return;
+      if (!p) return ring.show(null, 0, now);
+      const readyAfter = p.what.kind === 'protein' ? s.taco.proteins[p.what.protein].readyAfter : s.taco.timed.press.readyAfter;
+      ring.show(p.phase, p.t / readyAfter, now);
+    });
+    s.ovens.forEach((o, i) => {
+      const ring = this.ovenRings[i];
+      if (!ring) return;
+      if (!o) return ring.show(null, 0, now);
+      const readyAfter = o.what.kind === 'shell' ? s.taco.timed.crispy_shell.readyAfter : s.taco.timed.melt.readyAfter;
+      ring.show(o.phase, o.t / readyAfter, now);
+    });
   }
 
   /** One empty plate under every plate slot, sized from the slot so any number of plates lines up. */
@@ -294,6 +348,14 @@ export class TacoViews {
         this.put(this.ovens, i, 'oven', this.itemFace(o.what.item, 3, o.phase));
       }
     });
+    // The door only follows the oven slots; oven food is drawn on the open tray and hidden while the door is closed.
+    const trayShown = this.door.update(ovenDoorTarget(s.ovens), this.scene.time.now);
+    this.ovens.forEach((o) => {
+      if (!o) return;
+      o.img.setVisible(trayShown);
+      if (!trayShown) o.over?.setVisible(false);
+    });
+    this.syncRings();
     this.syncCups();
     s.plates.forEach((pl, i) => this.put(this.plates, i, 'plate', pl.item ? this.itemFace(pl.item, null, 'ready') : null));
   }
@@ -301,6 +363,9 @@ export class TacoViews {
   destroy(): void {
     for (const list of [this.pans, this.panBase, this.ovens, this.plates]) list.forEach((x) => x && this.scene.tweens.killTweensOf(x.img));
     for (const list of [this.pans, this.panBase, this.ovens, this.plates]) list.forEach((x) => { x?.img.destroy(); x?.over?.destroy(); });
+    this.door.destroy();
+    this.panRings.forEach((r) => r?.destroy());
+    this.ovenRings.forEach((r) => r?.destroy());
     this.plateBase.forEach((x) => x?.destroy());
     this.plateBase = [];
     this.panOver.forEach((x) => x?.destroy());

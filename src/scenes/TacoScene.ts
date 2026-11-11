@@ -14,6 +14,7 @@ import { CrazyGames } from '../sdk/crazygames';
 import { loadTacoArt, sheetKey, spriteKey, TacoViews } from '../views/TacoViews';
 import { TacoCustomers } from '../views/TacoCustomers';
 import { Hud } from '../views/Hud';
+import { Ring } from '../views/Ring';
 import { MenuButtons, type MenuKind } from '../views/MenuButtons';
 import { MuteButton } from '../views/MuteButton';
 import { EventBanner, LevelUpCard, Overlay, StoryCard, Toast } from '../views/Popups';
@@ -119,7 +120,7 @@ export class TacoScene extends Phaser.Scene {
     this.state.mods = modsFor(this.state.cfg.upgrades.upgrades, save.owned);
 
     this.fx = new ParticlePool(this, 140);
-    this.views = new TacoViews(this, this.bg, this.state, this.fx);
+    this.views = new TacoViews(this, this.bg, this.state, this.fx, (x, y, r) => new Ring(this, x, y, r, true));
     this.customers = new TacoCustomers(this, this.bg, this.state);
 
     // The shared interface, built exactly as in the diner (same classes, same positions, same depths).

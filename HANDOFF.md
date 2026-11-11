@@ -628,3 +628,15 @@ Next: B Mastery badges, C Daily Special (diner extras; shared save fields). Need
 
 ### Taco leave animation (2026-11-08)
 TacoCustomers now lazy-loads ghost_leave_happy/angry and plays the matching clip in place when the model removes a customer (angry flag remembered from the last model mood); falls back to the old fade if the sheet has not loaded; reduced motion removes instantly. Checked in headless Chromium (no errors, leave clip seen); not checked on a phone.
+
+## In progress (2026-11-11): oven door video + cooking timers (feature/taco-truck, nothing committed yet)
+Plan (update after each step):
+ O1. Copy Gemini oven mp4 to tools/taco_source/incoming/, find clip boundaries by frame diff, extract frames.
+ O2. tools/make_oven_door_sheet.py -> public/assets/taco/animations/oven_door_sheet.webp + .anim.json (clips close, closed-idle, open, open-hold). Old oven art stays until verified.
+ O3. TacoViews: oven door state machine (open while placing/collecting, close at bake start, closed-idle while baking, open + open-hold at ready); shells drawn on open tray only, hidden while closed. No cooking logic/timing changes.
+ T1. Ring.ts: add explicit 'burnt' look (keep other phases as-is; Diner/Pour/Station users unchanged except burnt now shown only if caller asks).
+ T2. TacoViews: one Ring per pan (4) and oven (2), positioned above the slot, driven from existing p.phase / p.t / def.readyAfter / burnWindow. Nothing on the griddle.
+ V.  Tests (anim json schema, clip validity, ring state mapping), screenshots, tsc, vitest, build, build:crazygames, report.
+O1-O3 oven door code written (TacoOvenDoor.ts), needs screenshot check
+T1-T2 rings coded (Ring showBurnt option, TacoViews buildRings/syncRings); need screenshots
+DONE 2026-11-11 (uncommitted, awaiting owner approval): oven door (tools/make_oven_door_sheet.py, oven_door_sheet.*, src/views/TacoOvenDoor.ts, hook in TacoViews) and cook timers (Ring showBurnt option, TacoViews rings for 4 pans + 2 ovens, injected from TacoScene). Tests: tests/taco_oven_door.test.ts, tests/taco_timers.test.ts. tsc, vitest (468 pass), build, build:crazygames pass. Not tested on a real device.
