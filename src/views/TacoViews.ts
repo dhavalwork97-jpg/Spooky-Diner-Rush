@@ -7,6 +7,7 @@ import { SaveSystem } from '../systems/SaveSystem';
 import { arcTo } from '../anim/fly';
 import type { ParticlePool } from '../anim/ParticlePool';
 import type { Ring } from './Ring';
+import { TacoDispensers, dispenserBaseKey, type DispenserMeta } from './TacoDispensers';
 import { ovenDoorTarget, TacoOvenDoor, type OvenDoorClips } from './TacoOvenDoor';
 
 /** Sheet metadata (frame size, columns) read from the .anim.json files shipped with the art. */
@@ -24,6 +25,11 @@ interface SheetMeta {
   /** Oven door sheet: named clips of frames and their speeds (see TacoOvenDoor). */
   clips?: OvenDoorClips;
   clipFps?: { close?: number; open?: number };
+  /** Pouring dispenser sheets (see TacoDispensers). */
+  base?: string;
+  fullFrame?: { width: number; height: number };
+  bandTop?: number;
+  lanes?: [number, number][];
 }
 const metas = import.meta.glob('../../public/assets/taco/animations/*.anim.json', { eager: true, import: 'default' }) as Record<string, SheetMeta>;
 const ANIM_DIR = 'assets/taco/animations';
@@ -38,6 +44,7 @@ export const spriteKey = (name: string): string => `tacosprite_${name}`;
 export function loadTacoArt(scene: Phaser.Scene, cfg: TacoConfig): void {
   for (const m of Object.values(metas)) {
     scene.load.spritesheet(sheetKey(m.key), `${ANIM_DIR}/${m.image}`, { frameWidth: m.frameWidth, frameHeight: m.frameHeight });
+    if (m.base) scene.load.image(dispenserBaseKey(m.key), `${ANIM_DIR}/${m.base}`); // pouring dispensers: the empty machine, drawn once
   }
   const sprites = new Set(cfg.dishes.map((d) => d.sprite));
   // Raw and cooked proteins are the food that flies between the griddle, the pans and the plates.
@@ -230,6 +237,8 @@ export class TacoViews {
   private cups = new Map<string, Slot>();
   /** The oven door (one body, both slots). Inactive when its sheet is missing. */
   private door: TacoOvenDoor;
+  /** The pouring cold-drink dispensers (inactive for a machine whose art is missing). */
+  private dispensers: TacoDispensers;
   /** One cook timer per pan and per oven slot (none on the griddle). They only read the slot's phase and `t`. */
   private panRings: (Ring | null)[] = [];
   private ovenRings: (Ring | null)[] = [];
@@ -243,6 +252,7 @@ export class TacoViews {
     this.nextSteam = s.pans.map(() => 0);
     this.buildPlateBase();
     this.door = new TacoOvenDoor(scene, bg, ovenDoorMeta);
+    this.dispensers = new TacoDispensers(scene, bg, Object.values(metas).filter((m) => m.base && m.lanes) as unknown as DispenserMeta[]);
     this.buildRings();
   }
 
@@ -356,6 +366,7 @@ export class TacoViews {
       if (!trayShown) o.over?.setVisible(false);
     });
     this.syncRings();
+    this.dispensers.sync(s);
     this.syncCups();
     s.plates.forEach((pl, i) => this.put(this.plates, i, 'plate', pl.item ? this.itemFace(pl.item, null, 'ready') : null));
   }
@@ -364,6 +375,7 @@ export class TacoViews {
     for (const list of [this.pans, this.panBase, this.ovens, this.plates]) list.forEach((x) => x && this.scene.tweens.killTweensOf(x.img));
     for (const list of [this.pans, this.panBase, this.ovens, this.plates]) list.forEach((x) => { x?.img.destroy(); x?.over?.destroy(); });
     this.door.destroy();
+    this.dispensers.destroy();
     this.panRings.forEach((r) => r?.destroy());
     this.ovenRings.forEach((r) => r?.destroy());
     this.plateBase.forEach((x) => x?.destroy());
@@ -462,6 +474,7 @@ export class TacoViews {
   private syncCups(): void {
     const s = this.s;
     for (const drink of s.taco.drinks) {
+      if (this.dispensers.has(drink.id)) continue; // the pour art draws these cups itself
       s.pours[drink.id]?.forEach((p, lane) => {
         const key = `${drink.id}:${lane}`;
         const cur = this.cups.get(key);

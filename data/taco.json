@@ -834,60 +834,60 @@
    "action": "cup",
    "arg": "horchata",
    "index": 0,
-   "x": 0.0174,
-   "y": 0.7207,
-   "width": 0.0349,
-   "height": 0.097
+   "x": 0.0119,
+   "y": 0.7419,
+   "width": 0.0317,
+   "height": 0.0881
   },
   {
    "id": "drink_dispenser_agua_cup_2",
    "action": "cup",
    "arg": "horchata",
    "index": 1,
-   "x": 0.0545,
-   "y": 0.7207,
-   "width": 0.0349,
-   "height": 0.097
+   "x": 0.0519,
+   "y": 0.7419,
+   "width": 0.0333,
+   "height": 0.0881
   },
   {
    "id": "drink_dispenser_agua_cup_3",
    "action": "cup",
    "arg": "horchata",
    "index": 2,
-   "x": 0.0911,
-   "y": 0.7207,
-   "width": 0.0349,
-   "height": 0.097
+   "x": 0.0935,
+   "y": 0.7419,
+   "width": 0.0325,
+   "height": 0.0881
   },
   {
    "id": "drink_dispenser_taco_cup_1",
    "action": "cup",
    "arg": "agua_de_jamaica",
    "index": 0,
-   "x": 0.0719,
-   "y": 0.4004,
-   "width": 0.0283,
-   "height": 0.0762
+   "x": 0.0443,
+   "y": 0.3561,
+   "width": 0.0499,
+   "height": 0.1273
   },
   {
    "id": "drink_dispenser_taco_cup_2",
    "action": "cup",
    "arg": "agua_de_jamaica",
    "index": 1,
-   "x": 0.1049,
-   "y": 0.4004,
-   "width": 0.0283,
-   "height": 0.0762
+   "x": 0.0987,
+   "y": 0.3561,
+   "width": 0.0486,
+   "height": 0.1273
   },
   {
    "id": "drink_dispenser_taco_cup_3",
    "action": "cup",
    "arg": "agua_de_jamaica",
    "index": 2,
-   "x": 0.1365,
-   "y": 0.4004,
-   "width": 0.0283,
-   "height": 0.0762
+   "x": 0.1524,
+   "y": 0.3561,
+   "width": 0.0454,
+   "height": 0.1273
   },
   {
    "id": "trash_bin",

@@ -640,3 +640,10 @@ Plan (update after each step):
 O1-O3 oven door code written (TacoOvenDoor.ts), needs screenshot check
 T1-T2 rings coded (Ring showBurnt option, TacoViews buildRings/syncRings); need screenshots
 DONE 2026-11-11 (uncommitted, awaiting owner approval): oven door (tools/make_oven_door_sheet.py, oven_door_sheet.*, src/views/TacoOvenDoor.ts, hook in TacoViews) and cook timers (Ring showBurnt option, TacoViews rings for 4 pans + 2 ovens, injected from TacoScene). Tests: tests/taco_oven_door.test.ts, tests/taco_timers.test.ts. tsc, vitest (468 pass), build, build:crazygames pass. Not tested on a real device.
+
+## In progress (2026-11-11): pouring dispensers (feature/taco-truck, previous work committed 952bdfd, not pushed)
+Owner brief: replace the two static dispensers with the supplied pour sheets (taco = red agua de jamaica, 68 frames 300x327; round = horchata, 58 frames 177x316; clips idle_empty/pour/idle_full), same slot position/size, bottom-centre anchor, one sheet = one draw call.
+Finding: the game has 3 INDEPENDENT lanes per dispenser (each tap fills the next free lane, each cup is served on its own), but the clips pour all 3 cups together. Plan: keep logic untouched; draw base = frame 0, and per lane an Image of the same sheet cropped (setCrop) to that lane's column, frame chosen from that lane's own progress p.t/fillSeconds, so a cup is full exactly when the model says ready. Needs a check that the 3 columns are separable in the frames.
+ D1. Unzip, inspect frames, check column separability. D2. tools/make_dispenser_sheets.py (webp + anim.json). D3. TacoViews hookup (hide old in-dispenser cup images, keep the drag ghost). D4. Tests, screenshots, builds, report.
+D1-D3 dispenser code written: src/views/TacoDispensers.ts + hook; needs screenshots
+DONE dispensers (uncommitted): TacoDispensers.ts, tools/make_dispenser_sheets.py, 6 sheets/bases, cup zones moved in data/taco.json, tests/taco_dispensers.test.ts. tsc/vitest/builds pass.
