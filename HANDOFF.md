@@ -647,3 +647,5 @@ Finding: the game has 3 INDEPENDENT lanes per dispenser (each tap fills the next
  D1. Unzip, inspect frames, check column separability. D2. tools/make_dispenser_sheets.py (webp + anim.json). D3. TacoViews hookup (hide old in-dispenser cup images, keep the drag ghost). D4. Tests, screenshots, builds, report.
 D1-D3 dispenser code written: src/views/TacoDispensers.ts + hook; needs screenshots
 DONE dispensers (uncommitted): TacoDispensers.ts, tools/make_dispenser_sheets.py, 6 sheets/bases, cup zones moved in data/taco.json, tests/taco_dispensers.test.ts. tsc/vitest/builds pass.
+Griddle left-edge fix (uncommitted): tools/make_griddle_art.py clears the old griddle frame strip before compositing; kitchen_front.webp regenerated, zones unchanged.
+Griddle bottom-left overlap fix: old counter corner kept in front (COUNTER_X/Y in make_griddle_art.py); kitchen_front.webp regenerated. Uncommitted.

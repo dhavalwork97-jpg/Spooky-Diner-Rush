@@ -19,6 +19,7 @@ TACO = ROOT / 'data/taco.json'
 
 # Old griddle footprint measured on the 2754x1536 background (plate outer edge .. control strip bottom).
 FOOT = dict(x0=1512, x1=2044, y0=656, y1=1034)
+COUNTER_Y, COUNTER_X = 966, 1547      # below this row, left of this column: the old counter (not the griddle) is what you see
 BINS_Y, BINS_X = 1012, 1700          # the food bins start here: old pixels stay in front of the new griddle
 
 def key_green(rgb):
@@ -118,12 +119,21 @@ def main():
     print('placed at', px, py, 'size', nw, nh, 'scale %.3f' % s)
 
     out = np.array(base).astype(np.float32)
+    # The new griddle is tilted, so its left edge sits further right than the old plate's frame: clear the old frame's left strip first,
+    # row by row, with the dark stove-top colour just to its left, so no double edge shows. (The new plate is drawn over the rest.)
+    SX0, SX1, SY0, SY1 = 1500, 1660, 656, 960
+    # (colour of the few clean columns just left of the old frame, smoothed down the strip; blended in over 10 px so there is no hard edge)
+    strip = np.median(out[SY0:SY1, 1499:1505, :3], axis=1)
+    strip = cv2.GaussianBlur(strip.astype(np.float32)[:, None, :], (1, 0), sigmaX=0.1, sigmaY=5)[:, 0, :]
+    fade = np.clip((np.arange(SX0, SX1) - SX0) / 10.0, 0, 1)[None, :, None]
+    out[SY0:SY1, SX0:SX1, :3] = out[SY0:SY1, SX0:SX1, :3] * (1 - fade) + strip[:, None, :] * fade
     # first paint the old footprint plate with the surrounding wall colour so no old edge peeks out
     reg = (slice(py, py + nh), slice(px, px + nw))
     old = out[reg]
     keep = np.zeros(old.shape[:2], bool)           # old pixels that must stay in front (food bins)
     yy, xx = np.mgrid[py:py + nh, px:px + nw]
     keep[(yy >= BINS_Y) & (xx >= BINS_X)] = True
+    keep[(yy >= COUNTER_Y) & (xx < COUNTER_X)] = True  # the orange counter's corner stays in front of the griddle's tilted base lip
     A = al[..., 0] * (~keep)
     out[reg][..., :3] = old[..., :3] * (1 - A[..., None]) + col * A[..., None]
     out[..., 3] = np.array(base)[..., 3]
