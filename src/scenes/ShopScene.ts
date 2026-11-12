@@ -4,6 +4,8 @@ import type { KitchenState } from '../game/KitchenState';
 import { titleForLevel } from '../game/career';
 import { buy, buyLabel, modsFor, tierOf } from '../game/shop';
 import { buyDecor, decorLabel } from '../game/decor';
+import { defaultTacoConfig } from '../game/taco/tacoConfig';
+import { buyTaco, tacoBuyLabel, tacoEffectText, tacoModsFor, tacoTierOf } from '../game/taco/tacoShop';
 import { SaveSystem } from '../systems/SaveSystem';
 import { audio } from '../systems/AudioSystem';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
@@ -17,8 +19,13 @@ const BTN_H = 92;
 /** The panel fits five rows; more upgrades go on further pages. */
 const PAGE_SIZE = 5;
 
+/** What the Shop reads and writes. The diner's and the Taco Truck's kitchen states both fit: Lv, coins and upgrades are shared. */
+export type ShopState = Pick<KitchenState, 'cfg' | 'level' | 'coins' | 'mods'>;
+
 export interface ShopData {
-  state: KitchenState;
+  state: ShopState;
+  /** Set by the Taco Truck: the Shop then shows the truck's own upgrades (own list, own save map), with tiers opening up as the menu grows. */
+  taco?: { menuStep: number };
   /** Called after the shop closes (the game scene resumes itself here). */
   onClose: () => void;
 }
@@ -28,7 +35,7 @@ export interface ShopData {
  * src/game/shop.ts; this scene only draws and passes the result back into the model and save.
  */
 export class ShopScene extends Phaser.Scene {
-  private state!: KitchenState;
+  private state!: ShopState;
   private onClose!: () => void;
   private rows: Phaser.GameObjects.GameObject[] = [];
   private coinText!: Phaser.GameObjects.Text;
@@ -37,6 +44,7 @@ export class ShopScene extends Phaser.Scene {
   private closing = false;
   private tab: 'upgrades' | 'decor' = 'upgrades';
   private page = 0;
+  private taco: ShopData['taco'];
 
   constructor() {
     super('Shop');
@@ -45,6 +53,7 @@ export class ShopScene extends Phaser.Scene {
   init(data: ShopData): void {
     this.state = data.state;
     this.onClose = data.onClose;
+    this.taco = data.taco;
     this.closing = false;
     this.tab = 'upgrades';
     this.page = 0;
@@ -109,10 +118,11 @@ export class ShopScene extends Phaser.Scene {
     this.rows = [];
     const s = this.state;
     const x0 = (LOGICAL_WIDTH - PANEL_W) / 2;
-    this.titleText.setText(`Lv ${s.level}  ·  ${titleForLevel(s.cfg, s.level).title}`);
+    this.titleText.setText(this.taco ? `Taco Truck  ·  Lv ${s.level}` : `Lv ${s.level}  ·  ${titleForLevel(s.cfg, s.level).title}`);
     this.coinText.setText(String(s.coins));
 
-    (['upgrades', 'decor'] as const).forEach((t, i) => {
+    // The truck has no Decor tab (decor belongs to the diner's walls), just its upgrades.
+    (this.taco ? (['upgrades'] as const) : (['upgrades', 'decor'] as const)).forEach((t, i) => {
       const on = this.tab === t;
       const label = t === 'upgrades' ? 'Upgrades' : 'Decor';
       this.rows.push(this.makeButton(x0 + 280 + i * 146, 52, label, 140, 60, on ? ORANGE : 0x9aa7b5, () => {
@@ -132,7 +142,8 @@ export class ShopScene extends Phaser.Scene {
       }));
     }
 
-    if (this.tab === 'upgrades') this.drawUpgradeRows(x0);
+    if (this.taco) this.drawTacoRows(x0, this.taco.menuStep);
+    else if (this.tab === 'upgrades') this.drawUpgradeRows(x0);
     else this.drawDecorRows(x0);
   }
 
@@ -187,6 +198,50 @@ export class ShopScene extends Phaser.Scene {
       const btn = this.makeButton(x0 + PANEL_W - 20 - 24 - BTN_W / 2, y + (ROW_H - 8) / 2, label.text, BTN_W, BTN_H, ORANGE, () => this.tryBuy(u.id), label.enabled);
       this.rows.push(g, name, desc, effect, btn);
     });
+  }
+
+  /** The Taco Truck's upgrade rows: same layout as the diner's, with the effect in percent and a locked tier saying what has to join the menu. */
+  private drawTacoRows(x0: number, menuStep: number): void {
+    const s = this.state;
+    const ups = defaultTacoConfig.upgrades;
+    const owned = SaveSystem.data.tacoOwned;
+    ups.forEach((u, i) => {
+      const { y, g } = this.rowBase(i, x0);
+      const tier = tacoTierOf(ups, owned, u.id);
+      const label = tacoBuyLabel(defaultTacoConfig, owned, u.id, menuStep, s.coins);
+      u.tiers.forEach((_, ti) => {
+        const px = x0 + 390 + ti * 30;
+        const py = y + 28;
+        if (ti < tier) g.fillStyle(LEAF, 1).fillCircle(px, py, 10).lineStyle(3, INK, 1).strokeCircle(px, py, 10);
+        else g.lineStyle(3, INK, 0.7).strokeCircle(px, py, 10);
+      });
+      const name = this.add.text(x0 + 40, y + 12, u.name, { fontFamily: FONT, fontSize: '30px', color: '#2B1B17' });
+      const desc = this.add.text(x0 + 40, y + 48, u.description, { fontFamily: FONT, fontSize: '20px', color: '#5a463e' });
+      const note = label.needs
+        ? this.add.text(x0 + 600, y + 40, label.needs, { fontFamily: FONT, fontSize: '19px', color: '#8a3b1f', wordWrap: { width: 185 }, align: 'left' }).setOrigin(0, 0.5)
+        : this.add.text(x0 + 600, y + 40, tacoEffectText(u, tier), { fontFamily: FONT, fontSize: '26px', color: '#2B1B17' }).setOrigin(0, 0.5);
+      const btn = this.makeButton(x0 + PANEL_W - 20 - 24 - BTN_W / 2, y + (ROW_H - 8) / 2, label.text, BTN_W, BTN_H, ORANGE, () => this.tryBuyTaco(u.id), label.enabled);
+      this.rows.push(g, name, desc, note, btn);
+    });
+    this.rows.push(this.add.text(LOGICAL_WIDTH / 2, ROW_TOP + ups.length * ROW_H + 14, 'Faster cooking never shortens the time before food burns.', { fontFamily: FONT, fontSize: '20px', color: '#5a463e' }).setOrigin(0.5));
+  }
+
+  private tryBuyTaco(id: string): void {
+    const s = this.state;
+    const ups = defaultTacoConfig.upgrades;
+    const r = buyTaco(ups, SaveSystem.data.tacoOwned, id, this.taco?.menuStep ?? 1, s.coins);
+    if (!r.ok) {
+      this.flash('Cannot buy that right now');
+      return;
+    }
+    s.coins = r.coins;
+    SaveSystem.data.tacoOwned = r.owned;
+    SaveSystem.data.coins = r.coins;
+    s.mods = tacoModsFor(ups, r.owned);
+    SaveSystem.save();
+    audio.play('levelUp');
+    this.flash(`${ups.find((u) => u.id === id)?.name ?? id} upgraded!`);
+    this.refresh();
   }
 
   private tryBuyDecor(id: string): void {

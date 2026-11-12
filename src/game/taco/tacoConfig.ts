@@ -8,7 +8,7 @@ export type DishKind = 'soft_taco' | 'crispy_taco' | 'burrito' | 'nachos';
 export interface TacoSettings {
   pans: number;
   ovenSlots: number;
-  /** The two orange plates on the pass counter: every dish in progress sits on one. */
+  /** The orange plates on the pass counter (four, drawn by TacoViews): every dish in progress sits on one. */
   plateSlots: number;
   seats: number;
   /** Cups each dispenser can fill at once. */
@@ -72,9 +72,50 @@ export interface TacoRamp {
   orderSize: [number, number];
   patienceMult: number;
 }
+/** How a new dish is brought in, so the player is never thrown into it (see tacoLearning.ts). All numbers are first-pass, tuned in data/taco.json. */
+export interface TacoLearning {
+  /** Serves of a dish before it counts as learned and joins the normal rotation. */
+  practiceServes: number;
+  /** The one-dish introduction order waits this much longer than normal. */
+  introPatienceMult: number;
+  /** While an introduction order is waiting, at most this many customers are in the truck. */
+  introSeats: number;
+  /** Seconds after the menu grows before the introduction customer can arrive. */
+  introDelay: number;
+  /** The next first-time dish waits until every dish before it has been served at least this often. */
+  introNeedsServes: number;
+  /** A dish that is still being practised is picked this much as often as a learned one. */
+  practiceWeight: number;
+  /** An order that holds a dish still being practised has at most this many items. */
+  practiceMaxItems: number;
+  /** Arrivals are this much slower (fraction) for each dish that is not learned yet. */
+  gapPerUnfamiliar: number;
+  gapMaxUnfamiliar: number;
+  /** Most crispy tacos plus nachos (oven dishes) the waiting customers may want at once, and most burritos (pan presses). Keeps one station from being everyone's bottleneck. */
+  ovenItemCap: number;
+  pressItemCap: number;
+}
+/** Which kitchen setting an upgrade changes (`pourSpeed` is the truck's own; the others are the shared kitchen mods). */
+export type TacoModKey = 'grillSpeed' | 'ovenSpeed' | 'burnWindow' | 'patience' | 'pourSpeed';
+export interface TacoUpgradeTier {
+  cost: number;
+  /** The value the setting has once this tier is bought (a multiplier, not an increment). */
+  value: number;
+  /** Menu step at which this tier can be bought, so the upgrades arrive with the difficulty. */
+  step: number;
+}
+export interface TacoUpgradeDef {
+  id: string;
+  name: string;
+  description: string;
+  mod: TacoModKey;
+  tiers: TacoUpgradeTier[];
+}
 export interface TacoConfig {
   restaurant: { id: string; name: string; unlockLevel: number; cost: number };
   settings: TacoSettings;
+  learning: TacoLearning;
+  upgrades: TacoUpgradeDef[];
   proteins: Record<Protein, TimedDef>;
   timed: { crispy_shell: TimedDef; melt: TimedDef; press: TimedDef };
   /** How busy the truck is at each menu step: seats in use, order size and the patience bonus. */
