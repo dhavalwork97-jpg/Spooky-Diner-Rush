@@ -1,0 +1,69 @@
+{
+ "key": "pan_blue_press",
+ "image": "pan_blue_press_sheet.webp",
+ "frameWidth": 273,
+ "frameHeight": 271,
+ "columns": 4,
+ "rows": 4,
+ "frameCount": 14,
+ "frameLabels": [
+  "empty",
+  "pale_0_src0",
+  "pale_1_src1",
+  "pale_2_src2",
+  "pale_3_src3",
+  "sear_0_src4",
+  "sear_1_src5",
+  "sear_2_src6",
+  "golden_0_src8",
+  "golden_1_src9",
+  "golden_2_src10",
+  "golden_3_src11",
+  "burnt_0_src12",
+  "burnt_2_src15"
+ ],
+ "panBox": {
+  "x": 7,
+  "y": 78,
+  "w": 247,
+  "h": 170
+ },
+ "stir": {
+  "looks": [
+   "pale",
+   "sear",
+   "golden",
+   "burnt"
+  ],
+  "loop": 4,
+  "fps": 4,
+  "empty": 0,
+  "clips": {
+   "pale": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "sear": [
+    5,
+    6,
+    7,
+    5
+   ],
+   "golden": [
+    8,
+    9,
+    10,
+    11
+   ],
+   "burnt": [
+    12,
+    12,
+    13,
+    13
+   ]
+  }
+ },
+ "note": "Pan and burrito drawn together (one sheet for all four burrito fillings: once wrapped the filling is not visible). panBox is the pan (bowl and handle). Each look in stir.clips is a 4-step loop: 0 rest, 1 rest + small steam, 2 pressed (puffs at the sides), 3 rest; looks cross-fade step for step. Made by tools/make_press_sheets.py. No press plate exists in the art yet."
+}

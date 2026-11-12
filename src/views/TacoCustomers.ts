@@ -3,6 +3,7 @@ import { LEAVE_FADE_MS, LOOK_ART, clipFor, type LookClip } from '../anim/custome
 import type { BackgroundPlacement } from '../kitchen/zones';
 import type { TacoCustomer, TacoKitchenState } from '../game/taco/TacoKitchenState';
 import { SaveSystem } from '../systems/SaveSystem';
+import { pop, shake } from '../anim/helpers';
 import { sheetKey, spriteKey } from './TacoViews';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
@@ -59,6 +60,18 @@ export class TacoCustomers {
     return v ? { x: v.x, y: v.bottomY - this.bodyH } : null;
   }
 
+  /** Middle of a customer's body, where a dish is dropped and coins start from. */
+  centerOf(id: number): { x: number; y: number } | null {
+    const v = this.views.get(id);
+    return v ? { x: v.x, y: v.bottomY - this.bodyH / 2 } : null;
+  }
+
+  /** A short head-shake for a wrong drop. */
+  shake(id: number): void {
+    const v = this.views.get(id);
+    if (v && !v.leaving) shake(this.scene, v.body, `taco_cust_${id}`, 6, 240);
+  }
+
   /** The waiting customer under a screen point, using the window's drop area and the nearest seat. */
   customerAt(px: number, py: number): TacoCustomer | null {
     const d = this.s.taco.customerWindow.dropZone;
@@ -112,8 +125,11 @@ export class TacoCustomers {
     this.requestLeaveClips();
     this.views.set(c.id, v);
     if (!SaveSystem.reduceMotion()) {
-      body.setAlpha(0);
-      this.scene.tweens.add({ targets: body, alpha: 1, duration: 250 });
+      // Arrive with a small rise and fade, so a new customer never just appears.
+      body.setAlpha(0).setY(bottomY + 14);
+      bubble.setAlpha(0);
+      this.scene.tweens.add({ targets: body, alpha: 1, y: bottomY, duration: 300, ease: 'Quad.Out' });
+      this.scene.tweens.add({ targets: bubble, alpha: 1, duration: 300, delay: 120 });
     }
     return v;
   }
@@ -130,7 +146,12 @@ export class TacoCustomers {
     v.angry = c.mood === 'angry';
     const done = c.mood === 'happy';
     const key = done ? 'done' : c.items.map((it, i) => `${it}${c.delivered[i] ? '+' : '-'}`).join(',');
-    if (key !== v.bubbleKey) this.drawBubble(v, c, done);
+    if (key !== v.bubbleKey) {
+      const changed = v.bubbleKey !== '';
+      this.drawBubble(v, c, done);
+      // A delivered item ticks off with a little pop (not on the first draw).
+      if (changed && !done) pop(this.scene, v.bubble, `taco_bubble_${v.id}`, 1.12, 200);
+    }
     v.bubbleKey = key;
     this.drawBar(v, done ? 0 : frac);
   }

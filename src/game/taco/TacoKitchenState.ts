@@ -195,6 +195,11 @@ export class TacoKitchenState {
   private invalid(message: string) {
     this.emit({ type: 'invalid', message });
   }
+  /** For views: 0 until the food is ready, then 0..1 up to the moment it burns (uses the same window as the real burn rule). */
+  burnFraction(t: number, readyAfter: number, baseBurnWindow: number): number {
+    const w = this.burnWindow(baseBurnWindow);
+    return w > 0 ? Math.max(0, Math.min(1, (t - readyAfter) / w)) : 0;
+  }
   private burnWindow(base: number): number {
     return base * this.mods.burnWindow;
   }

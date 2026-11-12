@@ -6,17 +6,18 @@ import { SaveSystem } from '../systems/SaveSystem';
 /**
  * Radial progress indicator. It only draws what the model says:
  * orange while cooking, green with a tick when ready, then a pulsing
- * mustard (warning) and red (danger) ring. Hidden when the item is burnt.
+ * mustard (warning) and red (danger) ring. Hidden when the item is burnt, unless the ring was made with `showBurnt`
+ * (the Taco Truck pans and ovens): then a burnt item shows a dark disc with a red cross, which no other phase looks like.
  */
 export class Ring extends Phaser.GameObjects.Graphics {
-  constructor(scene: Phaser.Scene, x: number, y: number, private radius = 22) {
+  constructor(scene: Phaser.Scene, x: number, y: number, private radius = 22, private showBurnt = false) {
     super(scene, { x, y });
     scene.add.existing(this);
     this.setDepth(600).setVisible(false);
   }
 
   show(phase: CookPhase | null, progress: number, now: number): void {
-    if (phase === null || phase === 'burnt') {
+    if (phase === null || (phase === 'burnt' && !this.showBurnt)) {
       this.setVisible(false);
       return;
     }
@@ -24,6 +25,14 @@ export class Ring extends Phaser.GameObjects.Graphics {
     this.clear();
     const r = this.radius;
     const reduce = SaveSystem.reduceMotion();
+    if (phase === 'burnt') {
+      // burnt: dark disc, solid red rim, cream cross (shape as well as colour; never looks like progress)
+      this.fillStyle(INK, 0.94).fillCircle(0, 0, r + 6);
+      this.lineStyle(7, TOMATO, 1).strokeCircle(0, 0, r);
+      const k = r * 0.42;
+      this.lineStyle(6, 0xfff4dc, 1).beginPath().moveTo(-k, -k).lineTo(k, k).moveTo(k, -k).lineTo(-k, k).strokePath();
+      return;
+    }
     this.fillStyle(0xfff4dc, 0.9).fillCircle(0, 0, r + 6);
     this.lineStyle(6, INK, 0.25).strokeCircle(0, 0, r);
     if (phase === 'cooking') {
