@@ -78,7 +78,7 @@ const BACK_PAN_LIFT = 0.025; // of the kitchen height
 const RING_ABOVE = 0.035;
 const RING_BELOW = 0.037;
 const PAN_RING_R = 17;
-const OVEN_RING_Y = 0.648;
+const OVEN_RING_Y = 0.644; // just above the oven casing (top edge y 0.673)
 const OVEN_RING_R = 18;
 /** Sheet whose empty pan frame is used for every idle pan (a clean, dry pan). */
 const EMPTY_PAN_SHEET = 'fish';

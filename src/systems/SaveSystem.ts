@@ -1,4 +1,6 @@
 import { CrazyGames } from '../sdk/crazygames';
+import { defaultTacoConfig } from '../game/taco/tacoConfig';
+import { seedLearned } from '../game/taco/tacoLearning';
 import { clampStep, stepFromLevel } from '../game/taco/tacoMenu';
 
 export interface SaveData {
@@ -20,6 +22,12 @@ export interface SaveData {
   /** Taco Truck menu step (1-10) and the XP towards the next one. Separate from Lv: buying the truck late still starts at 1. Saves from before this existed get a step worked out from Lv if the truck is already owned. */
   tacoStep: number;
   tacoXp: number;
+  /** The Taco Truck's own upgrades: upgrade id -> tier bought. Separate from `owned` (the diner's). */
+  tacoOwned: Record<string, number>;
+  /** Times each Taco Truck dish was served: decides when a new dish counts as learned. Saves from before this get every dish older than the current menu step as learned. */
+  tacoServed: Record<string, number>;
+  /** Pointer tutorial state per Taco Truck dish: times shown (1, 2) or 9 once done. */
+  tacoLessons: Record<string, number>;
   settings: { reduceMotion: boolean | null; musicVolume: number; sfxVolume: number; muted: boolean };
 }
 
@@ -38,6 +46,9 @@ export function defaultSave(): SaveData {
     restaurants: ['burger_diner'],
     tacoStep: 1,
     tacoXp: 0,
+    tacoOwned: {},
+    tacoServed: {},
+    tacoLessons: {},
     settings: { reduceMotion: null, musicVolume: 0.6, sfxVolume: 0.8, muted: false },
   };
 }
@@ -100,6 +111,9 @@ export function parseSave(raw: string | null): SaveData {
   try {
     const p = JSON.parse(raw) as Partial<SaveData>;
     const num = (v: unknown, d: number, min = 0) => (typeof v === 'number' && Number.isFinite(v) && v >= min ? v : d);
+    const tacoStep = typeof p.tacoStep === 'number' && Number.isFinite(p.tacoStep) ? clampStep(p.tacoStep) : cleanIds(p.restaurants).includes('taco_truck') ? stepFromLevel(Math.max(1, Math.floor(num(p.level, base.level, 1)))) : 1;
+    // A save from before dish learning: the player already knows every dish that joined the menu before their current step.
+    const seeded = seedLearned(defaultTacoConfig, tacoStep);
     return {
       version: 2,
       level: Math.max(1, Math.floor(num(p.level, base.level, 1))),
@@ -113,8 +127,11 @@ export function parseSave(raw: string | null): SaveData {
           ? p.lastRestaurant
           : base.lastRestaurant,
       restaurants: ownedRestaurants(p.restaurants),
-      tacoStep: typeof p.tacoStep === 'number' && Number.isFinite(p.tacoStep) ? clampStep(p.tacoStep) : cleanIds(p.restaurants).includes('taco_truck') ? stepFromLevel(Math.max(1, Math.floor(num(p.level, base.level, 1)))) : 1,
+      tacoStep,
       tacoXp: num(p.tacoXp, 0),
+      tacoOwned: cleanOwned(p.tacoOwned),
+      tacoServed: p.tacoServed === undefined ? seeded.served : cleanOwned(p.tacoServed),
+      tacoLessons: p.tacoLessons === undefined ? seeded.lessons : cleanOwned(p.tacoLessons),
       settings: {
         reduceMotion: typeof p.settings?.reduceMotion === 'boolean' ? p.settings.reduceMotion : null,
         musicVolume: Math.min(1, num(p.settings?.musicVolume, base.settings.musicVolume)),

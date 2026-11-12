@@ -22,8 +22,12 @@ export interface OvenDoorClips {
 }
 export type DoorState = 'open' | 'closing' | 'closed' | 'opening';
 
-/** Where the 258 x 242 video frame sits on the kitchen art, as fractions of the kitchen picture (tray lines up with the two oven tap zones). */
-export const OVEN_DOOR_BOX = { x: 0.3624, y: 0.7012, w: 0.1874 };
+/**
+ * Where the 258 x 242 video frame sits on the kitchen art, as fractions of the kitchen picture. It is fitted to the painted oven casing in
+ * kitchen_front.webp (measured at x 1026..1494, y 1034..1473 of 2754 x 1536), so the door replaces the painted oven exactly: it stays inside the
+ * orange cabinet, ends above the bottom edge (y 0.959) and the tray lines up with the two oven tap zones (x .4024..0.5174, y .7556..0.8305).
+ */
+export const OVEN_DOOR_BOX = { x: 0.3725, y: 0.6732, w: 0.1699 };
 const DEPTH = 20; // above the kitchen art, below the oven food (25) and the plates
 
 /** Where the door should be, from the model's oven slots only. */
