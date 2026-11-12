@@ -1,8 +1,10 @@
 import { advanceCook, cookPhase, isEdible, type CookPhase } from '../cook';
 import { defaultConfig, levelDef, xpForLevel, type EventDef, type GameConfig } from '../config';
-import { CUSTOMER_LOOK_COUNT, CUSTOMER_LOOK_MIN, type ActiveEvent, type Mods, type SaveSlice } from '../KitchenState';
+import { CUSTOMER_LOOK_COUNT, CUSTOMER_LOOK_MIN, type ActiveEvent, type SaveSlice } from '../KitchenState';
 import { makeRng, randInt, randRange, type Rng } from '../rng';
 import { clampStep, levelForStep, MAX_MENU_STEP, rampFor, stepFromLevel, stepXpNeeded } from './tacoMenu';
+import { NO_TACO_MODS, type TacoMods } from './tacoShop';
+import { familiarityOf, type Familiarity, type TacoServed } from './tacoLearning';
 import {
   buildView,
   defaultTacoConfig,
@@ -96,6 +98,8 @@ export type TacoEvent =
   | { type: 'leave'; customer: number }
   | { type: 'levelUp'; level: number; coins: number; unlocks: string[] }
   | { type: 'menuGrew'; added: string[] }
+  /** A dish was served: `count` is its total so far, `first` marks the very first time, `learned` the serve that moves it into the normal rotation. */
+  | { type: 'recipeServed'; dish: string; count: number; first: boolean; learned: boolean }
   | { type: 'closed' }
   | { type: 'reopened' }
   | { type: 'invalid'; message: string };
@@ -104,7 +108,12 @@ const LEAVE_DELAY = 0.9;
 const ARRIVE_GRACE = 0.7;
 
 /** What the Taco Truck needs from the save: the shared Lv, XP and coins, plus its own menu step (see tacoMenu.ts). Without a step it is worked out from Lv, as for saves from before menu steps. */
-export type TacoSaveSlice = SaveSlice & { menuStep?: number; menuXp?: number };
+export type TacoSaveSlice = SaveSlice & {
+  menuStep?: number;
+  menuXp?: number;
+  /** Times each dish was served. Left out (tests, old callers) the truck runs without dish learning: every dish counts as learned. */
+  tacoServed?: TacoServed;
+};
 
 export class TacoKitchenState {
   readonly cfg: GameConfig;
@@ -132,7 +141,11 @@ export class TacoKitchenState {
   clock = 0;
   event: ActiveEvent | null = null;
   nextEventIn: number;
-  mods: Mods = { fryerSpeed: 1, grillSpeed: 1, ovenSpeed: 1, patience: 1, tips: 1, burnWindow: 1, calm: 1 };
+  mods: TacoMods = { ...NO_TACO_MODS };
+  /** Times each dish was served. With dish learning on, a dish nobody has served yet is brought in by a one-dish introduction order. */
+  dishServes: TacoServed;
+  /** True when the save carried dish counts. Off, every dish counts as learned (the old, uniform behaviour). */
+  readonly learning: boolean;
   nextArrival = 1;
 
   private nextId = 1;
@@ -144,6 +157,8 @@ export class TacoKitchenState {
     this.level = save.level;
     this.menuStep = clampStep(save.menuStep ?? stepFromLevel(save.level));
     this.menuXp = Math.max(0, save.menuXp ?? 0);
+    this.learning = save.tacoServed !== undefined;
+    this.dishServes = { ...(save.tacoServed ?? {}) };
     this.xp = save.xp;
     this.coins = save.coins;
     this.reputation = cfg.xp.reputation.start;
@@ -286,7 +301,7 @@ export class TacoKitchenState {
     for (const drink of this.taco.drinks) {
       this.pours[drink.id].forEach((p, lane) => {
         if (!p) return;
-        p.t += dt;
+        p.t += dt * this.mods.pourSpeed; // Quick pour: cups fill sooner (a full cup never spoils, so there is no reaction window to protect)
         const phase = p.t < drink.fillSeconds ? 'cooking' : 'ready';
         if (phase !== p.phase) {
           p.phase = phase;
@@ -332,14 +347,105 @@ export class TacoKitchenState {
     if (this.nextArrival > 0) return;
     const info = this.levelInfo;
     const active = this.customers.filter((c) => c.mood === 'waiting').length;
-    if (active >= Math.min(info.maxCustomers, this.taco.settings.seats)) {
+    if (active >= this.seatLimit()) {
       this.nextArrival = 1;
       return;
     }
     this.spawnCustomer();
     const slow = 1 + 0.1 * Math.min(this.closesAtLevel.get(this.level) ?? 0, 3);
     const gap = randRange(this.rng, info.arrivalGap[0], info.arrivalGap[1]);
-    this.nextArrival = gap * slow * this.taco.settings.arrivalGapMult * this.wave.gapMult * (this.event?.def.arrivalMult ?? 1);
+    this.nextArrival = gap * slow * this.learningGapMult() * this.taco.settings.arrivalGapMult * this.wave.gapMult * (this.event?.def.arrivalMult ?? 1);
+  }
+
+  // ----- learning a new dish: which orders may hold it, how many customers at once, how fast they come -----
+
+  /** How well the player knows a dish. Without dish learning (no counts in the save) every dish counts as learned. */
+  familiarity(dishId: string): Familiarity {
+    return this.learning ? familiarityOf(this.taco.learning, this.dishServes[dishId] ?? 0) : 'normal';
+  }
+
+  /** Unlocked dishes the player has not learned yet (never served, or still being practised), in menu order. */
+  unfamiliarDishes(): DishDef[] {
+    return this.dishes.filter((d) => this.familiarity(d.id) !== 'normal');
+  }
+
+  private waitingItems(): string[] {
+    return this.customers.filter((c) => c.mood === 'waiting').flatMap((c) => c.items.filter((_, i) => !c.delivered[i]));
+  }
+
+  /** The dish whose first-ever order is due: the earliest dish on the menu that nobody has served yet and no waiting customer has ordered, and only while no other first-time dish is on order. */
+  introDue(): DishDef | null {
+    if (!this.learning) return null;
+    const wanted = this.waitingItems();
+    const fresh = this.dishes.filter((d) => this.familiarity(d.id) === 'intro');
+    if (fresh.length === 0 || fresh.some((d) => wanted.includes(d.id))) return null;
+    // The next new dish waits until the one before it has been made at least twice, so two new recipes never arrive in the same rush.
+    if (this.dishes.some((d) => (this.dishServes[d.id] ?? 0) > 0 && (this.dishServes[d.id] ?? 0) < this.taco.learning.introNeedsServes)) return null;
+    return [...fresh].sort((a, b) => a.unlockStep - b.unlockStep)[0];
+  }
+
+  /** True while a customer still waits for a dish nobody has served yet. */
+  introInFlight(): boolean {
+    if (!this.learning) return false;
+    const wanted = this.waitingItems();
+    return this.dishes.some((d) => this.familiarity(d.id) === 'intro' && wanted.includes(d.id));
+  }
+
+  /** How many customers may wait at once: the step's seats, one fewer while a dish is still being learned, and few while a first-time dish is on order or waiting to be ordered. */
+  seatLimit(): number {
+    const L = this.taco.learning;
+    let limit = Math.min(this.levelInfo.maxCustomers, this.taco.settings.seats);
+    if (!this.learning) return limit;
+    if (this.unfamiliarDishes().length > 0) limit = Math.max(Math.min(limit, 2), limit - 1);
+    if (this.introInFlight() || this.introDue()) limit = Math.min(limit, L.introSeats);
+    return limit;
+  }
+
+  /** Customers arrive a little slower for each dish still being learned, easing back to normal as they are learned. */
+  private learningGapMult(): number {
+    if (!this.learning) return 1;
+    const L = this.taco.learning;
+    return 1 + L.gapPerUnfamiliar * Math.min(this.unfamiliarDishes().length, L.gapMaxUnfamiliar);
+  }
+
+  /** How many oven dishes (crispy tacos, nachos) and burritos (pan presses) the waiting customers still want. */
+  private stationLoad(extra: readonly string[] = []): { oven: number; press: number } {
+    const load = { oven: 0, press: 0 };
+    for (const id of [...this.waitingItems(), ...extra]) {
+      const kind = this.dishDef(id)?.kind;
+      if (kind === 'crispy_taco' || kind === 'nachos') load.oven++;
+      else if (kind === 'burrito') load.press++;
+    }
+    return load;
+  }
+
+  /** One dish for an order. Learned dishes are picked evenly; a dish still being practised less often and only once per order; first-time dishes never (they have their own order). A dish that would pile onto a busy oven or press is skipped while there is a choice. */
+  private pickDish(chosen: readonly string[]): DishDef {
+    const L = this.taco.learning;
+    const dishes = this.dishes;
+    const load = this.stationLoad(chosen);
+    const unfamiliarChosen = chosen.some((id) => this.familiarity(id) !== 'normal');
+    const weigh = (d: DishDef, relaxed: boolean): number => {
+      const fam = this.familiarity(d.id);
+      if (fam === 'intro' && !relaxed) return 0;
+      let w = fam === 'practice' ? L.practiceWeight : 1;
+      if (fam !== 'normal' && unfamiliarChosen && !relaxed) return 0;
+      if (!relaxed && (d.kind === 'crispy_taco' || d.kind === 'nachos') && load.oven >= L.ovenItemCap) w = 0;
+      if (!relaxed && d.kind === 'burrito' && load.press >= L.pressItemCap) w = 0;
+      return w;
+    };
+    for (const relaxed of [false, true]) {
+      const weights = dishes.map((d) => weigh(d, relaxed));
+      const total = weights.reduce((a, b) => a + b, 0);
+      if (total <= 0) continue;
+      let r = this.rng() * total;
+      for (let i = 0; i < dishes.length; i++) {
+        r -= weights[i];
+        if (r <= 0 && weights[i] > 0) return dishes[i];
+      }
+      return dishes[dishes.length - 1];
+    }
+    return dishes[randInt(this.rng, 0, dishes.length - 1)];
   }
 
   private pickType(): string {
@@ -360,25 +466,39 @@ export class TacoKitchenState {
     return d;
   }
 
-  spawnCustomer(forceType?: string): void {
-    const dishes = this.dishes;
-    if (dishes.length === 0) return this.invalid(`The ${this.taco.restaurant.name} opens at Lv ${this.taco.restaurant.unlockLevel}`);
-    const info = this.levelInfo;
-    const typeKey = forceType && this.cfg.customers.types[forceType] ? forceType : this.pickType();
-    const type = this.cfg.customers.types[typeKey];
-    const used = new Set(this.customers.map((c) => c.seat));
-    let seat = 0;
-    while (used.has(seat)) seat++;
-    const size = Math.min(this.taco.settings.maxOrderSize, randInt(this.rng, info.orderSize[0], info.orderSize[1]) + type.extraItems);
+  /** The items of an ordinary order: dishes by `pickDish`, drinks by the usual chance. An order with a dish still being practised is kept short. */
+  private pickItems(size: number): string[] {
     const drinks = this.drinks;
     const items: string[] = [];
     for (let i = 0; i < size; i++) {
       if (drinks.length > 0 && this.rng() < this.taco.settings.drinkChance) items.push(drinks[randInt(this.rng, 0, drinks.length - 1)].id);
-      else items.push(dishes[randInt(this.rng, 0, dishes.length - 1)].id);
+      else items.push(this.pickDish(items.filter((k) => this.dishDef(k))).id);
     }
+    const cap = this.taco.learning.practiceMaxItems;
+    const at = items.findIndex((k) => this.dishDef(k) && this.familiarity(k) !== 'normal');
+    if (at >= 0 && items.length > cap) {
+      const keep = new Set<number>([at]);
+      for (let i = 0; i < items.length && keep.size < cap; i++) keep.add(i);
+      return items.filter((_, i) => keep.has(i));
+    }
+    return items;
+  }
+
+  spawnCustomer(forceType?: string): void {
+    const dishes = this.dishes;
+    if (dishes.length === 0) return this.invalid(`The ${this.taco.restaurant.name} opens at Lv ${this.taco.restaurant.unlockLevel}`);
+    const info = this.levelInfo;
+    const intro = forceType ? null : this.introDue();
+    const typeKey = forceType && this.cfg.customers.types[forceType] ? forceType : intro && this.cfg.customers.types.regular ? 'regular' : this.pickType();
+    const type = this.cfg.customers.types[typeKey];
+    const used = new Set(this.customers.map((c) => c.seat));
+    let seat = 0;
+    while (used.has(seat)) seat++;
+    // A dish nobody has served yet is ordered once, alone, by a regular customer who waits a little longer (a gentle first try).
+    const items: string[] = intro ? [intro.id] : this.pickItems(Math.min(this.taco.settings.maxOrderSize, randInt(this.rng, info.orderSize[0], info.orderSize[1]) + type.extraItems));
     const price = Math.round(items.reduce((sum, k) => sum + this.itemDef(k).price, 0) * type.payMult);
     const closes = Math.min(this.closesAtLevel.get(this.level) ?? 0, 3);
-    const patienceMax = info.patience * rampFor(this.taco, this.menuStep).patienceMult * type.patienceMult * this.mods.patience * (1 + 0.1 * closes);
+    const patienceMax = info.patience * rampFor(this.taco, this.menuStep).patienceMult * type.patienceMult * this.mods.patience * (1 + 0.1 * closes) * (intro ? this.taco.learning.introPatienceMult : 1);
     const c: TacoCustomer = {
       id: this.nextId++,
       seat,
@@ -587,8 +707,16 @@ export class TacoKitchenState {
     plate.item = null;
     c.delivered[need] = true;
     this.emit({ type: 'deliver', customer: c.id, plate: plateIndex, itemIndex: need });
+    this.countServe(item.dish);
     if (c.delivered.every(Boolean)) this.completeOrder(c);
     return true;
+  }
+
+  /** Count a served dish; the serve that reaches `practiceServes` moves it into the normal rotation. */
+  private countServe(dish: string): void {
+    const count = (this.dishServes[dish] ?? 0) + 1;
+    this.dishServes[dish] = count;
+    this.emit({ type: 'recipeServed', dish, count, first: count === 1, learned: count === this.taco.learning.practiceServes });
   }
 
   pourReady(drinkId: string, lane: number): boolean {
@@ -710,6 +838,7 @@ export class TacoKitchenState {
       this.menuStep++;
       const added = [...this.taco.dishes.filter((d) => d.unlockStep === this.menuStep).map((d) => d.name), ...this.taco.drinks.filter((d) => d.unlockStep === this.menuStep).map((d) => d.name)];
       this.emit({ type: 'menuGrew', added });
+      if (this.learning) this.nextArrival = Math.max(this.nextArrival, this.taco.learning.introDelay); // let the 'new on the menu' message land before the first customer for it
     }
     if (this.menuStep >= MAX_MENU_STEP) this.menuXp = 0;
   }
