@@ -111,10 +111,9 @@ describe('assembly rules', () => {
     expect(s.plates[0].item!.placed).toEqual(['tortilla_flour_tortillas']);
     expect(s.plates[1].item!.placed).toEqual(['tortilla_corn_tortillas', 'cooler_cheese']);
   });
-  it('only two plates: a third tortilla is refused', () => {
+  it('only four plates: a fifth tortilla is refused', () => {
     const s = quiet(tacoAt(10));
-    s.tapIngredient('tortilla_flour_tortillas');
-    s.tapIngredient('tortilla_flour_tortillas');
+    for (let i = 0; i < s.plates.length; i++) s.tapIngredient('tortilla_flour_tortillas');
     s.drainEvents();
     s.tapIngredient('tortilla_flour_tortillas');
     expect(invalids(s)[0]).toBe('No free plate');
@@ -168,8 +167,7 @@ describe('assembly rules', () => {
     s.tapPlate(0); // wrap
     s.tapPlate(0); // press: the plate empties
     expect(s.plates[0].item).toBeNull();
-    s.tapIngredient('tortilla_flour_tortillas');
-    s.tapIngredient('tortilla_flour_tortillas');
+    for (let i = 0; i < s.plates.length; i++) s.tapIngredient('tortilla_flour_tortillas'); // fill every plate
     run(s, 4.2);
     s.drainEvents();
     const pressPan = s.pans.findIndex((p) => p?.what.kind === 'press');

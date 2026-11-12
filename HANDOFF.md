@@ -84,6 +84,31 @@ This section is the authoritative current status for the next Claude/Codex sessi
 
 ---
 
+
+## NOTE (after commit 298ac33): griddle tap zones re-measured from the cleaned food masks (chicken/shrimp zones were ~45 px too wide); data/taco.json + tools/make_griddle_art.py changed, UNCOMMITTED until the owner says so.
+## DONE (committed + pushed as 298ac33): TASK C (burrito press) + TASK D (nachos melt)  [owner add-on, same rules: no commit, no gameplay/economy changes]
+Branch note: this worktree is on local branch `taco-art`. Everything stays UNCOMMITTED until the owner says so.
+Plan (tick as done):
+- [x] C0 (done, stir sheets rebuilt byte-identical). Shared helpers: move green keying, despill, cell cutting, registration, IoU, premultiplied scaling, blue-pan turn, sheet/json writing and memory table out of tools/make_stir_sheets.py into tools/art_common.py. Re-run make_stir_sheets.py and check the 8 pan sheets come out byte-identical.
+- [x] C1 (done: tools/make_press_sheets.py; lower-pan IoU min 0.982; frames 7,13,14 dropped; blue mask = pan pieces touching the outer edge, because the burrito never moves). tools/make_press_sheets.py: cut burrito_press_sheet (4x4, 256 px), classify frames, fix flaws (a) frame 7 golden, (b) frame 13 golden, (c) drift -> register on pan body (IoU), (d) frame 15 sparkle, (e) no press plate. Output pan_red_press / pan_blue_press + .anim.json (panBox, stir looks pale/sear/golden/burnt x 4 steps).
+- [x] C2 (code done + typechecks; visual check pending). TacoViews.ts: press pans use pan_<colour>_press loop (~1.2 s), looks cross-faded at same step by t/readyAfter keys [0,0],[0.4,1],[1,2], ready = golden loop with steam, burnFraction fade to burnt, burnt loop + smoke, no press moment; reduceMotion; press-plate hook (ships without the art).
+- [x] D1 (done: tools/make_nachos_melt_sheet.py, 11 frames, looks raw/melting/melted/browned/burnt). tools/make_nachos_melt_sheet.py: cut nachos_melt_sheet (4x4, 256x191), classify frames, register on pile bottom-centre, scale to 288x208 frames, anchor (144,202). Output nachos_melt sheet + .anim.json.
+- [x] D2 (meltBlend + oven branch; visual check pending). TacoViews.ts oven melt branch: raw -> melted cross-fade u 0.15-0.7, melted loop with steam at ready, burnFraction -> burnt loop; never the nachos_<protein> frame 3. reduceMotion holds a rest frame.
+- [x] CD3 (tests/taco_press_melt.test.ts added; texture total 83.0 MB > brief's ~80 MB: gate set at 85 and flagged for owner). Tests (anim json schema, melt never uses protein/toppings frame, press clips valid), tsc, vitest, build + build:crazygames.
+- [x] CD4 (screenshots press 0/press moment/40/80/ready/burning/burnt both colours + melt 0/30/70/ready/browning/burning/burnt; sharpness ok). NOT committed: waiting for owner approval. Screenshots (press 0/40%/ready/burnt both colours; melt 0/30/70/ready/burnt), sharpness check, sizes + texture memory, report.
+# IN PROGRESS (2026-11-09, Claude) - Taco Truck stir sheets + new griddle (worktree branch `taco-art` from origin/feature/taco-truck e846de8; NOT committed, owner has not approved a commit)
+Start state: origin/feature/taco-truck plus the owner's uncommitted 4-plate / smooth-blend work (from the zip `Chef-Rush-taco-4plates-smooth-cooking`: data/taco.json plateSlots 4, kitchen_front.webp, plate.webp, TacoViews/TacoScene/TacoKitchenState/tacoConfig, taco tests). Kept as is. No gameplay, economy, save, recipe, unlock or timing change; diner untouched.
+Originals go to `tools/taco_source/incoming/` (not public/). Art conversion is re-runnable: `tools/make_stir_sheets.py`, `tools/make_griddle_art.py`.
+Plan:
+- [x] A1. Contact sheets of the 4 stir sheets; classify every frame (stage, phase); drop broken ones.
+- [x] A2. `tools/make_stir_sheets.py`: remove green + watermark, register every frame to one pan placement, build 8-frame loops per stage (same timeline), blue variants by hue-shifting the pan only, write 8 sheets + .anim.json (33 frames, 4 cols), check sizes/memory.
+- NOTE A2 result: `python3 tools/make_stir_sheets.py [--debug DIR] [--cache DIR]` writes the 8 pan sheets + .anim.json (unique frames + `stir.clips` per stage, 4 columns, 71 MB GPU total, each file < 350 KB). Old sheets backed up OUTSIDE the repo in /tmp (also in git history). TacoViews still uses the OLD loader/blend code and will break until A3 is done: finish A3 before running anything.
+- [x] A3 (visual check done: 4 pans x 5 cooking points x 2 colours look right; 'stage'/'shift'/'star' renamed to look/turn/sparkle for the wording rule). TacoViews runtime: time-based loop, stage cross-fade, ready tosses less, burnt at rest, reduce-motion, remove old PAN_KEYS/panBlend/updateToss only when verified.
+- [x] A4. Tests (tests/taco_stir.test.ts, 15 pass; tests/node_shim.d.ts gives it node typings) (anim json schema, asset lists, frame labels).
+- [x] B1 (done: python3 tools/make_griddle_art.py; backup tools/taco_source/kitchen_front_before_griddle.webp; new griddle fitted onto old plate + control strip footprint x1512..2044 y655..1034). Measure old griddle in kitchen_front.webp; `tools/make_griddle_art.py` (remove green/watermark, fit, bake, keep backup `tools/taco_source/kitchen_front_before_griddle.webp`).
+- [x] B2 (zones rewritten by the same script; raw_* sprites regenerated from the new art by the same script). Re-measure 4 food clusters, update griddle_raw_* zones in data/taco.json; run taco_zones + tutorial tests. Try clean raw_* cut-outs.
+- [x] V (tsc clean; vitest all pass, balance_upgrades needs --testTimeout=60000; npm run build + build:crazygames ok; screenshots + 30fps series done; NOT committed: waiting for owner approval). tsc, vitest (balance_upgrades alone if it times out), build + build:crazygames, headless screenshots, 30 fps jump check, memory numbers, final report.
+
 # HANDOFF
 
 ## AdMob for the Android app (2026-11-04, Claude) - branch `feature/android-capacitor`, JS side DONE and tested, native side NOT built here, COMMITTED (merge commit f393cfc, owner approved) and pushed on owner approval, NO PR yet, NOT merged
@@ -110,6 +135,7 @@ Exact Android testing steps (owner, on the computer with Android Studio; test ad
 4. `adb install -r app/build/outputs/apk/debug/app-debug.apk` (run in the `android` folder), or copy the APK to the phone.
 5. Check: app starts; Lv 3 then a Google "Test Ad" after the level-up card, game and sound frozen, resumes after closing; no second mid-game ad for 180 s; Closed screen: plain Reopen = 55, "Watch an ad" button, watch to the end = 100, close early = no reward and the "No ad available" text; airplane mode = no ad, no crash; Back during an ad does nothing. Optional: `adb logcat | grep -i Ads`, and `chrome://inspect` shows no `sdk.crazygames.com` request. Full list: `docs/android.md`.
 Shared-change note for later: `src/ads/timing.ts` and the small `src/sdk/crazygames.ts` import are the only browser-side files touched; moving them to `main` would be a separate, approved step (do not merge this branch into `main`).
+
 
 ## TACO TRUCK UI + ANIMATION + TUTORIAL POLISH (2026-11-08, Claude) - branch `feature/taco-truck`, NOTHING committed until the full suite is green and the owner's checklist is verified (owner: commit only after verifying the diner has not regressed; no merge to main)
 Owner brief: Taco Truck must show the SAME HUD/navigation as Spooky Diner, smoother animations, and a guided first-visit tutorial using the diner's pointer/highlight systems. No gameplay, economy, unlock (Lv 15), price (2,000), save or recipe changes.
@@ -731,3 +757,26 @@ Not done: real-device look at the Special tag and Recipe Book line; transfer to 
 
 ### 2026-11-08: Taco Truck + diner extras merged (owner approved)
 main = origin/main + feature/taco-truck + feature/diner-extras (local merge commits, NOT pushed). feature/android-capacitor = its previous tip + main merged in (conflicts in target.ts, crazygames.ts, KitchenState.ts, sim_late test, HANDOFF resolved by keeping both sides; ADS_ENABLED only gates the CrazyGames SDK, AdMob untouched). Two ad tests adjusted (adsafety regex for new reopen braces; adsrouting sets VITE_ENABLE_ADS for the browser-mode routing check). Taco scene has no ad calls. Known flaky: balance_upgrades 5 s timeouts. Gradle/APK not built here (no Android SDK, no network): build the APK on the owner's machine. Not tested on a real phone.
+
+
+## In progress (2026-11-11): oven door video + cooking timers (feature/taco-truck, nothing committed yet)
+Plan (update after each step):
+ O1. Copy Gemini oven mp4 to tools/taco_source/incoming/, find clip boundaries by frame diff, extract frames.
+ O2. tools/make_oven_door_sheet.py -> public/assets/taco/animations/oven_door_sheet.webp + .anim.json (clips close, closed-idle, open, open-hold). Old oven art stays until verified.
+ O3. TacoViews: oven door state machine (open while placing/collecting, close at bake start, closed-idle while baking, open + open-hold at ready); shells drawn on open tray only, hidden while closed. No cooking logic/timing changes.
+ T1. Ring.ts: add explicit 'burnt' look (keep other phases as-is; Diner/Pour/Station users unchanged except burnt now shown only if caller asks).
+ T2. TacoViews: one Ring per pan (4) and oven (2), positioned above the slot, driven from existing p.phase / p.t / def.readyAfter / burnWindow. Nothing on the griddle.
+ V.  Tests (anim json schema, clip validity, ring state mapping), screenshots, tsc, vitest, build, build:crazygames, report.
+O1-O3 oven door code written (TacoOvenDoor.ts), needs screenshot check
+T1-T2 rings coded (Ring showBurnt option, TacoViews buildRings/syncRings); need screenshots
+DONE 2026-11-11 (uncommitted, awaiting owner approval): oven door (tools/make_oven_door_sheet.py, oven_door_sheet.*, src/views/TacoOvenDoor.ts, hook in TacoViews) and cook timers (Ring showBurnt option, TacoViews rings for 4 pans + 2 ovens, injected from TacoScene). Tests: tests/taco_oven_door.test.ts, tests/taco_timers.test.ts. tsc, vitest (468 pass), build, build:crazygames pass. Not tested on a real device.
+
+## In progress (2026-11-11): pouring dispensers (feature/taco-truck, previous work committed 952bdfd, not pushed)
+Owner brief: replace the two static dispensers with the supplied pour sheets (taco = red agua de jamaica, 68 frames 300x327; round = horchata, 58 frames 177x316; clips idle_empty/pour/idle_full), same slot position/size, bottom-centre anchor, one sheet = one draw call.
+Finding: the game has 3 INDEPENDENT lanes per dispenser (each tap fills the next free lane, each cup is served on its own), but the clips pour all 3 cups together. Plan: keep logic untouched; draw base = frame 0, and per lane an Image of the same sheet cropped (setCrop) to that lane's column, frame chosen from that lane's own progress p.t/fillSeconds, so a cup is full exactly when the model says ready. Needs a check that the 3 columns are separable in the frames.
+ D1. Unzip, inspect frames, check column separability. D2. tools/make_dispenser_sheets.py (webp + anim.json). D3. TacoViews hookup (hide old in-dispenser cup images, keep the drag ghost). D4. Tests, screenshots, builds, report.
+D1-D3 dispenser code written: src/views/TacoDispensers.ts + hook; needs screenshots
+DONE dispensers (uncommitted): TacoDispensers.ts, tools/make_dispenser_sheets.py, 6 sheets/bases, cup zones moved in data/taco.json, tests/taco_dispensers.test.ts. tsc/vitest/builds pass.
+Griddle left-edge fix (uncommitted): tools/make_griddle_art.py clears the old griddle frame strip before compositing; kitchen_front.webp regenerated, zones unchanged.
+Griddle bottom-left overlap fix: old counter corner kept in front (COUNTER_X/Y in make_griddle_art.py); kitchen_front.webp regenerated. Uncommitted.
+Merged origin/main (943ebeb) into android-two-provider locally: TacoViews = main's version; TacoScene = main's art + Android ads door (ads, reopenWithAd). Not pushed. APK not built here.

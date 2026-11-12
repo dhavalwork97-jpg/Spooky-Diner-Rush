@@ -34,7 +34,7 @@ describe('taco zones data', () => {
   });
   it('has exactly one zone for each pan, oven slot, plate and protein, and one tap zone per dispenser', () => {
     const count = (a: string) => cfg.zones.filter((z) => z.action === a).length;
-    expect([count('pan'), count('oven'), count('plate'), count('protein'), count('drinks'), count('cup'), count('trash')]).toEqual([4, 2, 2, 4, 2, 6, 1]);
+    expect([count('pan'), count('oven'), count('plate'), count('protein'), count('drinks'), count('cup'), count('trash')]).toEqual([4, 2, 4, 4, 2, 6, 1]);
   });
   it('every tortilla and ingredient used by a dish has a zone to tap', () => {
     const have = new Set(cfg.zones.filter((z) => z.action === 'ingredient').map((z) => z.arg));

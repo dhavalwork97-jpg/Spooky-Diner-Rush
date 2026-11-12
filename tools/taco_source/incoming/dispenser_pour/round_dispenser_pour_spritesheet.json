@@ -1,0 +1,46 @@
+{
+  "name": "round_dispenser_pour",
+  "source_video": "gemini_generated_video_eb54d71c.mp4",
+  "fps": 12,
+  "frame_count": 58,
+  "sheet": {
+    "file": "round_dispenser_pour_spritesheet.png",
+    "columns": 10,
+    "rows": 6,
+    "frame_width": 177,
+    "frame_height": 316,
+    "width": 1770,
+    "height": 1896,
+    "scale_vs_full": 0.75,
+    "file_webp": "round_dispenser_pour_spritesheet.webp"
+  },
+  "full_res_frame_size": [
+    236,
+    422
+  ],
+  "frames_dir": "frames_full",
+  "clips": {
+    "idle_empty": {
+      "frames": [
+        0,
+        0
+      ]
+    },
+    "pour": {
+      "frames": [
+        0,
+        57
+      ],
+      "loop": false,
+      "fps": 12
+    },
+    "idle_full": {
+      "frames": [
+        57,
+        57
+      ]
+    }
+  },
+  "anchor": "bottom-center",
+  "notes": "All 3 cups pour together. Frame 0 = empty cups, last frame = full cups. Transparent background (keyed from #00FF00)."
+}

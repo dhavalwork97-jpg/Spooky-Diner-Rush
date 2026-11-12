@@ -1,0 +1,84 @@
+{
+ "key": "oven_door_taco",
+ "image": "oven_door_sheet.webp",
+ "frameWidth": 258,
+ "frameHeight": 242,
+ "columns": 6,
+ "rows": 4,
+ "frameCount": 23,
+ "suggestedFps": 12,
+ "clips": {
+  "close": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "closed-idle": [
+   7
+  ],
+  "open": [
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21
+  ],
+  "open-hold": [
+   22
+  ]
+ },
+ "clipFps": {
+  "close": 14,
+  "open": 14
+ },
+ "source": {
+  "file": "oven_door.mp4",
+  "frames": {
+   "close": [
+    187,
+    189,
+    191,
+    193,
+    195,
+    197,
+    199
+   ],
+   "closed-idle": [
+    60
+   ],
+   "open": [
+    94,
+    97,
+    100,
+    103,
+    106,
+    109,
+    112,
+    115,
+    118,
+    121,
+    124,
+    127,
+    130,
+    133
+   ],
+   "open-hold": [
+    150
+   ]
+  }
+ },
+ "note": "close = door closes (warm open to closed); closed-idle = held while baking; open = door opens; open-hold = held open, empty tray."
+}
