@@ -1,4 +1,18 @@
-# CURRENT HANDOFF — 2026-11-08 (READ THIS FIRST)
+# CURRENT HANDOFF — 2026-11-12 (READ THIS FIRST)
+
+## Development-only all-content test mode (2026-11-12)
+
+- Branch: `feature/dev-all-unlocks-test-mode` (based on current `main`); not merged.
+- Entry URL: `http://localhost:5173/?testMode=all` after `npm install` and `npm run dev`.
+- The shortcut is guarded by `import.meta.env.DEV`; production/CrazyGames builds ignore the query parameter and use the normal save.
+- Test progress uses the separate key `chef-rush-test-save`; normal `chef-rush-save` is not read or written while this test mode is active.
+- On each test-mode load, the test profile is raised (without reducing existing test progress) to at least the highest configured main recipe unlock level, Taco Truck's configured purchase level, 10,000 coins, Taco Truck ownership, and the highest configured Taco dish/drink menu step. This is data-driven so newly added recipe/menu unlocks are included when their config is updated.
+- Test mode starts directly in the game, skipping the title screen.
+- Files changed: `src/systems/SaveSystem.ts`, `src/scenes/BootScene.ts`.
+- Verification status: GitHub source edits completed. Typecheck, unit tests, browser smoke and production-build exclusion have **not yet been run** in this session. Do not describe the feature as verified until CI/local checks pass.
+- Next: run `npm ci`, `npm run typecheck`, `npm test`, `npm run build`, and `npm run build:crazygames`; smoke-test both normal and `?testMode=all` flows and confirm the normal save key remains unchanged. Then review and merge the PR.
+
+---
 
 This section is the authoritative current status for the next Claude/Codex session. Older dated sections below are retained as project history; where they say work is uncommitted, in progress, or still awaiting a merge, use this current section instead.
 

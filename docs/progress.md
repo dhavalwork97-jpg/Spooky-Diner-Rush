@@ -1,4 +1,7 @@
-# Current repository status — 2026-10-29
+# Current repository status — 2026-11-12
+
+- Development-only all-content test mode added on branch `feature/dev-all-unlocks-test-mode`; see `HANDOFF.md` for URL, separate save key, dynamic unlock behavior and unverified checks. Not merged to `main` yet.
+
 
 - Milestone 3 PR #5 and Milestone 4 PR #6 are merged into `main`.
 - Milestone 4 merge commit: `6e46972dc5ff3e98575e317b61527fb51ac611af`.

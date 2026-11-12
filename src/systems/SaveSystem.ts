@@ -1,5 +1,7 @@
 import { CrazyGames } from '../sdk/crazygames';
 import { clampStep, stepFromLevel } from '../game/taco/tacoMenu';
+import { defaultConfig } from '../game/config';
+import { defaultTacoConfig } from '../game/taco/tacoConfig';
 
 export interface SaveData {
   /** 2 since Milestone 4. Version 1 saves load fine and get the new fields from defaults. */
@@ -28,6 +30,29 @@ export interface SaveData {
 }
 
 const KEY = 'chef-rush-save';
+const TEST_KEY = 'chef-rush-test-save';
+
+/** Test mode is available only on Vite's development server, never production builds. */
+function isDevAllTestMode(): boolean {
+  if (!import.meta.env.DEV || typeof globalThis.location === 'undefined') return false;
+  return new URLSearchParams(globalThis.location.search).get('testMode') === 'all';
+}
+
+function allContentTestSave(data: SaveData): SaveData {
+  const highestRecipeLevel = Math.max(...Object.values(defaultConfig.recipes.items).map((item) => item.unlockLevel));
+  const highestTacoStep = Math.max(
+    1,
+    ...defaultTacoConfig.dishes.map((dish) => dish.unlockStep),
+    ...defaultTacoConfig.drinks.map((drink) => drink.unlockStep),
+  );
+  return {
+    ...data,
+    level: Math.max(data.level, defaultTacoConfig.restaurant.unlockLevel, highestRecipeLevel),
+    coins: Math.max(data.coins, 10000),
+    restaurants: ownedRestaurants([...data.restaurants, defaultTacoConfig.restaurant.id]),
+    tacoStep: Math.max(data.tacoStep, highestTacoStep),
+  };
+}
 
 export function defaultSave(): SaveData {
   return {
