@@ -53,21 +53,43 @@ function panWith(pans: (Pan | null)[], protein: Protein): number {
   return (mine.find((x) => x.p!.phase !== 'cooking') ?? mine[0])?.i ?? -1;
 }
 
-export function nextTacoHint(s: TacoKitchenState): TacoHint | null {
+/**
+ * The recipe tutorial's card text for a dish, built from its real steps (so a new or changed recipe teaches itself): "Shrimp soft taco: a flour tortilla, cooked shrimp, ...".
+ * Steps are named as the player sees them in the kitchen; an action such as wrapping is named the same way the pointer names it.
+ */
+export function recipeIntro(taco: TacoConfig, dish: DishDef): { title: string; text: string } {
+  const steps = dish.steps.map((id) => say(taco, id));
+  // The card has room for about four lines: name the first parts and let the pointer show the rest.
+  const first = steps.slice(0, 4).join(', ');
+  return { title: dish.name, text: `New recipe! It starts with ${first}${steps.length > 4 ? ' and more' : ''}.\nFollow the hand!` };
+}
+
+/** The customer a recipe tutorial is about: the first waiting customer who still wants this dish. */
+export function lessonCustomer(s: TacoKitchenState, dishId: string): number | null {
+  return s.customers.find((c) => c.mood === 'waiting' && c.items.some((k, i) => k === dishId && !c.delivered[i]))?.id ?? null;
+}
+
+/**
+ * The next thing to do. Without `focus` it follows the first waiting customer's order (the first-visit guide). With `focus` (a dish id) it
+ * teaches that one recipe: it only looks at the customer who ordered it and only at its finished plate, so the pointer never wanders to other orders.
+ */
+export function nextTacoHint(s: TacoKitchenState, focus?: string): TacoHint | null {
   if (s.closed) return null;
   const taco = s.taco;
   const waiting = s.customers.filter((c) => c.mood === 'waiting');
+  const focusId = focus ? lessonCustomer(s, focus) : null;
+  if (focus && focusId === null) return { kind: 'wait', text: `A customer for the ${s.dishDef(focus)?.name ?? 'new dish'} is on the way`, key: `lesson_wait:${focus}` };
   if (waiting.length === 0) return { kind: 'wait', text: 'A customer is on the way', key: 'no_customer' };
 
   // 1. Something finished that a waiting customer ordered: drag it over.
   for (const pl of s.plates) {
     const it = pl.item;
-    if (!it || it.building || !it.dish) continue;
+    if (!it || it.building || !it.dish || (focus && it.dish !== focus)) continue;
     const c = waiting.find((x) => x.items.some((k, i) => k === it.dish && !x.delivered[i]));
     const from = zoneFor(taco, 'plate', { index: pl.index });
     if (c && from) return { kind: 'drag', from, customer: c.id, text: 'Drag the finished dish to the customer', key: `drag:${pl.index}:${c.id}` };
   }
-  for (const dr of s.drinks) {
+  for (const dr of focus ? [] : s.drinks) {
     const lanes = s.pours[dr.id] ?? [];
     for (let lane = 0; lane < lanes.length; lane++) {
       if (!s.pourReady(dr.id, lane)) continue;
@@ -78,7 +100,8 @@ export function nextTacoHint(s: TacoKitchenState): TacoHint | null {
   }
 
   // 2. Guide the first thing the first waiting customer still wants. Dishes first: they are the recipes the tutorial teaches.
-  const want = waiting[0].items.find((k, i) => !waiting[0].delivered[i] && s.dishDef(k)) ?? waiting[0].items.find((k, i) => !waiting[0].delivered[i]);
+  const target = (focusId !== null ? waiting.find((c) => c.id === focusId) : undefined) ?? waiting[0];
+  const want = focus ?? target.items.find((k, i) => !target.delivered[i] && s.dishDef(k)) ?? target.items.find((k, i) => !target.delivered[i]);
   if (!want) return null;
   const drink = s.drinks.find((d) => d.id === want);
   if (drink) {

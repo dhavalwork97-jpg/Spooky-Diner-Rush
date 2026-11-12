@@ -4,9 +4,11 @@ import { TacoKitchenState, type TacoEvent } from '../game/taco/TacoKitchenState'
 import { defaultTacoConfig, type TacoZone } from '../game/taco/tacoConfig';
 import { hitTestTaco, tapZone } from '../game/taco/tacoZones';
 import { tacoRecipeEntries, TACO_BOOK_TIPS } from '../game/taco/tacoRecipes';
-import { TACO_TUTORIAL_ID, nextTacoHint, tutorialDue } from '../game/taco/tacoTutorial';
+import { TACO_TUTORIAL_ID, nextTacoHint, recipeIntro, tutorialDue } from '../game/taco/tacoTutorial';
+import { lessonDone, lessonMode, lessonShown, seedLearned } from '../game/taco/tacoLearning';
+import { tacoModsFor } from '../game/taco/tacoShop';
+import { clampStep } from '../game/taco/tacoMenu';
 import { titleEarnedAt } from '../game/career';
-import { modsFor } from '../game/shop';
 import type { RestaurantSelectData } from './RestaurantSelectScene';
 import type { BookRow, RecipeBookData } from './RecipeBookScene';
 import { SaveSystem } from '../systems/SaveSystem';
@@ -84,6 +86,12 @@ export class TacoScene extends Phaser.Scene {
   private menuButtons!: MenuButtons;
   private tutorial!: TacoTutorialView;
   private tutorialOn = false;
+  /** The recipe tutorial that is running (one dish at a time), or null. `active` turns true once its intro card is closed. */
+  private lesson: { dish: string; mode: 'full' | 'reminder'; active: boolean } | null = null;
+  /** ?debug&speed=N: time runs N times faster (testing only). */
+  private speed = 1;
+  /** No automatic tutorial starts before this time (ms, scene clock): after a skip or an ended lesson the player is left alone for a while. */
+  private lessonPauseUntil = 0;
   /** A finished dish or full cup being dragged to a customer. */
   private drag: Drag | null = null;
   private lastSave = 0;
@@ -108,6 +116,8 @@ export class TacoScene extends Phaser.Scene {
     this.panelOpen = false;
     this.drag = null;
     this.tutorialOn = false;
+    this.lesson = null;
+    this.lessonPauseUntil = 0;
     this.adActive = false;
     this.adPending = false;
     const a = defaultTacoConfig.art;
@@ -118,8 +128,10 @@ export class TacoScene extends Phaser.Scene {
     layer('taco_front', 20);
 
     const save = SaveSystem.data;
-    this.state = new TacoKitchenState({ level: save.level, xp: save.xp, coins: save.coins, menuStep: save.tacoStep, menuXp: save.tacoXp });
-    this.state.mods = modsFor(this.state.cfg.upgrades.upgrades, save.owned);
+    this.state = new TacoKitchenState({ level: save.level, xp: save.xp, coins: save.coins, menuStep: save.tacoStep, menuXp: save.tacoXp, tacoServed: save.tacoServed });
+    // The truck uses its own upgrades only (the diner's shop upgrades do not carry over).
+    this.state.mods = tacoModsFor(this.state.taco.upgrades, save.tacoOwned);
+    this.applyDebugFlags();
 
     this.fx = new ParticlePool(this, 140);
     this.views = new TacoViews(this, this.bg, this.state, this.fx, (x, y, r) => new Ring(this, x, y, r, true));
@@ -134,7 +146,7 @@ export class TacoScene extends Phaser.Scene {
     this.storyCard = new StoryCard(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     new MuteButton(this);
     this.menuButtons = new MenuButtons(this, (k: MenuKind) => this.openPanel(k === 'shop' ? 'Shop' : k === 'book' ? 'RecipeBook' : 'RestaurantSelect'));
-    this.tutorial = new TacoTutorialView(this, LOGICAL_WIDTH, LOGICAL_HEIGHT, () => this.finishTutorial('Tutorial skipped. The Recipe Book shows every recipe.'));
+    this.tutorial = new TacoTutorialView(this, LOGICAL_WIDTH, LOGICAL_HEIGHT, () => (this.lesson ? this.endLesson(false) : this.finishTutorial('Tutorial skipped. The Recipe Book shows every recipe.')));
     if (new URLSearchParams(location.search).has('debug')) this.drawZones();
 
     this.startTutorial();
@@ -168,19 +180,21 @@ export class TacoScene extends Phaser.Scene {
   }
 
   /** The guided dish is finished (or skipped): remember it and clear the pointer. */
-  private finishTutorial(message: string): void {
+  private finishTutorial(message: string, finished = false): void {
     if (!this.tutorialOn) return;
     this.tutorialOn = false;
     this.tutorial.hide();
     const save = SaveSystem.data;
     if (!save.seenStory.includes(TACO_TUTORIAL_ID)) save.seenStory.push(TACO_TUTORIAL_ID);
+    // The first-visit guide teaches the menu's first dish(es): that counts as their lesson (finished) or as one showing (skipped).
+    for (const d of this.state.taco.dishes.filter((x) => x.unlockStep <= 1)) save.tacoLessons = finished ? lessonDone(save.tacoLessons, d.id) : lessonShown(save.tacoLessons, d.id);
     SaveSystem.save();
     this.toast.show(message);
   }
 
   override update(_time: number, delta: number): void {
     const real = Math.min(delta, 100) / 1000;
-    if (!this.storyCard.isShowing && !this.adActive) this.state.update(real);
+    if (!this.storyCard.isShowing && !this.adActive) this.state.update(real * this.speed);
     for (const e of this.state.drainEvents()) this.handle(e);
     this.views.sync();
     this.customers.sync();
@@ -188,6 +202,7 @@ export class TacoScene extends Phaser.Scene {
     if (this.state.event) this.banner.update(this.state.event.remaining);
     this.followDrag(real);
     this.updateTutorial();
+    this.updateLesson();
 
     const s = this.state;
     const cooking = s.pans.filter((p) => p && p.phase !== 'burnt').length + s.ovens.filter((o) => o && o.phase !== 'burnt').length;
@@ -243,9 +258,12 @@ export class TacoScene extends Phaser.Scene {
           flyCoins(this, this.hud.coinIcon, at, Math.min(6, 2 + Math.floor((e.coins + e.tip) / 25)));
         }
         this.saveNow();
-        this.finishTutorial('You served your first order! The Recipe Book shows every recipe.');
+        this.finishTutorial('You served your first order! The Recipe Book shows every recipe.', true);
         break;
       }
+      case 'recipeServed':
+        this.onRecipeServed(e.dish, e.learned);
+        break;
       case 'wrongDrop':
         if (e.customer !== null) this.customers.shake(e.customer);
         this.toast.show(e.penalty ? 'That is not what they ordered' : 'Drop it on a customer who ordered it');
@@ -275,6 +293,7 @@ export class TacoScene extends Phaser.Scene {
         break;
       }
       case 'closed':
+        this.endLesson(false, true);
         this.cancelDrag();
         this.banner.hide();
         audio.setSizzle(0);
@@ -342,9 +361,10 @@ export class TacoScene extends Phaser.Scene {
   // ---------------------------------------------------------------- tutorial
 
   private updateTutorial(): void {
-    if (!this.tutorialOn) return;
+    const lesson = this.lesson?.active ? this.lesson.dish : undefined;
+    if (!this.tutorialOn && lesson === undefined) return;
     const blocked = this.panelOpen || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.drag !== null;
-    const hint = blocked ? null : nextTacoHint(this.state);
+    const hint = blocked ? null : nextTacoHint(this.state, lesson);
     // While the player carries a dish the pointer steps aside; only the caption stays.
     if (this.drag && !blocked) return;
     this.tutorial.show(
@@ -355,6 +375,65 @@ export class TacoScene extends Phaser.Scene {
       },
       (id) => this.customers.centerOf(id),
     );
+  }
+
+  // ---------------------------------------------------------------- recipe lessons
+
+  private lessonBlocked(): boolean {
+    return this.panelOpen || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing || this.adActive;
+  }
+
+  /** Each frame: start the tutorial for a dish a customer has ordered (when none runs), or end it when nobody wants that dish any more. */
+  private updateLesson(): void {
+    const s = this.state;
+    if (this.lesson) {
+      const stillWanted = s.customers.some((c) => c.mood === 'waiting' && c.items.some((k, i) => k === this.lesson!.dish && !c.delivered[i]));
+      if (!stillWanted && this.lesson.active) this.endLesson(false);
+      return;
+    }
+    if (this.tutorialOn || this.lessonBlocked() || this.time.now < this.lessonPauseUntil) return;
+    for (const c of s.customers) {
+      if (c.mood !== 'waiting') continue;
+      for (let i = 0; i < c.items.length; i++) {
+        const id = c.items[i];
+        if (c.delivered[i] || !s.dishDef(id) || s.familiarity(id) === 'normal') continue;
+        const mode = lessonMode(SaveSystem.data.tacoLessons, id);
+        if (mode) return this.beginLesson(id, mode);
+      }
+    }
+  }
+
+  /** The first sight of a dish gets the full lesson (intro card, then the pointer); a skipped or unfinished one gets one short reminder; then never again. */
+  private beginLesson(dish: string, mode: 'full' | 'reminder'): void {
+    const def = this.state.dishDef(dish);
+    if (!def) return;
+    SaveSystem.data.tacoLessons = lessonShown(SaveSystem.data.tacoLessons, dish); // counted when it starts, so a reload never repeats it
+    SaveSystem.save();
+    this.lesson = { dish, mode, active: mode === 'reminder' };
+    if (mode === 'reminder') return void this.toast.show(`Quick reminder: ${def.name}`);
+    const intro = recipeIntro(this.state.taco, def);
+    this.storyCard.show({ id: `taco_recipe_${dish}`, ...intro }, () => {
+      if (this.lesson?.dish === dish) this.lesson.active = true;
+    });
+  }
+
+  /** The dish was made with the pointer's help (`done`) or the tutorial ended early (skip, closed, customer gone). */
+  private endLesson(done: boolean, silent = false): void {
+    const l = this.lesson;
+    if (!l) return;
+    this.lesson = null;
+    this.lessonPauseUntil = this.time.now + 90_000;
+    this.tutorial.hide();
+    if (done) {
+      SaveSystem.data.tacoLessons = lessonDone(SaveSystem.data.tacoLessons, l.dish);
+      this.toast.show(`${this.state.dishDef(l.dish)?.name ?? 'Recipe'} learned!`);
+    } else if (!silent && l.active) this.toast.show('The Recipe Book shows every recipe.');
+    SaveSystem.save();
+  }
+
+  private onRecipeServed(dish: string, learned: boolean): void {
+    if (this.lesson?.dish === dish) this.endLesson(true);
+    if (learned && !this.lesson) this.saveNow();
   }
 
   // ---------------------------------------------------------------- input
@@ -473,11 +552,12 @@ export class TacoScene extends Phaser.Scene {
     this.panelOpen = true;
     const onClose = () => {
       this.panelOpen = false;
-      this.state.mods = modsFor(this.state.cfg.upgrades.upgrades, SaveSystem.data.owned); // a Shop purchase counts straight away
+      this.state.mods = tacoModsFor(this.state.taco.upgrades, SaveSystem.data.tacoOwned); // a Shop purchase counts straight away
       this.scene.resume();
     };
-    const data: RestaurantSelectData & RecipeBookData = {
+    const data: RestaurantSelectData & RecipeBookData & { taco?: { menuStep: number } } = {
       state: this.state,
+      taco: key === 'Shop' ? { menuStep: this.state.menuStep } : undefined,
       current: defaultTacoConfig.restaurant.id,
       onClose,
       onPick: (id: string) => (id === defaultTacoConfig.restaurant.id ? this.scene.restart() : this.scene.start('Game', { restaurantId: id })),
@@ -521,6 +601,7 @@ export class TacoScene extends Phaser.Scene {
     SaveSystem.data.coins = this.state.coins;
     SaveSystem.data.tacoStep = this.state.menuStep;
     SaveSystem.data.tacoXp = this.state.menuXp;
+    SaveSystem.data.tacoServed = { ...this.state.dishServes };
     SaveSystem.save();
     this.lastSave = performance.now();
   }
@@ -544,6 +625,32 @@ export class TacoScene extends Phaser.Scene {
     CrazyGames.gameplayStop();
   }
 
+  /**
+   * Development test mode (only with ?debug): ?step=N jumps the menu to step N with every older dish already learned (and its tutorial done),
+   * so the newest dishes arrive as brand-new recipes; ?coins=N sets the coins; ?level=N the level; ?speed=N (up to 8) runs time faster.
+   * Nothing here runs in a normal game.
+   */
+  private applyDebugFlags(): void {
+    const q = new URLSearchParams(location.search);
+    if (!q.has('debug')) return;
+    const num = (k: string): number | null => (q.has(k) && Number.isFinite(Number(q.get(k))) ? Number(q.get(k)) : null);
+    const step = num('step');
+    if (step !== null) {
+      this.state.menuStep = clampStep(step);
+      this.state.menuXp = 0;
+      const seeded = seedLearned(this.state.taco, this.state.menuStep);
+      this.state.dishServes = seeded.served;
+      SaveSystem.data.tacoLessons = seeded.lessons;
+      SaveSystem.data.tacoServed = { ...seeded.served };
+      if (this.state.menuStep > 1 && !SaveSystem.data.seenStory.includes(TACO_TUTORIAL_ID)) SaveSystem.data.seenStory.push(TACO_TUTORIAL_ID);
+    }
+    const coins = num('coins');
+    if (coins !== null) this.state.coins = Math.max(0, Math.floor(coins));
+    const level = num('level');
+    if (level !== null) this.state.level = Math.max(1, Math.floor(level));
+    this.speed = Math.max(1, Math.min(8, num('speed') ?? 1));
+  }
+
   /** ?debug: outline every tap zone. */
   private drawZones(): void {
     const g = this.add.graphics().setDepth(39);
@@ -565,7 +672,8 @@ export class TacoScene extends Phaser.Scene {
       openRecipeBook: () => this.openBook(),
       openRestaurants: () => this.openRestaurants(),
       tutorialOn: () => this.tutorialOn,
-      hint: () => nextTacoHint(this.state),
+      lesson: () => (this.lesson ? { dish: this.lesson.dish, mode: this.lesson.mode, active: this.lesson.active } : null),
+      hint: () => nextTacoHint(this.state, this.lesson?.active ? this.lesson.dish : undefined),
       spot: (id: string) => {
         const z = this.state.taco.zones.find((q) => q.id === id);
         return z ? this.views.spot(z) : null;
