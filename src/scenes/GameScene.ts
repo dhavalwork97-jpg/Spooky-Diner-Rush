@@ -24,6 +24,7 @@ import { CrazyGames } from '../sdk/crazygames';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
 import { levelDef } from '../game/config';
 import { nextHint } from '../game/tutorial';
+import { LOGIN_FROM_LEVEL, checkLogin, tomorrowReward } from '../game/loginBonus';
 import { GOALS_FROM_LEVEL, GoalTracker, toGoalEvent, type GoalEnv } from '../game/goals';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 import { laneSpan } from '../kitchen/grab';
@@ -157,6 +158,7 @@ export class GameScene extends Phaser.Scene {
     this.hand = new TutorialHand(this);
     this.storyCard = new StoryCard(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.chef = new ChefBubble(this, this.layout);
+    this.applyLoginBonus();
     this.chefTalk = new ChefTalk(this.state.cfg.chef, makeRng(Date.now()));
     new MuteButton(this);
     this.menuButtons = new MenuButtons(this, (k: MenuKind) => (k === 'shop' ? this.openShop() : k === 'book' ? this.openRecipeBook() : this.openRestaurants()));
@@ -746,7 +748,7 @@ export class GameScene extends Phaser.Scene {
         CrazyGames.gameplayStop();
         this.overlay.show(
           'Closed',
-          'Too many unhappy customers.\nYour level, XP and coins are safe.',
+          'Too many unhappy customers.\nYour level, XP and coins are safe.' + this.comeBackLine(),
           'Reopen',
           () => this.breakAd(() => this.state.reopen()),
           CrazyGames.canShowRewarded() ? { label: 'Watch an ad: reopen at full reputation', onPress: () => this.reviveWithAd() } : undefined,
@@ -853,6 +855,36 @@ export class GameScene extends Phaser.Scene {
       this.fx.burst(v.x, v.y, 0x9a9a9a, 6, 30, 350);
       this.tweens.add({ targets: v, scale: 0, alpha: 0, duration: 200, onComplete: () => v.destroy() });
     } else v.destroy();
+  }
+
+  // ---------------------------------------------------------------- daily login bonus
+
+  /**
+   * First thing after the scene opens (from the title screen or straight in): on a new day, a friendly popup pays the day's coins.
+   * Never for a brand-new player (that visit is only recorded), never during the guided first levels (the bonus simply waits, nothing is recorded),
+   * and never under ?debug, so scripted test runs start clean.
+   */
+  private applyLoginBonus(): void {
+    if (new URLSearchParams(location.search).has('debug')) return;
+    const save = SaveSystem.data;
+    const hasProgress = save.level > 1 || save.xp > 0 || save.coins > 0 || save.seenStory.length > 0;
+    const r = checkLogin({ lastLoginDay: save.lastLoginDay, loginStreak: save.loginStreak }, this.dayKey, hasProgress);
+    if (r.reward > 0 && this.state.level < LOGIN_FROM_LEVEL) return;
+    if (r.next.lastLoginDay === save.lastLoginDay && r.next.loginStreak === save.loginStreak) return;
+    save.lastLoginDay = r.next.lastLoginDay;
+    save.loginStreak = r.next.loginStreak;
+    if (r.reward > 0) {
+      this.state.coins += r.reward;
+      this.storyCard.show({ id: 'login_bonus', title: 'Welcome back!', text: `Day ${r.day} bonus: +${r.reward} coins` });
+    }
+    this.saveNow();
+  }
+
+  /** One line for the Closed screen once today's bonus is collected: what coming back tomorrow pays. */
+  private comeBackLine(): string {
+    const save = SaveSystem.data;
+    if (this.state.level < LOGIN_FROM_LEVEL || save.lastLoginDay !== this.dayKey) return '';
+    return `\nCome back tomorrow: +${tomorrowReward({ lastLoginDay: save.lastLoginDay, loginStreak: save.loginStreak })} coins`;
   }
 
   // ---------------------------------------------------------------- mini-goals
