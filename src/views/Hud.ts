@@ -133,12 +133,13 @@ export class Hud {
   }
 }
 
-const GOAL_W = 290;
-const GOAL_H = 54;
+const GOAL_W = 262;
+const GOAL_H = 42;
 
 /**
- * The active mini-goal as a compact cream plate in the empty top-middle strip, between the event banner (to its left) and the combo
- * meter (to its right), so it never covers order bubbles or station buttons. Read-only: it shows what `GoalTracker` says.
+ * The active mini-goal as a compact cream plate tucked under the reputation bar, top left. Customers and their order bubbles stand along the
+ * top and middle of the room, so the top-middle strip is NOT free (the first version sat there and hid bubbles); this corner only has the
+ * drink machine's housing behind it. Read-only: it shows what `GoalTracker` says.
  */
 export class GoalBanner {
   private box: Phaser.GameObjects.Container;
@@ -152,9 +153,9 @@ export class GoalBanner {
     bg.fillStyle(0x000000, 0.22).fillRoundedRect(-GOAL_W / 2 + 3, -GOAL_H / 2 + 6, GOAL_W, GOAL_H, 18);
     bg.fillStyle(CREAM, 1).fillRoundedRect(-GOAL_W / 2, -GOAL_H / 2, GOAL_W, GOAL_H, 18);
     bg.lineStyle(4, INK, 1).strokeRoundedRect(-GOAL_W / 2, -GOAL_H / 2, GOAL_W, GOAL_H, 18);
-    this.title = scene.add.text(0, -8, '', { fontFamily: FONT, fontSize: '21px', color: '#2B1B17' }).setOrigin(0.5);
+    this.title = scene.add.text(0, -6, '', { fontFamily: FONT, fontSize: '20px', color: '#2B1B17' }).setOrigin(0.5);
     this.bar = scene.add.graphics();
-    this.box = scene.add.container(795, 42, [bg, this.title, this.bar]).setDepth(861).setVisible(false);
+    this.box = scene.add.container(194, 138, [bg, this.title, this.bar]).setDepth(861).setVisible(false);
   }
 
   /** Show `goal` (null hides the banner). Cheap to call every frame: it only redraws when the goal or its progress changes. */
@@ -175,11 +176,11 @@ export class GoalBanner {
     // Long texts shrink to fit the plate instead of spilling over its edge.
     this.title.setScale(Math.min(1, (GOAL_W - 28) / Math.max(1, this.title.width)));
     this.bar.clear();
-    const bw = GOAL_W - 44;
+    const bw = GOAL_W - 40;
     const frac = Math.max(0, Math.min(1, progress / goal.target));
-    this.bar.fillStyle(0x3b2a24, 1).fillRoundedRect(-bw / 2, 10, bw, 9, 4.5);
-    if (frac > 0.001) this.bar.fillStyle(ORANGE, 1).fillRoundedRect(-bw / 2, 10, Math.max(9, bw * frac), 9, 4.5);
-    this.bar.lineStyle(2, INK, 1).strokeRoundedRect(-bw / 2, 10, bw, 9, 4.5);
+    this.bar.fillStyle(0x3b2a24, 1).fillRoundedRect(-bw / 2, 8, bw, 8, 4);
+    if (frac > 0.001) this.bar.fillStyle(ORANGE, 1).fillRoundedRect(-bw / 2, 8, Math.max(8, bw * frac), 8, 4);
+    this.bar.lineStyle(2, INK, 1).strokeRoundedRect(-bw / 2, 8, bw, 8, 4);
     if (fresh && !SaveSystem.reduceMotion()) {
       this.scene.tweens.killTweensOf(this.box);
       this.box.setScale(0.85);
