@@ -99,9 +99,14 @@ describe('daily special', () => {
     const a = make();
     a.enableExtras({}, '2026-11-08', true);
     expect(a.special?.done).toBe(true);
-    const b = make(14);
+    // Retention pacing (2026-11-13): the Daily Special starts at Lv 3 (data/extras.json dailySpecial.fromLevel, was 15), so Lv 2 is still without one.
+    const b = make(2);
     b.enableExtras({}, '2026-11-08', false);
     expect(b.special).toBeNull();
+    const c = make(3);
+    c.enableExtras({}, '2026-11-08', false);
+    expect(c.special?.items.length).toBeGreaterThan(0);
+    expect(c.special?.items.every((k) => c.levelInfo.items.includes(k))).toBe(true);
   });
 });
 

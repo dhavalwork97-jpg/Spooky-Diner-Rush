@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import assetsJson from '../../data/assets.json';
 import restaurantsJson from '../../data/restaurants.json';
+import xpJson from '../../data/xp.json';
 import upgradesJson from '../../data/upgrades.json';
 import careerJson from '../../data/career.json';
 import chefJson from '../../data/chef.json';
@@ -8,12 +9,13 @@ import storyJson from '../../data/story.json';
 import decorJson from '../../data/decor.json';
 import recipebookJson from '../../data/recipebook.json';
 import restaurantMenuJson from '../../data/restaurant_menu.json';
-import { assertValid, validateAssets, validateRestaurants, validateUpgrades, validateCareer, validateChef, validateStory, validateDecor, validateRecipeBook, validateRestaurantMenu, type AssetDef, type RestaurantDef } from '../data/validate';
+import { assertValid, validateXp, validateAssets, validateRestaurants, validateUpgrades, validateCareer, validateChef, validateStory, validateDecor, validateRecipeBook, validateRestaurantMenu, type AssetDef, type RestaurantDef } from '../data/validate';
 import { CrazyGames } from '../sdk/crazygames';
 import { SaveSystem } from '../systems/SaveSystem';
 import { buildAllTextures } from '../art/builders';
 import { defaultConfig } from '../game/config';
 import { pickStartRestaurant } from '../game/restaurants';
+import { chooseFirstScene, hasSavedProgress } from '../game/startup';
 
 export const LOGICAL_WIDTH = 1280;
 export const LOGICAL_HEIGHT = 698;
@@ -27,6 +29,7 @@ export class BootScene extends Phaser.Scene {
     // Data is validated before anything is loaded, so bad JSON fails loudly and early.
     assertValid('assets.json', validateAssets(assetsJson));
     assertValid('restaurants.json', validateRestaurants(restaurantsJson));
+    assertValid('xp.json', validateXp(xpJson));
     assertValid('upgrades.json', validateUpgrades(upgradesJson));
     assertValid('career.json', validateCareer(careerJson));
     assertValid('chef.json', validateChef(chefJson));
@@ -63,10 +66,10 @@ export class BootScene extends Phaser.Scene {
     buildAllTextures(this, defaultConfig);
     const start = pickStartRestaurant(restaurants, SaveSystem.data.lastRestaurant, SaveSystem.data.level);
     // Canvas text does not redraw when a font arrives later, so wait for the bundled font (a missing file only delays by the timeout).
-    // The title screen (with the intro video) comes before every game; ?debug starts straight in, as the test scripts expect.
+    // New players see the title screen (with the intro video) first; returning players and ?debug go straight in (see src/game/startup.ts).
     const params = new URLSearchParams(location.search);
     // ?debug&taco opens the Taco Truck directly (see TacoScene for its ?step, ?speed and ?coins flags).
-    const next = params.has('debug') ? (params.has('taco') ? 'Taco' : 'Game') : 'Title';
+    const next = chooseFirstScene({ debug: params.has('debug'), taco: params.has('taco'), returning: hasSavedProgress(SaveSystem.data) });
     const go = (): void => {
       CrazyGames.loadingStop();
       void this.scene.start(next, { restaurantId: start });

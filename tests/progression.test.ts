@@ -109,8 +109,27 @@ describe('scaling after Lv 20', () => {
 });
 
 describe('xp curve for the later levels', () => {
-  it('keeps rising by a fixed step', () => {
-    for (let n = 1; n < 40; n++) expect(xpForLevel(cfg, n + 1) - xpForLevel(cfg, n)).toBe(cfg.xp.perLevel);
+  const early = cfg.xp.earlyUntilLevel!;
+  it('keeps rising by a fixed step from the end of the gentle early part on', () => {
+    for (let n = early + 1; n < 40; n++) expect(xpForLevel(cfg, n + 1) - xpForLevel(cfg, n)).toBe(cfg.xp.perLevel);
+  });
+  it('Lv 1-2 and every level after the early part keep the original curve', () => {
+    for (const n of [1, 2, early + 1, early + 2, 20, 40]) expect(xpForLevel(cfg, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
+  });
+  it('Lv 3 to the early limit use the gentler slope and never cost more than before', () => {
+    expect(cfg.xp.earlyPerLevel).toBe(50);
+    expect(early).toBe(8);
+    for (let n = 3; n <= early; n++) {
+      expect(xpForLevel(cfg, n)).toBe(cfg.xp.base + 50 * n);
+      expect(xpForLevel(cfg, n)).toBeLessThan(cfg.xp.base + cfg.xp.perLevel * n);
+    }
+    for (let n = 3; n < early; n++) expect(xpForLevel(cfg, n + 1) - xpForLevel(cfg, n)).toBe(50);
+    // The step back onto the normal curve at Lv 9 is the one visible jump: the catch-up for the 990 XP saved in Lv 3-8.
+    expect(xpForLevel(cfg, early + 1) - xpForLevel(cfg, early)).toBe(cfg.xp.base + cfg.xp.perLevel * (early + 1) - (cfg.xp.base + 50 * early));
+  });
+  it('without the early settings the curve is the plain linear one', () => {
+    const plain = { ...cfg, xp: { ...cfg.xp, earlyPerLevel: undefined, earlyUntilLevel: undefined } };
+    for (let n = 1; n < 30; n++) expect(xpForLevel(plain, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
   });
 });
 

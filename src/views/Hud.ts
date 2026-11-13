@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { INK, LEAF, MUSTARD, NAVY, ORANGE, TOMATO } from '../art/builders';
+import { CREAM, INK, LEAF, MUSTARD, NAVY, ORANGE, TOMATO } from '../art/builders';
+import type { Goal } from '../game/goals';
 import { SaveSystem } from '../systems/SaveSystem';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
@@ -129,5 +130,71 @@ export class Hud {
     const fw = Math.max(h, w * Math.max(0, Math.min(1, frac)));
     if (frac > 0.001) g.fillStyle(color, alpha).fillRoundedRect(x, y, fw, h, h / 2);
     g.lineStyle(3, INK, 1).strokeRoundedRect(x, y, w, h, h / 2);
+  }
+}
+
+const GOAL_W = 290;
+const GOAL_H = 54;
+
+/**
+ * The active mini-goal as a compact cream plate in the empty top-middle strip, between the event banner (to its left) and the combo
+ * meter (to its right), so it never covers order bubbles or station buttons. Read-only: it shows what `GoalTracker` says.
+ */
+export class GoalBanner {
+  private box: Phaser.GameObjects.Container;
+  private title: Phaser.GameObjects.Text;
+  private bar: Phaser.GameObjects.Graphics;
+  private shownKey = '';
+  private shownProgress = -1;
+
+  constructor(private scene: Phaser.Scene) {
+    const bg = scene.add.graphics();
+    bg.fillStyle(0x000000, 0.22).fillRoundedRect(-GOAL_W / 2 + 3, -GOAL_H / 2 + 6, GOAL_W, GOAL_H, 18);
+    bg.fillStyle(CREAM, 1).fillRoundedRect(-GOAL_W / 2, -GOAL_H / 2, GOAL_W, GOAL_H, 18);
+    bg.lineStyle(4, INK, 1).strokeRoundedRect(-GOAL_W / 2, -GOAL_H / 2, GOAL_W, GOAL_H, 18);
+    this.title = scene.add.text(0, -8, '', { fontFamily: FONT, fontSize: '21px', color: '#2B1B17' }).setOrigin(0.5);
+    this.bar = scene.add.graphics();
+    this.box = scene.add.container(795, 42, [bg, this.title, this.bar]).setDepth(861).setVisible(false);
+  }
+
+  /** Show `goal` (null hides the banner). Cheap to call every frame: it only redraws when the goal or its progress changes. */
+  update(goal: Goal | null): void {
+    if (!goal) {
+      this.box.setVisible(false);
+      this.shownKey = '';
+      return;
+    }
+    const key = `${goal.text}`;
+    const progress = Math.min(goal.progress, goal.target);
+    if (key === this.shownKey && progress === this.shownProgress && this.box.visible) return;
+    const fresh = key !== this.shownKey || !this.box.visible;
+    this.shownKey = key;
+    this.shownProgress = progress;
+    this.box.setVisible(true);
+    this.title.setText(goal.kind === 'fastRow' || goal.kind === 'item' || goal.kind === 'orders' ? `${goal.text}  ${progress}/${goal.target}` : goal.text);
+    // Long texts shrink to fit the plate instead of spilling over its edge.
+    this.title.setScale(Math.min(1, (GOAL_W - 28) / Math.max(1, this.title.width)));
+    this.bar.clear();
+    const bw = GOAL_W - 44;
+    const frac = Math.max(0, Math.min(1, progress / goal.target));
+    this.bar.fillStyle(0x3b2a24, 1).fillRoundedRect(-bw / 2, 10, bw, 9, 4.5);
+    if (frac > 0.001) this.bar.fillStyle(ORANGE, 1).fillRoundedRect(-bw / 2, 10, Math.max(9, bw * frac), 9, 4.5);
+    this.bar.lineStyle(2, INK, 1).strokeRoundedRect(-bw / 2, 10, bw, 9, 4.5);
+    if (fresh && !SaveSystem.reduceMotion()) {
+      this.scene.tweens.killTweensOf(this.box);
+      this.box.setScale(0.85);
+      this.scene.tweens.add({ targets: this.box, scale: 1, duration: 180, ease: 'Back.Out' });
+    }
+  }
+
+  get visible(): boolean {
+    return this.box.visible;
+  }
+  get text(): string {
+    return this.title.text;
+  }
+
+  destroy(): void {
+    this.box.destroy();
   }
 }

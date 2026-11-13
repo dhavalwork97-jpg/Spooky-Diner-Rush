@@ -1,3 +1,7 @@
+# DONE locally, NOT pushed (2026-11-13, Claude) - feat/retention-pacing (branch from main ff1e282)
+Plan (one commit each): [x] T1 XP curve (DONE: earlyPerLevel 50 to Lv8; fast Lv10 366s, avg Lv5 183s, casual Lv5 333s; sim_late floor 1700->1600; Lv9 has a +270 catch-up step) earlyPerLevel/earlyUntilLevel  [x] T2 mini-goals + HUD banner (DONE: src/game/goals.ts, GoalBanner in Hud.ts, GameScene wiring, awardGoal in KitchenState)  [x] T3 daily login bonus + Daily Special from Lv3 (DONE: loginBonus.ts, save fields, GameScene popup + Closed-screen teaser; Chromium popup check pending Task 4)  [x] T4 skip title for returning players (DONE: src/game/startup.ts; Chromium: returning -> Game + login popup, new -> Title)  [x] T5 branding (DONE: index.html description + og tags, manifest short_name; assets/art/logo_chef_rush.webp shows 'CHEF RUSH' but no code uses it).
+Rules: no ad logic change, no Taco Truck scene change, save stays backward compatible. Baseline test failures recorded below once run. Bot script: tools/pacing.ts-style test helper (tests/helpers).
+
 # CURRENT HANDOFF — 2026-11-08 (READ THIS FIRST)
 
 This section is the authoritative current status for the next Claude/Codex session. Older dated sections below are retained as project history; where they say work is uncommitted, in progress, or still awaiting a merge, use this current section instead.

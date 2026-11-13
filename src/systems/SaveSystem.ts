@@ -26,6 +26,9 @@ export interface SaveData {
   mastery: Record<string, number>;
   /** Day (YYYY-MM-DD, player's own clock) the Daily Special was last served, or '' for never. */
   specialDay: string;
+  /** Daily login bonus: the last visit's local day (YYYY-MM-DD, '' = never) and the days-in-a-row count. Missing in older saves. */
+  lastLoginDay: string;
+  loginStreak: number;
   /** The Taco Truck's own upgrades: upgrade id -> tier bought. Separate from `owned` (the diner's). */
   tacoOwned: Record<string, number>;
   /** Times each Taco Truck dish was served: decides when a new dish counts as learned. Saves from before this get every dish older than the current menu step as learned. */
@@ -52,6 +55,8 @@ export function defaultSave(): SaveData {
     tacoXp: 0,
     mastery: {},
     specialDay: '',
+    lastLoginDay: '',
+    loginStreak: 0,
     tacoOwned: {},
     tacoServed: {},
     tacoLessons: {},
@@ -149,6 +154,8 @@ export function parseSave(raw: string | null): SaveData {
       tacoStep,
       tacoXp: num(p.tacoXp, 0),
       mastery: cleanCounts(p.mastery),
+      lastLoginDay: typeof p.lastLoginDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.lastLoginDay) ? p.lastLoginDay : '',
+      loginStreak: typeof p.loginStreak === 'number' && Number.isFinite(p.loginStreak) ? Math.min(100000, Math.max(0, Math.floor(p.loginStreak))) : 0,
       specialDay: typeof p.specialDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.specialDay) ? p.specialDay : '',
       tacoOwned: cleanOwned(p.tacoOwned),
       tacoServed: p.tacoServed === undefined ? seeded.served : cleanOwned(p.tacoServed),

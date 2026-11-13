@@ -251,6 +251,24 @@ export function validateRestaurantMenu(data: unknown, playableIds: string[]): st
   return errors;
 }
 
+/** xp.json: the optional gentler early curve needs both settings, a sane slope, and a level range that does not touch Lv 1-2. */
+export function validateXp(data: unknown): string[] {
+  const errors: string[] = [];
+  const x = data as Record<string, unknown> | null;
+  if (!x || typeof x !== 'object') return ['xp.json: must be an object'];
+  if (!isNum(x.base) || x.base < 0) errors.push('xp.json: base must be a number >= 0');
+  if (!isNum(x.perLevel) || x.perLevel <= 0) errors.push('xp.json: perLevel must be a number > 0');
+  const hasSlope = x.earlyPerLevel !== undefined;
+  const hasUntil = x.earlyUntilLevel !== undefined;
+  if (hasSlope !== hasUntil) errors.push('xp.json: earlyPerLevel and earlyUntilLevel must be given together');
+  if (hasSlope && hasUntil) {
+    if (!isNum(x.earlyPerLevel) || x.earlyPerLevel <= 0) errors.push('xp.json: earlyPerLevel must be a number > 0');
+    else if (isNum(x.perLevel) && x.earlyPerLevel > x.perLevel) errors.push('xp.json: earlyPerLevel must not be steeper than perLevel (the early part is meant to be gentler)');
+    if (!isNum(x.earlyUntilLevel) || !Number.isInteger(x.earlyUntilLevel) || x.earlyUntilLevel < 3) errors.push('xp.json: earlyUntilLevel must be a whole number >= 3 (Lv 1-2 keep the normal curve)');
+  }
+  return errors;
+}
+
 export function assertValid(name: string, errors: string[]): void {
   if (errors.length > 0) throw new Error(`${name} failed validation:\n- ${errors.join('\n- ')}`);
 }
