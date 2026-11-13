@@ -1,4 +1,4 @@
-import { KitchenState } from '../../src/game/KitchenState';
+import { KitchenState, type GameEvent } from '../../src/game/KitchenState';
 import { isEdible } from '../../src/game/cook';
 import { defaultConfig, type GameConfig } from '../../src/game/config';
 import { buy, modsFor, type Owned } from '../../src/game/shop';
@@ -80,6 +80,8 @@ export interface PlayOptions {
   upgrades?: boolean | UpgradePlan;
   /** The bot puts the bun down as soon as a patty is cooking (default: the original order, bun is the last thing it does). */
   prepBun?: boolean;
+  /** Sees every event after the bot's own bookkeeping (used to run the mini-goal tracker next to the bot). */
+  onEvent?: (e: GameEvent, s: KitchenState, t: number) => void;
 }
 
 /** What happened while the player was on one level. */
@@ -163,6 +165,7 @@ export function play(seed: number, reaction: number, seconds: number, opts: Play
     const lost = Math.max(0, repBefore - s.reputation);
     let burntNow = 0;
     for (const e of s.drainEvents()) {
+      opts.onEvent?.(e, s, t);
       if (e.type === 'levelUp') levelTimes[e.level] = Math.round(t);
       if (e.type === 'closed') {
         closeLevels.push(s.level);

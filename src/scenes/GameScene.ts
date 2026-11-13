@@ -22,7 +22,9 @@ import { arcTo, flyCoins } from '../anim/fly';
 import { audio } from '../systems/AudioSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
+import { levelDef } from '../game/config';
 import { nextHint } from '../game/tutorial';
+import { GOALS_FROM_LEVEL, GoalTracker, toGoalEvent, type GoalEnv } from '../game/goals';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 import { laneSpan } from '../kitchen/grab';
 import { BURNERS, COLD, COLD_BASE_W, COLD_LANE_DX, FRY_FROM, ICE, ICE_BASE_W, ICE_LANE_DX, Layout, SLOTS, SRC_H, SRC_W, VAT_FOOD_W, VATS } from '../views/layout';
@@ -32,7 +34,7 @@ import { PourViews, loadColdDrinkArt, loadIceCreamArt } from '../views/PourViews
 import { loadOvenSheet } from '../views/OvenDoor';
 import { ItemView } from '../views/ItemView';
 import { CustomerView } from '../views/CustomerView';
-import { Hud } from '../views/Hud';
+import { GoalBanner, Hud } from '../views/Hud';
 import { EventBanner, LevelUpCard, Overlay, Toast, StoryCard } from '../views/Popups';
 import { TutorialHand } from '../views/TutorialHand';
 
@@ -69,6 +71,10 @@ export class GameScene extends Phaser.Scene {
   private stock!: StockViews;
   private pours!: PourViews;
   private hud!: Hud;
+  private goals!: GoalTracker;
+  private goalBanner!: GoalBanner;
+  /** "Goal complete" messages waiting for a moment with no card on screen. */
+  private goalToasts: string[] = [];
   private toast!: Toast;
   private banner!: EventBanner;
   private levelUpCard!: LevelUpCard;
@@ -143,6 +149,9 @@ export class GameScene extends Phaser.Scene {
     this.hud = new Hud(this, this.state);
     this.toast = new Toast(this, LOGICAL_WIDTH / 2, 300);
     this.banner = new EventBanner(this, 551, 42);
+    this.goals = new GoalTracker(Date.now());
+    this.goalBanner = new GoalBanner(this);
+    this.goalToasts = [];
     this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330, () => this.levelBreakAd());
     this.overlay = new Overlay(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.hand = new TutorialHand(this);
@@ -187,6 +196,7 @@ export class GameScene extends Phaser.Scene {
       customers: () => [...this.custViews.values()].map((v) => ({ id: v.id, ...v.center })),
       overlayVisible: () => this.overlay.visible,
       banner: () => (this.banner.visible ? this.banner.text : ''),
+      goal: () => ({ current: this.goals.current, shown: this.goalBanner.visible ? this.goalBanner.text : '', completed: this.goals.completed }),
       startEvent: (id: string) => {
         const def = this.state.cfg.events.events.find((e) => e.id === id);
         if (def) this.state.startEvent(def);
@@ -501,6 +511,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handle(e: GameEvent): void {
+    this.countGoal(e);
     this.sayChef(this.chefTalk.onEvent(e, this.state.clock));
     switch (e.type) {
       case 'fryStart': {
@@ -844,6 +855,41 @@ export class GameScene extends Phaser.Scene {
     } else v.destroy();
   }
 
+  // ---------------------------------------------------------------- mini-goals
+
+  private goalEnv(): GoalEnv {
+    const cfg = this.state.cfg;
+    return { level: this.state.level, items: levelDef(cfg, this.state.level).items, itemName: (k) => cfg.recipes.items[k].name, maxCombo: cfg.combo.maxCombo, wanted: this.state.customers.filter((c) => c.mood === 'waiting').flatMap((c) => c.items.filter((_, i) => !c.delivered[i])) };
+  }
+
+  /** Goals need a calm screen: not in the tutorial levels, and not under a card, overlay, pause or Closed screen. */
+  private goalsAllowed(): boolean {
+    return this.state.level >= GOALS_FROM_LEVEL && !this.paused && !this.state.closed && !this.overlay.visible && !this.storyCard.isShowing && !this.levelUpCard.isShowing;
+  }
+
+  /** Every kitchen event also goes to the goal tracker; a finished goal pays out and shows "Goal complete". */
+  private countGoal(e: GameEvent): void {
+    if (this.state.level < GOALS_FROM_LEVEL || !this.goals.current) return;
+    const ge = toGoalEvent(e, (customer, i) => this.state.customers.find((c) => c.id === customer)?.items[i]);
+    if (!ge) return;
+    const done = this.goals.onEvent(ge, this.goalEnv());
+    if (!done) return;
+    this.state.awardGoal(done.coins, done.xp);
+    this.goalToasts.push(`Goal complete! +${done.coins} coins  +${done.xp} XP`);
+  }
+
+  private updateGoals(dt: number): void {
+    const ok = this.goalsAllowed();
+    if (ok) {
+      const env = this.goalEnv();
+      this.goals.ensure(env);
+      this.goals.tick(dt, env);
+    }
+    this.goalBanner.update(ok ? this.goals.current : null);
+    const msg = ok && !this.toast.visible ? this.goalToasts.splice(0, 1)[0] : undefined;
+    if (msg) this.toast.show(msg);
+  }
+
   /** Short-lived text that rises and fades (Rush, Combo, tip). */
   private floatText(x: number, y: number, text: string, color: string): void {
     const t = this.add
@@ -895,6 +941,7 @@ export class GameScene extends Phaser.Scene {
     this.pours.update(this.state, time);
     this.syncPourItems();
     this.hud.update(this.state, dtReal);
+    this.updateGoals(dtReal);
     if (this.state.event) this.banner.update(this.state.event.remaining);
     this.updateHint();
     this.maybeShowStory();
@@ -1070,6 +1117,7 @@ export class GameScene extends Phaser.Scene {
     this.pours.destroy();
     this.hand.destroy();
     this.storyCard.destroy();
+    this.goalBanner.destroy();
     this.fx.destroy();
     this.atmosphere?.destroy();
     this.atmosphere = undefined;
