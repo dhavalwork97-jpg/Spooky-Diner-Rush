@@ -787,6 +787,12 @@ export class KitchenState {
     }
   }
 
+  /** A finished mini-goal pays coins and XP (XP can level the player up like any other). Touches nothing else: no combo, streak, reputation or Rush. */
+  awardGoal(coins: number, xp: number): void {
+    this.coins += coins;
+    this.addXp(xp);
+  }
+
   private addXp(amount: number): void {
     this.xp += amount;
     while (this.xp >= this.xpNeeded) {

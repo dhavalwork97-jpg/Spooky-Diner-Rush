@@ -8,7 +8,7 @@
     ]
   },
   "dailySpecial": {
-    "fromLevel": 15,
+    "fromLevel": 3,
     "bonus": 0.5,
     "afterServes": 3,
     "size": 3

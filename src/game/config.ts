@@ -132,6 +132,9 @@ export interface GameConfig {
   xp: {
     base: number;
     perLevel: number;
+    /** Optional gentler slope for Lv 3 to `earlyUntilLevel`: XP to leave level n is base + earlyPerLevel * n there. Lv 1-2 and every level after keep the normal curve. */
+    earlyPerLevel?: number;
+    earlyUntilLevel?: number;
     speedBonusXp: number;
     speedBonusPatienceFraction: number;
     levelUpCoins: { base: number; perLevel: number };
@@ -199,7 +202,15 @@ export function levelDef(cfg: GameConfig, level: number): LevelDef {
   return { ...last, level, patience, arrivalGap, unlocks: [] };
 }
 
-export const xpForLevel = (cfg: GameConfig, level: number): number => cfg.xp.base + cfg.xp.perLevel * level;
+/** First level the early curve applies to: Lv 1-2 stay as tuned (the first minute already feels right). */
+export const EARLY_XP_FROM_LEVEL = 3;
+
+/** XP needed to leave `level`. The mid-game (Lv 3 to earlyUntilLevel) can be made gentler in data so casual players reach the pizza level sooner. */
+export const xpForLevel = (cfg: GameConfig, level: number): number => {
+  const { base, perLevel, earlyPerLevel, earlyUntilLevel } = cfg.xp;
+  if (earlyPerLevel !== undefined && earlyUntilLevel !== undefined && level >= EARLY_XP_FROM_LEVEL && level <= earlyUntilLevel) return base + earlyPerLevel * level;
+  return base + perLevel * level;
+};
 
 /** Items that cook in a fryer vat. */
 export type FriedKind = 'fries' | 'nuggets';
