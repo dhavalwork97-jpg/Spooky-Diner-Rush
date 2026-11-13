@@ -43,8 +43,10 @@ describe('Lv 11-20 balance simulation', () => {
     // Speed upgrades now only shorten cooking (advanceCook), which brings the 150-seed mean to about 1734 s; the owner accepted
     // this faster pace on 2026-11-07, so the floor is 1700 s.
     // The floor applies to the average of 150 seeds instead of each of 4 runs.
+    // Retention pacing (2026-11-13): Lv 3-8 now need 990 XP less in total (data/xp.json earlyPerLevel 50 instead of 80), so the 150-seed
+    // mean moved from about 1734 s to about 1652 s (about 80 s sooner; everything from Lv 9 on is unchanged). Floor 1700 -> 1600.
     const mean = fastMany.reduce((n, r) => n + r.levelTimes[20]!, 0) / fastMany.length;
-    expect(mean).toBeGreaterThan(1700);
+    expect(mean).toBeGreaterThan(1600);
   });
 
   it('the climb is gradual: close rate never falls and the ramp stays inside 2.5x of Lv 6-10 (average bot) by Lv 20', () => {
@@ -96,7 +98,9 @@ describe('scaling after Lv 20', () => {
     }
   });
   it('close rate at Lv 21-25 is at most 1.4x the rate at Lv 16-20 and stays under 1.1 a minute', () => {
-    for (const runs of [fast]) {
+    // 150 seeds, same bounds: with 4 seeds the Lv 16-20 bracket holds only a handful of closes, and the earlier Lv 3-8 curve (2026-11-13)
+    // moved those few closes around (c 0.145, d 0.241 at 4 seeds) without changing the late game itself.
+    for (const runs of [fastMany]) {
       const [, , c, d] = rates(runs);
       expect(d).toBeLessThanOrEqual(c * 1.4);
       expect(d).toBeLessThan(1.1);

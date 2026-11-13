@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import assetsJson from '../../data/assets.json';
 import restaurantsJson from '../../data/restaurants.json';
+import xpJson from '../../data/xp.json';
 import upgradesJson from '../../data/upgrades.json';
 import careerJson from '../../data/career.json';
 import chefJson from '../../data/chef.json';
@@ -8,7 +9,7 @@ import storyJson from '../../data/story.json';
 import decorJson from '../../data/decor.json';
 import recipebookJson from '../../data/recipebook.json';
 import restaurantMenuJson from '../../data/restaurant_menu.json';
-import { assertValid, validateAssets, validateRestaurants, validateUpgrades, validateCareer, validateChef, validateStory, validateDecor, validateRecipeBook, validateRestaurantMenu, type AssetDef, type RestaurantDef } from '../data/validate';
+import { assertValid, validateXp, validateAssets, validateRestaurants, validateUpgrades, validateCareer, validateChef, validateStory, validateDecor, validateRecipeBook, validateRestaurantMenu, type AssetDef, type RestaurantDef } from '../data/validate';
 import { CrazyGames } from '../sdk/crazygames';
 import { SaveSystem } from '../systems/SaveSystem';
 import { buildAllTextures } from '../art/builders';
@@ -27,6 +28,7 @@ export class BootScene extends Phaser.Scene {
     // Data is validated before anything is loaded, so bad JSON fails loudly and early.
     assertValid('assets.json', validateAssets(assetsJson));
     assertValid('restaurants.json', validateRestaurants(restaurantsJson));
+    assertValid('xp.json', validateXp(xpJson));
     assertValid('upgrades.json', validateUpgrades(upgradesJson));
     assertValid('career.json', validateCareer(careerJson));
     assertValid('chef.json', validateChef(chefJson));

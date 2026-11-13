@@ -1,3 +1,7 @@
+# IN PROGRESS (2026-11-13, Claude) - feat/retention-pacing (branch from main ff1e282)
+Plan (one commit each): [x] T1 XP curve (DONE: earlyPerLevel 50 to Lv8; fast Lv10 366s, avg Lv5 183s, casual Lv5 333s; sim_late floor 1700->1600; Lv9 has a +270 catch-up step) earlyPerLevel/earlyUntilLevel  [ ] T2 mini-goals + HUD banner  [ ] T3 daily login bonus + Daily Special from Lv3  [ ] T4 skip title for returning players  [ ] T5 branding check.
+Rules: no ad logic change, no Taco Truck scene change, save stays backward compatible. Baseline test failures recorded below once run. Bot script: tools/pacing.ts-style test helper (tests/helpers).
+
 # CURRENT HANDOFF — 2026-11-08 (READ THIS FIRST)
 
 This section is the authoritative current status for the next Claude/Codex session. Older dated sections below are retained as project history; where they say work is uncommitted, in progress, or still awaiting a merge, use this current section instead.
