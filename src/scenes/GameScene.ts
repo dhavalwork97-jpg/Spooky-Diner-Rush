@@ -24,6 +24,7 @@ import { CrazyGames } from '../sdk/crazygames';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
 import { levelDef } from '../game/config';
 import { nextHint } from '../game/tutorial';
+import { hasSavedProgress } from '../game/startup';
 import { LOGIN_FROM_LEVEL, checkLogin, tomorrowReward } from '../game/loginBonus';
 import { GOALS_FROM_LEVEL, GoalTracker, toGoalEvent, type GoalEnv } from '../game/goals';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
@@ -867,7 +868,7 @@ export class GameScene extends Phaser.Scene {
   private applyLoginBonus(): void {
     if (new URLSearchParams(location.search).has('debug')) return;
     const save = SaveSystem.data;
-    const hasProgress = save.level > 1 || save.xp > 0 || save.coins > 0 || save.seenStory.length > 0;
+    const hasProgress = hasSavedProgress(save);
     const r = checkLogin({ lastLoginDay: save.lastLoginDay, loginStreak: save.loginStreak }, this.dayKey, hasProgress);
     if (r.reward > 0 && this.state.level < LOGIN_FROM_LEVEL) return;
     if (r.next.lastLoginDay === save.lastLoginDay && r.next.loginStreak === save.loginStreak) return;
