@@ -1,5 +1,15 @@
 # Release notes: first version (Spooky Diner Rush, one restaurant)
 
+## Build 2026-11-13 (main d77bc5e: Taco Truck update + retention pacing)
+- ZIP: `npm run build:crazygames`, then zip the CONTENTS of `dist-crazygames/` (162 files, 16.9 MB zipped, `index.html` at the root, no `.mp4`, the SDK script is the only external URL). Well inside the limits below. Not run in the real CrazyGames QA tool.
+- Taco Truck: oven now fits the kitchen art; the truck has its own 5 upgrades (cooking speed, burn protection, patience, serving, drink pouring) in its own Shop view, separate from the diner's (diner upgrades no longer change the truck); each new dish gets a one-time pointer lesson (full once, one short reminder, then never) and arrives alone first, then in practice orders, before it joins the normal mix. Old saves load: dishes older than the current menu step count as already learned.
+- Diner pacing (aimed at playtime, D1 retention and gameplay conversion): Lv 3-8 need less XP (`data/xp.json` `earlyPerLevel` 50 up to `earlyUntilLevel` 8; Lv 1-2 and Lv 9+ unchanged, so Lv 9 has one visible step up); one mini-goal at a time from Lv 3 with a banner and a small coin and XP reward; the Daily Special starts at Lv 3 (was 15).
+- Returning players: a daily login bonus (25 / 50 / 100 coins over a 3-day cycle, popup "Welcome back!"), never on the first launch and never in Lv 1-2; the Closed screen says what coming back tomorrow pays. Players with saved progress skip the title screen and go straight into the game; new players still see it.
+- Branding: `index.html` has a description and og tags; the web manifest short name is now "Spooky Diner Rush". `public/assets/art/logo_chef_rush.webp` shows "CHEF RUSH" but no code displays it.
+- Ads: unchanged (same CrazyGames calls, reopen 55 / rewarded 100, 180 s cooldown).
+- Tested: type check, 575 unit tests, bot pacing table (average bot Lv 5 at 183 s instead of 220 s; fast bot Lv 10 at 366 s; casual bot Lv 5 at 333 s instead of 441 s; slower bots close the diner more often than before), headless Chromium for the oven, tutorial pointer, truck Shop, goal banner and login popup.
+- Needs the owner: a real phone in landscape (goal banner size, touch drag, login popup, direct start without the title), play-testing the Taco Truck learning flow (hardest point: the nachos dishes), and the CrazyGames QA tool.
+
 ## CrazyGames ZIP (browser release)
 1. `npm run build:crazygames` (typecheck, then Vite in `--mode crazygames`). Output goes to `dist-crazygames/` (git-ignored); the normal `npm run build` keeps writing `dist/` and is unchanged.
 2. Zip the CONTENTS of `dist-crazygames/` so `index.html` is at the top of the ZIP, not inside a folder. Windows 10/11 or macOS (Terminal or PowerShell, from the repo root): `tar -a -c -f chef-rush-crazygames.zip -C dist-crazygames .` Or open the folder, select everything inside, right-click, Compress / Send to ZIP.
