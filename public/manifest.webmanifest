@@ -1,6 +1,6 @@
 {
   "name": "Spooky Diner Rush",
-  "short_name": "Diner Rush",
+  "short_name": "Spooky Diner Rush",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
