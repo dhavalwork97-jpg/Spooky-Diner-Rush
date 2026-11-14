@@ -266,6 +266,10 @@ export function validateXp(data: unknown): string[] {
     else if (isNum(x.perLevel) && x.earlyPerLevel > x.perLevel) errors.push('xp.json: earlyPerLevel must not be steeper than perLevel (the early part is meant to be gentler)');
     if (!isNum(x.earlyUntilLevel) || !Number.isInteger(x.earlyUntilLevel) || x.earlyUntilLevel < 3) errors.push('xp.json: earlyUntilLevel must be a whole number >= 3 (Lv 1-2 keep the normal curve)');
   }
+  if (x.firstLevelXp !== undefined) {
+    if (!isNum(x.firstLevelXp) || !Number.isInteger(x.firstLevelXp) || x.firstLevelXp <= 0) errors.push('xp.json: firstLevelXp must be a whole number > 0');
+    else if (isNum(x.base) && isNum(x.perLevel) && x.firstLevelXp > x.base + x.perLevel) errors.push('xp.json: firstLevelXp must not be more than the normal Lv 1 cost (base + perLevel)');
+  }
   return errors;
 }
 

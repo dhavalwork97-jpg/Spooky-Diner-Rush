@@ -3,6 +3,7 @@
   "perLevel": 80,
   "earlyPerLevel": 50,
   "earlyUntilLevel": 8,
+  "firstLevelXp": 100,
   "speedBonusXp": 10,
   "speedBonusPatienceFraction": 0.5,
   "levelUpCoins": { "base": 20, "perLevel": 5 },
