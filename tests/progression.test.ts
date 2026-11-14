@@ -113,8 +113,20 @@ describe('xp curve for the later levels', () => {
   it('keeps rising by a fixed step from the end of the gentle early part on', () => {
     for (let n = early + 1; n < 40; n++) expect(xpForLevel(cfg, n + 1) - xpForLevel(cfg, n)).toBe(cfg.xp.perLevel);
   });
-  it('Lv 1-2 and every level after the early part keep the original curve', () => {
-    for (const n of [1, 2, early + 1, early + 2, 20, 40]) expect(xpForLevel(cfg, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
+  it('Lv 2 and every level after the early part keep the original curve', () => {
+    for (const n of [2, early + 1, early + 2, 20, 40]) expect(xpForLevel(cfg, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
+  });
+  it('only the very first level-up is cheaper (firstLevelXp), so it lands inside the first minute', () => {
+    expect(cfg.xp.firstLevelXp).toBe(100);
+    expect(xpForLevel(cfg, 1)).toBe(100);
+    expect(xpForLevel(cfg, 1)).toBeLessThan(cfg.xp.base + cfg.xp.perLevel);
+    // Fries are worth 20 XP (+10 when served fast): five plain orders, or four fast ones, finish Lv 1.
+    const fries = cfg.recipes.items.fries.xp;
+    expect(Math.ceil(xpForLevel(cfg, 1) / fries)).toBeLessThanOrEqual(5);
+  });
+  it('without firstLevelXp Lv 1 keeps the original cost', () => {
+    const plain = { ...cfg, xp: { ...cfg.xp, firstLevelXp: undefined } };
+    expect(xpForLevel(plain, 1)).toBe(cfg.xp.base + cfg.xp.perLevel);
   });
   it('Lv 3 to the early limit use the gentler slope and never cost more than before', () => {
     expect(cfg.xp.earlyPerLevel).toBe(50);
@@ -129,7 +141,7 @@ describe('xp curve for the later levels', () => {
   });
   it('without the early settings the curve is the plain linear one', () => {
     const plain = { ...cfg, xp: { ...cfg.xp, earlyPerLevel: undefined, earlyUntilLevel: undefined } };
-    for (let n = 1; n < 30; n++) expect(xpForLevel(plain, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
+    for (let n = 1; n < 30; n++) expect(xpForLevel({ ...plain, xp: { ...plain.xp, firstLevelXp: undefined } }, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
   });
 });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig, levelDef } from '../src/game/config';
-import { GOALS_FROM_LEVEL, GOAL_STALE_SECONDS, GoalTracker, goalReward, toGoalEvent, type GoalEnv, type GoalEvent } from '../src/game/goals';
+import { GOALS_FROM_LEVEL, GOAL_STALE_SECONDS, GoalTracker, goalReward, goalsUnlocked, toGoalEvent, type GoalEnv, type GoalEvent } from '../src/game/goals';
 import { KitchenState, type GameEvent } from '../src/game/KitchenState';
 import { play } from './helpers/bot';
 
@@ -196,6 +196,32 @@ describe('mini-goals: kitchen events', () => {
   });
   it('goals are off in the tutorial levels', () => {
     expect(GOALS_FROM_LEVEL).toBeGreaterThanOrEqual(3);
+  });
+  it('goalsUnlocked: never at Lv 1, at Lv 2 only after its tutorial, always from Lv 3', () => {
+    expect(goalsUnlocked(1, true)).toBe(false);
+    expect(goalsUnlocked(1, false)).toBe(false);
+    expect(goalsUnlocked(2, true)).toBe(false);
+    expect(goalsUnlocked(2, false)).toBe(true);
+    expect(goalsUnlocked(3, true)).toBe(true);
+    expect(goalsUnlocked(3, false)).toBe(true);
+    expect(goalsUnlocked(12, false)).toBe(true);
+  });
+  it('the first goals at Lv 2 are plain ones (orders, coins or one item), never fast-in-a-row or combo', () => {
+    for (let seed = 1; seed <= 60; seed++) {
+      const t = new GoalTracker(seed);
+      const g = t.ensure(envFor(2));
+      expect(['orders', 'coins', 'item']).toContain(g.kind);
+      // Finish several goals in a row: every goal that follows is a plain one too.
+      for (let done = 0; done < 6; done++) {
+        const before = t.completed;
+        for (let i = 0; i < 12 && t.completed === before; i++) {
+          t.onEvent({ type: 'deliver', item: t.current!.item ?? 'fries' }, envFor(2));
+          t.onEvent({ type: 'orderDone', fast: false, coins: 60 }, envFor(2));
+        }
+        expect(t.completed).toBe(before + 1);
+        expect(['orders', 'coins', 'item']).toContain(t.current!.kind);
+      }
+    }
   });
 });
 

@@ -23,10 +23,10 @@ import { audio } from '../systems/AudioSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
 import { levelDef } from '../game/config';
-import { nextHint } from '../game/tutorial';
+import { nextHint, tutorialActive } from '../game/tutorial';
 import { hasSavedProgress } from '../game/startup';
 import { LOGIN_FROM_LEVEL, checkLogin, tomorrowReward } from '../game/loginBonus';
-import { GOALS_FROM_LEVEL, GoalTracker, toGoalEvent, type GoalEnv } from '../game/goals';
+import { GoalTracker, goalsUnlocked, toGoalEvent, type GoalEnv } from '../game/goals';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 import { laneSpan } from '../kitchen/grab';
 import { BURNERS, COLD, COLD_BASE_W, COLD_LANE_DX, FRY_FROM, ICE, ICE_BASE_W, ICE_LANE_DX, Layout, SLOTS, SRC_H, SRC_W, VAT_FOOD_W, VATS } from '../views/layout';
@@ -895,14 +895,14 @@ export class GameScene extends Phaser.Scene {
     return { level: this.state.level, items: levelDef(cfg, this.state.level).items, itemName: (k) => cfg.recipes.items[k].name, maxCombo: cfg.combo.maxCombo, wanted: this.state.customers.filter((c) => c.mood === 'waiting').flatMap((c) => c.items.filter((_, i) => !c.delivered[i])) };
   }
 
-  /** Goals need a calm screen: not in the tutorial levels, and not under a card, overlay, pause or Closed screen. */
+  /** Goals need a calm screen: not while the pointing hand is teaching (Lv 1, Lv 2 before the first burger), and not under a card, overlay, pause or Closed screen. */
   private goalsAllowed(): boolean {
-    return this.state.level >= GOALS_FROM_LEVEL && !this.paused && !this.state.closed && !this.overlay.visible && !this.storyCard.isShowing && !this.levelUpCard.isShowing;
+    return goalsUnlocked(this.state.level, tutorialActive(this.state)) && !this.paused && !this.state.closed && !this.overlay.visible && !this.storyCard.isShowing && !this.levelUpCard.isShowing;
   }
 
   /** Every kitchen event also goes to the goal tracker; a finished goal pays out and shows "Goal complete". */
   private countGoal(e: GameEvent): void {
-    if (this.state.level < GOALS_FROM_LEVEL || !this.goals.current) return;
+    if (!goalsUnlocked(this.state.level, tutorialActive(this.state)) || !this.goals.current) return;
     const ge = toGoalEvent(e, (customer, i) => this.state.customers.find((c) => c.id === customer)?.items[i]);
     if (!ge) return;
     const done = this.goals.onEvent(ge, this.goalEnv());

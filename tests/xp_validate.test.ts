@@ -19,4 +19,10 @@ describe('validateXp', () => {
     expect(validateXp({ base: 100, perLevel: 80, earlyPerLevel: 50, earlyUntilLevel: 5.5 })).toHaveLength(1);
   });
   it('rejects junk', () => expect(validateXp(null)).toHaveLength(1));
+  it('accepts firstLevelXp, and rejects a bad or harder-than-before value', () => {
+    expect(validateXp({ base: 100, perLevel: 80, firstLevelXp: 100 })).toEqual([]);
+    expect(validateXp({ base: 100, perLevel: 80, firstLevelXp: 0 })).toHaveLength(1);
+    expect(validateXp({ base: 100, perLevel: 80, firstLevelXp: 99.5 })).toHaveLength(1);
+    expect(validateXp({ base: 100, perLevel: 80, firstLevelXp: 500 })).toHaveLength(1);
+  });
 });
