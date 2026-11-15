@@ -1,0 +1,25 @@
+{
+  "chests": [
+    {
+      "id": "chest_lv5",
+      "level": 5,
+      "title": "Treasure Chest!",
+      "coins": 100,
+      "decorId": "lucky_lantern"
+    },
+    {
+      "id": "chest_lv10",
+      "level": 10,
+      "title": "Treasure Chest!",
+      "coins": 200,
+      "decorId": "haunted_portrait"
+    },
+    {
+      "id": "chest_lv14",
+      "level": 14,
+      "title": "Big Treasure Chest!",
+      "coins": 350,
+      "decorId": "golden_skeleton_plant"
+    }
+  ]
+}

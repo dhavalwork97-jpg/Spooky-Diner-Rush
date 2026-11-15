@@ -15,8 +15,10 @@ import {
   STAR_BOX,
   WINDOW_PANES,
   WISP_GAP,
+  approach,
   envelope,
   fogSpec,
+  hauntedLampIntensity,
   lampIntensity,
   moteSpec,
   nextDelay,
@@ -52,6 +54,13 @@ const WISP_TINT = 0x8fefff;
 
 type Img = Phaser.GameObjects.Image;
 
+/** Spooky events change the room's look: Full Moon brightens the moon, Haunted Lights makes the lamps flicker and turn green. */
+export type EventLook = 'none' | 'moon' | 'lights';
+const LAMP_ORANGE = 0xffa43a;
+const LAMP_GREEN = 0x9dff7a;
+/** Seconds the look takes to fade fully in or out (0 to 1). */
+const LOOK_FADE = 1.2;
+
 export class Atmosphere {
   private readonly rng: Rng = makeRng((Date.now() & 0xffffff) | 1);
   private readonly quality: AtmosphereQuality;
@@ -63,6 +72,11 @@ export class Atmosphere {
   private pinpoints: { img: Img; phase: number }[] = [];
   private lamps: { glow: Img; core: Img; phase: number; base: number; coreBase: number }[] = [];
   private moonGlow?: Img;
+  /** Wide soft cool wash around the moon, only seen during Full Moon. */
+  private moonWash?: Img;
+  private look: EventLook = 'none';
+  private moonBlend = 0;
+  private lightsBlend = 0;
 
   private t = 0;
   private paused = false;
@@ -91,6 +105,21 @@ export class Atmosphere {
     this.applyStaticLook();
   }
 
+  /** The room's current event look (for tests and the debug hook). */
+  get eventLook(): EventLook {
+    return this.look;
+  }
+
+  /** Fade an event look in (or back to none). Under reduced motion it applies at once and stays still: no pulse, no flicker. */
+  setEventLook(look: EventLook): void {
+    this.look = look;
+    if (this.reduced) {
+      this.moonBlend = look === 'moon' ? 1 : 0;
+      this.lightsBlend = look === 'lights' ? 1 : 0;
+      this.applyLook(0);
+    }
+  }
+
   /** Number of live fog patches / wisps / motes (for tests and the debug hook). */
   get live(): { fog: number; wisps: number; motes: number } {
     return { fog: this.fogCount, wisps: this.wispCount, motes: this.moteCount };
@@ -113,13 +142,10 @@ export class Atmosphere {
     if (this.reduced) return;
 
     this.t += dt;
-    for (const l of this.lamps) {
-      const k = lampIntensity(this.t, l.phase);
-      l.glow.setAlpha(l.base * k);
-      l.core.setAlpha(l.coreBase * k);
-    }
+    this.moonBlend = approach(this.moonBlend, this.look === 'moon' ? 1 : 0, 1 / LOOK_FADE, dt);
+    this.lightsBlend = approach(this.lightsBlend, this.look === 'lights' ? 1 : 0, 1 / LOOK_FADE, dt);
+    this.applyLook(this.t);
     for (const s of this.pinpoints) s.img.setAlpha(twinkle(this.t, s.phase));
-    if (this.moonGlow) this.moonGlow.setAlpha(0.5 + 0.05 * Math.sin(this.t * 0.6));
 
     this.fogLeft -= dt;
     if (this.fogLeft <= 0 && this.fogCount < this.quality.maxFog) {
@@ -189,6 +215,10 @@ export class Atmosphere {
       this.scene.add.image(L.x(MOON.x), L.y(MOON.y), GLOW).setTint(0xaec8ff).setBlendMode(Phaser.BlendModes.ADD).setDepth(D.moon - 0.2).setAlpha(0.5),
     );
     this.moonGlow.setDisplaySize(L.s(MOON.r * 7), L.s(MOON.r * 7));
+    this.moonWash = this.add(
+      this.scene.add.image(L.x(MOON.x - 90), L.y(MOON.y + 40), GLOW).setTint(0x8fb4ff).setBlendMode(Phaser.BlendModes.ADD).setDepth(D.moon - 0.4).setAlpha(0),
+    );
+    this.moonWash.setDisplaySize(L.s(MOON.r * 38), L.s(MOON.r * 20));
     const moon = this.add(this.scene.add.image(L.x(MOON.x), L.y(MOON.y), MOON_TEX).setDepth(D.moon));
     moon.setDisplaySize(L.s(MOON.r * 2 * (128 / 84)), L.s(MOON.r * 2 * (128 / 84)));
 
@@ -233,12 +263,31 @@ export class Atmosphere {
   /** Reduced motion (and the first frame): everything steady, no moving parts. */
   private applyStaticLook(): void {
     if (!this.reduced) return;
-    for (const l of this.lamps) {
-      l.glow.setAlpha(l.base);
-      l.core.setAlpha(l.coreBase);
-    }
+    this.moonBlend = this.look === 'moon' ? 1 : 0;
+    this.lightsBlend = this.look === 'lights' ? 1 : 0;
+    this.applyLook(0);
     for (const s of this.pinpoints) s.img.setAlpha(0.6);
-    this.moonGlow?.setAlpha(0.5);
+  }
+
+  /** Lamps and moon from the two look blends. `t` is 0 under reduced motion, which switches the pulse and the flicker off (a steady, still look). */
+  private applyLook(t: number): void {
+    const moving = t > 0 && !this.reduced;
+    const green = Phaser.Display.Color.Interpolate.ColorWithColor(Phaser.Display.Color.ValueToColor(LAMP_ORANGE), Phaser.Display.Color.ValueToColor(LAMP_GREEN), 100, Math.round(this.lightsBlend * 100));
+    const tint = Phaser.Display.Color.GetColor(green.r, green.g, green.b);
+    for (const l of this.lamps) {
+      const calm = moving ? lampIntensity(t, l.phase) : 1;
+      const wild = moving ? hauntedLampIntensity(t, l.phase) : 0.85; // a still, slightly dimmer lamp when motion is reduced
+      const k = calm + (wild - calm) * this.lightsBlend;
+      l.glow.setAlpha(l.base * k).setTint(tint);
+      l.core.setAlpha(l.coreBase * k);
+    }
+    if (this.moonGlow) {
+      const pulse = moving ? 0.05 * Math.sin(t * 0.6) : 0;
+      this.moonGlow.setAlpha(0.5 + 0.5 * this.moonBlend + pulse);
+      const size = MOON.r * (7 + 7 * this.moonBlend);
+      this.moonGlow.setDisplaySize(this.layout.s(size), this.layout.s(size));
+    }
+    this.moonWash?.setAlpha(0.34 * this.moonBlend);
   }
 
   // ------------------------------------------------------------------ moving layers

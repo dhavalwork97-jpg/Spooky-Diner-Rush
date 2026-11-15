@@ -41,6 +41,7 @@ export const decorKey = (id: string): string => `decor_${id}`;
 /** Decor is drawn at its source-pixel size (see data/decor.json). Unknown ids get a plain panel. */
 function buildDecor(scene: Phaser.Scene, cfg: GameConfig): void {
   for (const d of cfg.decor.items) {
+    if (d.art) continue; // supplied art (lazy-loaded), nothing to draw here
     const w = Math.round(d.width);
     const h = Math.round(d.height);
     make(scene, decorKey(d.id), w, h, (g) => {
