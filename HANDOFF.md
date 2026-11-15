@@ -1,3 +1,40 @@
+# LATEST MAIN UPDATE (2026-11-15) - PR #34 MERGED
+
+Owner approved merging the committed Diner Extras + Taco Truck Midnight work. This update records the completed push to `main`.
+
+- [x] PR #34 merged: [Merge diner extras and Taco Truck midnight expansion](https://github.com/dhavalwork97-jpg/Spooky-Diner-Rush/pull/34)
+- [x] Base: `main`; source: `feat/taco-midnight`.
+- [x] Merge method: squash merge.
+- [x] Main merge commit: `21da2843d32b4d6a14a45ffb7476460ae7e0620e`.
+- [x] Merged change size: 129 files, 5,425 additions, 92 deletions (5 source commits).
+- [x] PR state verified after merge: closed, `merged: true`.
+- [x] Source branch checks recorded in its handoff: TypeScript clean; Vitest 725 passed + 1 skipped; standard and CrazyGames builds passed; Chromium desktop and phone-layout checks completed. These are branch-recorded checks, not a fresh rerun after the squash merge.
+- [ ] No PR-triggered GitHub Actions workflow runs were returned for the source commit during the merge check; do not describe CI as having passed.
+
+## What is now on main
+
+The merged committed work includes the Diner Extras branch content and Taco Truck Midnight art/overlays plus Taco Truck features B1-B7:
+- Taco Mastery grid (4x4), named regulars, and milestone chests at menu steps 3/6/10.
+- Taco-only Full Moon and Bat Delivery events, haunted-window combo reactions, and additional Taco sounds.
+- Supporting midnight art, overlay/zone alignment work, tests, and documentation from the merged branch.
+
+The merge did not include Pizza Place changes or ad-logic changes.
+
+## Still not included - Taco Phase 2 work
+
+The following three features were marked complete in the source handoff but were explicitly recorded as **not committed/pushed** at merge time, so they were not part of PR #34 and are not on `main`:
+1. Haunted-window pumpkin taps (+2 coins, 60-second per-pumpkin cooldown).
+2. Taco Ghost Party event (menu step 6+, party of 3, 30% bonus under the documented success rules).
+3. Taco Badges (10 badges and a Badges tab in the Taco Recipe Book).
+
+Their implementation files were not present in the GitHub branch snapshot used for PR #34. Recover the original uncommitted working-tree changes before attempting to commit or merge them; do not recreate or claim these features are on main based only on this handoff description. The remaining unbuilt Phase 2 ideas (Ghost Pepper orders, truck stickers, ghost costumes) also remain out of scope pending explicit approval.
+
+## Next action
+
+Continue from the updated `main` commit above. First recover and inspect the three uncommitted Phase 2 features from the original local working directory; verify the diff and tests, then use a focused branch and PR. Do not force-push or rewrite the source branch history merely because its pre-squash commit graph now differs from `main`.
+
+---
+
 # IN PROGRESS (2026-11-15, Claude) - TACO PHASE 2 - branch `feat/taco-midnight` (midnight + B1-B7 are committed as a0bb4f7 and pushed; Phase 2 is NOT committed unless the owner says so)
 Owner chose: P1 window pumpkin taps, P2 Ghost Party event (taco), P3 taco badges. Ghost Pepper orders: owner answered "optional extra on an order" but did not tick it in the scope list -> NOT built, ask. Truck stickers (no art) and ghost costumes (conflicts with "never change customer art") NOT built.
 - [x] P1. Window pumpkin taps (painted pumpkins in the haunted window; tap = small coin/sparkle, limited; must not steal station/bubble taps)
