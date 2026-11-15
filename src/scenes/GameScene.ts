@@ -12,7 +12,7 @@ import { localDateKey } from '../game/extras';
 import { ChefTalk } from '../game/chef';
 import { dueStory, seenAfter } from '../game/story';
 import type { RestaurantSelectData } from './RestaurantSelectScene';
-import { ownedDecor } from '../game/decor';
+import { ownedDecor, withDecorPerks } from '../game/decor';
 import { decorKey } from '../art/builders';
 import { makeRng } from '../game/rng';
 import { ChefBubble } from '../views/ChefBubble';
@@ -22,7 +22,7 @@ import { arcTo, flyCoins } from '../anim/fly';
 import { audio } from '../systems/AudioSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
-import { levelDef } from '../game/config';
+import { levelDef, type DecorDef, type EventDef } from '../game/config';
 import { nextHint, tutorialActive } from '../game/tutorial';
 import { hasSavedProgress } from '../game/startup';
 import { LOGIN_FROM_LEVEL, checkLogin, tomorrowReward } from '../game/loginBonus';
@@ -39,6 +39,14 @@ import { CustomerView } from '../views/CustomerView';
 import { GoalBanner, Hud } from '../views/Hud';
 import { EventBanner, LevelUpCard, Overlay, Toast, StoryCard } from '../views/Popups';
 import { TutorialHand } from '../views/TutorialHand';
+import { IntroCard, IntroGlow } from '../views/IntroViews';
+import { ChestCard } from '../views/ChestViews';
+import { defaultChests, dueChests, openedAfter } from '../game/chests';
+import { BatFlyers } from '../views/BatViews';
+import { dxKey, hasDinerArt, loadDinerArt } from '../views/dinerArt';
+import { defaultBadges, newlyEarned, track, type BadgeEvent } from '../game/badges';
+import { batSchedule } from '../game/spooky';
+import { defaultIntros, dueIntros, introText, seenAfterIntro } from '../game/intros';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 const SAVE_EVERY_MS = 15000;
@@ -57,6 +65,9 @@ interface ZoneView {
  * Kitchen scene. The background is static. The KitchenState model owns all gameplay;
  * this scene turns taps into model calls, and turns model events into animation.
  */
+/** The first burn of a session shakes the camera once (see the 'burnt' case). */
+let burnShaken = false;
+
 export class GameScene extends Phaser.Scene {
   private restaurant!: RestaurantDef;
   private bg!: BackgroundPlacement;
@@ -80,9 +91,16 @@ export class GameScene extends Phaser.Scene {
   private toast!: Toast;
   private banner!: EventBanner;
   private levelUpCard!: LevelUpCard;
+  private chestCard!: ChestCard;
   private overlay!: Overlay;
   private hand!: TutorialHand;
+  private introCard!: IntroCard;
+  private introGlow!: IntroGlow;
+  private bats!: BatFlyers;
   private decorViews = new Map<string, Phaser.GameObjects.Image>();
+  private decorGlows: Phaser.GameObjects.Ellipse[] = [];
+  private earnedSeen = 0;
+  private badgeQueue: string[] = [];
   private menuButtons!: MenuButtons;
   private storyCard!: StoryCard;
   private chef!: ChefBubble;
@@ -124,7 +142,10 @@ export class GameScene extends Phaser.Scene {
     const debug = params.has('debug');
     const save = SaveSystem.data;
     this.state = new KitchenState({ level: save.level, xp: save.xp, coins: save.coins });
-    this.state.mods = modsFor(this.state.cfg.upgrades.upgrades, save.owned);
+    this.earnedSeen = 0;
+    this.badgeQueue = [];
+    this.badgeToastBusy = false;
+    this.state.mods = withDecorPerks(modsFor(this.state.cfg.upgrades.upgrades, save.owned), this.state.cfg.decor.items, save.decor);
     if (debug) {
       const lv = Number(params.get('level'));
       if (lv >= 1) {
@@ -154,11 +175,17 @@ export class GameScene extends Phaser.Scene {
     this.goals = new GoalTracker(Date.now());
     this.goalBanner = new GoalBanner(this);
     this.goalToasts = [];
-    this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330, () => this.levelBreakAd());
+    this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330, () => this.afterLevelUpCards());
+    this.chestCard = new ChestCard(this, this.fx, LOGICAL_WIDTH / 2, 360);
+    this.introCard = new IntroCard(this, LOGICAL_WIDTH / 2, 300);
+    this.introGlow = new IntroGlow(this);
+    this.bats = new BatFlyers(this, LOGICAL_WIDTH, (x, y) => this.tapBat(x, y));
+    this.prepareDinerArt();
     this.overlay = new Overlay(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.hand = new TutorialHand(this);
     this.storyCard = new StoryCard(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.chef = new ChefBubble(this, this.layout);
+    this.claimMissedChests();
     this.applyLoginBonus();
     this.chefTalk = new ChefTalk(this.state.cfg.chef, makeRng(Date.now()));
     new MuteButton(this);
@@ -207,6 +234,9 @@ export class GameScene extends Phaser.Scene {
       spawn: (type: string) => this.state.spawnCustomer(type),
       atmosphere: () => this.atmosphere?.live,
       levelCardVisible: () => this.levelUpCard.isShowing,
+      bats: () => ({ flying: this.bats.flying, positions: this.bats.positions(), look: this.atmosphere?.eventLook ?? 'none' }),
+      chest: () => ({ showing: this.chestCard.isShowing, opened: this.chestCard.opened, tap: () => this.chestCard.tap(), opens: [...SaveSystem.data.chestsOpened] }),
+      intro: () => ({ text: this.introCard.visible ? this.introCard.message : '', glowing: this.introGlow.active }),
       chef: () => this.chef.text,
       story: () => this.storyCard.id,
       ovenDoor: (i = 0) => this.stations.doorState(i),
@@ -328,6 +358,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private selectZone(zone: ZoneDef, pt: TapPoint): void {
+    this.introGlow.tapped(zone.id);
     const view = this.views.find((v) => v.zone.id === zone.id);
     if (!view) return;
     this.selectedId = zone.id;
@@ -611,6 +642,11 @@ export class GameScene extends Phaser.Scene {
         audio.play('pop');
         break;
       case 'burnt':
+        this.badgeEvent({ type: 'burn' });
+        if (!burnShaken && !SaveSystem.reduceMotion()) {
+          burnShaken = true; // the very first burn of a session gets one small camera shake, never again, never under reduced motion
+          this.cameras.main.shake(160, 0.003);
+        }
         this.stations.burntPuff(e.where, e.index);
         audio.play('burn');
         this.toast.show('Burnt! Tap to throw it away');
@@ -650,6 +686,7 @@ export class GameScene extends Phaser.Scene {
       case 'arrive': {
         const c = this.state.customers.find((x) => x.id === e.customer);
         if (c && !this.custViews.has(c.id)) this.addCustomer(c.id);
+        if (c?.regular) this.sayChef(this.chefTalk.say('regular', this.state.clock));
         audio.play('pop');
         break;
       }
@@ -687,15 +724,38 @@ export class GameScene extends Phaser.Scene {
       case 'eventStart':
         this.banner.show(e.name, e.duration);
         audio.play('ding');
+        if (this.state.event) this.startEventFx(this.state.event.def);
         break;
       case 'eventEnd':
         this.banner.hide();
+        this.endEventFx();
+        break;
+      case 'batCaught':
+        this.badgeEvent({ type: 'bat' });
+        this.onBatCaught(e.coins);
+        break;
+      case 'partyArrive': {
+        // Three ghosts walk in together: a short cheer over the seats, nothing that blocks play.
+        const at = e.ids.map((id) => this.custViews.get(id)?.center).filter((c): c is { x: number; y: number } => !!c);
+        const cx = at.length ? at.reduce((n, c) => n + c.x, 0) / at.length : LOGICAL_WIDTH / 2;
+        this.floatText(cx, 200, 'Party!', '#F6C445');
+        if (!SaveSystem.reduceMotion()) this.fx.burst(cx, 230, 0xf6c445, 12, 70, 600);
+        audio.play('party');
+        break;
+      }
+      case 'partyDone':
+        this.badgeEvent({ type: 'party' });
+        this.toast.show(`Party bonus +${e.bonus} coins`);
+        this.floatText(LOGICAL_WIDTH / 2, 210, `+${e.bonus}`, '#F6C445');
+        this.flyCoins({ x: LOGICAL_WIDTH / 2, y: 230 }, Math.min(8, 3 + Math.floor(e.bonus / 20)));
+        audio.play('coin');
         break;
       case 'streakBonus':
         this.toast.show(`Streak bonus +${e.xp} XP`);
         audio.play('ding');
         break;
       case 'orderDone': {
+        this.badgeEvent({ type: 'serve', rush: e.rush, atMaxCombo: e.combo >= this.state.cfg.combo.maxCombo, duringMoon: this.state.event?.def.id === 'full_moon', regular: !!e.regular });
         const cv = this.custViews.get(e.customer);
         this.flyCoins(cv?.center ?? { x: 640, y: 150 }, Math.min(6, 2 + Math.floor(e.coins / 10)));
         if (cv) {
@@ -709,6 +769,7 @@ export class GameScene extends Phaser.Scene {
         break;
       }
       case 'masteryUp': {
+        this.badgeEvent({ type: 'mastery' });
         const name = this.state.cfg.recipes.items[e.item].name;
         this.toast.show(`${e.tier} badge: ${name} +${e.coins} coins`);
         audio.play('ding');
@@ -737,11 +798,13 @@ export class GameScene extends Phaser.Scene {
         break;
       }
       case 'levelUp':
+        this.prepareDinerArt();
         this.hud.badgePop();
         this.levelUpCard.show(e.level, e.coins, e.unlocks, titleEarnedAt(this.state.cfg, e.level)?.title);
         this.saveNow();
         break;
       case 'closed':
+        this.endEventFx();
         this.setSelectedSlot(null);
         this.hand.hide();
         audio.play('close');
@@ -757,6 +820,7 @@ export class GameScene extends Phaser.Scene {
         break;
       case 'reopened':
         this.banner.hide();
+        this.endEventFx();
         this.items.forEach((v) => v.destroy());
         this.items.clear();
         this.pourItems.forEach((v) => v.destroy());
@@ -791,9 +855,28 @@ export class GameScene extends Phaser.Scene {
   private syncDecor(): void {
     for (const d of ownedDecor(this.state.cfg.decor.items, SaveSystem.data.decor)) {
       if (this.decorViews.has(d.id)) continue;
-      const img = this.add.image(this.layout.x(d.x), this.layout.y(d.y), decorKey(d.id)).setOrigin(0, 0).setDepth(100).setName(`decor_${d.id}`);
+      if (d.art && !hasDinerArt(this, d.art)) continue; // supplied art is still loading: drawn once it is ready (never a placeholder)
+      const img = this.add.image(this.layout.x(d.x), this.layout.y(d.y), d.art ? dxKey(d.art) : decorKey(d.id)).setOrigin(0, 0).setDepth(100).setName(`decor_${d.id}`);
       this.layout.fit(img, d.width);
+      if (d.art) {
+        img.setDepth(250); // supplied art sits above the night grade (249) so its colours stay true, and below the customers (299+)
+        this.addDecorGlow(d, img);
+      }
       this.decorViews.set(d.id, img);
+    }
+  }
+
+  /** Soft additive glow drawn in code for the candle flames and the green lantern. Static (it never moves), so reduced motion needs nothing special. */
+  private addDecorGlow(d: DecorDef, img: Phaser.GameObjects.Image): void {
+    const spots: { fx: number; fy: number; r: number; color: number; alpha: number }[] =
+      d.id === 'candle_string'
+        ? [[0.1, 0.33], [0.25, 0.55], [0.42, 0.65], [0.58, 0.65], [0.75, 0.55], [0.9, 0.33]].map(([fx, fy]) => ({ fx, fy, r: 0.075, color: 0xffc766, alpha: 0.22 }))
+        : d.id === 'lucky_lantern'
+          ? [{ fx: 0.5, fy: 0.62, r: 0.62, color: 0x9dff7a, alpha: 0.16 }]
+          : [];
+    for (const g of spots) {
+      const glow = this.add.ellipse(img.x + img.displayWidth * g.fx, img.y + img.displayHeight * g.fy, img.displayWidth * g.r * 2, img.displayWidth * g.r * 2, g.color, g.alpha).setBlendMode(Phaser.BlendModes.ADD).setDepth(251);
+      this.decorGlows.push(glow);
     }
   }
 
@@ -944,7 +1027,38 @@ export class GameScene extends Phaser.Scene {
 
   // ---------------------------------------------------------------- loop
 
+  /** Feed one event to the badge counters and award any badge that just reached its target (a small toast, no coins). */
+  private badgeEvent(e: BadgeEvent): void {
+    SaveSystem.data.stats = track(SaveSystem.data.stats, e);
+    const won = newlyEarned(defaultBadges, SaveSystem.data.stats, SaveSystem.data.badges);
+    if (won.length === 0) return;
+    SaveSystem.data.badges = [...SaveSystem.data.badges, ...won.map((b) => b.id)];
+    this.saveNow();
+    for (const b of won) this.badgeQueue.push(b.name);
+    this.nextBadgeToast();
+  }
+
+  private badgeToastBusy = false;
+  private nextBadgeToast(): void {
+    if (this.badgeToastBusy) return;
+    const [name] = this.badgeQueue.splice(0, 1);
+    if (!name) return;
+    this.badgeToastBusy = true;
+    this.sayChef(this.chefTalk.say('badge', this.state.clock));
+    this.toast.show(`Badge earned: ${name}!`);
+    audio.play('badge');
+    this.time.delayedCall(2200, () => {
+      this.badgeToastBusy = false;
+      this.nextBadgeToast();
+    });
+  }
+
   override update(time: number, delta: number): void {
+    if (this.state.coinsEarned !== this.earnedSeen) {
+      const gained = this.state.coinsEarned - this.earnedSeen;
+      this.earnedSeen = this.state.coinsEarned;
+      this.badgeEvent({ type: 'coins', amount: gained });
+    }
     const dtReal = Math.min(delta / 1000, 0.1);
     const portrait = window.innerWidth < 900 && window.innerHeight > window.innerWidth * 1.1;
     if (!this.paused && !portrait && !this.storyCard.isShowing) {
@@ -974,6 +1088,8 @@ export class GameScene extends Phaser.Scene {
     this.pours.update(this.state, time);
     this.syncPourItems();
     this.hud.update(this.state, dtReal);
+    this.introGlow.update(time);
+    if (this.state.event?.def.bat) this.bats.update(this.state.event.def.duration - this.state.event.remaining);
     this.updateGoals(dtReal);
     if (this.state.event) this.banner.update(this.state.event.remaining);
     this.updateHint();
@@ -1107,6 +1223,105 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  /** Load the diner extras art a feature will need soon (background load; views skip their art until it arrives). */
+  private prepareDinerArt(): void {
+    if (this.state.level >= 4) loadDinerArt(this, 'chest'); // the Lv 5 chest, and the coin bag the bat drops
+    if (this.state.level >= 7) loadDinerArt(this, 'bat');
+    if (this.state.level >= 4) loadDinerArt(this, 'decor', () => this.syncDecor()); // the decor art (shop pieces from Lv 5 and the chest prizes)
+    if (this.state.level >= 7) loadDinerArt(this, 'badges'); // the regulars' heart and the badge icons
+  }
+
+  /** A spooky event began: change the room's look, or send the bat on its flights. */
+  private startEventFx(def: EventDef): void {
+    this.atmosphere?.setEventLook(def.look ?? 'none');
+    if (def.look === 'moon') audio.play('moon');
+    if (def.bat) this.bats.start(batSchedule(def.bat.flights, def.duration, makeRng(Date.now() & 0xffff)));
+  }
+
+  private endEventFx(): void {
+    this.atmosphere?.setEventLook('none');
+    this.bats.clear();
+  }
+
+  /** The player tapped a bat: the model pays the bag; show the bag falling and the coins flying in. */
+  private tapBat(x: number, y: number): void {
+    if (this.paused) return; // a menu or card is open over the kitchen
+    audio.unlock();
+    if (this.state.catchBat() > 0) this.bats.caught(x, y);
+  }
+
+  private onBatCaught(coins: number): void {
+    const at = this.bats.positions()[0] ?? { x: LOGICAL_WIDTH / 2, y: 140 };
+    this.fx.burst(at.x, at.y, 0xf6c445, 10, 46, 500);
+    this.floatText(at.x, at.y - 10, `+${coins}`, '#F6C445');
+    if (hasDinerArt(this, 'coin_bag')) {
+      const bag = this.add.image(at.x, at.y, dxKey('coin_bag')).setOrigin(0.5, 1).setScale(0.22).setDepth(700);
+      if (SaveSystem.reduceMotion()) this.time.delayedCall(700, () => bag.destroy());
+      else this.tweens.add({ targets: bag, y: at.y + 90, duration: 520, ease: 'Bounce.Out', onComplete: () => this.tweens.add({ targets: bag, alpha: 0, duration: 260, delay: 220, onComplete: () => bag.destroy() }) });
+    }
+    this.flyCoins({ x: at.x, y: at.y + 60 }, Math.min(6, 2 + Math.floor(coins / 10)));
+    audio.play('coin');
+    this.saveNow();
+  }
+
+  /** The last level-up card is gone: the calm-moment ad is queued, then any station intro card that is due shows (non-blocking). */
+  private afterLevelUpCards(): void {
+    this.levelBreakAd();
+    this.showChests();
+  }
+
+  /** A player who is already past a milestone (an older save) gets the chest claim cards a moment after the game starts, one per missed chest. */
+  private claimMissedChests(): void {
+    if (dueChests(defaultChests, this.state.level, SaveSystem.data.chestsOpened).length === 0) return;
+    const tryShow = (): void => {
+      if (this.storyCard.isShowing || this.levelUpCard.isShowing || this.paused) this.time.delayedCall(2000, tryShow);
+      else this.showChests();
+    };
+    this.time.delayedCall(2500, tryShow);
+  }
+
+  /** Milestone chest cards (Lv 5, 10, 14), one after the other, then any station intro. A chest pays once: the Lv goes into `chestsOpened` when it is opened. */
+  private showChests(): void {
+    const due = dueChests(defaultChests, this.state.level, SaveSystem.data.chestsOpened);
+    if (due.length === 0 || this.chestCard.isShowing) {
+      if (!this.chestCard.isShowing) this.showIntros();
+      return;
+    }
+    this.chestCard.show(
+      due[0],
+      (c) => {
+        SaveSystem.data.chestsOpened = openedAfter(SaveSystem.data.chestsOpened, c);
+        this.badgeEvent({ type: 'chest' });
+        this.sayChef(this.chefTalk.say('chest', this.state.clock));
+        this.state.awardChest(c.coins);
+        const prize = c.decorId ? this.state.cfg.decor.items.find((d) => d.id === c.decorId) : undefined;
+        const lines = [`+${c.coins} coins`];
+        if (prize && !SaveSystem.data.decor.includes(prize.id)) {
+          SaveSystem.data.decor = [...SaveSystem.data.decor, prize.id];
+          this.state.mods = withDecorPerks(modsFor(this.state.cfg.upgrades.upgrades, SaveSystem.data.owned), this.state.cfg.decor.items, SaveSystem.data.decor);
+          this.syncDecor();
+          lines.push(`${prize.name} for the wall!`);
+        }
+        this.flyCoins({ x: LOGICAL_WIDTH / 2, y: 330 }, Math.min(8, 3 + Math.floor(c.coins / 60)));
+        this.saveNow();
+        return lines;
+      },
+      () => this.showChests(),
+    );
+  }
+
+  /** "New: <station>!" plus a glow on the new station, once per player. Several due at once (a jump of levels) show one after the other. */
+  private showIntros(): void {
+    const due = dueIntros(defaultIntros, this.state.level, SaveSystem.data.seenIntros);
+    if (due.length === 0) return;
+    const card = due[0];
+    SaveSystem.data.seenIntros = seenAfterIntro(SaveSystem.data.seenIntros, card.id);
+    this.saveNow();
+    this.introCard.show(introText(card));
+    this.introGlow.show(card.zones.flatMap((id) => this.views.filter((v) => v.zone.id === id).map((v) => ({ id, rect: v.rect }))));
+    if (due.length > 1) this.time.delayedCall(4300, () => this.showIntros());
+  }
+
   /** After the last level-up card: an ad is due from Lv 3 on; it runs at the next calm moment (see `runDueAd`). */
   private levelBreakAd(): void {
     if (this.state.level >= 3) this.adDue = true;
@@ -1115,7 +1330,7 @@ export class GameScene extends Phaser.Scene {
   /** Runs a due ad only when nothing else is open: no pause, closed overlay, story card or level-up card. */
   private runDueAd(): void {
     if (!this.adDue || this.adActive || this.adPending) return;
-    if (this.paused || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing) return;
+    if (this.paused || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing || this.chestCard.isShowing) return;
     this.adDue = false;
     this.breakAd();
   }
@@ -1136,6 +1351,12 @@ export class GameScene extends Phaser.Scene {
 
   private cleanup(): void {
     this.saveNow();
+    this.introCard.destroy();
+    this.chestCard.destroy();
+    this.decorGlows.forEach((g) => g.destroy());
+    this.decorGlows = [];
+    this.introGlow.destroy();
+    this.bats.destroy();
     this.input.keyboard?.off('keydown-B', this.openShop, this);
     this.input.keyboard?.off('keydown-R', this.openRecipeBook, this);
     this.input.keyboard?.off('keydown-T', this.openRestaurants, this);

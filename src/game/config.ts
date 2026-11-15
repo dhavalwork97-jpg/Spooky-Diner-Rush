@@ -70,6 +70,12 @@ export interface EventDef {
   coinMult?: number;
   ovenSpeed?: number;
   spawnType?: string;
+  /** Look only (spooky events): which change the room gets. 'moon' brightens the moon, 'lights' makes the lamps flicker and turn green. Reduced motion shows both still. */
+  look?: 'moon' | 'lights';
+  /** Bat Delivery: the bat flies `flights` times; tapping it drops a bag worth a coin amount in `coins`; at most `maxDrops` bags per event. */
+  bat?: { flights: number; coins: [number, number]; maxDrops: number };
+  /** Ghost Party: `size` customers arrive together once `size` seats are free; serving all of them with nobody leaving angry pays `bonus` (a fraction) of what they paid, once. */
+  party?: { size: number; bonus: number };
 }
 /** Which `KitchenState.mods` field an upgrade sets. */
 export type ModKey = 'fryerSpeed' | 'grillSpeed' | 'ovenSpeed' | 'patience' | 'tips' | 'burnWindow' | 'calm';
@@ -122,6 +128,12 @@ export interface DecorDef {
   y: number;
   width: number;
   height: number;
+  /** Supplied art (a name in public/assets/diner_extras/decor, loaded on demand). Without it the piece is code-drawn like the first three. */
+  art?: string;
+  /** Small bonus while the piece is on display. Only existing mod keys; the total per mod is capped (see DECOR_PERK_CAP). */
+  perk?: { mod: ModKey; pct: number };
+  /** Given by a milestone chest, never sold in the shop. */
+  chestOnly?: boolean;
 }
 export interface GameConfig {
   recipes: { settings: RecipeSettings; items: Record<ItemKind, ItemDef> };

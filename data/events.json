@@ -1,10 +1,78 @@
 {
   "firstAfter": 75,
-  "gap": [60, 180],
+  "gap": [
+    60,
+    180
+  ],
   "events": [
-    { "id": "lunch_rush", "name": "Lunch rush", "minLevel": 3, "duration": 25, "arrivalMult": 0.6 },
-    { "id": "double_coins", "name": "Double coins", "minLevel": 3, "duration": 30, "coinMult": 2 },
-    { "id": "slow_oven", "name": "Slow oven", "minLevel": 5, "duration": 30, "ovenSpeed": 0.7 },
-    { "id": "vip_visit", "name": "VIP visit", "minLevel": 6, "duration": 40, "spawnType": "vip" }
+    {
+      "id": "lunch_rush",
+      "name": "Lunch rush",
+      "minLevel": 3,
+      "duration": 25,
+      "arrivalMult": 0.6
+    },
+    {
+      "id": "double_coins",
+      "name": "Double coins",
+      "minLevel": 3,
+      "duration": 30,
+      "coinMult": 2
+    },
+    {
+      "id": "slow_oven",
+      "name": "Slow oven",
+      "minLevel": 5,
+      "duration": 30,
+      "ovenSpeed": 0.7
+    },
+    {
+      "id": "vip_visit",
+      "name": "VIP visit",
+      "minLevel": 6,
+      "duration": 40,
+      "spawnType": "vip"
+    },
+    {
+      "id": "full_moon",
+      "name": "Full Moon",
+      "minLevel": 4,
+      "duration": 30,
+      "arrivalMult": 0.83,
+      "coinMult": 1.2,
+      "look": "moon"
+    },
+    {
+      "id": "bat_delivery",
+      "name": "Bat Delivery",
+      "minLevel": 8,
+      "duration": 30,
+      "bat": {
+        "flights": 3,
+        "coins": [
+          20,
+          40
+        ],
+        "maxDrops": 3
+      }
+    },
+    {
+      "id": "haunted_lights",
+      "name": "Haunted Lights",
+      "minLevel": 9,
+      "duration": 30,
+      "coinMult": 1.2,
+      "look": "lights"
+    },
+    {
+      "id": "ghost_party",
+      "name": "Ghost Party",
+      "minLevel": 10,
+      "duration": 40,
+      "party": {
+        "size": 3,
+        "bonus": 0.5
+      }
+    }
   ]
 }

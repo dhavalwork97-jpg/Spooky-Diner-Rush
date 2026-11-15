@@ -1,0 +1,14 @@
+{
+  "badges": [
+    { "id": "clean_kitchen", "name": "Clean Kitchen", "goal": "Serve 50 orders in a row without burning anything", "stat": "cleanRun", "target": 50, "art": "clean_kitchen" },
+    { "id": "speed_demon", "name": "Speed Demon", "goal": "Serve 25 Rush orders", "stat": "rushServes", "target": 25, "art": "speed_demon" },
+    { "id": "combo_master", "name": "Combo Master", "goal": "Reach the top combo once", "stat": "maxCombos", "target": 1, "art": "combo_master" },
+    { "id": "first_bronze", "name": "First Bronze", "goal": "Earn your first Bronze mastery badge", "stat": "masteries", "target": 1, "art": "first_bronze" },
+    { "id": "moon_chef", "name": "Moon Chef", "goal": "Serve 10 orders during a Full Moon", "stat": "moonServes", "target": 10, "art": "moon_chef" },
+    { "id": "bat_catcher", "name": "Bat Catcher", "goal": "Tap 10 bats", "stat": "bats", "target": 10, "art": "bat_catcher" },
+    { "id": "regular_friend", "name": "Regular Friend", "goal": "Serve a regular their favorite dish 5 times", "stat": "regularServes", "target": 5, "art": "regular_friend" },
+    { "id": "party_host", "name": "Party Host", "goal": "Serve 3 Ghost Parties with nobody angry", "stat": "parties", "target": 3, "art": "party_host" },
+    { "id": "chest_hunter", "name": "Chest Hunter", "goal": "Open all 3 Treasure Chests", "stat": "chests", "target": 3, "art": "chest_hunter" },
+    { "id": "coin_collector", "name": "Coin Collector", "goal": "Earn 5,000 coins in total", "stat": "coinsEarned", "target": 5000, "art": "coin_collector" }
+  ]
+}

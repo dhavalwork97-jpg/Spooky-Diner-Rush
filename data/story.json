@@ -19,10 +19,34 @@
       "text": "Dough, oven, plate, done. Pizza is on the menu now. Keep an eye on it so it does not burn, chef. Nobody wants an angry ghost."
     },
     {
+      "id": "three_seats",
+      "level": 7,
+      "title": "Room for three",
+      "text": "Chef here! The counter has three seats now. Three hungry ghosts at once, so keep every pan busy and the tickets moving."
+    },
+    {
       "id": "sous_chef",
       "level": 10,
       "title": "Sous Chef",
       "text": "You run this kitchen like a pro. A full counter of hungry ghosts is no trouble for you."
+    },
+    {
+      "id": "impatient_ghosts",
+      "level": 11,
+      "title": "Impatient ghosts",
+      "text": "Some ghosts are in a real hurry now. They run out of patience fast, but they tip double when you are quick. Fast hands, chef!"
+    },
+    {
+      "id": "ice_cream",
+      "level": 12,
+      "title": "Ice cream is open",
+      "text": "The ice cream machine is ready! Swirl a cone and serve it before it melts. A cold treat is a big hit with ghosts."
+    },
+    {
+      "id": "vip_ghosts",
+      "level": 14,
+      "title": "VIP ghosts",
+      "text": "VIP ghosts drift in now. They pay double and order one extra dish, so take your time to get it right and keep the combo."
     },
     {
       "id": "head_chef",

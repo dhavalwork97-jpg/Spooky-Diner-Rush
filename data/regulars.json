@@ -1,0 +1,11 @@
+{
+  "settings": { "chance": 0.1, "tipBonus": 0.3 },
+  "regulars": [
+    { "id": "mr_wispy", "name": "Mr. Wispy", "look": 8, "favorite": "fries", "fromLevel": 8 },
+    { "id": "miss_mist", "name": "Miss Mist", "look": 8, "favorite": "drink", "fromLevel": 8 },
+    { "id": "old_sheet", "name": "Old Sheet", "look": 8, "favorite": "burger", "fromLevel": 8 },
+    { "id": "little_boo", "name": "Little Boo", "look": 8, "favorite": "nuggets", "fromLevel": 8 },
+    { "id": "captain_fog", "name": "Captain Fog", "look": 8, "favorite": "pizza", "fromLevel": 8 },
+    { "id": "dame_dusk", "name": "Dame Dusk", "look": 8, "favorite": "icecream", "fromLevel": 8 }
+  ]
+}

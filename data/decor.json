@@ -1,7 +1,152 @@
 {
   "items": [
-    { "id": "clock", "name": "Wall clock", "description": "A big friendly clock on the wall.", "cost": 80, "unlockLevel": 2, "x": 1375, "y": 45, "width": 66, "height": 66 },
-    { "id": "bunting", "name": "Party bunting", "description": "Colorful flags over the windows.", "cost": 120, "unlockLevel": 3, "x": 400, "y": 2, "width": 940, "height": 40 },
-    { "id": "runner", "name": "Floor runner", "description": "A cozy red runner for the dining floor.", "cost": 150, "unlockLevel": 4, "x": 420, "y": 336, "width": 1000, "height": 34 }
+    {
+      "id": "clock",
+      "name": "Wall clock",
+      "description": "A big friendly clock on the wall.",
+      "cost": 80,
+      "unlockLevel": 2,
+      "x": 1375,
+      "y": 45,
+      "width": 66,
+      "height": 66
+    },
+    {
+      "id": "bunting",
+      "name": "Party bunting",
+      "description": "Colorful flags over the windows.",
+      "cost": 120,
+      "unlockLevel": 3,
+      "x": 400,
+      "y": 2,
+      "width": 940,
+      "height": 40
+    },
+    {
+      "id": "runner",
+      "name": "Floor runner",
+      "description": "A cozy red runner for the dining floor.",
+      "cost": 150,
+      "unlockLevel": 4,
+      "x": 420,
+      "y": 336,
+      "width": 1000,
+      "height": 34
+    },
+    {
+      "id": "cobweb",
+      "name": "Cobweb",
+      "description": "A friendly web in the window corner.",
+      "cost": 150,
+      "unlockLevel": 5,
+      "x": 440,
+      "y": 43,
+      "width": 110,
+      "height": 103,
+      "art": "cobweb",
+      "perk": {
+        "mod": "patience",
+        "pct": 0.02
+      }
+    },
+    {
+      "id": "jack_o_lantern",
+      "name": "Jack-o'-lantern",
+      "description": "A grinning pumpkin on the bar.",
+      "cost": 220,
+      "unlockLevel": 6,
+      "x": 1040,
+      "y": 130,
+      "width": 84,
+      "height": 81,
+      "art": "jack_o_lantern",
+      "perk": {
+        "mod": "tips",
+        "pct": 0.02
+      }
+    },
+    {
+      "id": "candle_string",
+      "name": "Candle string",
+      "description": "Little candles glowing by the window.",
+      "cost": 300,
+      "unlockLevel": 8,
+      "x": 1010,
+      "y": 43,
+      "width": 260,
+      "height": 84,
+      "art": "candle_string",
+      "perk": {
+        "mod": "burnWindow",
+        "pct": 0.02
+      }
+    },
+    {
+      "id": "bat_garland",
+      "name": "Bat garland",
+      "description": "Five sleepy bats hanging around.",
+      "cost": 400,
+      "unlockLevel": 9,
+      "x": 560,
+      "y": 43,
+      "width": 420,
+      "height": 148,
+      "art": "bat_garland",
+      "perk": {
+        "mod": "fryerSpeed",
+        "pct": 0.02
+      }
+    },
+    {
+      "id": "lucky_lantern",
+      "name": "Lucky lantern",
+      "description": "A green lantern. A Treasure Chest prize.",
+      "cost": 0,
+      "unlockLevel": 5,
+      "x": 1285,
+      "y": 43,
+      "width": 60,
+      "height": 117,
+      "art": "lucky_lantern",
+      "perk": {
+        "mod": "patience",
+        "pct": 0.02
+      },
+      "chestOnly": true
+    },
+    {
+      "id": "haunted_portrait",
+      "name": "Haunted portrait",
+      "description": "A ghost smiles from the frame. A Treasure Chest prize.",
+      "cost": 0,
+      "unlockLevel": 10,
+      "x": 1566,
+      "y": 105,
+      "width": 48,
+      "height": 63,
+      "art": "haunted_portrait",
+      "perk": {
+        "mod": "tips",
+        "pct": 0.02
+      },
+      "chestOnly": true
+    },
+    {
+      "id": "golden_skeleton_plant",
+      "name": "Golden plant",
+      "description": "A skeleton naps in a golden pot. A Treasure Chest prize.",
+      "cost": 0,
+      "unlockLevel": 14,
+      "x": 1132,
+      "y": 130,
+      "width": 50,
+      "height": 82,
+      "art": "golden_skeleton_plant",
+      "perk": {
+        "mod": "calm",
+        "pct": 0.02
+      },
+      "chestOnly": true
+    }
   ]
 }
