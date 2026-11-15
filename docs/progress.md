@@ -300,3 +300,8 @@ Ten additive features: station intro cards (Lv 2/4/5/6/10/12), mastery from Lv 6
 - Verified: tsc, 725 tests (+1 skipped), both builds, headless Chromium at desktop and phone size, taco bot sim unchanged within noise (step 10 fast: 3403 s / 15253 coins before, 3417 s / 15059 after).
 - Not verified: real phone, real sound, human balance, the real CrazyGames SDK. Phase 2 items not built.
 
+## Taco Phase 2: window pumpkins, Ghost Party, taco badges (2026-11-15, branch feat/taco-midnight, not committed)
+- Four painted window pumpkins can be tapped (2 coins, 60 s rest each); Ghost Party for the truck from menu step 6 (3 ghosts at once, +30 percent bonus if nobody leaves angry); ten taco badges with their own save fields (tacoBadges, tacoStats) and a Badges tab in the taco Recipe Book.
+- Not built: Ghost Pepper orders (waiting for go), truck stickers (no art), ghost costumes (conflicts with the no-customer-art-change rule).
+- Verified: tsc, 738 tests (+1 skipped), both builds, headless Chromium (pumpkin tap paid, party of 3 arrived together, Badges tab) at desktop and phone size. Not verified: real phone, real sound, human balance.
+

@@ -6,6 +6,19 @@ Branch port/taco-midnight-to-main from local main (0dcb1da). Approved by user: P
 - [ ] 4. npm ci, tsc, full vitest, build + build:crazygames (browser must stay CrazyGames only, no AdMob/LevelPlay)
 - [ ] 5. report conflicts and results
 
+# IN PROGRESS (2026-11-15, Claude) - TACO PHASE 2 - branch `feat/taco-midnight` (midnight + B1-B7 are committed as a0bb4f7 and pushed; Phase 2 is NOT committed unless the owner says so)
+Owner chose: P1 window pumpkin taps, P2 Ghost Party event (taco), P3 taco badges. Ghost Pepper orders: owner answered "optional extra on an order" but did not tick it in the scope list -> NOT built, ask. Truck stickers (no art) and ghost costumes (conflicts with "never change customer art") NOT built.
+- [x] P1. Window pumpkin taps (painted pumpkins in the haunted window; tap = small coin/sparkle, limited; must not steal station/bubble taps)
+- [x] P2. Ghost Party event for the truck (taco entry, from a menu step; reuse the shared party rule)
+- [x] P3. Taco badges (reuse src/game/badges.ts shape; Badges tab in the taco Recipe Book)
+
+  P1 pumpkins: data/taco.json haunted.pumpkins (4 jack-o-lanterns measured in the visible glass: x .30/.44/.73/.80, y .33-.36) + "pumpkin" {coins 2, cooldown 60 s}. TacoHaunted makes an invisible 44 px+ tap zone over each (depth 4, inside the glass where no station/customer/bubble is tappable; the bat lane is above at y .09-.20) and an orange additive flare (static under reduced motion). TacoKitchenState.tapPumpkin pays 2 coins then rests 60 s per pumpkin (max about 480 coins/hour if farmed).
+  P2 Ghost Party (taco entry in data/taco.json events, menu step 6+, 40 s, party of 3, bonus 30 percent of what the party paid, paid once, none if a guest leaves angry; waits for 3 free seats): same rules as the diner's, implemented in TacoKitchenState (updateParty/partyServed, events partyArrive/partyDone/partyFailed). Scene: "Party!" text, bonus toast and coins, sounds party/coin.
+  P3 taco badges: ten badges in data/taco.json "badges" (same shape and counters as the diner's, reuse src/game/badges.ts, BadgeEvent gained 'pumpkin'), save fields tacoBadges + tacoStats (optional), toast on earn, a "Badges" tab (5x2) in the taco Recipe Book (RecipeBookData.badges). Art reuses the diner badge icons (Pumpkin Patch uses heart_pin: no pumpkin badge art exists).
+  Phase 2 NOT built: Ghost Pepper orders (asked, owner chose "optional extra on an order" but did not tick it in scope: waiting for go), truck stickers (no art, no free wall), ghost costumes (conflicts with "never change customer art").
+- [x] F2. tsc, full vitest, both builds, Chromium desktop+phone, update HANDOFF/docs
+  F2 result: tsc clean; vitest 65 files, 738 passed + 1 skipped, 0 failed; both builds ok; Chromium desktop+phone: pumpkin click +2 coins (desktop mouse; phone used the hook only), ghost party of 3 seated together, Badges tab 5x2. Not tested: real phone, sound, human balance. Not committed.
+
 # IN PROGRESS (2026-11-15, Claude) - TACO TRUCK MIDNIGHT + 7 TACO FEATURES - branch `feat/taco-midnight` (local, from feat/diner-extras 1b2a563 so the shared diner components exist), NOTHING committed/pushed/merged unless the owner says so
 Owner brief (Taco Truck ONLY; no diner / pizza change; no ad change; saves backward compatible; no shift/stage/star words; never weaken tests; edit through the shell). Midnight art installed first (old art kept in tools/taco_source/old/, build tool tools/make_taco_midnight_art.py, sources tools/taco_source/midnight/).
 Plan (tick when done, result line under each):

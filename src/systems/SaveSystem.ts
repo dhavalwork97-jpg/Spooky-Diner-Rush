@@ -43,6 +43,9 @@ export interface SaveData {
   chestsOpened: number[];
   /** Taco mastery badges already paid: dish id -> tiers paid (1 bronze to 3 gold). Missing in older saves: whatever their serve counts already earned counts as paid (no payout). */
   tacoMastery: Record<string, number>;
+  /** Taco badges earned (ids from data/taco.json "badges") and their counters. */
+  tacoBadges: string[];
+  tacoStats: Record<string, number>;
   /** The all-16-bronze coin bonus has been paid. */
   tacoMasteryBonus: boolean;
   /** Taco milestone chests opened, by menu step (3, 6, 10). A player already past a step gets one claim card per missing chest. */
@@ -80,6 +83,8 @@ export function defaultSave(): SaveData {
     chestsOpened: [],
     tacoMastery: {},
     tacoMasteryBonus: false,
+    tacoBadges: [],
+    tacoStats: {},
     tacoChests: [],
     badges: [],
     stats: {},
@@ -195,6 +200,8 @@ export function parseSave(raw: string | null): SaveData {
       chestsOpened: cleanLevels(p.chestsOpened),
       tacoMastery: p.tacoMastery === undefined ? seedMasteryPaid(p.tacoServed === undefined ? seeded.served : cleanOwned(p.tacoServed)) : cleanCounts(p.tacoMastery),
       tacoMasteryBonus: p.tacoMasteryBonus === true,
+      tacoBadges: cleanIds(p.tacoBadges),
+      tacoStats: cleanCounts(p.tacoStats),
       tacoChests: cleanLevels(p.tacoChests),
       badges: cleanIds(p.badges),
       stats: cleanCounts(p.stats),
