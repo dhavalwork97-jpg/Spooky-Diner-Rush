@@ -969,5 +969,196 @@
    "width": 0.0443,
    "height": 0.1979
   }
+ ],
+ "haunted": {
+  "note": "Measured from the final kitchen_street_back.webp (2754x1536); fractions of the art. Used by Full Moon (B4) and combo windows (B6).",
+  "moon": {
+   "x": 0.644,
+   "y": 0.146,
+   "radius": 0.0349
+  },
+  "windows": [
+   {
+    "id": "tower",
+    "x": 0.5034,
+    "y": 0.2139,
+    "w": 0.0025,
+    "h": 0.015,
+    "tier": 3,
+    "tower": true
+   },
+   {
+    "id": "left_low",
+    "x": 0.4715,
+    "y": 0.2732,
+    "w": 0.0054,
+    "h": 0.0163,
+    "tier": 1
+   },
+   {
+    "id": "mid_left",
+    "x": 0.5173,
+    "y": 0.2674,
+    "w": 0.0036,
+    "h": 0.0169,
+    "tier": 1
+   },
+   {
+    "id": "mid_a",
+    "x": 0.5314,
+    "y": 0.2653,
+    "w": 0.0033,
+    "h": 0.0163,
+    "tier": 2
+   },
+   {
+    "id": "mid_b",
+    "x": 0.5355,
+    "y": 0.2658,
+    "w": 0.0033,
+    "h": 0.0169,
+    "tier": 2
+   },
+   {
+    "id": "right_a",
+    "x": 0.5589,
+    "y": 0.2731,
+    "w": 0.0033,
+    "h": 0.0072,
+    "tier": 2
+   },
+   {
+    "id": "door",
+    "x": 0.5609,
+    "y": 0.2878,
+    "w": 0.0084,
+    "h": 0.0195,
+    "tier": 3
+   },
+   {
+    "id": "right_far",
+    "x": 0.6019,
+    "y": 0.2618,
+    "w": 0.0036,
+    "h": 0.0085,
+    "tier": 3
+   }
+  ]
+ },
+ "mastery": {
+  "fromStep": 1,
+  "tiers": [
+   {
+    "id": "bronze",
+    "name": "Bronze",
+    "serves": 10,
+    "coins": 20
+   },
+   {
+    "id": "silver",
+    "name": "Silver",
+    "serves": 40,
+    "coins": 50
+   },
+   {
+    "id": "gold",
+    "name": "Gold",
+    "serves": 100,
+    "coins": 120
+   }
+  ],
+  "allBronzeCoins": 100
+ },
+ "regulars": {
+  "settings": {
+   "chance": 0.1,
+   "tipBonus": 0.3,
+   "fromStep": 4
+  },
+  "regulars": [
+   {
+    "id": "dona_boo",
+    "name": "Dona Boo",
+    "look": 8,
+    "favorite": "chicken_soft_taco"
+   },
+   {
+    "id": "senor_wisp",
+    "name": "Senor Wisp",
+    "look": 8,
+    "favorite": "veggies_taco"
+   },
+   {
+    "id": "little_fantasma",
+    "name": "Little Fantasma",
+    "look": 8,
+    "favorite": "shrimp_soft_taco"
+   },
+   {
+    "id": "capitan_niebla",
+    "name": "Capitan Niebla",
+    "look": 8,
+    "favorite": "fish_soft_taco"
+   },
+   {
+    "id": "tia_mist",
+    "name": "Tia Mist",
+    "look": 8,
+    "favorite": "chicken_taco"
+   },
+   {
+    "id": "don_sabana",
+    "name": "Don Sabana",
+    "look": 8,
+    "favorite": "veggies_burrito"
+   }
+  ]
+ },
+ "chests": [
+  {
+   "id": "taco_chest_3",
+   "step": 3,
+   "title": "Treasure Chest!",
+   "coins": 150
+  },
+  {
+   "id": "taco_chest_6",
+   "step": 6,
+   "title": "Treasure Chest!",
+   "coins": 250
+  },
+  {
+   "id": "taco_chest_10",
+   "step": 10,
+   "title": "Big Treasure Chest!",
+   "coins": 400
+  }
+ ],
+ "events": [
+  {
+   "id": "full_moon",
+   "name": "Full Moon",
+   "minStep": 3,
+   "minLevel": 1,
+   "duration": 30,
+   "arrivalMult": 0.83,
+   "coinMult": 1.2,
+   "look": "moon"
+  },
+  {
+   "id": "bat_delivery",
+   "name": "Bat Delivery",
+   "minStep": 5,
+   "minLevel": 1,
+   "duration": 30,
+   "bat": {
+    "flights": 3,
+    "coins": [
+     20,
+     40
+    ],
+    "maxDrops": 3
+   }
+  }
  ]
 }

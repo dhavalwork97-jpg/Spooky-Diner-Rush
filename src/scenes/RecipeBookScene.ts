@@ -18,12 +18,32 @@ export interface BookRow {
   locked: boolean;
 }
 
+/** One dish of a mastery grid (the Taco Truck's). */
+export interface MasteryCellView {
+  name: string;
+  icon: { key: string; frame?: number };
+  count: number;
+  /** 0 none, 1 bronze, 2 silver, 3 gold. */
+  tier: number;
+  /** "28 more for Silver", or "Gold!" once done. */
+  next: string;
+  onMenu: boolean;
+}
+export interface MasteryBookData {
+  rowLabels: string[];
+  colLabels: string[];
+  cells: MasteryCellView[][];
+  footer: string;
+}
+
 /** What the Recipe Book needs. The diner passes its state; another restaurant also passes its own `rows` (and an optional how-to line). */
 export interface RecipeBookData {
   state: { cfg: GameConfig; level: number };
   onClose: () => void;
   rows?: BookRow[];
   tips?: string;
+  /** A restaurant with a mastery grid adds a second tab for it. */
+  mastery?: MasteryBookData;
 }
 
 const ROWS_PER_PAGE = 5;
@@ -48,8 +68,11 @@ export class RecipeBookScene extends Phaser.Scene {
   private tips = '';
   private recipeObjs: Phaser.GameObjects.GameObject[] = [];
   private badgeObjs: Phaser.GameObjects.GameObject[] = [];
-  private tab: 'recipes' | 'badges' = 'recipes';
+  private tab: 'recipes' | 'badges' | 'mastery' = 'recipes';
   private tabChips: { recipes?: Phaser.GameObjects.Text; badges?: Phaser.GameObjects.Text } = {};
+  private mastery?: MasteryBookData;
+  private pagedShown: Phaser.GameObjects.GameObject[] = [];
+  private pagedHidden = false;
 
   constructor() {
     super('RecipeBook');
@@ -62,6 +85,9 @@ export class RecipeBookScene extends Phaser.Scene {
     this.level = data.state.level;
     this.extraRows = data.rows;
     this.tips = data.tips ?? '';
+    this.mastery = data.mastery;
+    this.pagedShown = [];
+    this.pagedHidden = false;
     this.tab = 'recipes';
     this.tabChips = {};
   }
@@ -79,7 +105,7 @@ export class RecipeBookScene extends Phaser.Scene {
 
     this.recipeObjs = [];
     this.badgeObjs = [];
-    if (!this.extraRows) this.buildTabs(x0);
+    if (!this.extraRows || this.mastery) this.buildTabs(x0);
     const mark = this.children.length;
     if (this.extraRows) this.pagedRows(x0, this.extraRows);
     else recipeEntries(this.cfg, this.level).forEach((e, i) => {
@@ -124,7 +150,7 @@ export class RecipeBookScene extends Phaser.Scene {
 
   /** Two tabs under the title: Recipes (the list below) and Badges (the lifetime goals). Only the diner has them. */
   private buildTabs(x0: number): void {
-    const chip = (label: string, x: number, tab: 'recipes' | 'badges'): Phaser.GameObjects.Text => {
+    const chip = (label: string, x: number, tab: 'recipes' | 'badges' | 'mastery'): Phaser.GameObjects.Text => {
       const t = this.add.text(x, 58, label, { fontFamily: FONT, fontSize: '26px', color: '#FFF4DC', backgroundColor: '#2BA6A0', padding: { x: 18, y: 6 }, stroke: '#2B1B17', strokeThickness: 4 }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
       t.on('pointerup', () => {
         if (this.tab === tab) return;
@@ -134,22 +160,54 @@ export class RecipeBookScene extends Phaser.Scene {
       return t;
     };
     this.tabChips.recipes = chip('Recipes', x0 + 380, 'recipes');
-    this.tabChips.badges = chip('Badges', x0 + 380 + 150, 'badges');
+    this.tabChips.badges = chip(this.extraRows ? 'Mastery' : 'Badges', x0 + 380 + 150, this.extraRows ? 'mastery' : 'badges');
     this.paintTabs();
   }
 
   private paintTabs(): void {
     this.tabChips.recipes?.setBackgroundColor(this.tab === 'recipes' ? '#F28C28' : '#2BA6A0');
-    this.tabChips.badges?.setBackgroundColor(this.tab === 'badges' ? '#F28C28' : '#2BA6A0');
+    this.tabChips.badges?.setBackgroundColor(this.tab !== 'recipes' ? '#F28C28' : '#2BA6A0');
   }
 
-  private showTab(x0: number, tab: 'recipes' | 'badges'): void {
+  private showTab(x0: number, tab: 'recipes' | 'badges' | 'mastery'): void {
     this.tab = tab;
     this.paintTabs();
+    this.pagedHidden = tab !== 'recipes';
     this.recipeObjs.forEach((o) => (o as unknown as Phaser.GameObjects.Components.Visible).setVisible(tab === 'recipes'));
+    this.pagedShown.forEach((o) => (o as unknown as Phaser.GameObjects.Components.Visible).setVisible(tab === 'recipes'));
     this.badgeObjs.forEach((o) => o.destroy());
     this.badgeObjs = [];
     if (tab === 'badges') this.buildBadges(x0);
+    if (tab === 'mastery' && this.mastery) this.buildMastery(x0, this.mastery);
+  }
+
+  /** The Mastery page: a 4 x 4 grid (row = protein, column = format). Each cell shows the dish, its serve count and the badge earned. */
+  private buildMastery(x0: number, m: MasteryBookData): void {
+    const mark = this.children.length;
+    const labelW = 120;
+    const cellW = (PANEL_W - 40 - labelW) / m.colLabels.length;
+    const cellH = 108;
+    const top = 150;
+    const tierColor = [0x999999, 0xcd7f32, 0xb8c0c8, 0xf6c445];
+    m.colLabels.forEach((c, i) => this.add.text(x0 + 20 + labelW + cellW * i + cellW / 2, 124, c, { fontFamily: FONT, fontSize: '22px', color: '#2B1B17' }).setOrigin(0.5));
+    m.cells.forEach((row, r) => {
+      const y = top + r * (cellH + 6);
+      this.add.text(x0 + 20 + labelW / 2, y + cellH / 2, m.rowLabels[r], { fontFamily: FONT, fontSize: '22px', color: '#2B1B17' }).setOrigin(0.5);
+      row.forEach((c, i) => {
+        const x = x0 + 20 + labelW + cellW * i;
+        const g = this.add.graphics();
+        g.fillStyle(c.onMenu ? 0xfaedd0 : 0xe6dcc4, 1).fillRoundedRect(x + 4, y, cellW - 8, cellH, 14);
+        g.lineStyle(3, INK, c.onMenu ? 0.7 : 0.35).strokeRoundedRect(x + 4, y, cellW - 8, cellH, 14);
+        const icon = this.add.image(x + 52, y + cellH / 2, c.icon.key, c.icon.frame);
+        icon.setScale(72 / Math.max(icon.width, icon.height));
+        if (!c.onMenu) icon.setTint(0x555555).setAlpha(0.55);
+        this.add.circle(x + cellW - 28, y + 24, 14, tierColor[c.tier], 1).setStrokeStyle(3, INK, c.tier > 0 ? 1 : 0.4);
+        this.add.text(x + 96, y + 20, c.onMenu ? `${c.count} served` : 'Not on the menu yet', { fontFamily: FONT, fontSize: '20px', color: '#2B1B17' });
+        this.add.text(x + 96, y + 52, c.onMenu ? c.next : '', { fontFamily: FONT, fontSize: '16px', color: c.tier > 0 ? '#B8730F' : '#5a463e', wordWrap: { width: cellW - 110 } });
+      });
+    });
+    this.add.text(x0 + PANEL_W / 2, 618, m.footer, { fontFamily: FONT, fontSize: '20px', color: '#5a463e', align: 'center', wordWrap: { width: PANEL_W - 80 } }).setOrigin(0.5, 0);
+    this.badgeObjs = this.children.list.slice(mark);
   }
 
   /** The Badges page: 5 across, 2 down. Earned badges are in full colour; locked ones are greyed and show their goal and progress. */
@@ -208,6 +266,8 @@ export class RecipeBookScene extends Phaser.Scene {
         const steps = this.add.text(x0 + 400, y + 10, how, { fontFamily: FONT, fontSize: '17px', color: '#2B1B17', lineSpacing: 3, wordWrap: { width: PANEL_W - 400 - 40 } });
         shown.push(row, icon, name, stats, steps);
       });
+      this.pagedShown = shown;
+      if (this.pagedHidden) shown.forEach((o) => (o as unknown as Phaser.GameObjects.Components.Visible).setVisible(false));
       pageText.setText(`${page + 1} / ${pages}`);
     };
     const nav = (label: string, x: number, delta: number): void => {
