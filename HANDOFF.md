@@ -321,8 +321,8 @@ Owner supplied Gemini art (night diner, logo on green, chef with ghost on green)
 
 ## START HERE: current status (2026-11-01, Claude)
 First version (one restaurant) is feature complete and in release prep. Sections below are newest first; older milestone notes are further down.
-- `main` is at 6d5eb54 (PR #19 merged). Merged today: customer system, ghost-only customers with scare clips (PRs #15, #16, #18), drinks and ice cream served straight from the machine (#17), animation helper drift fix (#19). Backups: branches `backup/main-2026-10-29`, `backup/main-2026-11-01`, `backup/main-2026-11-01-b` (a3414ed).
-- OPEN, NOT MERGED: PR #20 `chore/release-prep` (bundled Fredoka, smaller art sheet, SDK init, 12 MB build, `docs/release.md`). Merge it, then read `docs/release.md`.
+- `main` is at e7f9bbf (PRs #15-#21 merged). Tests 233, typecheck and build clean on it. Merged today: customer system, ghost-only customers with scare clips (PRs #15, #16, #18), drinks and ice cream served straight from the machine (#17), animation helper drift fix (#19). Backups: branches `backup/main-2026-10-29`, `backup/main-2026-11-01`, `backup/main-2026-11-01-b` (a3414ed).
+- Merged since: PR #20 release prep (bundled Fredoka, smaller art sheet, SDK init, 12 MB build, `docs/release.md`) and PR #21 (wider grab areas for full drinks and ice cream, touch drag verified). Nothing is open. Read `docs/release.md` next.
 - Tests 229, typecheck and build clean on the branch.
 - Left for the owner: CrazyGames cover images, title and description, "saves progress" toggle, testing with the real SDK, real phones (thumb feel, fps), real sound, slow connections (scare sheets about 7 MB lazy).
 - Known limits: vest gentleman has no scare clip (code lunge) and no angry face; no scare sound; ghosts have no happy or eating faces (needs new art); people customers are blanked in `customers.webp` (needs the 8 PNGs and `CUSTOMER_LOOK_MIN` 0 to return); fast Lv 20 bot is about 7 s quicker since drinks skip the plates (test floor 1750 s); the Lv 1 price label sits over the tomato cover on purpose; second restaurant is not in this version (next update).
