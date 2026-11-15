@@ -73,3 +73,24 @@ describe('seenAfter', () => {
     expect(seenAfter(cfg, ['old_card'], cards[0])).toContain('old_card');
   });
 });
+
+describe('diner story cards (Lv 7, 11, 12, 14)', () => {
+  const byLevel = (n: number) => defaultConfig.story.cards.filter((c) => c.level === n);
+  it('there is one card at each of Lv 7, 11, 12 and 14, and the old cards are still there', () => {
+    for (const n of [7, 11, 12, 14]) expect(byLevel(n)).toHaveLength(1);
+    for (const n of [1, 3, 5, 10, 15, 20]) expect(byLevel(n).length).toBeGreaterThan(0);
+  });
+  it('each is true to the data: 3 seats at Lv 7, Impatient at Lv 11, ice cream at Lv 12, VIP at Lv 14', () => {
+    const lv = (n: number) => defaultConfig.progression.levels[n - 1];
+    expect(lv(7).maxCustomers).toBe(3);
+    expect(lv(6).maxCustomers).toBe(2);
+    expect(Object.keys(lv(11).types ?? {})).toContain('impatient');
+    expect(Object.keys(lv(10).types ?? {})).not.toContain('impatient');
+    expect(lv(12).items).toContain('icecream');
+    expect(Object.keys(lv(14).types ?? {})).toContain('vip');
+    expect(Object.keys(lv(13).types ?? {})).not.toContain('vip');
+  });
+  it('texts are 160 characters or fewer', () => {
+    for (const n of [7, 11, 12, 14]) expect(byLevel(n)[0].text.length).toBeLessThanOrEqual(160);
+  });
+});

@@ -1,6 +1,6 @@
 {
   "mastery": {
-    "fromLevel": 16,
+    "fromLevel": 6,
     "tiers": [
       { "id": "bronze", "name": "Bronze", "serves": 10, "coins": 40 },
       { "id": "silver", "name": "Silver", "serves": 40, "coins": 120 },

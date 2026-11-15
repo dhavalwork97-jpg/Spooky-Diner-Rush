@@ -7,6 +7,10 @@ describe('first scene after loading', () => {
     expect(hasSavedProgress(defaultSave())).toBe(false);
     expect(chooseFirstScene({ debug: false, taco: false, returning: false })).toBe('Title');
   });
+  it('the CrazyGames build skips the title for new players too, so play starts without an extra tap', () => {
+    expect(chooseFirstScene({ debug: false, taco: false, returning: false, skipTitle: true })).toBe('Game');
+    expect(chooseFirstScene({ debug: false, taco: false, returning: false, skipTitle: false })).toBe('Title');
+  });
   it('a returning player goes straight into the game', () => {
     expect(chooseFirstScene({ debug: false, taco: false, returning: true })).toBe('Game');
   });

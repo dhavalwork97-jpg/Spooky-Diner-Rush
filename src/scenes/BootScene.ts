@@ -14,8 +14,16 @@ import { CrazyGames } from '../sdk/crazygames';
 import { SaveSystem } from '../systems/SaveSystem';
 import { buildAllTextures } from '../art/builders';
 import { defaultConfig } from '../game/config';
+import { CUSTOMER_LOOK_COUNT, CUSTOMER_LOOK_MIN } from '../game/KitchenState';
 import { pickStartRestaurant } from '../game/restaurants';
+import { defaultIntros, validateIntros } from '../game/intros';
+import { defaultChests, validateChests } from '../game/chests';
+import { defaultBadges, validateBadges } from '../game/badges';
+import { dinerArtRows } from '../views/dinerArt';
+import { defaultRegulars, defaultRegularSettings, validateRegulars } from '../game/regulars';
+import { validateEvents } from '../game/spooky';
 import { chooseFirstScene, hasSavedProgress } from '../game/startup';
+import { IS_CRAZYGAMES_BUILD } from '../build/target';
 
 export const LOGICAL_WIDTH = 1280;
 export const LOGICAL_HEIGHT = 698;
@@ -37,6 +45,11 @@ export class BootScene extends Phaser.Scene {
     assertValid('decor.json', validateDecor(decorJson));
     assertValid('restaurant_menu.json', validateRestaurantMenu(restaurantMenuJson, (restaurantsJson as { restaurants: { id: string }[] }).restaurants.map((r) => r.id)));
     assertValid('recipebook.json', validateRecipeBook(recipebookJson, Object.keys(defaultConfig.recipes.items)));
+    assertValid('intros.json', validateIntros(defaultIntros, (restaurantsJson as { restaurants: RestaurantDef[] }).restaurants.find((r) => r.id === 'burger_diner')!.zones));
+    assertValid('chests.json', validateChests(defaultChests, defaultConfig.decor.items.filter((d) => d.chestOnly).map((d) => d.id)));
+    assertValid('regulars.json', validateRegulars(defaultRegulars, defaultRegularSettings, CUSTOMER_LOOK_COUNT, CUSTOMER_LOOK_MIN, Object.fromEntries(Object.entries(defaultConfig.recipes.items).map(([k, v]) => [k, v.unlockLevel]))));
+    assertValid('badges.json', validateBadges(defaultBadges, dinerArtRows('badges').map((r) => r.key.replace(/^dx_/, ''))));
+    assertValid('events.json', validateEvents(defaultConfig.events.events));
     SaveSystem.load();
 
     const w = LOGICAL_WIDTH;
@@ -66,10 +79,10 @@ export class BootScene extends Phaser.Scene {
     buildAllTextures(this, defaultConfig);
     const start = pickStartRestaurant(restaurants, SaveSystem.data.lastRestaurant, SaveSystem.data.level);
     // Canvas text does not redraw when a font arrives later, so wait for the bundled font (a missing file only delays by the timeout).
-    // New players see the title screen (with the intro video) first; returning players and ?debug go straight in (see src/game/startup.ts).
+    // New players see the title screen (with the intro video) first; returning players, ?debug and the CrazyGames build go straight in (see src/game/startup.ts).
     const params = new URLSearchParams(location.search);
     // ?debug&taco opens the Taco Truck directly (see TacoScene for its ?step, ?speed and ?coins flags).
-    const next = chooseFirstScene({ debug: params.has('debug'), taco: params.has('taco'), returning: hasSavedProgress(SaveSystem.data) });
+    const next = chooseFirstScene({ debug: params.has('debug'), taco: params.has('taco'), returning: hasSavedProgress(SaveSystem.data), skipTitle: IS_CRAZYGAMES_BUILD });
     const go = (): void => {
       CrazyGames.loadingStop();
       void this.scene.start(next, { restaurantId: start });

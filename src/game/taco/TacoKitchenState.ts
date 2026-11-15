@@ -2,7 +2,9 @@ import { advanceCook, cookPhase, isEdible, type CookPhase } from '../cook';
 import { defaultConfig, levelDef, xpForLevel, type EventDef, type GameConfig } from '../config';
 import { CUSTOMER_LOOK_COUNT, CUSTOMER_LOOK_MIN, type ActiveEvent, type SaveSlice } from '../KitchenState';
 import { makeRng, randInt, randRange, type Rng } from '../rng';
+import { batBagCoins } from '../spooky';
 import { clampStep, levelForStep, MAX_MENU_STEP, rampFor, stepFromLevel, stepXpNeeded } from './tacoMenu';
+import { eligibleTacoRegulars, tacoEventPool, tacoHaunted, tacoPumpkin, regularTip, tacoRegularSettings, tacoRegulars } from './tacoExtras';
 import { NO_TACO_MODS, type TacoMods } from './tacoShop';
 import { familiarityOf, type Familiarity, type TacoServed } from './tacoLearning';
 import {
@@ -70,6 +72,10 @@ export interface TacoCustomer {
   type: string;
   mood: 'waiting' | 'happy' | 'angry';
   leaveIn: number;
+  /** Id of the named regular this customer is (data/taco.json "regulars"). */
+  regular?: string;
+  /** Id of the Ghost Party this customer arrived with. */
+  party?: number;
 }
 
 export type TacoEvent =
@@ -92,8 +98,13 @@ export type TacoEvent =
   | { type: 'comboChanged'; combo: number; max: number; broken: boolean }
   | { type: 'eventStart'; id: string; name: string; duration: number }
   | { type: 'eventEnd'; id: string }
+  | { type: 'batCaught'; coins: number; drop: number }
+  | { type: 'partyArrive'; ids: number[] }
+  | { type: 'partyDone'; bonus: number; size: number }
+  | { type: 'partyFailed' }
+  | { type: 'pumpkinTap'; id: string; coins: number }
   | { type: 'streakBonus'; xp: number }
-  | { type: 'orderDone'; customer: number; coins: number; tip: number; xp: number; fast: boolean; rush: boolean; combo: number; mult: number }
+  | { type: 'orderDone'; customer: number; coins: number; tip: number; xp: number; fast: boolean; rush: boolean; combo: number; mult: number; regular?: string }
   | { type: 'angryLeave'; customer: number }
   | { type: 'leave'; customer: number }
   | { type: 'levelUp'; level: number; coins: number; unlocks: string[] }
@@ -150,6 +161,18 @@ export class TacoKitchenState {
 
   private nextId = 1;
   private rng: Rng;
+  /** Own random stream for named regulars: whether one comes never changes the main random sequence. */
+  private regularRng: Rng;
+  private batRng: Rng;
+  /** Bags dropped so far in the running Bat Delivery event. */
+  batDrops = 0;
+  /** Ghost Party: waiting for enough free seats (the event's first arrival). */
+  partyPending = false;
+  /** The party now seated: who is in it and what the serves have paid so far. */
+  party: { id: number; size: number; bonus: number; served: number; earned: number; failed: boolean } | null = null;
+  private nextPartyId = 1;
+  /** Seconds each window pumpkin still rests after a tap (missing = ready). */
+  private pumpkinRest = new Map<string, number>();
 
   constructor(save: TacoSaveSlice = { level: 15, xp: 0, coins: 0 }, cfg: GameConfig = defaultConfig, taco: TacoConfig = defaultTacoConfig, seed = Date.now()) {
     this.cfg = cfg;
@@ -163,6 +186,8 @@ export class TacoKitchenState {
     this.coins = save.coins;
     this.reputation = cfg.xp.reputation.start;
     this.rng = makeRng(seed);
+    this.regularRng = makeRng(seed ^ 0x2e6);
+    this.batRng = makeRng(seed ^ 0xba7);
     this.nextEventIn = cfg.events.firstAfter;
     const s = taco.settings;
     this.pans = Array.from({ length: s.pans }, () => null);
@@ -267,6 +292,10 @@ export class TacoKitchenState {
   update(dt: number): void {
     if (this.closed) return;
     this.clock += dt;
+    for (const [id, t] of this.pumpkinRest) {
+      if (t - dt <= 0) this.pumpkinRest.delete(id);
+      else this.pumpkinRest.set(id, t - dt);
+    }
     this.updateEvents(dt);
     this.updateCooking(dt);
     this.updateCustomers(dt);
@@ -327,6 +356,10 @@ export class TacoKitchenState {
           c.mood = 'angry';
           c.leaveIn = LEAVE_DELAY;
           this.emit({ type: 'angryLeave', customer: c.id });
+          if (this.party && c.party === this.party.id && !this.party.failed) {
+            this.party.failed = true; // no bonus for this party
+            this.emit({ type: 'partyFailed' });
+          }
           this.streak = 0;
           this.breakCombo();
           this.addReputation(-this.cfg.xp.reputation.angryLeave * this.cfg.customers.types[c.type].repMult);
@@ -342,8 +375,41 @@ export class TacoKitchenState {
     }
   }
 
+  /** Ghost Party: the whole party arrives together, only when every seat it needs is free. Until then normal arrivals wait. */
+  private updateParty(): boolean {
+    const def = this.event?.def.party;
+    if (!this.partyPending || !def) return false;
+    const waiting = this.customers.filter((c) => c.mood === 'waiting').length;
+    if (this.seatLimit() - waiting < def.size || this.taco.settings.seats - this.customers.length < def.size) return true;
+    this.partyPending = false;
+    const id = this.nextPartyId++;
+    const before = this.customers.length;
+    for (let i = 0; i < def.size; i++) this.spawnCustomer('regular');
+    const members = this.customers.slice(before);
+    for (const m of members) m.party = id;
+    this.party = { id, size: members.length, bonus: def.bonus, served: 0, earned: 0, failed: false };
+    this.emit({ type: 'partyArrive', ids: members.map((m) => m.id) });
+    this.nextArrival = randRange(this.rng, this.levelInfo.arrivalGap[0], this.levelInfo.arrivalGap[1]);
+    return true;
+  }
+
+  /** Ghost Party bookkeeping for a served party member: when the last one is served and nobody left angry, the bonus is paid once. */
+  private partyServed(c: TacoCustomer, coins: number): void {
+    const p = this.party;
+    if (!p || c.party !== p.id) return;
+    p.served++;
+    p.earned += coins;
+    if (p.served >= p.size && !p.failed) {
+      const bonus = Math.round(p.earned * p.bonus);
+      this.coins += bonus;
+      this.emit({ type: 'partyDone', bonus, size: p.size });
+      this.party = null;
+    }
+  }
+
   private updateArrivals(dt: number): void {
     this.nextArrival -= dt;
+    if (this.updateParty()) return;
     if (this.nextArrival > 0) return;
     const info = this.levelInfo;
     const active = this.customers.filter((c) => c.mood === 'waiting').length;
@@ -496,6 +562,18 @@ export class TacoKitchenState {
     while (used.has(seat)) seat++;
     // A dish nobody has served yet is ordered once, alone, by a regular customer who waits a little longer (a gentle first try).
     const items: string[] = intro ? [intro.id] : this.pickItems(Math.min(this.taco.settings.maxOrderSize, randInt(this.rng, info.orderSize[0], info.orderSize[1]) + type.extraItems));
+    // Named regular: about one arrival in ten from menu step 4. Their favourite dish is always in the order (it replaces the first item, so the order
+    // keeps its size, and only a dish the player already knows well). The roll uses a separate random stream. Never an introduction order or an event's forced customer.
+    let regular: (typeof tacoRegulars)[number] | undefined;
+    if (!intro && !forceType && this.menuStep >= tacoRegularSettings.fromStep) {
+      const roll = this.regularRng();
+      const pool = eligibleTacoRegulars(this.menuStep, this.dishes.filter((d) => this.familiarity(d.id) === 'normal').map((d) => d.id), this.customers.flatMap((x) => (x.regular ? [x.regular] : [])));
+      const pick = this.regularRng();
+      if (roll < tacoRegularSettings.chance && pool.length > 0) {
+        regular = pool[Math.min(pool.length - 1, Math.floor(pick * pool.length))];
+        if (!items.includes(regular.favorite)) items[0] = regular.favorite;
+      }
+    }
     const price = Math.round(items.reduce((sum, k) => sum + this.itemDef(k).price, 0) * type.payMult);
     const closes = Math.min(this.closesAtLevel.get(this.level) ?? 0, 3);
     const patienceMax = info.patience * rampFor(this.taco, this.menuStep).patienceMult * type.patienceMult * this.mods.patience * (1 + 0.1 * closes) * (intro ? this.taco.learning.introPatienceMult : 1);
@@ -512,6 +590,7 @@ export class TacoKitchenState {
       type: typeKey,
       mood: 'waiting',
       leaveIn: 0,
+      ...(regular ? { regular: regular.id } : {}),
     };
     this.customers.push(c);
     this.emit({ type: 'arrive', customer: c.id });
@@ -757,7 +836,8 @@ export class TacoKitchenState {
     } else this.breakCombo();
     const mult = this.comboMultiplier;
     const coinMult = this.event?.def.coinMult ?? 1;
-    const tip = fast ? Math.round(c.price * this.cfg.xp.tipFraction * frac * type.tipMult * (rush ? cc.rush.tipMultiplier : 1) * this.mods.tips) : 0;
+    const baseTip = fast ? Math.round(c.price * this.cfg.xp.tipFraction * frac * type.tipMult * (rush ? cc.rush.tipMultiplier : 1) * this.mods.tips) : 0;
+    const tip = c.regular ? regularTip(baseTip, tacoRegularSettings.tipBonus) : baseTip;
     const coins = Math.round((c.price + tip) * mult * coinMult);
     const baseXp = c.items.reduce((s, k) => s + this.itemDef(k).xp, 0);
     const xp = Math.round((baseXp + (fast ? this.cfg.xp.speedBonusXp : 0) + (rush ? cc.rush.bonusXp : 0)) * mult);
@@ -766,7 +846,8 @@ export class TacoKitchenState {
     this.served++;
     this.coins += coins;
     this.addReputation(this.cfg.xp.reputation.serveGain + (this.combo >= cc.comboReputationFrom ? cc.comboReputationGain : 0));
-    this.emit({ type: 'orderDone', customer: c.id, coins, tip, xp, fast, rush, combo: this.combo, mult });
+    this.emit({ type: 'orderDone', customer: c.id, coins, tip, xp, fast, rush, combo: this.combo, mult, ...(c.regular ? { regular: c.regular } : {}) });
+    this.partyServed(c, coins);
     this.addXp(xp);
     this.streak++;
     if (this.streak >= cc.streak.servesNeeded) {
@@ -774,6 +855,31 @@ export class TacoKitchenState {
       this.emit({ type: 'streakBonus', xp: cc.streak.bonusXp });
       this.addXp(cc.streak.bonusXp);
     }
+  }
+
+  /** A window pumpkin was tapped: a couple of coins, then it rests (see data/taco.json "pumpkin"). 0 when it is resting, unknown or the truck is closed. */
+  tapPumpkin(id: string): number {
+    if (this.closed || !tacoHaunted.pumpkins.some((p) => p.id === id) || (this.pumpkinRest.get(id) ?? 0) > 0) return 0;
+    this.pumpkinRest.set(id, tacoPumpkin.cooldown);
+    this.coins += tacoPumpkin.coins;
+    this.emit({ type: 'pumpkinTap', id, coins: tacoPumpkin.coins });
+    return tacoPumpkin.coins;
+  }
+
+  /** Is this pumpkin ready for a tap? */
+  pumpkinReady(id: string): boolean {
+    return (this.pumpkinRest.get(id) ?? 0) <= 0;
+  }
+
+  /** Bat Delivery: the player tapped the bat. Pays the bag's coins and returns them; 0 when no bat event is running, the truck is closed or the event's bag limit is reached. */
+  catchBat(): number {
+    const bat = this.event?.def.bat;
+    if (this.closed || !bat || this.batDrops >= bat.maxDrops) return 0;
+    this.batDrops++;
+    const coins = batBagCoins(bat.coins, this.batRng);
+    this.coins += coins;
+    this.emit({ type: 'batCaught', coins, drop: this.batDrops });
+    return coins;
   }
 
   private breakCombo(): void {
@@ -788,6 +894,7 @@ export class TacoKitchenState {
     if (this.event) {
       this.event.remaining -= dt;
       if (this.event.remaining <= 0) {
+        this.partyPending = false;
         this.emit({ type: 'eventEnd', id: this.event.def.id });
         this.event = null;
         this.nextEventIn = randRange(this.rng, this.cfg.events.gap[0], this.cfg.events.gap[1]);
@@ -800,7 +907,7 @@ export class TacoKitchenState {
       this.nextEventIn = 1;
       return;
     }
-    const pool = this.cfg.events.events.filter((e) => e.minLevel <= this.level);
+    const pool = tacoEventPool(this.cfg.events.events, this.level, this.menuStep);
     if (pool.length === 0) {
       this.nextEventIn = 10;
       return;
@@ -810,6 +917,8 @@ export class TacoKitchenState {
 
   startEvent(def: EventDef): void {
     this.event = { def, remaining: def.duration };
+    this.batDrops = 0;
+    this.partyPending = !!def.party;
     this.emit({ type: 'eventStart', id: def.id, name: def.name, duration: def.duration });
     const seats = Math.min(this.levelInfo.maxCustomers, this.taco.settings.seats);
     if (def.spawnType && this.customers.length < this.taco.settings.seats && this.customers.filter((c) => c.mood === 'waiting').length < seats + 1) {

@@ -459,6 +459,236 @@
       "scale": 1,
       "preferFallback": false,
       "lazy": false
+    },
+    {
+      "key": "dx_cobweb",
+      "file": "assets/diner_extras/decor/cobweb.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 347,
+      "height": 324
+    },
+    {
+      "key": "dx_jack_o_lantern",
+      "file": "assets/diner_extras/decor/jack_o_lantern.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 241,
+      "height": 231
+    },
+    {
+      "key": "dx_candle_string",
+      "file": "assets/diner_extras/decor/candle_string.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 692,
+      "height": 223
+    },
+    {
+      "key": "dx_bat_garland",
+      "file": "assets/diner_extras/decor/bat_garland.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 651,
+      "height": 230
+    },
+    {
+      "key": "dx_lucky_lantern",
+      "file": "assets/diner_extras/decor/lucky_lantern.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 314,
+      "height": 614
+    },
+    {
+      "key": "dx_haunted_portrait",
+      "file": "assets/diner_extras/decor/haunted_portrait.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 470,
+      "height": 614
+    },
+    {
+      "key": "dx_golden_skeleton_plant",
+      "file": "assets/diner_extras/decor/golden_skeleton_plant.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 340,
+      "height": 559
+    },
+    {
+      "key": "dx_chest_closed",
+      "file": "assets/diner_extras/chest/chest_closed.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 478,
+      "height": 439
+    },
+    {
+      "key": "dx_chest_open",
+      "file": "assets/diner_extras/chest/chest_open.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 490,
+      "height": 507
+    },
+    {
+      "key": "dx_coin_bag",
+      "file": "assets/diner_extras/chest/coin_bag.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 302,
+      "height": 358
+    },
+    {
+      "key": "dx_clean_kitchen",
+      "file": "assets/diner_extras/badges/clean_kitchen.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 246,
+      "height": 265
+    },
+    {
+      "key": "dx_speed_demon",
+      "file": "assets/diner_extras/badges/speed_demon.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 247,
+      "height": 266
+    },
+    {
+      "key": "dx_combo_master",
+      "file": "assets/diner_extras/badges/combo_master.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 247,
+      "height": 266
+    },
+    {
+      "key": "dx_first_bronze",
+      "file": "assets/diner_extras/badges/first_bronze.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 247,
+      "height": 266
+    },
+    {
+      "key": "dx_moon_chef",
+      "file": "assets/diner_extras/badges/moon_chef.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 213,
+      "height": 236
+    },
+    {
+      "key": "dx_bat_catcher",
+      "file": "assets/diner_extras/badges/bat_catcher.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 214,
+      "height": 236
+    },
+    {
+      "key": "dx_regular_friend",
+      "file": "assets/diner_extras/badges/regular_friend.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 215,
+      "height": 236
+    },
+    {
+      "key": "dx_party_host",
+      "file": "assets/diner_extras/badges/party_host.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 214,
+      "height": 236
+    },
+    {
+      "key": "dx_chest_hunter",
+      "file": "assets/diner_extras/badges/chest_hunter.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 212,
+      "height": 238
+    },
+    {
+      "key": "dx_coin_collector",
+      "file": "assets/diner_extras/badges/coin_collector.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 211,
+      "height": 239
+    },
+    {
+      "key": "dx_heart_badge",
+      "file": "assets/diner_extras/badges/heart_badge.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 177,
+      "height": 166
+    },
+    {
+      "key": "dx_heart_pin",
+      "file": "assets/diner_extras/badges/heart_pin.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "image",
+      "width": 217,
+      "height": 166
+    },
+    {
+      "key": "dx_bat_fly",
+      "file": "assets/diner_extras/bat/bat_fly.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": true,
+      "type": "spritesheet",
+      "frameWidth": 325,
+      "frameHeight": 534
     }
   ]
 }

@@ -70,6 +70,12 @@ export interface EventDef {
   coinMult?: number;
   ovenSpeed?: number;
   spawnType?: string;
+  /** Look only (spooky events): which change the room gets. 'moon' brightens the moon, 'lights' makes the lamps flicker and turn green. Reduced motion shows both still. */
+  look?: 'moon' | 'lights';
+  /** Bat Delivery: the bat flies `flights` times; tapping it drops a bag worth a coin amount in `coins`; at most `maxDrops` bags per event. */
+  bat?: { flights: number; coins: [number, number]; maxDrops: number };
+  /** Ghost Party: `size` customers arrive together once `size` seats are free; serving all of them with nobody leaving angry pays `bonus` (a fraction) of what they paid, once. */
+  party?: { size: number; bonus: number };
 }
 /** Which `KitchenState.mods` field an upgrade sets. */
 export type ModKey = 'fryerSpeed' | 'grillSpeed' | 'ovenSpeed' | 'patience' | 'tips' | 'burnWindow' | 'calm';
@@ -122,6 +128,12 @@ export interface DecorDef {
   y: number;
   width: number;
   height: number;
+  /** Supplied art (a name in public/assets/diner_extras/decor, loaded on demand). Without it the piece is code-drawn like the first three. */
+  art?: string;
+  /** Small bonus while the piece is on display. Only existing mod keys; the total per mod is capped (see DECOR_PERK_CAP). */
+  perk?: { mod: ModKey; pct: number };
+  /** Given by a milestone chest, never sold in the shop. */
+  chestOnly?: boolean;
 }
 export interface GameConfig {
   recipes: { settings: RecipeSettings; items: Record<ItemKind, ItemDef> };
@@ -135,6 +147,8 @@ export interface GameConfig {
     /** Optional gentler slope for Lv 3 to `earlyUntilLevel`: XP to leave level n is base + earlyPerLevel * n there. Lv 1-2 and every level after keep the normal curve. */
     earlyPerLevel?: number;
     earlyUntilLevel?: number;
+    /** Optional XP to leave Lv 1 only (the very first level-up). Every other level ignores it. Lets the first level-up land inside the first minute. */
+    firstLevelXp?: number;
     speedBonusXp: number;
     speedBonusPatienceFraction: number;
     levelUpCoins: { base: number; perLevel: number };
@@ -202,12 +216,13 @@ export function levelDef(cfg: GameConfig, level: number): LevelDef {
   return { ...last, level, patience, arrivalGap, unlocks: [] };
 }
 
-/** First level the early curve applies to: Lv 1-2 stay as tuned (the first minute already feels right). */
+/** First level the early curve applies to: Lv 2 stays as tuned; Lv 1 has its own optional value (`firstLevelXp`). */
 export const EARLY_XP_FROM_LEVEL = 3;
 
 /** XP needed to leave `level`. The mid-game (Lv 3 to earlyUntilLevel) can be made gentler in data so casual players reach the pizza level sooner. */
 export const xpForLevel = (cfg: GameConfig, level: number): number => {
-  const { base, perLevel, earlyPerLevel, earlyUntilLevel } = cfg.xp;
+  const { base, perLevel, earlyPerLevel, earlyUntilLevel, firstLevelXp } = cfg.xp;
+  if (level === 1 && firstLevelXp !== undefined) return firstLevelXp;
   if (earlyPerLevel !== undefined && earlyUntilLevel !== undefined && level >= EARLY_XP_FROM_LEVEL && level <= earlyUntilLevel) return base + earlyPerLevel * level;
   return base + perLevel * level;
 };

@@ -1,7 +1,9 @@
+import { seedMasteryPaid } from '../game/taco/tacoExtras';
 import { CrazyGames } from '../sdk/crazygames';
 import { defaultTacoConfig } from '../game/taco/tacoConfig';
 import { seedLearned } from '../game/taco/tacoLearning';
 import { clampStep, stepFromLevel } from '../game/taco/tacoMenu';
+import { defaultIntros, introsSeededFor } from '../game/intros';
 
 export interface SaveData {
   /** 2 since Milestone 4. Version 1 saves load fine and get the new fields from defaults. */
@@ -35,6 +37,23 @@ export interface SaveData {
   tacoServed: Record<string, number>;
   /** Pointer tutorial state per Taco Truck dish: times shown (1, 2) or 9 once done. */
   tacoLessons: Record<string, number>;
+  /** Station intro cards already shown (ids from data/intros.json). A save from before they existed gets every unlock at or below its Lv as seen. */
+  seenIntros: string[];
+  /** Milestone chests opened, by the Lv they belong to (5, 10, 14). A player already past a milestone gets one claim card per missing chest. */
+  chestsOpened: number[];
+  /** Taco mastery badges already paid: dish id -> tiers paid (1 bronze to 3 gold). Missing in older saves: whatever their serve counts already earned counts as paid (no payout). */
+  tacoMastery: Record<string, number>;
+  /** Taco badges earned (ids from data/taco.json "badges") and their counters. */
+  tacoBadges: string[];
+  tacoStats: Record<string, number>;
+  /** The all-16-bronze coin bonus has been paid. */
+  tacoMasteryBonus: boolean;
+  /** Taco milestone chests opened, by menu step (3, 6, 10). A player already past a step gets one claim card per missing chest. */
+  tacoChests: number[];
+  /** Badges earned (ids from data/badges.json). */
+  badges: string[];
+  /** Lifetime counters behind the badges (id -> count). Additive; missing in older saves. */
+  stats: Record<string, number>;
   settings: { reduceMotion: boolean | null; musicVolume: number; sfxVolume: number; muted: boolean };
 }
 
@@ -60,6 +79,15 @@ export function defaultSave(): SaveData {
     tacoOwned: {},
     tacoServed: {},
     tacoLessons: {},
+    seenIntros: [],
+    chestsOpened: [],
+    tacoMastery: {},
+    tacoMasteryBonus: false,
+    tacoBadges: [],
+    tacoStats: {},
+    tacoChests: [],
+    badges: [],
+    stats: {},
     settings: { reduceMotion: null, musicVolume: 0.6, sfxVolume: 0.8, muted: false },
   };
 }
@@ -128,6 +156,14 @@ function cleanCounts(v: unknown): Record<string, number> {
   return out;
 }
 
+/** Whole numbers only (a milestone Lv), without repeats, sorted. */
+function cleanLevels(v: unknown): number[] {
+  if (!Array.isArray(v)) return [];
+  const out: number[] = [];
+  for (const x of v) if (typeof x === 'number' && Number.isInteger(x) && x >= 1 && x <= 1000 && !out.includes(x)) out.push(x);
+  return out.sort((a, b) => a - b).slice(0, 50);
+}
+
 /** Merge unknown input over defaults so old or corrupt saves never crash the game. */
 export function parseSave(raw: string | null): SaveData {
   const base = defaultSave();
@@ -160,6 +196,15 @@ export function parseSave(raw: string | null): SaveData {
       tacoOwned: cleanOwned(p.tacoOwned),
       tacoServed: p.tacoServed === undefined ? seeded.served : cleanOwned(p.tacoServed),
       tacoLessons: p.tacoLessons === undefined ? seeded.lessons : cleanOwned(p.tacoLessons),
+      seenIntros: p.seenIntros === undefined ? introsSeededFor(defaultIntros, Math.max(1, Math.floor(num(p.level, base.level, 1)))) : cleanIds(p.seenIntros),
+      chestsOpened: cleanLevels(p.chestsOpened),
+      tacoMastery: p.tacoMastery === undefined ? seedMasteryPaid(p.tacoServed === undefined ? seeded.served : cleanOwned(p.tacoServed)) : cleanCounts(p.tacoMastery),
+      tacoMasteryBonus: p.tacoMasteryBonus === true,
+      tacoBadges: cleanIds(p.tacoBadges),
+      tacoStats: cleanCounts(p.tacoStats),
+      tacoChests: cleanLevels(p.tacoChests),
+      badges: cleanIds(p.badges),
+      stats: cleanCounts(p.stats),
       settings: {
         reduceMotion: typeof p.settings?.reduceMotion === 'boolean' ? p.settings.reduceMotion : null,
         musicVolume: Math.min(1, num(p.settings?.musicVolume, base.settings.musicVolume)),

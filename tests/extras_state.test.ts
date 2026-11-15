@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { KitchenState, type Customer, type GameEvent } from '../src/game/KitchenState';
+import { defaultExtras } from '../src/game/extras';
 
-function make(level = 16, seed = 1) {
+function make(level = defaultExtras.mastery.fromLevel, seed = 1) {
   const k = new KitchenState({ level, xp: 0, coins: 0 }, undefined, seed);
   return k;
 }
@@ -45,7 +46,8 @@ describe('mastery badges', () => {
     expect(k.coins - coinsBefore).toBeGreaterThanOrEqual(40);
   });
   it('do not count below the starting level', () => {
-    const k = make(15);
+    // Mastery starts at Lv 6 since the diner content work (data/extras.json, was Lv 16): the level below the start is taken from the data.
+    const k = make(defaultExtras.mastery.fromLevel - 1);
     k.enableExtras({}, '2026-11-08', true);
     k.spawnCustomer();
     finish(k, k.customers[0], true);

@@ -969,5 +969,323 @@
    "width": 0.0443,
    "height": 0.1979
   }
+ ],
+ "pumpkin": {
+  "coins": 2,
+  "cooldown": 60
+ },
+ "haunted": {
+  "note": "Measured from the final kitchen_street_back.webp (2754x1536); fractions of the art. Used by Full Moon (B4) and combo windows (B6).",
+  "moon": {
+   "x": 0.644,
+   "y": 0.146,
+   "radius": 0.0349
+  },
+  "pumpkins": [
+   {
+    "id": "pumpkin_left",
+    "x": 0.3029,
+    "y": 0.3574,
+    "w": 0.04,
+    "h": 0.04
+   },
+   {
+    "id": "pumpkin_mid",
+    "x": 0.4376,
+    "y": 0.3605,
+    "w": 0.026,
+    "h": 0.03
+   },
+   {
+    "id": "pumpkin_right",
+    "x": 0.7313,
+    "y": 0.3544,
+    "w": 0.04,
+    "h": 0.046
+   },
+   {
+    "id": "pumpkin_far",
+    "x": 0.7993,
+    "y": 0.3339,
+    "w": 0.032,
+    "h": 0.04
+   }
+  ],
+  "windows": [
+   {
+    "id": "tower",
+    "x": 0.5034,
+    "y": 0.2139,
+    "w": 0.0025,
+    "h": 0.015,
+    "tier": 3,
+    "tower": true
+   },
+   {
+    "id": "left_low",
+    "x": 0.4715,
+    "y": 0.2732,
+    "w": 0.0054,
+    "h": 0.0163,
+    "tier": 1
+   },
+   {
+    "id": "mid_left",
+    "x": 0.5173,
+    "y": 0.2674,
+    "w": 0.0036,
+    "h": 0.0169,
+    "tier": 1
+   },
+   {
+    "id": "mid_a",
+    "x": 0.5314,
+    "y": 0.2653,
+    "w": 0.0033,
+    "h": 0.0163,
+    "tier": 2
+   },
+   {
+    "id": "mid_b",
+    "x": 0.5355,
+    "y": 0.2658,
+    "w": 0.0033,
+    "h": 0.0169,
+    "tier": 2
+   },
+   {
+    "id": "right_a",
+    "x": 0.5589,
+    "y": 0.2731,
+    "w": 0.0033,
+    "h": 0.0072,
+    "tier": 2
+   },
+   {
+    "id": "door",
+    "x": 0.5609,
+    "y": 0.2878,
+    "w": 0.0084,
+    "h": 0.0195,
+    "tier": 3
+   },
+   {
+    "id": "right_far",
+    "x": 0.6019,
+    "y": 0.2618,
+    "w": 0.0036,
+    "h": 0.0085,
+    "tier": 3
+   }
+  ]
+ },
+ "mastery": {
+  "fromStep": 1,
+  "tiers": [
+   {
+    "id": "bronze",
+    "name": "Bronze",
+    "serves": 10,
+    "coins": 20
+   },
+   {
+    "id": "silver",
+    "name": "Silver",
+    "serves": 40,
+    "coins": 50
+   },
+   {
+    "id": "gold",
+    "name": "Gold",
+    "serves": 100,
+    "coins": 120
+   }
+  ],
+  "allBronzeCoins": 100
+ },
+ "regulars": {
+  "settings": {
+   "chance": 0.1,
+   "tipBonus": 0.3,
+   "fromStep": 4
+  },
+  "regulars": [
+   {
+    "id": "dona_boo",
+    "name": "Dona Boo",
+    "look": 8,
+    "favorite": "chicken_soft_taco"
+   },
+   {
+    "id": "senor_wisp",
+    "name": "Senor Wisp",
+    "look": 8,
+    "favorite": "veggies_taco"
+   },
+   {
+    "id": "little_fantasma",
+    "name": "Little Fantasma",
+    "look": 8,
+    "favorite": "shrimp_soft_taco"
+   },
+   {
+    "id": "capitan_niebla",
+    "name": "Capitan Niebla",
+    "look": 8,
+    "favorite": "fish_soft_taco"
+   },
+   {
+    "id": "tia_mist",
+    "name": "Tia Mist",
+    "look": 8,
+    "favorite": "chicken_taco"
+   },
+   {
+    "id": "don_sabana",
+    "name": "Don Sabana",
+    "look": 8,
+    "favorite": "veggies_burrito"
+   }
+  ]
+ },
+ "chests": [
+  {
+   "id": "taco_chest_3",
+   "step": 3,
+   "title": "Treasure Chest!",
+   "coins": 150
+  },
+  {
+   "id": "taco_chest_6",
+   "step": 6,
+   "title": "Treasure Chest!",
+   "coins": 250
+  },
+  {
+   "id": "taco_chest_10",
+   "step": 10,
+   "title": "Big Treasure Chest!",
+   "coins": 400
+  }
+ ],
+ "events": [
+  {
+   "id": "full_moon",
+   "name": "Full Moon",
+   "minStep": 3,
+   "minLevel": 1,
+   "duration": 30,
+   "arrivalMult": 0.83,
+   "coinMult": 1.2,
+   "look": "moon"
+  },
+  {
+   "id": "bat_delivery",
+   "name": "Bat Delivery",
+   "minStep": 5,
+   "minLevel": 1,
+   "duration": 30,
+   "bat": {
+    "flights": 3,
+    "coins": [
+     20,
+     40
+    ],
+    "maxDrops": 3
+   }
+  },
+  {
+   "id": "ghost_party",
+   "name": "Ghost Party",
+   "minStep": 6,
+   "minLevel": 1,
+   "duration": 40,
+   "party": {
+    "size": 3,
+    "bonus": 0.3
+   }
+  }
+ ],
+ "badges": [
+  {
+   "id": "taco_combo",
+   "name": "Taco Combo",
+   "goal": "Reach the top combo once",
+   "stat": "maxCombos",
+   "target": 1,
+   "art": "combo_master"
+  },
+  {
+   "id": "taco_rush",
+   "name": "Speed Taco",
+   "goal": "Serve 25 Rush orders",
+   "stat": "rushServes",
+   "target": 25,
+   "art": "speed_demon"
+  },
+  {
+   "id": "taco_bronze",
+   "name": "First Bronze",
+   "goal": "Earn your first Bronze mastery badge",
+   "stat": "masteries",
+   "target": 1,
+   "art": "first_bronze"
+  },
+  {
+   "id": "taco_moon",
+   "name": "Moon Taco",
+   "goal": "Serve 10 orders during a Full Moon",
+   "stat": "moonServes",
+   "target": 10,
+   "art": "moon_chef"
+  },
+  {
+   "id": "taco_bat",
+   "name": "Bat Catcher",
+   "goal": "Tap 10 bats",
+   "stat": "bats",
+   "target": 10,
+   "art": "bat_catcher"
+  },
+  {
+   "id": "taco_regular",
+   "name": "Regular Friend",
+   "goal": "Serve a regular their favorite dish 5 times",
+   "stat": "regularServes",
+   "target": 5,
+   "art": "regular_friend"
+  },
+  {
+   "id": "taco_party",
+   "name": "Party Host",
+   "goal": "Serve 3 Ghost Parties with nobody angry",
+   "stat": "parties",
+   "target": 3,
+   "art": "party_host"
+  },
+  {
+   "id": "taco_chests",
+   "name": "Chest Hunter",
+   "goal": "Open all 3 Treasure Chests",
+   "stat": "chests",
+   "target": 3,
+   "art": "chest_hunter"
+  },
+  {
+   "id": "taco_pumpkin",
+   "name": "Pumpkin Patch",
+   "goal": "Tap the window pumpkins 25 times",
+   "stat": "pumpkins",
+   "target": 25,
+   "art": "heart_pin"
+  },
+  {
+   "id": "taco_coins",
+   "name": "Taco Tycoon",
+   "goal": "Earn 10,000 coins in total",
+   "stat": "coinsEarned",
+   "target": 10000,
+   "art": "coin_collector"
+  }
  ]
 }

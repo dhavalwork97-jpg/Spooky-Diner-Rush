@@ -83,6 +83,22 @@ export function lampIntensity(t: number, phase: number): number {
   return 1 + breathe - dip;
 }
 
+/**
+ * Haunted Lights event: the pendant lamps flicker hard. A quick jitter (0.72 to 1) plus now and then a deep dip (down to about 0.4).
+ * Never fully dark (so the room and the order bubbles stay readable) and never above 1 (no flash). Deterministic in `t`.
+ */
+export const HAUNTED_LAMP_MIN = 0.35;
+export function hauntedLampIntensity(t: number, phase: number): number {
+  const jitter = 0.72 + 0.28 * (0.5 + 0.5 * Math.sin(t * 9 + phase * 4) * Math.sin(t * 5.3 + phase));
+  const s = Math.sin(t * 1.7 + phase * 3.3);
+  const dip = s > 0.82 ? ((s - 0.82) / 0.18) * 0.35 : 0;
+  return Math.min(1, Math.max(HAUNTED_LAMP_MIN, jitter - dip));
+}
+
+/** Move `current` toward `target` by at most `rate * dt` (the fade of an event look in and out). */
+export const approach = (current: number, target: number, rate: number, dt: number): number =>
+  current < target ? Math.min(target, current + rate * dt) : Math.max(target, current - rate * dt);
+
 /** Twinkle alpha of a sky pinpoint between `lo` and `hi`. */
 export function twinkle(t: number, phase: number, lo = 0.25, hi = 0.9): number {
   return lo + (hi - lo) * (0.5 + 0.5 * Math.sin(t * (0.8 + (phase % 1)) + phase * 6));
