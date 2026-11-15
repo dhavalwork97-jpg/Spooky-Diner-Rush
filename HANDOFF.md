@@ -2,7 +2,7 @@
 Owner approved: "prepare" a port of the three commits from feat/taco-midnight: 1b2a563 (diner extras Lv 1-14), a0bb4f7 (taco midnight art + B1-B7), 91f9fa2 (taco Phase 2). The CrazyGames first-minute commits (f9a284c, 0dcb1da) are browser work on main and are NOT part of this port unless a dependency forces it.
 Plan (tick when done):
 - [x] 1. Baseline on 17fd3ea: tsc + full vitest (reproduce any known failures first)
-- [ ] 2. cherry-pick 1b2a563, resolve conflicts (keep the ads door: ads.*, reopenWithAd; never CrazyGames calls in shared scenes)
+- [x] 2. cherry-pick 1b2a563, resolve conflicts (keep the ads door: ads.*, reopenWithAd; never CrazyGames calls in shared scenes)
 - [ ] 3. cherry-pick a0bb4f7, resolve
 - [ ] 4. cherry-pick 91f9fa2, resolve
 - [ ] 5. tsc, full vitest, builds (npm run build, build:crazygames, android-play, android-direct per docs/android.md), bundle checks, ad-safety tests, `npx cap sync android`
