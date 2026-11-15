@@ -34,6 +34,10 @@ export function sfxFor(e: TacoEvent): Sfx | null {
       return 'owl_hoot';
     case 'batCaught':
       return 'coin';
+    case 'partyArrive':
+      return 'party';
+    case 'partyDone':
+      return 'coin';
     case 'burnt':
       return 'burn';
     case 'discard':

@@ -112,11 +112,12 @@ describe('taco events (B4, B5)', () => {
     expect(ids(3)).toContain('full_moon');
     expect(ids(3)).not.toContain('bat_delivery');
     expect(ids(5)).toContain('bat_delivery');
+    expect(ids(5)).not.toContain('ghost_party');
+    expect(ids(6)).toContain('ghost_party');
     for (const step of [1, 5, 10]) {
       const list = ids(step);
       expect(new Set(list).size).toBe(list.length);
       expect(list).not.toContain('haunted_lights');
-      expect(list).not.toContain('ghost_party');
     }
     expect(ids(10)).toEqual(expect.arrayContaining(['lunch_rush', 'double_coins', 'slow_oven', 'vip_visit']));
   });
@@ -267,5 +268,152 @@ describe('bat delivery in the kitchen (B5)', async () => {
     expect(plan[0].fromLeft).not.toBe(plan[1].fromLeft);
     expect(batPosition(plan[0], plan[0].at + 1, 750).flip).toBe(!plan[0].fromLeft);
     expect(batPosition(plan[1], plan[1].at + 1, 750).flip).toBe(!plan[1].fromLeft);
+  });
+});
+
+describe('Ghost Party in the kitchen (P2)', async () => {
+  const { TacoKitchenState } = await import('../src/game/taco/TacoKitchenState');
+  const { defaultConfig: dc } = await import('../src/game/config');
+  const party = tacoEvents.find((e) => e.id === 'ghost_party')!;
+  const all = Object.fromEntries(cfg.dishes.map((d) => [d.id, 5]));
+  const kitchen = (step = 8) => {
+    const k = new TacoKitchenState({ level: 15, xp: 0, coins: 0, menuStep: step, tacoServed: all }, dc, undefined, 3);
+    k.nextArrival = 1e9;
+    k.nextEventIn = 1e9;
+    return k;
+  };
+  it('starts at menu step 6 with a party of 3 and a bonus of at most 50 percent', () => {
+    expect(party.minStep).toBe(6);
+    expect(party.party).toEqual({ size: 3, bonus: 0.3 });
+  });
+  it('three ghosts arrive together, and the bonus is paid once when all are served and nobody left angry', () => {
+    const k = kitchen();
+    k.startEvent(party);
+    k.update(0.1);
+    expect(k.customers.length).toBe(3);
+    expect(k.customers.every((c) => c.party === 1)).toBe(true);
+    const arrive = k.drainEvents().find((e) => e.type === 'partyArrive') as { ids: number[] } | undefined;
+    expect(arrive?.ids.length).toBe(3);
+    let earned = 0;
+    const done: { bonus: number; size: number }[] = [];
+    const priv = k as unknown as { completeOrder(c: unknown): void };
+    for (const c of [...k.customers]) {
+      priv.completeOrder(c);
+      for (const e of k.drainEvents()) {
+        if (e.type === 'orderDone') earned += e.coins;
+        if (e.type === 'partyDone') done.push(e);
+      }
+    }
+    expect(done.length).toBe(1);
+    expect(done[0]).toMatchObject({ size: 3, bonus: Math.round(earned * 0.3) });
+    expect(k.party).toBeNull();
+  });
+  it('no bonus when a guest leaves angry', () => {
+    const k = kitchen();
+    k.startEvent(party);
+    k.update(0.1);
+    k.drainEvents();
+    k.customers[0].patience = 0.01;
+    for (let i = 0; i < 30; i++) k.update(0.1);
+    expect(k.drainEvents().some((e) => e.type === 'partyFailed')).toBe(true);
+    const priv = k as unknown as { completeOrder(c: unknown): void };
+    for (const c of [...k.customers].filter((x) => x.mood === 'waiting')) priv.completeOrder(c);
+    expect(k.drainEvents().some((e) => e.type === 'partyDone')).toBe(false);
+  });
+  it('the party waits for free seats and is dropped when the event ends', () => {
+    const k = kitchen();
+    for (let i = 0; i < 4; i++) k.spawnCustomer();
+    k.startEvent(party);
+    k.update(0.1);
+    expect(k.party).toBeNull();
+    expect(k.partyPending).toBe(true);
+    k.event!.remaining = 0.01;
+    k.update(0.1);
+    expect(k.partyPending).toBe(false);
+  });
+});
+
+describe('window pumpkins (P1)', async () => {
+  const { TacoKitchenState } = await import('../src/game/taco/TacoKitchenState');
+  const { defaultConfig: dc } = await import('../src/game/config');
+  const { tacoPumpkin } = await import('../src/game/taco/tacoExtras');
+  const kitchen = () => {
+    const k = new TacoKitchenState({ level: 15, xp: 0, coins: 0, menuStep: 3 }, dc, undefined, 2);
+    k.nextArrival = 1e9;
+    k.nextEventIn = 1e9;
+    return k;
+  };
+  it('four pumpkins inside the glass, a tiny reward and a rest time', () => {
+    expect(tacoHaunted.pumpkins.length).toBe(4);
+    expect(tacoPumpkin.coins).toBeLessThanOrEqual(3);
+    expect(tacoPumpkin.cooldown).toBeGreaterThanOrEqual(30);
+  });
+  it('a tap pays once, then the pumpkin rests, then it pays again', () => {
+    const k = kitchen();
+    const id = tacoHaunted.pumpkins[0].id;
+    expect(k.tapPumpkin(id)).toBe(tacoPumpkin.coins);
+    expect(k.tapPumpkin(id)).toBe(0);
+    expect(k.pumpkinReady(id)).toBe(false);
+    expect(k.tapPumpkin(tacoHaunted.pumpkins[1].id)).toBe(tacoPumpkin.coins); // another pumpkin is independent
+    for (let i = 0; i < tacoPumpkin.cooldown * 10 + 5; i++) k.update(0.1);
+    expect(k.pumpkinReady(id)).toBe(true);
+    expect(k.tapPumpkin(id)).toBe(tacoPumpkin.coins);
+  });
+  it('unknown ids and a closed truck pay nothing', () => {
+    const k = kitchen();
+    expect(k.tapPumpkin('nope')).toBe(0);
+    k.closed = true;
+    expect(k.tapPumpkin(tacoHaunted.pumpkins[0].id)).toBe(0);
+  });
+  it('the most a player could farm is small next to the truck income', () => {
+    const perHour = (3600 / tacoPumpkin.cooldown) * tacoHaunted.pumpkins.length * tacoPumpkin.coins;
+    expect(perHour).toBeLessThan(700);
+  });
+  it('no tap zone lies under a pumpkin, so a pumpkin cannot steal a station tap', () => {
+    for (const k of tacoHaunted.pumpkins) {
+      const hit = cfg.zones.some((z) => k.x >= z.x - 0.02 && k.x <= z.x + z.width + 0.02 && k.y >= z.y - 0.02 && k.y <= z.y + z.height + 0.02);
+      expect(hit).toBe(false);
+    }
+  });
+});
+
+describe('taco badges (P3)', async () => {
+  const { tacoBadges } = await import('../src/game/taco/tacoExtras');
+  const { newlyEarned, progressOf, track, validateBadges, defaultBadges } = await import('../src/game/badges');
+  const fs = await import('node:fs');
+  const art = fs.readdirSync('public/assets/diner_extras/badges').map((f) => f.replace(/\.webp$/, ''));
+  it('ten valid badges with real art and unique ids', () => {
+    expect(tacoBadges.length).toBe(10);
+    expect(validateBadges(tacoBadges, art)).toEqual([]);
+    expect(tacoBadges.every((b) => b.id.startsWith('taco_'))).toBe(true);
+  });
+  it('each badge counter is fed by a game event', () => {
+    const feed = [
+      { type: 'serve', rush: true, atMaxCombo: true, duringMoon: true, regular: true },
+      { type: 'mastery' }, { type: 'bat' }, { type: 'party' }, { type: 'chest' }, { type: 'pumpkin' }, { type: 'coins', amount: 10 },
+    ] as const;
+    let stats = {};
+    for (const e of feed) stats = track(stats, e);
+    for (const b of tacoBadges) expect((stats as Record<string, number>)[b.stat], b.id).toBeGreaterThan(0);
+  });
+  it('a badge is earned once when its counter reaches the goal', () => {
+    let stats = {};
+    for (let i = 0; i < 24; i++) stats = track(stats, { type: 'pumpkin' });
+    expect(newlyEarned(tacoBadges, stats, []).map((b) => b.id)).toEqual([]);
+    stats = track(stats, { type: 'pumpkin' });
+    expect(newlyEarned(tacoBadges, stats, []).map((b) => b.id)).toEqual(['taco_pumpkin']);
+    expect(newlyEarned(tacoBadges, stats, ['taco_pumpkin'])).toEqual([]);
+    expect(progressOf(tacoBadges.find((b) => b.id === 'taco_pumpkin')!, stats)).toEqual({ have: 25, target: 25 });
+  });
+  it('the diner badges are unchanged and the taco ones live in their own save fields', async () => {
+    expect(defaultBadges.length).toBe(10);
+    expect(defaultBadges.every((b) => !b.id.startsWith('taco_'))).toBe(true);
+    const { parseSave } = await import('../src/systems/SaveSystem');
+    const old = parseSave(JSON.stringify({ level: 3 }));
+    expect(old.tacoBadges).toEqual([]);
+    expect(old.tacoStats).toEqual({});
+    const s = parseSave(JSON.stringify({ tacoBadges: ['taco_bat', 'taco_bat', 5], tacoStats: { bats: 4, junk: 'x' } }));
+    expect(s.tacoBadges).toEqual(['taco_bat']);
+    expect(s.tacoStats).toEqual({ bats: 4 });
   });
 });

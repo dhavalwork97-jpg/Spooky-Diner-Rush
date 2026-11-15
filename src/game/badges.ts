@@ -28,6 +28,7 @@ export type BadgeEvent =
   | { type: 'bat' }
   | { type: 'party' }
   | { type: 'chest' }
+  | { type: 'pumpkin' }
   | { type: 'coins'; amount: number };
 
 const bump = (s: Stats, key: string, n = 1): void => {
@@ -59,6 +60,9 @@ export function track(stats: Readonly<Stats>, e: BadgeEvent): Stats {
       break;
     case 'chest':
       bump(s, 'chests');
+      break;
+    case 'pumpkin':
+      bump(s, 'pumpkins');
       break;
     case 'coins':
       if (e.amount > 0) bump(s, 'coinsEarned', Math.floor(e.amount));

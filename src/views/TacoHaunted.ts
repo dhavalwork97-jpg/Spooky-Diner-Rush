@@ -19,10 +19,11 @@ export class TacoHaunted {
   private lights = new Map<string, Phaser.GameObjects.GameObject[]>();
   private moonOn = false;
   private tier = 0;
+  private pumpkins = new Map<string, { zone: Phaser.GameObjects.Zone; glow: Phaser.GameObjects.Arc }>();
   private moonTween?: Phaser.Tweens.Tween;
   private towerTween?: Phaser.Tweens.Tween;
 
-  constructor(private scene: Phaser.Scene, bg: BackgroundPlacement) {
+  constructor(private scene: Phaser.Scene, bg: BackgroundPlacement, onPumpkin: (id: string) => void = () => undefined) {
     const m = tacoHaunted.moon;
     const cx = bg.x + m.x * bg.width;
     const cy = bg.y + m.y * bg.height;
@@ -30,6 +31,17 @@ export class TacoHaunted {
     // Three soft rings: a wide faint halo, a tighter one, and a core over the painted disc.
     for (const [k, a] of [[2.3, 0.10], [1.6, 0.16], [1.05, 0.22]] as const) {
       this.moon.push(scene.add.circle(cx, cy, r * k, MOON, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH).setData('a', a));
+    }
+    // Window pumpkins: an invisible tap area over each painted jack-o-lantern (nothing else is tappable inside the glass) and a glow that flares on a tap.
+    for (const k of tacoHaunted.pumpkins) {
+      const x = bg.x + k.x * bg.width;
+      const y = bg.y + k.y * bg.height;
+      const w = Math.max(44, k.w * bg.width);
+      const h = Math.max(44, k.h * bg.height); // a finger needs at least 44 px
+      const glow = scene.add.circle(x, y, Math.max(w, h) * 0.6, 0xff8a1f, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH + 1);
+      const zone = scene.add.zone(x, y, w, h).setDepth(DEPTH + 2).setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => onPumpkin(k.id));
+      this.pumpkins.set(k.id, { zone, glow });
     }
     for (const w of tacoHaunted.windows) {
       const x = bg.x + w.x * bg.width;
@@ -83,6 +95,16 @@ export class TacoHaunted {
     } else if (wasMax && tower) (this.lights.get(tower.id) as Phaser.GameObjects.Rectangle[]).forEach((p) => p.setAlpha(1));
   }
 
+  /** A pumpkin was tapped (and paid): flare its glow. Under reduced motion it just shows for a moment. */
+  flare(id: string): void {
+    const p = this.pumpkins.get(id);
+    if (!p) return;
+    this.scene.tweens.killTweensOf(p.glow);
+    p.glow.setFillStyle(0xff8a1f, 0.6);
+    if (SaveSystem.reduceMotion()) this.scene.time.delayedCall(500, () => p.glow.setFillStyle(0xff8a1f, 0));
+    else this.scene.tweens.add({ targets: p.glow, scale: { from: 0.8, to: 1.5 }, alpha: { from: 1, to: 0 }, duration: 600, onComplete: () => p.glow.setFillStyle(0xff8a1f, 0).setScale(1).setAlpha(1) });
+  }
+
   /** For tests and the debug hook. */
   get status(): { tier: number; moon: boolean } {
     return { tier: this.tier, moon: this.moonOn };
@@ -91,6 +113,11 @@ export class TacoHaunted {
   destroy(): void {
     this.moonTween?.remove();
     this.towerTween?.remove();
+    this.pumpkins.forEach((p) => {
+      p.zone.destroy();
+      p.glow.destroy();
+    });
+    this.pumpkins.clear();
     this.moon.forEach((o) => o.destroy());
     this.lights.forEach((l) => l.forEach((o) => o.destroy()));
     this.lights.clear();
