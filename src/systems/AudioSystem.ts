@@ -1,10 +1,15 @@
 import { SaveSystem } from './SaveSystem';
+import { makeThrottle } from './throttle';
 
 /**
  * All sound is synthesized with WebAudio, no files. The context is created and resumed
  * on the first user gesture so browser autoplay rules are respected.
  */
-export type Sfx = 'tap' | 'ding' | 'coin' | 'burn' | 'levelUp' | 'click' | 'drop' | 'wrong' | 'pop' | 'close';
+export type Sfx = 'tap' | 'ding' | 'coin' | 'burn' | 'levelUp' | 'click' | 'drop' | 'wrong' | 'pop' | 'close' | 'flap' | 'chest' | 'party' | 'badge' | 'moon';
+
+/** Seconds that must pass before the same new sound may play again (the older sounds are unchanged and unthrottled). */
+export const SFX_GAPS: Readonly<Record<string, number>> = { flap: 0.35, chest: 0.6, party: 1.5, badge: 1.0, moon: 4 };
+const throttled = makeThrottle(SFX_GAPS);
 
 export class AudioSystem {
   private ctx: AudioContext | null = null;
@@ -87,6 +92,7 @@ export class AudioSystem {
 
   play(name: Sfx): void {
     if (!this.ctx) return;
+    if (!throttled(name, this.ctx.currentTime)) return;
     switch (name) {
       case 'tap': return this.tone(520, 0.07, 'triangle', 0.3);
       case 'click': return this.tone(660, 0.06, 'square', 0.15);
@@ -97,6 +103,14 @@ export class AudioSystem {
       case 'burn': return this.tone(140, 0.45, 'sawtooth', 0.3, 0, 60);
       case 'wrong': return this.tone(220, 0.15, 'square', 0.2, 0, 160);
       case 'close': return this.tone(330, 0.5, 'triangle', 0.4, 0, 110);
+      case 'flap': this.tone(620, 0.07, 'triangle', 0.16, 0, 900); return this.tone(540, 0.08, 'triangle', 0.14, 0.09, 820);
+      case 'chest':
+        this.tone(150, 0.2, 'sine', 0.45, 0, 70);
+        [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, 0.28, 'sine', 0.26, 0.12 + i * 0.07));
+        return;
+      case 'party': [523, 659, 784, 659, 880].forEach((f, i) => this.tone(f, 0.16, 'triangle', 0.3, i * 0.08)); return;
+      case 'badge': [880, 1175, 1568].forEach((f, i) => this.tone(f, 0.3, 'sine', 0.28, i * 0.09)); return;
+      case 'moon': return this.tone(196, 1.1, 'sine', 0.2, 0, 150);
       case 'levelUp':
         [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.22, 'triangle', 0.4, i * 0.09));
         return;

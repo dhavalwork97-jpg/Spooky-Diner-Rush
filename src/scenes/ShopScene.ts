@@ -3,7 +3,7 @@ import { CREAM, INK, LEAF, ORANGE } from '../art/builders';
 import type { KitchenState } from '../game/KitchenState';
 import { titleForLevel } from '../game/career';
 import { buy, buyLabel, modsFor, tierOf } from '../game/shop';
-import { buyDecor, decorLabel } from '../game/decor';
+import { buyDecor, decorLabel, perkText, withDecorPerks } from '../game/decor';
 import { defaultTacoConfig } from '../game/taco/tacoConfig';
 import { buyTaco, tacoBuyLabel, tacoEffectText, tacoModsFor, tacoTierOf } from '../game/taco/tacoShop';
 import { SaveSystem } from '../systems/SaveSystem';
@@ -13,6 +13,9 @@ import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 const PANEL_W = 1040;
 const ROW_H = 104;
+/** Decor has up to seven rows, so they are shorter than the upgrade rows. */
+const DECOR_ROW_H = 74;
+const DECOR_BTN_H = 54;
 const ROW_TOP = 118;
 const BTN_W = 200;
 const BTN_H = 92;
@@ -147,29 +150,31 @@ export class ShopScene extends Phaser.Scene {
     else this.drawDecorRows(x0);
   }
 
-  private rowBase(i: number, x0: number): { y: number; g: Phaser.GameObjects.Graphics } {
-    const y = ROW_TOP + i * ROW_H;
+  private rowBase(i: number, x0: number, rowH = ROW_H): { y: number; g: Phaser.GameObjects.Graphics } {
+    const y = ROW_TOP + i * rowH;
     const g = this.add.graphics();
-    g.fillStyle(i % 2 ? 0xf3e3bd : 0xfaedd0, 1).fillRoundedRect(x0 + 20, y, PANEL_W - 40, ROW_H - 8, 16);
-    g.lineStyle(3, INK, 0.6).strokeRoundedRect(x0 + 20, y, PANEL_W - 40, ROW_H - 8, 16);
+    g.fillStyle(i % 2 ? 0xf3e3bd : 0xfaedd0, 1).fillRoundedRect(x0 + 20, y, PANEL_W - 40, rowH - 8, 16);
+    g.lineStyle(3, INK, 0.6).strokeRoundedRect(x0 + 20, y, PANEL_W - 40, rowH - 8, 16);
     return { y, g };
   }
 
   private drawDecorRows(x0: number): void {
     const s = this.state;
-    const items = s.cfg.decor.items;
     const owned = SaveSystem.data.decor;
+    // Chest prizes are listed only once the player has them (they cannot be bought).
+    const items = s.cfg.decor.items.filter((d) => !d.chestOnly || owned.includes(d.id));
     items.forEach((d, i) => {
-      const { y, g } = this.rowBase(i, x0);
+      const { y, g } = this.rowBase(i, x0, DECOR_ROW_H);
       const label = decorLabel(items, owned, d.id, s.level, s.coins);
-      const name = this.add.text(x0 + 40, y + 12, d.name, { fontFamily: FONT, fontSize: '30px', color: '#2B1B17' });
-      const desc = this.add.text(x0 + 40, y + 48, d.description, { fontFamily: FONT, fontSize: '20px', color: '#5a463e' });
-      const mark = owned.includes(d.id) ? this.add.text(x0 + 600, y + 40, 'On display', { fontFamily: FONT, fontSize: '26px', color: '#2B1B17' }).setOrigin(0, 0.5) : null;
-      const btn = this.makeButton(x0 + PANEL_W - 20 - 24 - BTN_W / 2, y + (ROW_H - 8) / 2, label.text, BTN_W, BTN_H, ORANGE, () => this.tryBuyDecor(d.id), label.enabled);
+      const name = this.add.text(x0 + 40, y + 6, d.name, { fontFamily: FONT, fontSize: '28px', color: '#2B1B17' });
+      const perk = perkText(d);
+      const desc = this.add.text(x0 + 40, y + 40, perk ? `${d.description}  ${perk}` : d.description, { fontFamily: FONT, fontSize: '19px', color: perk ? '#2f7d4f' : '#5a463e' });
+      const mark = owned.includes(d.id) ? this.add.text(x0 + 600, y + 33, 'On display', { fontFamily: FONT, fontSize: '26px', color: '#2B1B17' }).setOrigin(0, 0.5) : null;
+      const btn = this.makeButton(x0 + PANEL_W - 20 - 24 - BTN_W / 2, y + (DECOR_ROW_H - 8) / 2, label.text, BTN_W, DECOR_BTN_H, ORANGE, () => this.tryBuyDecor(d.id), label.enabled);
       this.rows.push(g, name, desc, btn);
       if (mark) this.rows.push(mark);
     });
-    const hint = this.add.text(LOGICAL_WIDTH / 2, ROW_TOP + items.length * ROW_H + 18, 'Decor is just for looks. It never changes the game.', { fontFamily: FONT, fontSize: '22px', color: '#5a463e' }).setOrigin(0.5);
+    const hint = this.add.text(LOGICAL_WIDTH / 2, ROW_TOP + items.length * DECOR_ROW_H + 14, 'The first pieces are just for looks. Newer pieces give a small bonus (at most +8% each kind).', { fontFamily: FONT, fontSize: '22px', color: '#5a463e' }).setOrigin(0.5);
     this.rows.push(hint);
   }
 
@@ -254,6 +259,7 @@ export class ShopScene extends Phaser.Scene {
     }
     s.coins = r.coins;
     SaveSystem.data.decor = r.decor;
+    s.mods = withDecorPerks(modsFor(s.cfg.upgrades.upgrades, SaveSystem.data.owned), items, r.decor);
     SaveSystem.data.coins = r.coins;
     SaveSystem.save();
     audio.play('levelUp');
@@ -272,7 +278,7 @@ export class ShopScene extends Phaser.Scene {
     s.coins = r.coins;
     SaveSystem.data.owned = r.owned;
     SaveSystem.data.coins = r.coins;
-    s.mods = modsFor(ups, r.owned);
+    s.mods = withDecorPerks(modsFor(ups, r.owned), s.cfg.decor.items, SaveSystem.data.decor);
     SaveSystem.save();
     audio.play('levelUp');
     const name = ups.find((u) => u.id === id)?.name ?? id;

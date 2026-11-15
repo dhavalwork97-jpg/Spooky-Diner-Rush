@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import type { Customer } from '../game/KitchenState';
 import { INK, LEAF, MUSTARD, TOMATO } from '../art/builders';
 import { SaveSystem } from '../systems/SaveSystem';
+import { defaultRegulars } from '../game/regulars';
+import { dxKey, hasDinerArt } from './dinerArt';
 import { SEATS_X, CUSTOMER_FLOOR_Y, Layout } from './layout';
 import { ParticlePool } from '../anim/ParticlePool';
 import {
@@ -217,6 +219,25 @@ export class CustomerView {
       spBg.fillStyle(0xf6c445, 1).fillRoundedRect(-30, -8, 60, 16, 6).lineStyle(2, INK, 1).strokeRoundedRect(-30, -8, 60, 16, 6);
       const spText = scene.add.text(0, 0, 'Special', { fontFamily: FONT, fontSize: '12px', color: '#3A2412' }).setOrigin(0.5);
       this.bubble.add(scene.add.container(0, tagY - 20, [spBg, spText]));
+    }
+    if (c.regular) {
+      // named regular: a small name tag (with the heart badge when its art is loaded) above the bubble
+      const reg = defaultRegulars.find((r) => r.id === c.regular);
+      if (reg) {
+        const label = scene.add.text(0, 0, reg.name, { fontFamily: FONT, fontSize: '13px', fontStyle: '700', color: '#FFF4DC' }).setOrigin(0.5);
+        const hasHeart = hasDinerArt(scene, 'heart_badge');
+        const w = Math.ceil(label.width) + 16 + (hasHeart ? 18 : 0);
+        const nBg = scene.add.graphics();
+        nBg.fillStyle(0x6a3d8f, 1).fillRoundedRect(-w / 2, -10, w, 20, 8).lineStyle(2, INK, 1).strokeRoundedRect(-w / 2, -10, w, 20, 8);
+        const parts: Phaser.GameObjects.GameObject[] = [nBg, label];
+        if (hasHeart) {
+          const heart = scene.add.image(-w / 2 + 12, 0, dxKey('heart_badge'));
+          heart.setScale(16 / Math.max(heart.width, heart.height));
+          label.x = 9;
+          parts.push(heart);
+        }
+        this.bubble.add(scene.add.container(0, tagY - (c.special ? 40 : 21), parts));
+      }
     }
     if (c.type !== 'regular') {
       const chip = TYPE_CHIPS[c.type];

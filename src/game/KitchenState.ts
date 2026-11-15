@@ -2,6 +2,8 @@ import { advanceCook, burnWindowFor, cookPhase, isEdible, type CookPhase } from 
 import { defaultConfig, levelDef, xpForLevel, type EventDef, type FriedKind, type GameConfig, type ItemKind } from './config';
 import { makeRng, randInt, randRange, type Rng } from './rng';
 import { dailySpecialFor, defaultExtras, tiersEarned, type Extras } from './extras';
+import { batBagCoins } from './spooky';
+import { defaultRegularSettings, defaultRegulars, eligibleRegulars, regularTip } from './regulars';
 
 /**
  * All gameplay state lives here. It has no Phaser code and no animation code:
@@ -64,6 +66,10 @@ export interface Customer {
   leaveIn: number; // seconds until removal once happy or angry
   /** True for today's Daily Special customer. */
   special?: boolean;
+  /** Id of the Ghost Party this customer arrived with. */
+  party?: number;
+  /** Id of the named regular this customer is (data/regulars.json). */
+  regular?: string;
 }
 
 export type GameEvent =
@@ -92,12 +98,16 @@ export type GameEvent =
   | { type: 'eventStart'; id: string; name: string; duration: number }
   | { type: 'eventEnd'; id: string }
   | { type: 'streakBonus'; xp: number }
-  | { type: 'orderDone'; customer: number; coins: number; tip: number; xp: number; fast: boolean; rush: boolean; combo: number; mult: number }
+  | { type: 'orderDone'; customer: number; coins: number; tip: number; xp: number; fast: boolean; rush: boolean; combo: number; mult: number; regular?: string }
   | { type: 'masteryUp'; item: ItemKind; tier: string; coins: number }
   | { type: 'specialDone'; customer: number; bonus: number }
   | { type: 'angryLeave'; customer: number }
   | { type: 'leave'; customer: number }
   | { type: 'levelUp'; level: number; coins: number; unlocks: string[] }
+  | { type: 'batCaught'; coins: number; drop: number }
+  | { type: 'partyArrive'; ids: number[] }
+  | { type: 'partyDone'; bonus: number; size: number }
+  | { type: 'partyFailed' }
   | { type: 'closed' }
   | { type: 'reopened' }
   | { type: 'invalid'; message: string };
@@ -178,6 +188,18 @@ export class KitchenState {
   private specialQueued = false;
 
   private nextId = 1;
+  /** Bat Delivery: bags dropped in the current event (capped by the event's `bat.maxDrops`). */
+  batDrops = 0;
+  /** Ghost Party: waiting for enough free seats (the event's first arrival). */
+  partyPending = false;
+  /** Coins earned since this state was created (a running total, spending does not lower it). */
+  coinsEarned = 0;
+  /** The party now seated: who is in it and what the serves have paid so far. */
+  party: { id: number; size: number; bonus: number; served: number; earned: number; failed: boolean } | null = null;
+  private nextPartyId = 1;
+  private batRng: Rng;
+  private regularRng: Rng;
+  private noRegular = false;
   nextArrival = 1; // first customer arrives at about second 1
   private rng: Rng;
 
@@ -188,6 +210,8 @@ export class KitchenState {
     this.coins = save.coins;
     this.reputation = cfg.xp.reputation.start;
     this.rng = makeRng(seed);
+    this.regularRng = makeRng(seed ^ 0x2e6); // its own stream too: whether a regular comes never changes the main random sequence
+    this.batRng = makeRng(seed ^ 0xb47); // its own stream: the bag size never changes the main random sequence
     this.nextEventIn = cfg.events.firstAfter;
     const s = cfg.recipes.settings;
     this.vats = Array.from({ length: s.fryVats }, () => null);
@@ -359,6 +383,10 @@ export class KitchenState {
           c.leaveIn = LEAVE_DELAY;
           this.emit({ type: 'angryLeave', customer: c.id });
           if (c.special) this.specialQueued = true; // missed it: the special comes back with the next customer
+          if (this.party && c.party === this.party.id && !this.party.failed) {
+            this.party.failed = true; // no bonus for this party
+            this.emit({ type: 'partyFailed' });
+          }
           this.streak = 0;
           this.breakCombo();
           this.addReputation(-this.cfg.xp.reputation.angryLeave * this.cfg.customers.types[c.type].repMult);
@@ -374,8 +402,37 @@ export class KitchenState {
     }
   }
 
+  /** Seats that are free right now (a customer who is still leaving keeps the seat until they are gone). */
+  freeSeats(): number {
+    const used = new Set(this.customers.map((c) => c.seat));
+    let n = 0;
+    for (let s = 0; s < this.levelInfo.maxCustomers; s++) if (!used.has(s)) n++;
+    return n;
+  }
+
+  /** Ghost Party: the whole party arrives together, only when every seat it needs is free. Until then normal arrivals wait. */
+  private updateParty(): boolean {
+    const def = this.event?.def.party;
+    if (!this.partyPending || !def) return false;
+    if (this.freeSeats() < def.size) return true;
+    this.partyPending = false;
+    const id = this.nextPartyId++;
+    const before = this.customers.length;
+    this.noRegular = true;
+    for (let i = 0; i < def.size; i++) this.spawnCustomer('regular');
+    this.noRegular = false;
+    const members = this.customers.slice(before);
+    for (const m of members) m.party = id;
+    this.party = { id, size: members.length, bonus: def.bonus, served: 0, earned: 0, failed: false };
+    this.emit({ type: 'partyArrive', ids: members.map((m) => m.id) });
+    const info = this.levelInfo;
+    this.nextArrival = randRange(this.rng, info.arrivalGap[0], info.arrivalGap[1]);
+    return true;
+  }
+
   private updateArrivals(dt: number): void {
     this.nextArrival -= dt;
+    if (this.updateParty()) return;
     if (this.nextArrival > 0) return;
     const info = this.levelInfo;
     const active = this.customers.filter((c) => c.mood === 'waiting').length;
@@ -423,13 +480,25 @@ export class KitchenState {
       items.push(...this.special!.items);
       this.specialQueued = false;
     }
+    // Named regular: about one arrival in ten from Lv 8. Their favourite dish is always in the order (it replaces the first item, so the order keeps its size).
+    // The roll comes from a separate random stream, so the main sequence is the same with or without regulars. Never the Daily Special customer or a party guest.
+    let regular: (typeof defaultRegulars)[number] | undefined;
+    if (!special && !this.noRegular && this.level >= Math.min(...defaultRegulars.map((r) => r.fromLevel))) {
+      const roll = this.regularRng();
+      const pool = eligibleRegulars(defaultRegulars, this.level, info.items, this.customers.flatMap((c) => (c.regular ? [c.regular] : [])));
+      const pick = this.regularRng();
+      if (roll < defaultRegularSettings.chance && pool.length > 0) {
+        regular = pool[Math.min(pool.length - 1, Math.floor(pick * pool.length))];
+        if (!items.includes(regular.favorite)) items[0] = regular.favorite;
+      }
+    }
     const price = Math.round(items.reduce((sum, k) => sum + this.cfg.recipes.items[k].price, 0) * type.payMult);
     const closes = Math.min(this.closesAtLevel.get(this.level) ?? 0, 3);
     const patienceMax = info.patience * type.patienceMult * this.mods.patience * (1 + 0.1 * closes);
     const c: Customer = {
       id: this.nextId++,
       seat,
-      look: randInt(this.rng, CUSTOMER_LOOK_MIN, CUSTOMER_LOOK_COUNT - 1), // cosmetic only: picks one of the ghosts (same RNG draw count as before)
+      look: randInt(this.rng, CUSTOMER_LOOK_MIN, CUSTOMER_LOOK_COUNT - 1), // cosmetic only: picks one of the ghosts (same RNG draw count as before; always drawn, a regular overrides it below)
       items,
       delivered: items.map(() => false),
       price,
@@ -440,7 +509,9 @@ export class KitchenState {
       mood: 'waiting',
       leaveIn: 0,
       ...(special ? { special: true } : {}),
+      ...(regular ? { regular: regular.id } : {}),
     };
+    if (regular) c.look = regular.look;
     this.customers.push(c);
     this.emit({ type: 'arrive', customer: c.id });
   }
@@ -698,23 +769,39 @@ export class KitchenState {
     } else this.breakCombo();
     const mult = this.comboMultiplier;
     const coinMult = this.event?.def.coinMult ?? 1;
-    const tip = fast ? Math.round(c.price * this.cfg.xp.tipFraction * frac * type.tipMult * (rush ? cc.rush.tipMultiplier : 1) * this.mods.tips) : 0;
+    const baseTip = fast ? Math.round(c.price * this.cfg.xp.tipFraction * frac * type.tipMult * (rush ? cc.rush.tipMultiplier : 1) * this.mods.tips) : 0;
+    const tip = c.regular ? regularTip(baseTip, defaultRegularSettings.tipBonus) : baseTip;
     const coins = Math.round((c.price + tip) * mult * coinMult);
     const baseXp = c.items.reduce((s, k) => s + this.cfg.recipes.items[k].xp, 0);
     const xp = Math.round((baseXp + (fast ? this.cfg.xp.speedBonusXp : 0) + (rush ? cc.rush.bonusXp : 0)) * mult);
     c.mood = 'happy';
     c.leaveIn = LEAVE_DELAY;
     this.served++;
-    this.coins += coins;
+    this.credit(coins);
     this.addReputation(this.cfg.xp.reputation.serveGain + (this.combo >= cc.comboReputationFrom ? cc.comboReputationGain : 0));
-    this.emit({ type: 'orderDone', customer: c.id, coins, tip, xp, fast, rush, combo: this.combo, mult });
+    this.emit({ type: 'orderDone', customer: c.id, coins, tip, xp, fast, rush, combo: this.combo, mult, ...(c.regular ? { regular: c.regular } : {}) });
     this.addXp(xp);
     this.awardExtras(c, fast, coins);
+    this.partyServed(c, coins);
     this.streak++;
     if (this.streak >= cc.streak.servesNeeded) {
       this.streak = 0;
       this.emit({ type: 'streakBonus', xp: cc.streak.bonusXp });
       this.addXp(cc.streak.bonusXp);
+    }
+  }
+
+  /** Ghost Party bookkeeping for a served party member: when the last one is served and nobody left angry, the bonus is paid once. */
+  private partyServed(c: Customer, coins: number): void {
+    const p = this.party;
+    if (!p || c.party !== p.id) return;
+    p.served++;
+    p.earned += coins;
+    if (p.served >= p.size && !p.failed) {
+      const bonus = Math.round(p.earned * p.bonus);
+      this.credit(bonus);
+      this.emit({ type: 'partyDone', bonus, size: p.size });
+      this.party = null;
     }
   }
 
@@ -730,7 +817,7 @@ export class KitchenState {
         const gained = tiersEarned(this.extras, after) - tiersEarned(this.extras, before);
         if (gained > 0) {
           const tier = m.tiers[tiersEarned(this.extras, after) - 1];
-          this.coins += tier.coins;
+          this.credit(tier.coins);
           this.emit({ type: 'masteryUp', item: kind, tier: tier.name, coins: tier.coins });
         }
       }
@@ -740,7 +827,7 @@ export class KitchenState {
     if (c.special) {
       const bonus = Math.round(coins * this.extras.dailySpecial.bonus);
       sp.done = true;
-      this.coins += bonus;
+      this.credit(bonus);
       this.emit({ type: 'specialDone', customer: c.id, bonus });
     } else if (++this.servedToday >= this.extras.dailySpecial.afterServes) this.specialQueued = true;
   }
@@ -759,6 +846,7 @@ export class KitchenState {
       if (this.event.remaining <= 0) {
         this.emit({ type: 'eventEnd', id: this.event.def.id });
         this.event = null;
+        this.partyPending = false; // never got the seats: no party this time
         this.nextEventIn = randRange(this.rng, this.cfg.events.gap[0], this.cfg.events.gap[1]);
       }
       return;
@@ -781,15 +869,39 @@ export class KitchenState {
   /** Start an event now (also used by the debug hook and tests). */
   startEvent(def: EventDef): void {
     this.event = { def, remaining: def.duration };
+    this.batDrops = 0;
+    this.partyPending = !!def.party;
     this.emit({ type: 'eventStart', id: def.id, name: def.name, duration: def.duration });
     if (def.spawnType && this.customers.length < 4 && this.customers.filter((c) => c.mood === 'waiting').length < this.levelInfo.maxCustomers + 1) {
       this.spawnCustomer(def.spawnType);
     }
   }
 
+  /** Bat Delivery: the player tapped the bat. Pays the bag's coins and returns them; 0 when no bat event is running, the game is closed or the event's bag limit is reached. */
+  catchBat(): number {
+    const bat = this.event?.def.bat;
+    if (this.closed || !bat || this.batDrops >= bat.maxDrops) return 0;
+    this.batDrops++;
+    const coins = batBagCoins(bat.coins, this.batRng);
+    this.credit(coins);
+    this.emit({ type: 'batCaught', coins, drop: this.batDrops });
+    return coins;
+  }
+
+  /** Every coin the player earns goes through here, so the lifetime total (for the Coin Collector badge) cannot miss a source. */
+  private credit(n: number): void {
+    this.coins += n;
+    if (n > 0) this.coinsEarned += n;
+  }
+
+  /** A milestone chest was opened: pays its coins. Touches nothing else (no XP, combo, streak or reputation). */
+  awardChest(coins: number): void {
+    if (coins > 0) this.credit(Math.floor(coins));
+  }
+
   /** A finished mini-goal pays coins and XP (XP can level the player up like any other). Touches nothing else: no combo, streak, reputation or Rush. */
   awardGoal(coins: number, xp: number): void {
-    this.coins += coins;
+    this.credit(coins);
     this.addXp(xp);
   }
 
@@ -799,7 +911,7 @@ export class KitchenState {
       this.xp -= this.xpNeeded;
       this.level++;
       const reward = this.cfg.xp.levelUpCoins.base + this.cfg.xp.levelUpCoins.perLevel * this.level;
-      this.coins += reward;
+      this.credit(reward);
       this.emit({ type: 'levelUp', level: this.level, coins: reward, unlocks: this.levelInfo.unlocks });
     }
   }

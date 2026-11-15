@@ -5,6 +5,8 @@ import { recipeEntries } from '../game/recipebook';
 import { defaultExtras, masteryProgress } from '../game/extras';
 import { audio } from '../systems/AudioSystem';
 import { SaveSystem } from '../systems/SaveSystem';
+import { defaultBadges, progressOf } from '../game/badges';
+import { dxKey, hasDinerArt, loadDinerArt } from '../views/dinerArt';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 
 /** One row of a generic Recipe Book (the Taco Truck's). The diner keeps its own rows, built from `cfg.recipes`. */
@@ -44,6 +46,10 @@ export class RecipeBookScene extends Phaser.Scene {
   private level = 1;
   private extraRows?: BookRow[];
   private tips = '';
+  private recipeObjs: Phaser.GameObjects.GameObject[] = [];
+  private badgeObjs: Phaser.GameObjects.GameObject[] = [];
+  private tab: 'recipes' | 'badges' = 'recipes';
+  private tabChips: { recipes?: Phaser.GameObjects.Text; badges?: Phaser.GameObjects.Text } = {};
 
   constructor() {
     super('RecipeBook');
@@ -56,6 +62,8 @@ export class RecipeBookScene extends Phaser.Scene {
     this.level = data.state.level;
     this.extraRows = data.rows;
     this.tips = data.tips ?? '';
+    this.tab = 'recipes';
+    this.tabChips = {};
   }
 
   create(): void {
@@ -69,6 +77,10 @@ export class RecipeBookScene extends Phaser.Scene {
     g.lineStyle(5, INK, 1).strokeRoundedRect(x0, 8, PANEL_W, h - 24, 24);
     this.add.text(x0 + 32, 44, 'Recipe Book', { fontFamily: FONT, fontSize: '44px', color: '#F28C28', stroke: '#2B1B17', strokeThickness: 7 }).setOrigin(0, 0.5);
 
+    this.recipeObjs = [];
+    this.badgeObjs = [];
+    if (!this.extraRows) this.buildTabs(x0);
+    const mark = this.children.length;
     if (this.extraRows) this.pagedRows(x0, this.extraRows);
     else recipeEntries(this.cfg, this.level).forEach((e, i) => {
       const y = ROW_TOP + i * ROW_H;
@@ -89,6 +101,7 @@ export class RecipeBookScene extends Phaser.Scene {
       const how = e.locked ? '' : e.steps.map((s, n) => `${n + 1}. ${s}`).join('\n');
       this.add.text(x0 + 470, y + 12, how, { fontFamily: FONT, fontSize: '20px', color: '#2B1B17', lineSpacing: 4, wordWrap: { width: PANEL_W - 470 - 50 + 20 } });
     });
+    this.recipeObjs = this.children.list.slice(mark);
 
     const bg = this.add.graphics();
     bg.fillStyle(0x000000, 0.25).fillRoundedRect(-75, -25, 150, 60, 18);
@@ -102,10 +115,73 @@ export class RecipeBookScene extends Phaser.Scene {
     });
     this.input.keyboard?.on('keydown-ESC', this.close, this);
     this.input.keyboard?.on('keydown-R', this.close, this);
+    if (!this.extraRows) loadDinerArt(this, 'badges', () => this.tab === 'badges' && this.showTab(x0, 'badges'));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard?.off('keydown-ESC', this.close, this);
       this.input.keyboard?.off('keydown-R', this.close, this);
     });
+  }
+
+  /** Two tabs under the title: Recipes (the list below) and Badges (the lifetime goals). Only the diner has them. */
+  private buildTabs(x0: number): void {
+    const chip = (label: string, x: number, tab: 'recipes' | 'badges'): Phaser.GameObjects.Text => {
+      const t = this.add.text(x, 58, label, { fontFamily: FONT, fontSize: '26px', color: '#FFF4DC', backgroundColor: '#2BA6A0', padding: { x: 18, y: 6 }, stroke: '#2B1B17', strokeThickness: 4 }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
+      t.on('pointerup', () => {
+        if (this.tab === tab) return;
+        audio.play('click');
+        this.showTab(x0, tab);
+      });
+      return t;
+    };
+    this.tabChips.recipes = chip('Recipes', x0 + 380, 'recipes');
+    this.tabChips.badges = chip('Badges', x0 + 380 + 150, 'badges');
+    this.paintTabs();
+  }
+
+  private paintTabs(): void {
+    this.tabChips.recipes?.setBackgroundColor(this.tab === 'recipes' ? '#F28C28' : '#2BA6A0');
+    this.tabChips.badges?.setBackgroundColor(this.tab === 'badges' ? '#F28C28' : '#2BA6A0');
+  }
+
+  private showTab(x0: number, tab: 'recipes' | 'badges'): void {
+    this.tab = tab;
+    this.paintTabs();
+    this.recipeObjs.forEach((o) => (o as unknown as Phaser.GameObjects.Components.Visible).setVisible(tab === 'recipes'));
+    this.badgeObjs.forEach((o) => o.destroy());
+    this.badgeObjs = [];
+    if (tab === 'badges') this.buildBadges(x0);
+  }
+
+  /** The Badges page: 5 across, 2 down. Earned badges are in full colour; locked ones are greyed and show their goal and progress. */
+  private buildBadges(x0: number): void {
+    const mark = this.children.length;
+    const stats = SaveSystem.data.stats;
+    const have = SaveSystem.data.badges;
+    const cols = 5;
+    const cellW = (PANEL_W - 60) / cols;
+    const cellH = 256;
+    const done = defaultBadges.filter((b) => have.includes(b.id)).length;
+    this.add.text(x0 + PANEL_W - 190, 100, `${done} / ${defaultBadges.length}`, { fontFamily: FONT, fontSize: '26px', color: '#5a463e' }).setOrigin(1, 0.5);
+    defaultBadges.forEach((b, i) => {
+      const cx = x0 + 30 + cellW * (i % cols) + cellW / 2;
+      const top = 116 + Math.floor(i / cols) * (cellH + 10);
+      const earned = have.includes(b.id);
+      const card = this.add.graphics();
+      card.fillStyle(earned ? 0xfaedd0 : 0xe6dcc4, 1).fillRoundedRect(cx - cellW / 2 + 6, top, cellW - 12, cellH, 16);
+      card.lineStyle(3, INK, earned ? 0.8 : 0.4).strokeRoundedRect(cx - cellW / 2 + 6, top, cellW - 12, cellH, 16);
+      if (hasDinerArt(this, b.art)) {
+        const img = this.add.image(cx, top + 68, dxKey(b.art));
+        img.setScale(108 / Math.max(img.width, img.height));
+        if (!earned) img.setTint(0x555555).setAlpha(0.55);
+      } else {
+        this.add.circle(cx, top + 68, 46, earned ? 0xf6c445 : 0x999999, 1).setStrokeStyle(4, INK, 1);
+      }
+      this.add.text(cx, top + 134, b.name, { fontFamily: FONT, fontSize: '22px', fontStyle: '700', color: earned ? '#2B1B17' : '#6b5a52', align: 'center', wordWrap: { width: cellW - 28 } }).setOrigin(0.5, 0);
+      const p = progressOf(b, stats);
+      const line = earned ? 'Earned!' : `${b.goal}\n${p.have.toLocaleString('en-US')} / ${p.target.toLocaleString('en-US')}`;
+      this.add.text(cx, top + 162, line, { fontFamily: FONT, fontSize: '16px', color: earned ? '#B8730F' : '#5a463e', align: 'center', wordWrap: { width: cellW - 30 } }).setOrigin(0.5, 0);
+    });
+    this.badgeObjs = this.children.list.slice(mark);
   }
 
   /** Rows of another restaurant, five to a page with Prev and Next, and a short how-to line under them. */

@@ -38,7 +38,11 @@ export class ChefTalk {
       case 'angryLeave':
         return this.say('angry', now);
       case 'eventStart':
-        return this.say('event', now);
+        return this.say(e.id === 'full_moon' ? 'full_moon' : 'event', now);
+      case 'batCaught':
+        return this.say('bat', now);
+      case 'partyDone':
+        return this.say('party', now);
       case 'levelUp':
         return this.say('level_up', now);
       default:

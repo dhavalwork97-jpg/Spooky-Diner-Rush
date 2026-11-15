@@ -148,7 +148,7 @@ export function validateCareer(data: unknown): string[] {
   return errors;
 }
 
-const CHEF_TRIGGERS = ['first_serve', 'rush', 'combo', 'burn', 'angry', 'event', 'level_up', 'idle'];
+const CHEF_TRIGGERS = ['first_serve', 'rush', 'combo', 'burn', 'angry', 'event', 'level_up', 'idle', 'full_moon', 'bat', 'chest', 'regular', 'party', 'badge'];
 
 /** chef.json: numbers >= 0, every known trigger present with short non-empty lines. */
 export function validateChef(data: unknown): string[] {
@@ -191,12 +191,15 @@ export function validateStory(data: unknown): string[] {
   return errors;
 }
 
+const PERK_MODS = ['fryerSpeed', 'grillSpeed', 'ovenSpeed', 'patience', 'tips', 'burnWindow', 'calm'];
+
 /** decor.json: unique ids, cost > 0, level >= 1, and a rectangle that lies inside the 1699 x 948 art. */
 export function validateDecor(data: unknown): string[] {
   const errors: string[] = [];
   const list = (data as { items?: unknown })?.items;
   if (!Array.isArray(list) || list.length === 0) return ['decor.json: "items" must be a non-empty array'];
   const ids = new Set<string>();
+  const perkSums = new Map<string, number>();
   (list as Record<string, unknown>[]).forEach((d, i) => {
     const id = isStr(d.id) ? d.id : `#${i + 1}`;
     if (!isStr(d.id)) errors.push(`decor ${id}: missing id`);
@@ -204,12 +207,23 @@ export function validateDecor(data: unknown): string[] {
     else ids.add(d.id);
     if (!isStr(d.name)) errors.push(`decor ${id}: missing name`);
     if (!isStr(d.description)) errors.push(`decor ${id}: missing description`);
-    if (!isNum(d.cost) || d.cost <= 0) errors.push(`decor ${id}: cost must be > 0`);
+    if (d.chestOnly === true) {
+      if (d.cost !== 0) errors.push(`decor ${id}: a chest-only piece has cost 0`);
+    } else if (!isNum(d.cost) || d.cost <= 0) errors.push(`decor ${id}: cost must be > 0`);
+    if (d.art !== undefined && !isStr(d.art)) errors.push(`decor ${id}: art must be a name`);
+    if (d.perk !== undefined) {
+      const pk = d.perk as { mod?: unknown; pct?: unknown };
+      if (!isStr(pk.mod) || !PERK_MODS.includes(pk.mod)) errors.push(`decor ${id}: perk.mod must be one of ${PERK_MODS.join(', ')}`);
+      if (!isNum(pk.pct) || pk.pct <= 0 || pk.pct > 0.04) errors.push(`decor ${id}: perk.pct must be above 0 and at most 0.04`);
+      else if (isStr(pk.mod)) perkSums.set(pk.mod, (perkSums.get(pk.mod) ?? 0) + pk.pct);
+    }
     if (!isNum(d.unlockLevel) || d.unlockLevel < 1) errors.push(`decor ${id}: unlockLevel must be >= 1`);
     const { x, y, width, height } = d;
     if (!isNum(x) || !isNum(y) || !isNum(width) || !isNum(height) || width <= 0 || height <= 0) errors.push(`decor ${id}: needs x, y, width and height`);
     else if (x < 0 || y < 0 || x + width > 1699 || y + height > 948) errors.push(`decor ${id}: must lie inside the 1699 x 948 art`);
   });
+  // Every piece on display at once: the perks of one mod may add up to at most +8 percent (DECOR_PERK_CAP in game/decor.ts).
+  for (const [mod, sum] of perkSums) if (sum > 0.08 + 1e-9) errors.push(`decor: perks for ${mod} add up to ${Math.round(sum * 100)}%, the cap is 8%`);
   return errors;
 }
 

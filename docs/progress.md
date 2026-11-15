@@ -284,3 +284,11 @@ Title scene before every game (logo, chef with ghost, "Tap to play"), tap starts
 ## Mint ghost replaces the old ghosts (2026-11-04, branch fix/tap-outline)
 - The only customer is now the mint ghost with five supplied animations: happy idle, impatient (under half patience), angry (under a quarter), and one-shot leave happy / leave angry played in place (sped up to about 3 s, then a fade). The white box that showed on a customer while an order was dragged onto them is gone.
 - Not verified: a real phone (frame rate with five animation sheets, texture memory about 80 MB for the mint ghost sheets), the leave clip timing against how fast the next customer arrives.
+
+
+## Spooky Diner content, Lv 1-14 (2026-11-15, branch feat/diner-extras, not committed)
+Ten additive features: station intro cards (Lv 2/4/5/6/10/12), mastery from Lv 6, spooky events (Full Moon Lv 4, Bat Delivery Lv 8, Haunted Lights Lv 9), milestone chests (Lv 5/10/14), Ghost Party (Lv 10+), six named regulars (Lv 8+, about 10% of arrivals), seven decor pieces with small perks (cap +8% per kind), ten badges with a Badges tab in the Recipe Book, synthesized sounds and a first-burn camera shake, story cards at Lv 7/11/12/14 and six new chef lines.
+- Data driven (data/intros, chests, regulars, badges, decor, events, story, chef); logic in pure modules (src/game/intros, chests, regulars, badges, spooky) with tests; saves stay backward compatible (new fields optional with defaults).
+- Art: 23 sprites (11.58 MB texture memory) lazy-loaded from public/assets/diner_extras; masters kept in tools/diner_extras_source (not shipped).
+- Verified: tsc clean, 693 tests pass (+1 skipped), both production builds, headless Chromium at desktop and phone sizes. Bot sim Lv 14 coins within about +-4% of before; chests add 650 coins once.
+- Not verified: a real phone or WebView, real audio output, human balance play, the real CrazyGames SDK. See HANDOFF.md for the full results and numbers.

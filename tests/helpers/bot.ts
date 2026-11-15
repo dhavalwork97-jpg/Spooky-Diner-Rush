@@ -2,6 +2,7 @@ import { KitchenState, type GameEvent } from '../../src/game/KitchenState';
 import { isEdible } from '../../src/game/cook';
 import { defaultConfig, type GameConfig } from '../../src/game/config';
 import { buy, modsFor, type Owned } from '../../src/game/shop';
+import type { Extras } from '../../src/game/extras';
 
 /**
  * Bot for the Lv 11-20 balance simulation. `botStep` is the same bot as in `sim.test.ts` (kept as a
@@ -80,6 +81,8 @@ export interface PlayOptions {
   upgrades?: boolean | UpgradePlan;
   /** The bot puts the bun down as soon as a patty is cooking (default: the original order, bun is the last thing it does). */
   prepBun?: boolean;
+  /** Turn the optional extras on (Mastery badges) with this config, like the real game does. Off by default so the older simulations are unchanged. */
+  extras?: Extras;
   /** Sees every event after the bot's own bookkeeping (used to run the mini-goal tracker next to the bot). */
   onEvent?: (e: GameEvent, s: KitchenState, t: number) => void;
 }
@@ -122,6 +125,7 @@ function shoppingOrder(cfg: GameConfig, owned: Owned, plan: UpgradePlan) {
 export function play(seed: number, reaction: number, seconds: number, opts: PlayOptions = {}) {
   const cfg = opts.cfg ?? defaultConfig;
   const s = new KitchenState({ level: 1, xp: 0, coins: 0 }, cfg, seed);
+  if (opts.extras) s.enableExtras({}, '2026-01-01', false, opts.extras);
   const levelTimes: Record<number, number> = {};
   const closeLevels: number[] = [];
   const levelStats: Record<number, LevelStats> = {};
