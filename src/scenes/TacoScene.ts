@@ -18,7 +18,8 @@ import { BatFlyers } from '../views/BatViews';
 import { TacoHaunted } from '../views/TacoHaunted';
 import { batSchedule } from '../game/spooky';
 import { makeRng } from '../game/rng';
-import { tacoEvents, TACO_BAT_LANE } from '../game/taco/tacoExtras';
+import { newlyEarned, track, type BadgeEvent } from '../game/badges';
+import { tacoBadges, tacoEvents, tacoHaunted, TACO_BAT_LANE } from '../game/taco/tacoExtras';
 import { SaveSystem } from '../systems/SaveSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { ads } from '../ads';
@@ -146,7 +147,7 @@ export class TacoScene extends Phaser.Scene {
     this.applyDebugFlags();
 
     this.fx = new ParticlePool(this, 140);
-    this.haunted = new TacoHaunted(this, this.bg);
+    this.haunted = new TacoHaunted(this, this.bg, (id) => this.tapPumpkin(id));
     // Bat Delivery: the bat flies across the window between the back layer (0) and the front frame (20), behind the customers (10) and their bubbles.
     // Nothing else is tappable inside the glass (no zone), so the bat cannot steal a tap from a station, drop zone, customer or bubble.
     const lane = { top: this.bg.y + TACO_BAT_LANE.top * this.bg.height, bottom: this.bg.y + TACO_BAT_LANE.bottom * this.bg.height, bob: TACO_BAT_LANE.bob * this.bg.height };
@@ -278,6 +279,8 @@ export class TacoScene extends Phaser.Scene {
           this.floatText(e.customer, `+${e.coins + e.tip}`);
           flyCoins(this, this.hud.coinIcon, at, Math.min(6, 2 + Math.floor((e.coins + e.tip) / 25)));
         }
+        this.badgeEvent({ type: 'serve', rush: e.rush, atMaxCombo: e.combo >= this.state.cfg.combo.maxCombo, duringMoon: this.state.event?.def.id === 'full_moon', regular: !!e.regular });
+        this.badgeEvent({ type: 'coins', amount: e.coins + e.tip });
         this.saveNow();
         this.finishTutorial('You served your first order! The Recipe Book shows every recipe.', true);
         break;
@@ -302,7 +305,29 @@ export class TacoScene extends Phaser.Scene {
         this.endEventFx();
         break;
       case 'batCaught':
+        this.badgeEvent({ type: 'bat' });
         this.onBatCaught(e.coins);
+        break;
+      case 'pumpkinTap': {
+        this.badgeEvent({ type: 'pumpkin' });
+        this.haunted.flare(e.id);
+        const k = tacoHaunted.pumpkins.find((x) => x.id === e.id);
+        if (k) this.fx.burst(this.bg.x + k.x * this.bg.width, this.bg.y + k.y * this.bg.height, 0xff8a1f, 6, 36, 400);
+        audio.play('pop');
+        break;
+      }
+      case 'partyArrive': {
+        // Three ghosts walk in together: a short cheer over the window, nothing that blocks play.
+        if (!SaveSystem.reduceMotion()) this.fx.burst(LOGICAL_WIDTH / 2, 150, 0xf6c445, 12, 70, 600);
+        this.bannerText(LOGICAL_WIDTH / 2, 120, 'Party!', '#F6C445');
+        break;
+      }
+      case 'partyDone':
+        this.badgeEvent({ type: 'party' });
+        this.toast.show(`Party bonus +${e.bonus} coins`);
+        this.bannerText(LOGICAL_WIDTH / 2, 130, `+${e.bonus}`, '#F6C445');
+        this.flyCoins2(Math.min(8, 3 + Math.floor(e.bonus / 20)));
+        this.saveNow();
         break;
       case 'streakBonus':
         this.toast.show(`Streak bonus +${e.xp} XP`);
@@ -490,6 +515,13 @@ export class TacoScene extends Phaser.Scene {
     if (this.state.catchBat() > 0) this.bats.caught(x, y);
   }
 
+  /** The player tapped a window pumpkin: the model pays a couple of coins (or nothing while it rests). */
+  private tapPumpkin(id: string): void {
+    if (this.panelOpen || this.adActive || this.storyCard.isShowing || this.chestCard.isShowing || this.state.closed) return;
+    audio.unlock();
+    this.state.tapPumpkin(id);
+  }
+
   private onBatCaught(coins: number): void {
     const at = this.lastBat;
     this.fx.burst(at.x, at.y, 0xf6c445, 10, 46, 500);
@@ -501,6 +533,19 @@ export class TacoScene extends Phaser.Scene {
       else this.tweens.add({ targets: bag, y: at.y + 90, duration: 520, ease: 'Bounce.Out', onComplete: () => this.tweens.add({ targets: bag, alpha: 0, duration: 260, delay: 220, onComplete: () => bag.destroy() }) });
     }
     flyCoins(this, this.hud.coinIcon, { x: at.x, y: at.y + 60 }, Math.min(6, 2 + Math.floor(coins / 10)));
+    this.saveNow();
+  }
+
+  // ---------------------------------------------------------------- taco badges
+
+  /** Count something for the truck's badges; a newly earned badge shows a small toast. No coin reward. */
+  private badgeEvent(e: BadgeEvent): void {
+    const save = SaveSystem.data;
+    save.tacoStats = track(save.tacoStats, e);
+    const won = newlyEarned(tacoBadges, save.tacoStats, save.tacoBadges);
+    if (won.length === 0) return;
+    save.tacoBadges = [...save.tacoBadges, ...won.map((b) => b.id)];
+    this.toast.show(`Badge earned: ${won.map((b) => b.name).join(', ')}!`);
     this.saveNow();
   }
 
@@ -523,6 +568,7 @@ export class TacoScene extends Phaser.Scene {
     if (awards.length > 0) {
       save.tacoMastery = paidAfter(save.tacoMastery, awards);
       for (const a of awards) {
+        this.badgeEvent({ type: 'mastery' });
         coins += a.coins;
         lines.push(`${this.state.dishDef(a.dish)?.name ?? a.dish}: ${a.name} badge! +${a.coins} coins`);
       }
@@ -573,6 +619,7 @@ export class TacoScene extends Phaser.Scene {
       (c) => {
         SaveSystem.data.tacoChests = tacoChestsAfter(SaveSystem.data.tacoChests, c as (typeof due)[number]);
         this.state.coins += c.coins;
+        this.badgeEvent({ type: 'chest' });
         this.flyCoins2(Math.min(8, 3 + Math.floor(c.coins / 60)));
         this.saveNow();
         return [`+${c.coins} coins`];
@@ -712,6 +759,7 @@ export class TacoScene extends Phaser.Scene {
       onPick: (id: string) => (id === defaultTacoConfig.restaurant.id ? this.scene.restart() : this.scene.start('Game', { restaurantId: id })),
       rows: key === 'RecipeBook' ? this.recipeRows() : undefined,
       mastery: key === 'RecipeBook' ? this.masteryData() : undefined,
+      badges: key === 'RecipeBook' ? { defs: tacoBadges, stats: SaveSystem.data.tacoStats, have: SaveSystem.data.tacoBadges } : undefined,
       tips: key === 'RecipeBook' ? TACO_BOOK_TIPS : undefined,
     };
     this.scene.launch(key, data);
@@ -736,6 +784,12 @@ export class TacoScene extends Phaser.Scene {
   private zoneSpot(action: TacoZone['action'], match: { arg?: string; index?: number }): { x: number; y: number } | null {
     const z = this.views.find(action, match);
     return z ? this.views.spot(z) : null;
+  }
+
+  /** A short coloured message floating up at a screen position (party cheer, party bonus). */
+  private bannerText(x: number, y: number, text: string, color: string): void {
+    const t = this.add.text(x, y, text, { fontFamily: FONT, fontSize: '34px', color, stroke: '#2B1B17', strokeThickness: 6 }).setOrigin(0.5).setDepth(45);
+    this.tweens.add({ targets: t, y: t.y - 40, alpha: 0, duration: 1400, onComplete: () => t.destroy() });
   }
 
   private floatText(customerId: number, text: string): void {
@@ -837,6 +891,7 @@ export class TacoScene extends Phaser.Scene {
       story: () => this.storyCard.id,
       bats: () => ({ flying: this.bats.flying, positions: this.bats.positions(), tap: (x: number, y: number) => this.tapBat(x, y) }),
       haunted: () => this.haunted.status,
+      pumpkin: (id: string) => this.tapPumpkin(id),
       startEvent: (id: string) => {
         const def = [...this.state.cfg.events.events, ...tacoEvents].find((d) => d.id === id);
         if (def) this.state.startEvent(def);

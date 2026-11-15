@@ -970,6 +970,10 @@
    "height": 0.1979
   }
  ],
+ "pumpkin": {
+  "coins": 2,
+  "cooldown": 60
+ },
  "haunted": {
   "note": "Measured from the final kitchen_street_back.webp (2754x1536); fractions of the art. Used by Full Moon (B4) and combo windows (B6).",
   "moon": {
@@ -977,6 +981,36 @@
    "y": 0.146,
    "radius": 0.0349
   },
+  "pumpkins": [
+   {
+    "id": "pumpkin_left",
+    "x": 0.3029,
+    "y": 0.3574,
+    "w": 0.04,
+    "h": 0.04
+   },
+   {
+    "id": "pumpkin_mid",
+    "x": 0.4376,
+    "y": 0.3605,
+    "w": 0.026,
+    "h": 0.03
+   },
+   {
+    "id": "pumpkin_right",
+    "x": 0.7313,
+    "y": 0.3544,
+    "w": 0.04,
+    "h": 0.046
+   },
+   {
+    "id": "pumpkin_far",
+    "x": 0.7993,
+    "y": 0.3339,
+    "w": 0.032,
+    "h": 0.04
+   }
+  ],
   "windows": [
    {
     "id": "tower",
@@ -1159,6 +1193,99 @@
     ],
     "maxDrops": 3
    }
+  },
+  {
+   "id": "ghost_party",
+   "name": "Ghost Party",
+   "minStep": 6,
+   "minLevel": 1,
+   "duration": 40,
+   "party": {
+    "size": 3,
+    "bonus": 0.3
+   }
+  }
+ ],
+ "badges": [
+  {
+   "id": "taco_combo",
+   "name": "Taco Combo",
+   "goal": "Reach the top combo once",
+   "stat": "maxCombos",
+   "target": 1,
+   "art": "combo_master"
+  },
+  {
+   "id": "taco_rush",
+   "name": "Speed Taco",
+   "goal": "Serve 25 Rush orders",
+   "stat": "rushServes",
+   "target": 25,
+   "art": "speed_demon"
+  },
+  {
+   "id": "taco_bronze",
+   "name": "First Bronze",
+   "goal": "Earn your first Bronze mastery badge",
+   "stat": "masteries",
+   "target": 1,
+   "art": "first_bronze"
+  },
+  {
+   "id": "taco_moon",
+   "name": "Moon Taco",
+   "goal": "Serve 10 orders during a Full Moon",
+   "stat": "moonServes",
+   "target": 10,
+   "art": "moon_chef"
+  },
+  {
+   "id": "taco_bat",
+   "name": "Bat Catcher",
+   "goal": "Tap 10 bats",
+   "stat": "bats",
+   "target": 10,
+   "art": "bat_catcher"
+  },
+  {
+   "id": "taco_regular",
+   "name": "Regular Friend",
+   "goal": "Serve a regular their favorite dish 5 times",
+   "stat": "regularServes",
+   "target": 5,
+   "art": "regular_friend"
+  },
+  {
+   "id": "taco_party",
+   "name": "Party Host",
+   "goal": "Serve 3 Ghost Parties with nobody angry",
+   "stat": "parties",
+   "target": 3,
+   "art": "party_host"
+  },
+  {
+   "id": "taco_chests",
+   "name": "Chest Hunter",
+   "goal": "Open all 3 Treasure Chests",
+   "stat": "chests",
+   "target": 3,
+   "art": "chest_hunter"
+  },
+  {
+   "id": "taco_pumpkin",
+   "name": "Pumpkin Patch",
+   "goal": "Tap the window pumpkins 25 times",
+   "stat": "pumpkins",
+   "target": 25,
+   "art": "heart_pin"
+  },
+  {
+   "id": "taco_coins",
+   "name": "Taco Tycoon",
+   "goal": "Earn 10,000 coins in total",
+   "stat": "coinsEarned",
+   "target": 10000,
+   "art": "coin_collector"
   }
  ]
 }

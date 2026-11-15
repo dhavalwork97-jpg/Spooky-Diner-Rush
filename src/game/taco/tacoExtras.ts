@@ -3,6 +3,7 @@ import type { EventDef } from '../config';
 import { type ChestDef, dueChests, openedAfter, validateChests } from '../chests';
 import { eligibleRegulars, regularTip, validateRegulars, type RegularDef, type RegularSettings } from '../regulars';
 import { validateEvents } from '../spooky';
+import type { BadgeDef } from '../badges';
 import type { DishDef, DishKind, Protein } from './tacoConfig';
 
 /**
@@ -18,6 +19,8 @@ const raw = tacoJson as unknown as {
   chests: { id: string; step: number; title: string; coins: number }[];
   events: TacoEventDef[];
   haunted: HauntedDef;
+  badges: BadgeDef[];
+  pumpkin: { coins: number; cooldown: number };
 };
 
 // ---------------------------------------------------------------- mastery grid (B1)
@@ -181,6 +184,9 @@ export const validateTacoEvents = (own: readonly TacoEventDef[], maxStep: number
   ...own.filter((e) => !Number.isInteger(e.minStep) || e.minStep < 1 || e.minStep > maxStep).map((e) => `event ${e.id}: minStep must be 1 to ${maxStep}`),
 ];
 
+/** The truck's own ten badges (same shape and counters as the diner's, kept in their own save fields: tacoBadges, tacoStats). */
+export const tacoBadges: BadgeDef[] = raw.badges;
+
 // ---------------------------------------------------------------- haunted window (B4, B6)
 
 export interface HauntedWindow {
@@ -194,11 +200,22 @@ export interface HauntedWindow {
   tier: number;
   tower?: boolean;
 }
+export interface HauntedPumpkin {
+  id: string;
+  /** Centre and size, as 0-1 fractions of the art. */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 export interface HauntedDef {
   moon: { x: number; y: number; radius: number };
+  pumpkins: HauntedPumpkin[];
   windows: HauntedWindow[];
 }
 export const tacoHaunted: HauntedDef = raw.haunted;
+/** Window pumpkins: a tap pays a couple of coins, then that pumpkin rests for `cooldown` seconds (a tiny extra, so it cannot be farmed). */
+export const tacoPumpkin: { coins: number; cooldown: number } = raw.pumpkin;
 /** Combos that light each level (the last is the game's max combo). */
 /** Where the Bat Delivery bat flies, as 0-1 fractions of the art: the sky of the haunted window, above the customers' heads. No tap zone lies inside the glass (tests/taco_extras.test.ts checks it). */
 export const TACO_BAT_LANE = { top: 0.09, bottom: 0.2, bob: 0.008 };
@@ -226,6 +243,14 @@ export function validateHaunted(h: HauntedDef, windowBox = { x0: 0.244, x1: 0.82
     if (![1, 2, 3].includes(w.tier)) errors.push(`haunted window ${w.id}: tier must be 1, 2 or 3`);
     if (!(w.w > 0 && w.h > 0)) errors.push(`haunted window ${w.id}: needs a size`);
   }
+  const pids = new Set<string>();
+  for (const k of h.pumpkins) {
+    if (!k.id || pids.has(k.id)) errors.push(`haunted pumpkin ${k.id || '?'}: missing or duplicate id`);
+    pids.add(k.id);
+    if (!inside(k.x, k.y)) errors.push(`haunted pumpkin ${k.id}: outside the window glass`);
+    if (!(k.w > 0 && k.h > 0)) errors.push(`haunted pumpkin ${k.id}: needs a size`);
+  }
+  if (h.pumpkins.length < 1) errors.push('haunted: no pumpkins');
   for (const t of [1, 2, 3]) if (!h.windows.some((w) => w.tier === t)) errors.push(`haunted: no window lights at tier ${t}`);
   if (!h.windows.some((w) => w.tower)) errors.push('haunted: no tower window');
   return errors;

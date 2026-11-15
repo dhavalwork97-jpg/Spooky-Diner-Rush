@@ -5,7 +5,7 @@ import { recipeEntries } from '../game/recipebook';
 import { defaultExtras, masteryProgress } from '../game/extras';
 import { audio } from '../systems/AudioSystem';
 import { SaveSystem } from '../systems/SaveSystem';
-import { defaultBadges, progressOf } from '../game/badges';
+import { defaultBadges, progressOf, type BadgeDef } from '../game/badges';
 import { dxKey, hasDinerArt, loadDinerArt } from '../views/dinerArt';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 
@@ -36,6 +36,13 @@ export interface MasteryBookData {
   footer: string;
 }
 
+/** Another restaurant's badges (the diner's come from the save and data/badges.json). */
+export interface BadgeBookData {
+  defs: BadgeDef[];
+  stats: Record<string, number>;
+  have: string[];
+}
+
 /** What the Recipe Book needs. The diner passes its state; another restaurant also passes its own `rows` (and an optional how-to line). */
 export interface RecipeBookData {
   state: { cfg: GameConfig; level: number };
@@ -44,6 +51,7 @@ export interface RecipeBookData {
   tips?: string;
   /** A restaurant with a mastery grid adds a second tab for it. */
   mastery?: MasteryBookData;
+  badges?: BadgeBookData;
 }
 
 const ROWS_PER_PAGE = 5;
@@ -69,8 +77,9 @@ export class RecipeBookScene extends Phaser.Scene {
   private recipeObjs: Phaser.GameObjects.GameObject[] = [];
   private badgeObjs: Phaser.GameObjects.GameObject[] = [];
   private tab: 'recipes' | 'badges' | 'mastery' = 'recipes';
-  private tabChips: { recipes?: Phaser.GameObjects.Text; badges?: Phaser.GameObjects.Text } = {};
+  private tabChips: { recipes?: Phaser.GameObjects.Text; mastery?: Phaser.GameObjects.Text; badges?: Phaser.GameObjects.Text } = {};
   private mastery?: MasteryBookData;
+  private badgeData?: BadgeBookData;
   private pagedShown: Phaser.GameObjects.GameObject[] = [];
   private pagedHidden = false;
 
@@ -86,6 +95,7 @@ export class RecipeBookScene extends Phaser.Scene {
     this.extraRows = data.rows;
     this.tips = data.tips ?? '';
     this.mastery = data.mastery;
+    this.badgeData = data.badges;
     this.pagedShown = [];
     this.pagedHidden = false;
     this.tab = 'recipes';
@@ -105,7 +115,7 @@ export class RecipeBookScene extends Phaser.Scene {
 
     this.recipeObjs = [];
     this.badgeObjs = [];
-    if (!this.extraRows || this.mastery) this.buildTabs(x0);
+    if (!this.extraRows || this.mastery || this.badgeData) this.buildTabs(x0);
     const mark = this.children.length;
     if (this.extraRows) this.pagedRows(x0, this.extraRows);
     else recipeEntries(this.cfg, this.level).forEach((e, i) => {
@@ -160,13 +170,22 @@ export class RecipeBookScene extends Phaser.Scene {
       return t;
     };
     this.tabChips.recipes = chip('Recipes', x0 + 380, 'recipes');
-    this.tabChips.badges = chip(this.extraRows ? 'Mastery' : 'Badges', x0 + 380 + 150, this.extraRows ? 'mastery' : 'badges');
+    if (this.extraRows) {
+      // Another restaurant: Recipes, then Mastery and Badges when it has them.
+      let at = x0 + 380 + 150;
+      if (this.mastery) {
+        this.tabChips.mastery = chip('Mastery', at, 'mastery');
+        at += 150;
+      }
+      if (this.badgeData) this.tabChips.badges = chip('Badges', at, 'badges');
+    } else this.tabChips.badges = chip('Badges', x0 + 380 + 150, 'badges');
     this.paintTabs();
   }
 
   private paintTabs(): void {
     this.tabChips.recipes?.setBackgroundColor(this.tab === 'recipes' ? '#F28C28' : '#2BA6A0');
-    this.tabChips.badges?.setBackgroundColor(this.tab !== 'recipes' ? '#F28C28' : '#2BA6A0');
+    this.tabChips.mastery?.setBackgroundColor(this.tab === 'mastery' ? '#F28C28' : '#2BA6A0');
+    this.tabChips.badges?.setBackgroundColor(this.tab === 'badges' ? '#F28C28' : '#2BA6A0');
   }
 
   private showTab(x0: number, tab: 'recipes' | 'badges' | 'mastery'): void {
@@ -213,14 +232,15 @@ export class RecipeBookScene extends Phaser.Scene {
   /** The Badges page: 5 across, 2 down. Earned badges are in full colour; locked ones are greyed and show their goal and progress. */
   private buildBadges(x0: number): void {
     const mark = this.children.length;
-    const stats = SaveSystem.data.stats;
-    const have = SaveSystem.data.badges;
+    const defs = this.badgeData?.defs ?? defaultBadges;
+    const stats = this.badgeData?.stats ?? SaveSystem.data.stats;
+    const have = this.badgeData?.have ?? SaveSystem.data.badges;
     const cols = 5;
     const cellW = (PANEL_W - 60) / cols;
     const cellH = 256;
-    const done = defaultBadges.filter((b) => have.includes(b.id)).length;
-    this.add.text(x0 + PANEL_W - 190, 100, `${done} / ${defaultBadges.length}`, { fontFamily: FONT, fontSize: '26px', color: '#5a463e' }).setOrigin(1, 0.5);
-    defaultBadges.forEach((b, i) => {
+    const done = defs.filter((b) => have.includes(b.id)).length;
+    this.add.text(x0 + PANEL_W - 190, 100, `${done} / ${defs.length}`, { fontFamily: FONT, fontSize: '26px', color: '#5a463e' }).setOrigin(1, 0.5);
+    defs.forEach((b, i) => {
       const cx = x0 + 30 + cellW * (i % cols) + cellW / 2;
       const top = 116 + Math.floor(i / cols) * (cellH + 10);
       const earned = have.includes(b.id);
