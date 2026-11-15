@@ -292,3 +292,11 @@ Ten additive features: station intro cards (Lv 2/4/5/6/10/12), mastery from Lv 6
 - Art: 23 sprites (11.58 MB texture memory) lazy-loaded from public/assets/diner_extras; masters kept in tools/diner_extras_source (not shipped).
 - Verified: tsc clean, 693 tests pass (+1 skipped), both production builds, headless Chromium at desktop and phone sizes. Bot sim Lv 14 coins within about +-4% of before; chests add 650 coins once.
 - Not verified: a real phone or WebView, real audio output, human balance play, the real CrazyGames SDK. See HANDOFF.md for the full results and numbers.
+
+## Taco Truck midnight art + 7 taco features (2026-11-15, branch feat/taco-midnight, not committed)
+- The Taco Truck now has the Halloween midnight kitchen (replaces the daytime art; overlays, zones and customer slots re-checked, nothing needed moving). Moon and mansion window positions are measured into data/taco.json ("haunted").
+- Additive, taco only, gated by menu step: Mastery tab (4x4, Bronze 10 / Silver 40 / Gold 100 serves), six named regulars (step 4+, about 10 percent, +30 percent tip), milestone chests (menu steps 3/6/10: 150/250/400 coins), Full Moon (step 3+), Bat Delivery (step 5+), combo-lit mansion windows, seven synthesized night sounds.
+- Logic in src/game/taco/tacoExtras.ts (reuses the diner's chests, regulars and spooky modules); tests/taco_extras.test.ts. New save fields tacoMastery, tacoMasteryBonus, tacoChests are optional.
+- Verified: tsc, 725 tests (+1 skipped), both builds, headless Chromium at desktop and phone size, taco bot sim unchanged within noise (step 10 fast: 3403 s / 15253 coins before, 3417 s / 15059 after).
+- Not verified: real phone, real sound, human balance, the real CrazyGames SDK. Phase 2 items not built.
+

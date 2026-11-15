@@ -5,11 +5,15 @@ import { makeThrottle } from './throttle';
  * All sound is synthesized with WebAudio, no files. The context is created and resumed
  * on the first user gesture so browser autoplay rules are respected.
  */
-export type Sfx = 'tap' | 'ding' | 'coin' | 'burn' | 'levelUp' | 'click' | 'drop' | 'wrong' | 'pop' | 'close' | 'flap' | 'chest' | 'party' | 'badge' | 'moon';
+export type Sfx = 'tap' | 'ding' | 'coin' | 'burn' | 'levelUp' | 'click' | 'drop' | 'wrong' | 'pop' | 'close' | 'flap' | 'chest' | 'party' | 'badge' | 'moon' | TacoSfx;
+/** The Taco Truck's own night sounds (synthesized here with the rest; chosen by src/views/TacoSounds.ts). */
+export type TacoSfx = 'owl_hoot' | 'wolf_howl' | 'creak' | 'chest_open' | 'bat_flap' | 'ghost_giggle' | 'regular_ding';
 
 /** Seconds that must pass before the same new sound may play again (the older sounds are unchanged and unthrottled). */
 export const SFX_GAPS: Readonly<Record<string, number>> = { flap: 0.35, chest: 0.6, party: 1.5, badge: 1.0, moon: 4 };
-const throttled = makeThrottle(SFX_GAPS);
+/** Same idea for the Taco Truck's night sounds (kept apart so the diner's table above stays exactly as it was). */
+export const TACO_SFX_GAPS: Readonly<Record<TacoSfx, number>> = { owl_hoot: 8, wolf_howl: 6, creak: 2, chest_open: 0.6, bat_flap: 0.35, ghost_giggle: 3, regular_ding: 0.5 };
+const throttled = makeThrottle({ ...SFX_GAPS, ...TACO_SFX_GAPS });
 
 export class AudioSystem {
   private ctx: AudioContext | null = null;
@@ -105,6 +109,17 @@ export class AudioSystem {
       case 'party': [523, 659, 784, 659, 880].forEach((f, i) => this.tone(f, 0.16, 'triangle', 0.3, i * 0.08)); return;
       case 'badge': [880, 1175, 1568].forEach((f, i) => this.tone(f, 0.3, 'sine', 0.28, i * 0.09)); return;
       case 'moon': return this.tone(196, 1.1, 'sine', 0.2, 0, 150);
+      case 'owl_hoot': this.tone(392, 0.26, 'sine', 0.3, 0, 330); this.tone(330, 0.42, 'sine', 0.3, 0.34, 294); return this.tone(392, 0.2, 'sine', 0.2, 0.95, 349);
+      case 'wolf_howl': this.tone(300, 1.3, 'sine', 0.22, 0, 640); this.tone(640, 1.0, 'sine', 0.2, 1.25, 420); return this.tone(604, 1.2, 'triangle', 0.08, 0.4, 630);
+      case 'creak': this.tone(110, 0.5, 'sawtooth', 0.12, 0, 170); return this.tone(150, 0.4, 'sawtooth', 0.1, 0.25, 90);
+      case 'chest_open':
+        this.tone(120, 0.45, 'sawtooth', 0.12, 0, 190);
+        this.tone(150, 0.2, 'sine', 0.4, 0.3, 70);
+        [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, 0.28, 'sine', 0.26, 0.42 + i * 0.07));
+        return;
+      case 'bat_flap': this.tone(480, 0.07, 'triangle', 0.16, 0, 720); return this.tone(420, 0.08, 'triangle', 0.14, 0.09, 660);
+      case 'ghost_giggle': [880, 1047, 988, 1175].forEach((f, i) => this.tone(f, 0.07, 'triangle', 0.16, i * 0.07, f * 1.15)); return;
+      case 'regular_ding': [1175, 1568, 1976].forEach((f, i) => this.tone(f, 0.24, 'sine', 0.26, i * 0.07)); return;
       case 'levelUp':
         [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.22, 'triangle', 0.4, i * 0.09));
         return;

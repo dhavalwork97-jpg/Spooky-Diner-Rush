@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { CREAM, INK, MUSTARD } from '../art/builders';
 import type { ParticlePool } from '../anim/ParticlePool';
 import type { ChestDef } from '../game/chests';
-import { audio } from '../systems/AudioSystem';
+import { audio, type Sfx } from '../systems/AudioSystem';
 import { SaveSystem } from '../systems/SaveSystem';
 import { dxKey, hasDinerArt } from './dinerArt';
 
@@ -31,7 +31,7 @@ export class ChestCard {
   private onDone?: () => void;
   private timer?: Phaser.Time.TimerEvent;
 
-  constructor(private scene: Phaser.Scene, private fx: ParticlePool, private x: number, private y: number) {
+  constructor(private scene: Phaser.Scene, private fx: ParticlePool, private x: number, private y: number, private sfx: Sfx = 'chest') {
     const bg = scene.add.graphics();
     bg.fillStyle(0x000000, 0.25).fillRoundedRect(-W / 2 + 4, -H / 2 + 10, W, H, 26);
     bg.fillStyle(CREAM, 1).fillRoundedRect(-W / 2, -H / 2, W, H, 26);
@@ -101,7 +101,7 @@ export class ChestCard {
     this.setChestArt(true);
     this.prompt.setVisible(false);
     this.reward.setText(lines.join('\n')).setVisible(true);
-    audio.play('chest');
+    audio.play(this.sfx);
     const gx = this.x;
     const gy = this.y + 20;
     if (!SaveSystem.reduceMotion()) {

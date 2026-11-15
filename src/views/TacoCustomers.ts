@@ -5,6 +5,8 @@ import type { TacoCustomer, TacoKitchenState } from '../game/taco/TacoKitchenSta
 import { SaveSystem } from '../systems/SaveSystem';
 import { pop, shake } from '../anim/helpers';
 import { sheetKey, spriteKey } from './TacoViews';
+import { tacoRegulars } from '../game/taco/tacoExtras';
+import { dxKey, hasDinerArt } from './dinerArt';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 /** Between the back layer (0) and the front counter layer (20), as the art pack asks. */
@@ -145,7 +147,8 @@ export class TacoCustomers {
     }
     v.angry = c.mood === 'angry';
     const done = c.mood === 'happy';
-    const key = done ? 'done' : c.items.map((it, i) => `${it}${c.delivered[i] ? '+' : '-'}`).join(',');
+    const heart = c.regular && hasDinerArt(this.scene, 'heart_badge') ? 'h' : '';
+    const key = done ? 'done' : c.regular + heart + c.items.map((it, i) => `${it}${c.delivered[i] ? '+' : '-'}`).join(',');
     if (key !== v.bubbleKey) {
       const changed = v.bubbleKey !== '';
       this.drawBubble(v, c, done);
@@ -179,6 +182,7 @@ export class TacoCustomers {
     g.lineStyle(3, 0x2b1b17, 1).strokeRoundedRect(-w / 2, -h, w, h, 12);
     g.fillStyle(0xfff4dc, 1).fillTriangle(-7, 0, 7, 0, 0, 9);
     box.add(g);
+    if (c.regular) this.addNameTag(box, c.regular, h);
     c.items.forEach((id, i) => {
       const cx = -w / 2 + 8 + ICON / 2 + 3 + i * (ICON + 6);
       const img = this.iconFor(id);
@@ -192,6 +196,25 @@ export class TacoCustomers {
       box.add(img);
       box.sendToBack(g);
     });
+  }
+
+  /** Named regular: a small name tag (with the heart badge once its art is loaded) above the order bubble. They look like every other ghost. */
+  private addNameTag(box: Phaser.GameObjects.Container, id: string, bubbleH: number): void {
+    const reg = tacoRegulars.find((r) => r.id === id);
+    if (!reg) return;
+    const label = this.scene.add.text(0, 0, reg.name, { fontFamily: FONT, fontSize: '13px', fontStyle: '700', color: '#FFF4DC' }).setOrigin(0.5);
+    const hasHeart = hasDinerArt(this.scene, 'heart_badge');
+    const w = Math.ceil(label.width) + 16 + (hasHeart ? 18 : 0);
+    const bg = this.scene.add.graphics();
+    bg.fillStyle(0x6a3d8f, 1).fillRoundedRect(-w / 2, -10, w, 20, 8).lineStyle(2, 0x2b1b17, 1).strokeRoundedRect(-w / 2, -10, w, 20, 8);
+    const parts: Phaser.GameObjects.GameObject[] = [bg, label];
+    if (hasHeart) {
+      const heart = this.scene.add.image(-w / 2 + 12, 0, dxKey('heart_badge'));
+      heart.setScale(16 / Math.max(heart.width, heart.height));
+      label.x = 9;
+      parts.push(heart);
+    }
+    box.add(this.scene.add.container(0, -bubbleH - 13, parts));
   }
 
   private iconFor(id: string): Phaser.GameObjects.Image | null {
