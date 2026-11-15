@@ -4,9 +4,13 @@ Plan (tick when done):
 - [x] 1. Baseline on 17fd3ea: tsc + full vitest (reproduce any known failures first)
 - [x] 2. cherry-pick 1b2a563, resolve conflicts (keep the ads door: ads.*, reopenWithAd; never CrazyGames calls in shared scenes)
 - [x] 3. cherry-pick a0bb4f7, resolve
-- [ ] 4. cherry-pick 91f9fa2, resolve
-- [ ] 5. tsc, full vitest, builds (npm run build, build:crazygames, android-play, android-direct per docs/android.md), bundle checks, ad-safety tests, `npx cap sync android`
-- [ ] 6. Report conflicts, results, what is not tested (device, ads, sound)
+- [x] 4. cherry-pick 91f9fa2, resolve
+- [x] 5. tsc, full vitest, builds (npm run build, build:crazygames, android-play, android-direct per docs/android.md), bundle checks, ad-safety tests, `npx cap sync android`
+- [x] 6. Report conflicts, results, what is not tested (device, ads, sound)
+
+  PORT RESULT (2026-11-15): branch port/taco-midnight-to-android-two-provider = origin/android-two-provider (17fd3ea) + cherry-picks of 1b2a563, a0bb4f7, 91f9fa2 (+ 3 small "wip" HANDOFF commits). Conflicts: GameScene.ts import line only (kept the android branch's `nextHint` import, added the DecorDef/EventDef types; `tutorialActive` is not used on this branch), HANDOFF.md and .handoff_log (kept both). No conflict in TacoScene, SaveSystem, AudioSystem, ads files. src/ads/* and reopenWithAd.ts are untouched; the taco code uses the same ads.* door as before; the 6 CrazyGames.gameplayStart/Stop calls in TacoScene were already on 17fd3ea.
+  Baseline on 17fd3ea after `npm ci`: tsc clean, 671 passed + 1 skipped (before npm ci the 30 failures were only missing Capacitor/LevelPlay packages). After the port: tsc clean, 71 files, 828 passed + 1 skipped, 0 failed. Builds ok: build, build:crazygames, build:android-play, build:android-direct. Bundle check: play = AdMob only (no LevelPlay), direct = LevelPlay only (no AdMob), neither has the CrazyGames script. `npx cap sync android` ran (the generated gradle plugin lists it touched were reverted, they are not part of this port). ads/wording tests pass.
+  NOT in this port: the CrazyGames first-minute commits (f9a284c, 0dcb1da: browser work on main). NOT tested: APK build (Gradle), real device, AdMob/LevelPlay delivery, touch on a phone, sound. Not pushed, not merged into android-two-provider.
 # IN PROGRESS (2026-11-15, Claude) - TACO PHASE 2 - branch `feat/taco-midnight` (midnight + B1-B7 are committed as a0bb4f7 and pushed; Phase 2 is NOT committed unless the owner says so)
 Owner chose: P1 window pumpkin taps, P2 Ghost Party event (taco), P3 taco badges. Ghost Pepper orders: owner answered "optional extra on an order" but did not tick it in the scope list -> NOT built, ask. Truck stickers (no art) and ghost costumes (conflicts with "never change customer art") NOT built.
 - [x] P1. Window pumpkin taps (painted pumpkins in the haunted window; tap = small coin/sparkle, limited; must not steal station/bubble taps)

@@ -7,3 +7,4 @@ B2,B4,B5,B6 wired + tests; next B7 sounds, then visual QA
 ALL DONE B7+final; waiting for owner review, nothing committed
 planned taco phase 2 (P1 pumpkins, P2 ghost party, P3 badges)
 P1-P3 coded + tests; next F2 final checks + chromium
+2026-11-15T17:00:08Z port/taco-midnight-to-android-two-provider ready (local only): tsc clean, 828 passed, 4 builds ok, cap sync ok; not pushed, APK/device/ads not tested
