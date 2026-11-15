@@ -43,12 +43,12 @@ export function batSchedule(flights: number, duration: number, rng: Rng): BatFli
 export const nextFlightDue = (plan: readonly BatFlight[], started: number, elapsed: number): number => (started < plan.length && elapsed >= plan[started].at ? started : -1);
 
 /** Where the bat is `elapsed` seconds into the event: x runs from one side to the other, y bobs gently. `progress` is 0 to 1 (outside that the flight is not on screen). */
-export function batPosition(flight: BatFlight, elapsed: number, width: number): { x: number; y: number; progress: number; flip: boolean } {
+export function batPosition(flight: BatFlight, elapsed: number, width: number, band: typeof BAT_BAND = BAT_BAND): { x: number; y: number; progress: number; flip: boolean } {
   const progress = (elapsed - flight.at) / BAT_FLIGHT_SECONDS;
   const span = width + BAT_OFFSCREEN * 2;
   const run = -BAT_OFFSCREEN + span * progress;
   const x = flight.fromLeft ? run : width - run;
-  const y = BAT_BAND.top + (BAT_BAND.bottom - BAT_BAND.top) * flight.y + BAT_BAND.bob * Math.sin(progress * Math.PI * 4);
+  const y = band.top + (band.bottom - band.top) * flight.y + band.bob * Math.sin(progress * Math.PI * 4);
   return { x, y, progress, flip: !flight.fromLeft };
 }
 

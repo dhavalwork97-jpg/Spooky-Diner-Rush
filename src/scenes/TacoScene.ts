@@ -10,7 +10,15 @@ import { tacoModsFor } from '../game/taco/tacoShop';
 import { clampStep } from '../game/taco/tacoMenu';
 import { titleEarnedAt } from '../game/career';
 import type { RestaurantSelectData } from './RestaurantSelectScene';
-import type { BookRow, RecipeBookData } from './RecipeBookScene';
+import type { BookRow, MasteryBookData, RecipeBookData } from './RecipeBookScene';
+import { allBronze, dueTacoChests, masteryDue, masteryGrid, paidAfter, tacoAllBronzeCoins, tacoChestsAfter, TACO_FORMATS, TACO_PROTEINS } from '../game/taco/tacoExtras';
+import { ChestCard } from '../views/ChestViews';
+import { dxKey, hasDinerArt, loadDinerArt } from '../views/dinerArt';
+import { BatFlyers } from '../views/BatViews';
+import { TacoHaunted } from '../views/TacoHaunted';
+import { batSchedule } from '../game/spooky';
+import { makeRng } from '../game/rng';
+import { tacoEvents, TACO_BAT_LANE } from '../game/taco/tacoExtras';
 import { SaveSystem } from '../systems/SaveSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { ads } from '../ads';
@@ -81,6 +89,10 @@ export class TacoScene extends Phaser.Scene {
   private toast!: Toast;
   private banner!: EventBanner;
   private levelUpCard!: LevelUpCard;
+  private chestCard!: ChestCard;
+  private haunted!: TacoHaunted;
+  private lastBat = { x: LOGICAL_WIDTH / 2, y: 140 };
+  private bats!: BatFlyers;
   private overlay!: Overlay;
   private storyCard!: StoryCard;
   private menuButtons!: MenuButtons;
@@ -134,6 +146,11 @@ export class TacoScene extends Phaser.Scene {
     this.applyDebugFlags();
 
     this.fx = new ParticlePool(this, 140);
+    this.haunted = new TacoHaunted(this, this.bg);
+    // Bat Delivery: the bat flies across the window between the back layer (0) and the front frame (20), behind the customers (10) and their bubbles.
+    // Nothing else is tappable inside the glass (no zone), so the bat cannot steal a tap from a station, drop zone, customer or bubble.
+    const lane = { top: this.bg.y + TACO_BAT_LANE.top * this.bg.height, bottom: this.bg.y + TACO_BAT_LANE.bottom * this.bg.height, bob: TACO_BAT_LANE.bob * this.bg.height };
+    this.bats = new BatFlyers(this, this.bg.width * (0.829 - 0.244), (x, y) => this.tapBat(x, y), { band: lane, depth: 5, scale: 0.17, x0: this.bg.x + this.bg.width * 0.244, sfx: 'bat_flap' });
     this.views = new TacoViews(this, this.bg, this.state, this.fx, (x, y, r) => new Ring(this, x, y, r, true));
     this.customers = new TacoCustomers(this, this.bg, this.state);
 
@@ -144,12 +161,15 @@ export class TacoScene extends Phaser.Scene {
     this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330);
     this.overlay = new Overlay(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.storyCard = new StoryCard(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+    this.chestCard = new ChestCard(this, this.fx, LOGICAL_WIDTH / 2, 360, 'chest_open');
+    this.prepareExtrasArt();
     new MuteButton(this);
     this.menuButtons = new MenuButtons(this, (k: MenuKind) => this.openPanel(k === 'shop' ? 'Shop' : k === 'book' ? 'RecipeBook' : 'RestaurantSelect'));
     this.tutorial = new TacoTutorialView(this, LOGICAL_WIDTH, LOGICAL_HEIGHT, () => (this.lesson ? this.endLesson(false) : this.finishTutorial('Tutorial skipped. The Recipe Book shows every recipe.')));
-    if (new URLSearchParams(location.search).has('debug')) this.drawZones();
+    if (new URLSearchParams(location.search).has('debug') && !new URLSearchParams(location.search).has('nozones')) this.drawZones();
 
     this.startTutorial();
+    this.claimMissedChests();
 
     this.input.on('pointerdown', this.onTap, this);
     this.input.on('pointermove', this.onMove, this);
@@ -200,6 +220,7 @@ export class TacoScene extends Phaser.Scene {
     this.customers.sync();
     this.hud.update(this.state, real);
     if (this.state.event) this.banner.update(this.state.event.remaining);
+    if (this.state.event?.def.bat) this.bats.update(this.state.event.def.duration - this.state.event.remaining);
     this.followDrag(real);
     this.updateTutorial();
     this.updateLesson();
@@ -270,12 +291,18 @@ export class TacoScene extends Phaser.Scene {
         break;
       case 'comboChanged':
         this.hud.comboPop(e.combo);
+        this.haunted.setCombo(e.combo, e.max);
         break;
       case 'eventStart':
         this.banner.show(e.name, e.duration);
+        this.startEventFx();
         break;
       case 'eventEnd':
         this.banner.hide();
+        this.endEventFx();
+        break;
+      case 'batCaught':
+        this.onBatCaught(e.coins);
         break;
       case 'streakBonus':
         this.toast.show(`Streak bonus +${e.xp} XP`);
@@ -290,9 +317,13 @@ export class TacoScene extends Phaser.Scene {
         const msg = `New on the menu: ${e.added.join(', ')}`;
         if (this.levelUpCard.isShowing) this.time.delayedCall(2800, () => this.toast.show(msg));
         else this.toast.show(msg);
+        this.prepareExtrasArt();
+        this.claimMissedChests(); // a milestone chest follows the step-up card
         break;
       }
       case 'closed':
+        this.endEventFx();
+        this.haunted.setCombo(0, this.state.cfg.combo.maxCombo);
         this.endLesson(false, true);
         this.cancelDrag();
         this.banner.hide();
@@ -433,7 +464,125 @@ export class TacoScene extends Phaser.Scene {
 
   private onRecipeServed(dish: string, learned: boolean): void {
     if (this.lesson?.dish === dish) this.endLesson(true);
+    this.payMastery();
     if (learned && !this.lesson) this.saveNow();
+  }
+
+  // ---------------------------------------------------------------- taco events (Full Moon, Bat Delivery)
+
+  private startEventFx(): void {
+    const def = this.state.event?.def;
+    if (!def) return;
+    this.haunted.setMoon(def.look === 'moon');
+    if (def.bat) this.bats.start(batSchedule(def.bat.flights, def.duration, makeRng(Date.now() & 0xffff)));
+  }
+
+  private endEventFx(): void {
+    this.haunted.setMoon(false);
+    this.bats.clear();
+  }
+
+  /** The player tapped a bat: the model pays the bag; show the bag falling and the coins flying in. */
+  private tapBat(x: number, y: number): void {
+    if (this.panelOpen || this.adActive || this.storyCard.isShowing || this.chestCard.isShowing) return;
+    audio.unlock();
+    this.lastBat = { x, y };
+    if (this.state.catchBat() > 0) this.bats.caught(x, y);
+  }
+
+  private onBatCaught(coins: number): void {
+    const at = this.lastBat;
+    this.fx.burst(at.x, at.y, 0xf6c445, 10, 46, 500);
+    const t = this.add.text(at.x, at.y - 10, `+${coins}`, { fontFamily: FONT, fontSize: '32px', color: '#F6C445', stroke: '#2B1B17', strokeThickness: 6 }).setOrigin(0.5).setDepth(45);
+    this.tweens.add({ targets: t, y: t.y - 50, alpha: 0, duration: 1100, onComplete: () => t.destroy() });
+    if (hasDinerArt(this, 'coin_bag')) {
+      const bag = this.add.image(at.x, at.y, dxKey('coin_bag')).setOrigin(0.5, 1).setScale(0.22).setDepth(45);
+      if (SaveSystem.reduceMotion()) this.time.delayedCall(700, () => bag.destroy());
+      else this.tweens.add({ targets: bag, y: at.y + 90, duration: 520, ease: 'Bounce.Out', onComplete: () => this.tweens.add({ targets: bag, alpha: 0, duration: 260, delay: 220, onComplete: () => bag.destroy() }) });
+    }
+    flyCoins(this, this.hud.coinIcon, { x: at.x, y: at.y + 60 }, Math.min(6, 2 + Math.floor(coins / 10)));
+    this.saveNow();
+  }
+
+  // ---------------------------------------------------------------- taco extras (mastery grid, milestone chests)
+
+  /** Load the shared extras art the truck's features need (lazy: a background load, views skip their art until it arrives). */
+  private prepareExtrasArt(): void {
+    const step = this.state.menuStep;
+    if (step >= 2) loadDinerArt(this, 'chest'); // the chest card (and the bat's coin bag)
+    if (step >= 3) loadDinerArt(this, 'badges'); // the regulars' heart
+    if (step >= 4) loadDinerArt(this, 'bat');
+  }
+
+  /** Pays every mastery badge the serve counts have earned and not yet been paid, plus the all-16-bronze bonus, once each. */
+  private payMastery(): void {
+    const save = SaveSystem.data;
+    const awards = masteryDue(this.state.dishServes, save.tacoMastery);
+    let coins = 0;
+    const lines: string[] = [];
+    if (awards.length > 0) {
+      save.tacoMastery = paidAfter(save.tacoMastery, awards);
+      for (const a of awards) {
+        coins += a.coins;
+        lines.push(`${this.state.dishDef(a.dish)?.name ?? a.dish}: ${a.name} badge! +${a.coins} coins`);
+      }
+    }
+    if (!save.tacoMasteryBonus && allBronze(this.state.taco.dishes, this.state.dishServes)) {
+      save.tacoMasteryBonus = true;
+      coins += tacoAllBronzeCoins;
+      lines.push(`All 16 dishes Bronze! +${tacoAllBronzeCoins} coins`);
+    }
+    if (coins === 0) return;
+    this.state.coins += coins;
+    this.toast.show(lines.join('\n'));
+    this.saveNow();
+  }
+
+  /** The mastery tab of the Recipe Book: the 4 x 4 grid from the real serve counts. */
+  private masteryData(): MasteryBookData {
+    const grid = masteryGrid(this.state.taco.dishes, this.state.dishServes, this.state.menuStep);
+    const bronze = this.state.taco.dishes.filter((d) => (this.state.dishServes[d.id] ?? 0) >= 10).length;
+    return {
+      rowLabels: TACO_PROTEINS.map((p) => p[0].toUpperCase() + p.slice(1)),
+      colLabels: TACO_FORMATS.map((k) => (k === 'soft_taco' ? 'Soft taco' : k === 'crispy_taco' ? 'Crispy taco' : k === 'burrito' ? 'Burrito' : 'Nachos')),
+      cells: grid.map((row) =>
+        row.map((c) => {
+          const d = this.state.dishDef(c.dish)!;
+          return { name: c.name, icon: { key: spriteKey(d.sprite) }, count: c.count, tier: c.tier, next: c.next ? `${c.next.remaining} more for ${c.next.name}` : 'Gold!', onMenu: c.onMenu };
+        }),
+      ),
+      footer: SaveSystem.data.tacoMasteryBonus ? 'All 16 dishes Bronze: bonus paid!' : `Bronze 10, Silver 40, Gold 100 served. All 16 Bronze pays +${tacoAllBronzeCoins} coins (${Math.min(16, bronze)} / 16).`,
+    };
+  }
+
+  /** Milestone chest cards (menu steps 3, 6 and 10), one after the other. A player already past a step gets one claim card per missed chest. */
+  private claimMissedChests(): void {
+    if (dueTacoChests(this.state.menuStep, SaveSystem.data.tacoChests).length === 0) return;
+    const tryShow = (): void => {
+      if (this.storyCard.isShowing || this.levelUpCard.isShowing || this.panelOpen || this.state.closed || this.overlay.visible || this.chestCard.isShowing) this.time.delayedCall(2000, tryShow);
+      else this.showChests();
+    };
+    this.time.delayedCall(2500, tryShow);
+  }
+
+  private showChests(): void {
+    const due = dueTacoChests(this.state.menuStep, SaveSystem.data.tacoChests);
+    if (due.length === 0 || this.chestCard.isShowing) return;
+    this.chestCard.show(
+      due[0],
+      (c) => {
+        SaveSystem.data.tacoChests = tacoChestsAfter(SaveSystem.data.tacoChests, c as (typeof due)[number]);
+        this.state.coins += c.coins;
+        this.flyCoins2(Math.min(8, 3 + Math.floor(c.coins / 60)));
+        this.saveNow();
+        return [`+${c.coins} coins`];
+      },
+      () => this.time.delayedCall(400, () => this.showChests()),
+    );
+  }
+
+  private flyCoins2(n: number): void {
+    flyCoins(this, this.hud.coinIcon, { x: LOGICAL_WIDTH / 2, y: 330 }, n);
   }
 
   // ---------------------------------------------------------------- input
@@ -544,7 +693,7 @@ export class TacoScene extends Phaser.Scene {
 
   /** Open the Shop, Recipe Book or restaurant list over the truck. The truck is paused until it closes. */
   private openPanel(key: 'Shop' | 'RecipeBook' | 'RestaurantSelect'): void {
-    if (this.panelOpen || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing) return;
+    if (this.panelOpen || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing || this.chestCard.isShowing) return;
     this.cancelDrag();
     this.tutorial.hide();
     audio.setSizzle(0);
@@ -562,6 +711,7 @@ export class TacoScene extends Phaser.Scene {
       onClose,
       onPick: (id: string) => (id === defaultTacoConfig.restaurant.id ? this.scene.restart() : this.scene.start('Game', { restaurantId: id })),
       rows: key === 'RecipeBook' ? this.recipeRows() : undefined,
+      mastery: key === 'RecipeBook' ? this.masteryData() : undefined,
       tips: key === 'RecipeBook' ? TACO_BOOK_TIPS : undefined,
     };
     this.scene.launch(key, data);
@@ -617,6 +767,9 @@ export class TacoScene extends Phaser.Scene {
     this.cancelDrag();
     this.tutorial.destroy();
     this.storyCard.destroy();
+    this.chestCard.destroy();
+    this.haunted.destroy();
+    this.bats.destroy();
     this.views.destroy();
     this.customers.destroy();
     this.fx.destroy();
@@ -682,6 +835,13 @@ export class TacoScene extends Phaser.Scene {
       toast: () => (this.toast.visible ? this.toast.message : ''),
       overlay: () => this.overlay.visible,
       story: () => this.storyCard.id,
+      bats: () => ({ flying: this.bats.flying, positions: this.bats.positions(), tap: (x: number, y: number) => this.tapBat(x, y) }),
+      haunted: () => this.haunted.status,
+      startEvent: (id: string) => {
+        const def = [...this.state.cfg.events.events, ...tacoEvents].find((d) => d.id === id);
+        if (def) this.state.startEvent(def);
+      },
+      chest: () => ({ showing: this.chestCard.isShowing, opened: this.chestCard.opened, tap: () => this.chestCard.tap(), claimed: [...SaveSystem.data.tacoChests] }),
     };
   }
 }

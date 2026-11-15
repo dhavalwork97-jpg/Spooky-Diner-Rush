@@ -1,2 +1,7 @@
 2026-11-11T12:22:56+05:30 planned oven-door + timers
 planned port of taco-midnight commits onto android-two-provider copy
+2026-11-15T12:05:35+05:30 planned taco midnight + B1-B7 (branch feat/taco-midnight)
+A1-A4 done: taco midnight art verified, haunted coords in taco.json
+B1+B3 scene wiring done; next B2 regulars in TacoKitchenState, B4/B5 events, B6, B7
+B2,B4,B5,B6 wired + tests; next B7 sounds, then visual QA
+ALL DONE B7+final; waiting for owner review, nothing committed
