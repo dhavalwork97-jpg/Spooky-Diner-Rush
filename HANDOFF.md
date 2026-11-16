@@ -5,7 +5,7 @@ Branch port/taco-midnight-to-main from local main (0dcb1da). Approved by user: P
 - [x] 3. cherry-pick 91f9fa2 (Phase 2)
 - [x] 4. npm ci, tsc, full vitest, build + build:crazygames (browser must stay CrazyGames only, no AdMob/LevelPlay)
 - [x] 5. report conflicts and results
-  RESULT: branch port/taco-midnight-to-main = main 0dcb1da + 3 cherry-picks (1b2a563, a0bb4f7, 91f9fa2). Only HANDOFF.md/.handoff_log conflicts (kept both). tsc clean, vitest run, build + build:crazygames ok, no admob/levelplay strings in dist. Not merged into main, not pushed. Untracked android/ folder in the working dir is not part of this port.
+  RESULT: branch port/taco-midnight-to-main = main 0dcb1da + 3 cherry-picks (1b2a563, a0bb4f7, 91f9fa2). Only HANDOFF.md/.handoff_log conflicts (kept both). tsc clean, vitest 735 passed + 3 balance_upgrades tests hit the 5 s default timeout on this slow machine (same file also times out on plain main; with --testTimeout=120000 all 12 pass on the port), build + build:crazygames ok, no admob/levelplay strings in dist. Not merged into main, not pushed. Untracked android/ folder in the working dir is not part of this port.
 
 # IN PROGRESS (2026-11-15, Claude) - TACO PHASE 2 - branch `feat/taco-midnight` (midnight + B1-B7 are committed as a0bb4f7 and pushed; Phase 2 is NOT committed unless the owner says so)
 Owner chose: P1 window pumpkin taps, P2 Ghost Party event (taco), P3 taco badges. Ghost Pepper orders: owner answered "optional extra on an order" but did not tick it in the scope list -> NOT built, ask. Truck stickers (no art) and ghost costumes (conflicts with "never change customer art") NOT built.
