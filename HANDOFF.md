@@ -1,3 +1,18 @@
+# IN PROGRESS (2026-11-16, Claude) - RESPONSIVE OPTIMIZATION + ASSET CLEANUP - branch `feature/crazygames-responsive-optimization` (from origin/main cca9676; backup/main-2026-11-15 verified on GitHub at cca9676)
+Rules: stay on this branch, commit in logical stages (only when the owner has said commit - see standing rule), no merge to main, no deploy, no force-push, keep CrazyGames SDK/ads/rewards untouched, no gameplay/art/timer/economy changes, never claim a device was tested if it was not (only headless Chromium emulation here).
+Stage 1 findings so far:
+- Scaling today: src/main.ts Phaser.Scale.FIT + CENTER_BOTH, logical size from BootScene (LOGICAL_WIDTH/HEIGHT), activePointers 2; index.html has viewport-fit=cover, touch-action none, user-select none, a portrait "turn your phone" overlay (<900 px wide portrait) and src/systems/Orientation.ts (first tap enters fullscreen + landscape lock on phones, skipped in the CrazyGames iframe).
+- Assets: 185 files under public/. Static + dynamic-name audit: the only files whose names appear nowhere in src/data/tests/tools (16: pan_{red,blue}_{chicken,shrimp,veggies} sheets + json, round/taco dispenser bases, Fredoka-OFL.txt, icon-512.png) ARE loaded through built names (`pan_${colour}_${protein}`, dispenserBaseKey, manifest) or are a font licence, so NONE is confirmed unused yet. Runtime network trace still to do before any deletion. tools/taco_source/old (3 webp, dev-only backups of replaced art, not shipped) is a candidate.
+- Naming: active "Chef Rush" text only in .github/workflows/verify.yml (name + artifact), RELEASE_NOTES_CRAZYGAMES.md title, docs/release.md, package name. KEEP (compat): save key 'chef-rush-save' (renaming would wipe saves), RNG seed string 'chef-rush:' in src/game/extras.ts (changes daily extras), window.__chefRush test hook, asset key/file logo_chef_rush (active art), package.json name.
+- [ ] 1. Audit + plan (this block)
+- [ ] 2. Scaling foundation: verify FIT/resize/orientation/fullscreen with Playwright at the listed sizes, fix only what is shown to be wrong
+- [ ] 3. Desktop sizes 1280x720 .. 1920x1080
+- [ ] 4. Mobile 360x640 .. 430x932 portrait + landscape, touch targets, safe areas
+- [ ] 5. Tablet 768x1024, 800x1280, 1024x768, 1180x820
+- [ ] 6. Fullscreen + lifecycle (blur/visibility/pause/resume, audio unlock, CG SDK calls unchanged)
+- [ ] 7. Asset cleanup (runtime trace first; delete only confirmed; report in HANDOFF) + safe naming cleanup
+- [ ] 8. Full tsc/vitest/builds, screenshots, final report
+
 # LATEST MAIN UPDATE (2026-11-15) - PR #34 MERGED
 
 Owner approved merging the committed Diner Extras + Taco Truck Midnight work. This update records the completed push to `main`.
