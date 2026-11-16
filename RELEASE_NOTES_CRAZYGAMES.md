@@ -1,4 +1,4 @@
-# Chef Rush — CrazyGames Release Notes
+# Spooky Diner Rush — CrazyGames Release Notes
 
 **Release source:** `main`  
 **Release commit:** `35dcf70ffcaf6c26a462294b4b12bb55b4b64199` (the verified game build; CI packaging workflow is updated separately)

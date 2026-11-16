@@ -7,6 +7,73 @@ Branch port/taco-midnight-to-main from local main (0dcb1da). Approved by user: P
 - [x] 5. report conflicts and results
   RESULT: branch port/taco-midnight-to-main = main 0dcb1da + 3 cherry-picks (1b2a563, a0bb4f7, 91f9fa2). Only HANDOFF.md/.handoff_log conflicts (kept both). tsc clean, vitest 735 passed + 3 balance_upgrades tests hit the 5 s default timeout on this slow machine (same file also times out on plain main; with --testTimeout=120000 all 12 pass on the port), build + build:crazygames ok, no admob/levelplay strings in dist. Not merged into main, not pushed. Untracked android/ folder in the working dir is not part of this port.
 
+# IN PROGRESS (2026-11-16, Claude) - RESPONSIVE OPTIMIZATION + ASSET CLEANUP - branch `feature/crazygames-responsive-optimization` (from origin/main cca9676; backup/main-2026-11-15 verified on GitHub at cca9676)
+Rules: stay on this branch, commit in logical stages (only when the owner has said commit - see standing rule), no merge to main, no deploy, no force-push, keep CrazyGames SDK/ads/rewards untouched, no gameplay/art/timer/economy changes, never claim a device was tested if it was not (only headless Chromium emulation here).
+Stage 1 findings so far:
+- Scaling today: src/main.ts Phaser.Scale.FIT + CENTER_BOTH, logical size from BootScene (LOGICAL_WIDTH/HEIGHT), activePointers 2; index.html has viewport-fit=cover, touch-action none, user-select none, a portrait "turn your phone" overlay (<900 px wide portrait) and src/systems/Orientation.ts (first tap enters fullscreen + landscape lock on phones, skipped in the CrazyGames iframe).
+- Assets: 185 files under public/. Static + dynamic-name audit: the only files whose names appear nowhere in src/data/tests/tools (16: pan_{red,blue}_{chicken,shrimp,veggies} sheets + json, round/taco dispenser bases, Fredoka-OFL.txt, icon-512.png) ARE loaded through built names (`pan_${colour}_${protein}`, dispenserBaseKey, manifest) or are a font licence, so NONE is confirmed unused yet. Runtime network trace still to do before any deletion. tools/taco_source/old (3 webp, dev-only backups of replaced art, not shipped) is a candidate.
+- Naming: active "Chef Rush" text only in .github/workflows/verify.yml (name + artifact), RELEASE_NOTES_CRAZYGAMES.md title, docs/release.md, package name. KEEP (compat): save key 'chef-rush-save' (renaming would wipe saves), RNG seed string 'chef-rush:' in src/game/extras.ts (changes daily extras), window.__chefRush test hook, asset key/file logo_chef_rush (active art), package.json name.
+- [x] 1. Audit + plan (this block)
+- [x] 2. Scaling foundation: verify FIT/resize/orientation/fullscreen with Playwright at the listed sizes, fix only what is shown to be wrong
+- [x] 3. Desktop sizes 1280x720 .. 1920x1080
+- [x] 4. Mobile 360x640 .. 430x932 portrait + landscape, touch targets, safe areas
+- [x] 5. Tablet 768x1024, 800x1280, 1024x768, 1180x820
+- [x] 6. Fullscreen + lifecycle (blur/visibility/pause/resume, audio unlock, CG SDK calls unchanged)
+- [x] 7. Asset cleanup (runtime trace first; delete only confirmed; report in HANDOFF) + safe naming cleanup
+- [x] 8. Full tsc/vitest/builds, screenshots, final report
+RESULTS (2026-11-16, headless Chromium emulation only; NO real phone, tablet or CrazyGames iframe was tested):
+- Scaling: the existing Phaser FIT + CENTER_BOTH setup (logical 1280x698) was already correct. Swept desktop 1280x720, 1366x768, 1440x900, 1600x900, 1920x1080; tablet 768x1024, 800x1280, 1024x768, 1180x820 (+ rotated); mobile 360x640, 375x667, 390x844, 412x915, 430x932 (+ rotated, dpr 2): canvas ratio 1.834 at every size, inside the viewport, centred, no page overflow, no page errors. Portrait phones and tablets up to 899 px wide show the existing "turn sideways / tap to play in landscape" overlay (deliberate: the game is landscape).
+- Input: a click/tap at logical (788,447) reported worldX/worldY (788,447) at 1280x720, 1920x1080, 1024x768, 1180x820, 844x390, 932x430, 667x375 (mouse on desktop, touch on tablet/phone).
+- Resize while playing (1920x1080, 900x500, 390x844, 844x390, 1024x768, back to 1280x720): canvas refits each time and the rotate overlay toggles correctly. Fullscreen enter/exit works in headless Chromium but layout did not change there, so this is NOT a real fullscreen test. Window blur/focus raised no errors (GameScene's existing blur handler untouched; CrazyGames SDK calls untouched; the SDK host is blocked in this sandbox so the SDK itself was NOT exercised).
+- CHANGED (index.html only): #game uses 100dvh where supported (follows the mobile address bar) and is inset by env(safe-area-inset-left/right) (viewport-fit=cover notches). Verified the sweep and click mapping with it in place. No game code, layout, art, timers or economy changed.
+- Not changed on purpose: tablets keep the same FIT layout (a separate tablet layout would mean moving machines; the brief forbids that without a verified problem). iPad-class portrait >= 900 px wide (e.g. 1024x1366) plays in a small letterboxed canvas, no overlay: left as is, flag for owner.
+ASSET CLEANUP:
+- Method: static + dynamic-name search of src/data/tests/tools/index, import.meta.glob check, and a runtime request trace of the diner, Taco Truck and title/intro runs; then a second run after deletion with 0 HTTP errors and 0 page errors (diner 1366x768, taco 1920x1080 / 1180x820 / 844x390).
+- REMOVED (8 files, about 400 KB, recoverable from git history and backup/main-2026-11-15): public/assets/taco/icons/icons_atlas.webp, icons_atlas.atlas.json, icons.json (no code or data refers to them; only tools/taco_source notes); public/assets/taco/sprites/crema_bowl.webp, guacamole_bowl.webp, lime_pile.webp (the bowls are painted into the kitchen art; loader only loads dish, raw_/cooked_ protein and plate sprites), pan_blue.webp, pan_red.webp (never in the loader list). Duplicates removed: none found.
+- KEPT because loaded dynamically or conditionally: all taco *_sheet.webp/.anim.json (anim json via import.meta.glob, sheets via loadTacoArt), pan_{red,blue}_{protein}_sheet, dispenser bases (dispenserBaseKey), lazy art in data/assets.json (cheese, onion, pickle, drink_cup, drink_soda, bg_taco, logo_chef_rush: lazy:true, loaded when unlocked), mint_ghost clips (customerMotion), diner_extras/manifest.json (lazy loader), fonts incl. fredoka-600 and the OFL licence, icon-512.png (manifest).
+- UNCERTAIN, not deleted: tools/taco_source/old/*.webp (3 dev-only backups of the replaced midnight art, not shipped; kept as rollback).
+NAMING: changed .github/workflows/verify.yml (workflow name, artifact name), RELEASE_NOTES_CRAZYGAMES.md title, docs/release.md zip filename. SAVE KEY RENAMED (owner request, same day): now 'spooky-diner-rush-save'; an old 'chef-rush-save' is read once if the new key is empty, copied on the next save, and never deleted or overwritten (tests/save_key.test.ts). RETAINED technical references (renaming would break compatibility): RNG seed text 'chef-rush:' in src/game/extras.ts (changing it would change the daily extras), window.__chefRush test hook, package.json name 'chef-rush', asset key/file logo_chef_rush, old HANDOFF/git history. Repository URL in this checkout still says chef-rush (GitHub redirects to Spooky-Diner-Rush).
+CHECKS: tsc clean; vitest 65 files, 738 passed + 1 skipped with --testTimeout=120000 (3 balance_upgrades tests exceed the 5 s default on this slow machine, also on plain main); npm run build and build:crazygames ok.
+Status: committed on the feature branch locally; NOT pushed, NOT merged to main, NOT deployed.
+
+
+# LATEST MAIN UPDATE (2026-11-15) - PR #34 MERGED
+
+Owner approved merging the committed Diner Extras + Taco Truck Midnight work. This update records the completed push to `main`.
+
+- [x] PR #34 merged: [Merge diner extras and Taco Truck midnight expansion](https://github.com/dhavalwork97-jpg/Spooky-Diner-Rush/pull/34)
+- [x] Base: `main`; source: `feat/taco-midnight`.
+- [x] Merge method: squash merge.
+- [x] Main merge commit: `21da2843d32b4d6a14a45ffb7476460ae7e0620e`.
+- [x] Merged change size: 129 files, 5,425 additions, 92 deletions (5 source commits).
+- [x] PR state verified after merge: closed, `merged: true`.
+- [x] Source branch checks recorded in its handoff: TypeScript clean; Vitest 725 passed + 1 skipped; standard and CrazyGames builds passed; Chromium desktop and phone-layout checks completed. These are branch-recorded checks, not a fresh rerun after the squash merge.
+- [ ] No PR-triggered GitHub Actions workflow runs were returned for the source commit during the merge check; do not describe CI as having passed.
+
+## What is now on main
+
+The merged committed work includes the Diner Extras branch content and Taco Truck Midnight art/overlays plus Taco Truck features B1-B7:
+- Taco Mastery grid (4x4), named regulars, and milestone chests at menu steps 3/6/10.
+- Taco-only Full Moon and Bat Delivery events, haunted-window combo reactions, and additional Taco sounds.
+- Supporting midnight art, overlay/zone alignment work, tests, and documentation from the merged branch.
+
+The merge did not include Pizza Place changes or ad-logic changes.
+
+## Still not included - Taco Phase 2 work
+
+The following three features were marked complete in the source handoff but were explicitly recorded as **not committed/pushed** at merge time, so they were not part of PR #34 and are not on `main`:
+1. Haunted-window pumpkin taps (+2 coins, 60-second per-pumpkin cooldown).
+2. Taco Ghost Party event (menu step 6+, party of 3, 30% bonus under the documented success rules).
+3. Taco Badges (10 badges and a Badges tab in the Taco Recipe Book).
+
+Their implementation files were not present in the GitHub branch snapshot used for PR #34. Recover the original uncommitted working-tree changes before attempting to commit or merge them; do not recreate or claim these features are on main based only on this handoff description. The remaining unbuilt Phase 2 ideas (Ghost Pepper orders, truck stickers, ghost costumes) also remain out of scope pending explicit approval.
+
+## Next action
+
+Continue from the updated `main` commit above. First recover and inspect the three uncommitted Phase 2 features from the original local working directory; verify the diff and tests, then use a focused branch and PR. Do not force-push or rewrite the source branch history merely because its pre-squash commit graph now differs from `main`.
+
+---
+
 # IN PROGRESS (2026-11-15, Claude) - TACO PHASE 2 - branch `feat/taco-midnight` (midnight + B1-B7 are committed as a0bb4f7 and pushed; Phase 2 is NOT committed unless the owner says so)
 Owner chose: P1 window pumpkin taps, P2 Ghost Party event (taco), P3 taco badges. Ghost Pepper orders: owner answered "optional extra on an order" but did not tick it in the scope list -> NOT built, ask. Truck stickers (no art) and ghost costumes (conflicts with "never change customer art") NOT built.
 - [x] P1. Window pumpkin taps (painted pumpkins in the haunted window; tap = small coin/sparkle, limited; must not steal station/bubble taps)
