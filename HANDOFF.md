@@ -4,14 +4,29 @@ Stage 1 findings so far:
 - Scaling today: src/main.ts Phaser.Scale.FIT + CENTER_BOTH, logical size from BootScene (LOGICAL_WIDTH/HEIGHT), activePointers 2; index.html has viewport-fit=cover, touch-action none, user-select none, a portrait "turn your phone" overlay (<900 px wide portrait) and src/systems/Orientation.ts (first tap enters fullscreen + landscape lock on phones, skipped in the CrazyGames iframe).
 - Assets: 185 files under public/. Static + dynamic-name audit: the only files whose names appear nowhere in src/data/tests/tools (16: pan_{red,blue}_{chicken,shrimp,veggies} sheets + json, round/taco dispenser bases, Fredoka-OFL.txt, icon-512.png) ARE loaded through built names (`pan_${colour}_${protein}`, dispenserBaseKey, manifest) or are a font licence, so NONE is confirmed unused yet. Runtime network trace still to do before any deletion. tools/taco_source/old (3 webp, dev-only backups of replaced art, not shipped) is a candidate.
 - Naming: active "Chef Rush" text only in .github/workflows/verify.yml (name + artifact), RELEASE_NOTES_CRAZYGAMES.md title, docs/release.md, package name. KEEP (compat): save key 'chef-rush-save' (renaming would wipe saves), RNG seed string 'chef-rush:' in src/game/extras.ts (changes daily extras), window.__chefRush test hook, asset key/file logo_chef_rush (active art), package.json name.
-- [ ] 1. Audit + plan (this block)
-- [ ] 2. Scaling foundation: verify FIT/resize/orientation/fullscreen with Playwright at the listed sizes, fix only what is shown to be wrong
-- [ ] 3. Desktop sizes 1280x720 .. 1920x1080
-- [ ] 4. Mobile 360x640 .. 430x932 portrait + landscape, touch targets, safe areas
-- [ ] 5. Tablet 768x1024, 800x1280, 1024x768, 1180x820
-- [ ] 6. Fullscreen + lifecycle (blur/visibility/pause/resume, audio unlock, CG SDK calls unchanged)
-- [ ] 7. Asset cleanup (runtime trace first; delete only confirmed; report in HANDOFF) + safe naming cleanup
-- [ ] 8. Full tsc/vitest/builds, screenshots, final report
+- [x] 1. Audit + plan (this block)
+- [x] 2. Scaling foundation: verify FIT/resize/orientation/fullscreen with Playwright at the listed sizes, fix only what is shown to be wrong
+- [x] 3. Desktop sizes 1280x720 .. 1920x1080
+- [x] 4. Mobile 360x640 .. 430x932 portrait + landscape, touch targets, safe areas
+- [x] 5. Tablet 768x1024, 800x1280, 1024x768, 1180x820
+- [x] 6. Fullscreen + lifecycle (blur/visibility/pause/resume, audio unlock, CG SDK calls unchanged)
+- [x] 7. Asset cleanup (runtime trace first; delete only confirmed; report in HANDOFF) + safe naming cleanup
+- [x] 8. Full tsc/vitest/builds, screenshots, final report
+RESULTS (2026-11-16, headless Chromium emulation only; NO real phone, tablet or CrazyGames iframe was tested):
+- Scaling: the existing Phaser FIT + CENTER_BOTH setup (logical 1280x698) was already correct. Swept desktop 1280x720, 1366x768, 1440x900, 1600x900, 1920x1080; tablet 768x1024, 800x1280, 1024x768, 1180x820 (+ rotated); mobile 360x640, 375x667, 390x844, 412x915, 430x932 (+ rotated, dpr 2): canvas ratio 1.834 at every size, inside the viewport, centred, no page overflow, no page errors. Portrait phones and tablets up to 899 px wide show the existing "turn sideways / tap to play in landscape" overlay (deliberate: the game is landscape).
+- Input: a click/tap at logical (788,447) reported worldX/worldY (788,447) at 1280x720, 1920x1080, 1024x768, 1180x820, 844x390, 932x430, 667x375 (mouse on desktop, touch on tablet/phone).
+- Resize while playing (1920x1080, 900x500, 390x844, 844x390, 1024x768, back to 1280x720): canvas refits each time and the rotate overlay toggles correctly. Fullscreen enter/exit works in headless Chromium but layout did not change there, so this is NOT a real fullscreen test. Window blur/focus raised no errors (GameScene's existing blur handler untouched; CrazyGames SDK calls untouched; the SDK host is blocked in this sandbox so the SDK itself was NOT exercised).
+- CHANGED (index.html only): #game uses 100dvh where supported (follows the mobile address bar) and is inset by env(safe-area-inset-left/right) (viewport-fit=cover notches). Verified the sweep and click mapping with it in place. No game code, layout, art, timers or economy changed.
+- Not changed on purpose: tablets keep the same FIT layout (a separate tablet layout would mean moving machines; the brief forbids that without a verified problem). iPad-class portrait >= 900 px wide (e.g. 1024x1366) plays in a small letterboxed canvas, no overlay: left as is, flag for owner.
+ASSET CLEANUP:
+- Method: static + dynamic-name search of src/data/tests/tools/index, import.meta.glob check, and a runtime request trace of the diner, Taco Truck and title/intro runs; then a second run after deletion with 0 HTTP errors and 0 page errors (diner 1366x768, taco 1920x1080 / 1180x820 / 844x390).
+- REMOVED (8 files, about 400 KB, recoverable from git history and backup/main-2026-11-15): public/assets/taco/icons/icons_atlas.webp, icons_atlas.atlas.json, icons.json (no code or data refers to them; only tools/taco_source notes); public/assets/taco/sprites/crema_bowl.webp, guacamole_bowl.webp, lime_pile.webp (the bowls are painted into the kitchen art; loader only loads dish, raw_/cooked_ protein and plate sprites), pan_blue.webp, pan_red.webp (never in the loader list). Duplicates removed: none found.
+- KEPT because loaded dynamically or conditionally: all taco *_sheet.webp/.anim.json (anim json via import.meta.glob, sheets via loadTacoArt), pan_{red,blue}_{protein}_sheet, dispenser bases (dispenserBaseKey), lazy art in data/assets.json (cheese, onion, pickle, drink_cup, drink_soda, bg_taco, logo_chef_rush: lazy:true, loaded when unlocked), mint_ghost clips (customerMotion), diner_extras/manifest.json (lazy loader), fonts incl. fredoka-600 and the OFL licence, icon-512.png (manifest).
+- UNCERTAIN, not deleted: tools/taco_source/old/*.webp (3 dev-only backups of the replaced midnight art, not shipped; kept as rollback).
+NAMING: changed .github/workflows/verify.yml (workflow name, artifact name), RELEASE_NOTES_CRAZYGAMES.md title, docs/release.md zip filename. RETAINED technical references (renaming would break saves or compatibility): save key 'chef-rush-save', RNG seed text 'chef-rush:' in src/game/extras.ts (changing it would change the daily extras), window.__chefRush test hook, package.json name 'chef-rush', asset key/file logo_chef_rush, old HANDOFF/git history. Repository URL in this checkout still says chef-rush (GitHub redirects to Spooky-Diner-Rush).
+CHECKS: tsc clean; vitest 65 files, 738 passed + 1 skipped with --testTimeout=120000 (3 balance_upgrades tests exceed the 5 s default on this slow machine, also on plain main); npm run build and build:crazygames ok.
+Status: committed on the feature branch locally; NOT pushed, NOT merged to main, NOT deployed.
+
 
 # LATEST MAIN UPDATE (2026-11-15) - PR #34 MERGED
 
