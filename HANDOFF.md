@@ -1,3 +1,11 @@
+# In progress: port Taco midnight to main (2026-11-16)
+Branch port/taco-midnight-to-main from local main (0dcb1da). Approved by user: PREPARE only, do not merge into main, do not push unless told.
+- [ ] 1. cherry-pick 1b2a563 (diner extras Lv 1-14)
+- [ ] 2. cherry-pick a0bb4f7 (taco midnight + B1-B7)
+- [ ] 3. cherry-pick 91f9fa2 (Phase 2)
+- [ ] 4. npm ci, tsc, full vitest, build + build:crazygames (browser must stay CrazyGames only, no AdMob/LevelPlay)
+- [ ] 5. report conflicts and results
+
 # IN PROGRESS (2026-11-14, Claude) - CrazyGames Basic Launch score: items 1 and 2 - branch `feat/cg-first-minute` (local, from main bb5d736), NOTHING committed or pushed until the owner says so
 Why: CrazyGames Basic Launch feedback "did not reach the performance benchmarks". Portal (Desktop 7/15, needs 9): playtime 5m49s (3, next at 7m45s), retention D1 1.06% (2, next at 2.81%), gameplay conversion 52.06% (2, next at 60.41%). Mobile 6/15. Loading is fine (1.9 s avg, 0.11% load crash), so this is engagement, not FPS.
 Rules: no ad logic change, no Reopen reward / cooldown change, no Taco Truck change, save stays backward compatible, Android untouched. Baseline on untouched main (bb5d736) with --testTimeout=60000: 575 passed, 1 skipped, 0 failed; plain `npm test` uses the default 5 s timeout and was NOT re-run, compare against it, never weaken assertions.
