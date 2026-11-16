@@ -57,7 +57,9 @@ export interface SaveData {
   settings: { reduceMotion: boolean | null; musicVolume: number; sfxVolume: number; muted: boolean };
 }
 
-const KEY = 'chef-rush-save';
+const KEY = 'spooky-diner-rush-save';
+/** The key used before the rename. Still read once so nobody loses progress; never written and never deleted (it stays as a backup). */
+export const LEGACY_SAVE_KEY = 'chef-rush-save';
 
 export function defaultSave(): SaveData {
   return {
@@ -220,7 +222,7 @@ export function parseSave(raw: string | null): SaveData {
 export const SaveSystem = {
   data: defaultSave(),
   load(): SaveData {
-    this.data = parseSave(read(KEY));
+    this.data = parseSave(read(KEY) ?? read(LEGACY_SAVE_KEY)); // the next save() writes the new key
     return this.data;
   },
   save(): void {
