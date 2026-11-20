@@ -7,6 +7,7 @@ import { clampStep, levelForStep, MAX_MENU_STEP, rampFor, stepFromLevel, stepXpN
 import { eligibleTacoRegulars, tacoEventPool, tacoHaunted, tacoPumpkin, regularTip, tacoRegularSettings, tacoRegulars } from './tacoExtras';
 import { NO_TACO_MODS, type TacoMods } from './tacoShop';
 import { familiarityOf, type Familiarity, type TacoServed } from './tacoLearning';
+import { drinkChanceNow, emptyHistory, kindMult, NEUTRAL_VARIETY, pickOrderSize, recencyMult, recentDishKinds, recordOrder, type OrderHistory } from './tacoVariety';
 import {
   buildView,
   defaultTacoConfig,
@@ -158,6 +159,8 @@ export class TacoKitchenState {
   /** True when the save carried dish counts. Off, every dish counts as learned (the old, uniform behaviour). */
   readonly learning: boolean;
   nextArrival = 1;
+  /** What was ordered lately (see tacoVariety.ts). Cleared when a closed service reopens; a new truck scene starts empty. */
+  private history: OrderHistory = emptyHistory();
 
   private nextId = 1;
   private rng: Rng;
@@ -485,13 +488,38 @@ export class TacoKitchenState {
     return load;
   }
 
-  /** One dish for an order. Learned dishes are picked evenly; a dish still being practised less often and only once per order; first-time dishes never (they have their own order). A dish that would pile onto a busy oven or press is skipped while there is a choice. */
+  private get variety() {
+    return this.taco.variety ?? NEUTRAL_VARIETY;
+  }
+
+  /** The dish kinds that could be picked right now (a first-time dish never counts). */
+  private kindsInPlay(): number {
+    return new Set(this.dishes.filter((d) => this.familiarity(d.id) !== 'intro').map((d) => d.kind)).size;
+  }
+
+  /** How much recent orders make a dish more or less likely now: 1 when nothing has been ordered lately. `chosen` are the dishes already in the order being built. */
+  private varietyWeight(dishId: string, chosen: readonly string[]): number {
+    const V = this.variety;
+    const kind = this.dishDef(dishId)?.kind;
+    const recentKinds = recentDishKinds(V, [...chosen.map((id) => this.dishDef(id)?.kind ?? 'drink').reverse(), ...this.history.items]);
+    return recencyMult(V, [...[...chosen].reverse(), ...this.history.dishes], dishId) * (kind ? kindMult(V, recentKinds, kind, this.kindsInPlay()) : 1);
+  }
+
+  /**
+   * One dish for an order. Learned dishes are picked evenly; a dish still being practised less often and only once per order; first-time dishes never
+   * (they have their own order). A dish that would pile onto a busy oven or press is skipped while there is a choice. On top of that, dishes ordered
+   * lately are less likely, and so are kinds that have been over-used lately (soft multipliers, never a ban). One customer does not get the same dish
+   * twice while another dish can be offered. Each rule is dropped only when it would leave nothing to pick: first the no-duplicate rule, then all the others.
+   */
   private pickDish(chosen: readonly string[]): DishDef {
     const L = this.taco.learning;
+    const V = this.variety;
     const dishes = this.dishes;
     const load = this.stationLoad(chosen);
     const unfamiliarChosen = chosen.some((id) => this.familiarity(id) !== 'normal');
-    const weigh = (d: DishDef, relaxed: boolean): number => {
+    const recent = [...[...chosen].reverse(), ...this.history.dishes];
+    const recentKinds = recentDishKinds(V, [...chosen.map((id) => this.dishDef(id)?.kind ?? 'drink').reverse(), ...this.history.items]);
+    const base = (d: DishDef, relaxed: boolean): number => {
       const fam = this.familiarity(d.id);
       if (fam === 'intro' && !relaxed) return 0;
       let w = fam === 'practice' ? L.practiceWeight : 1;
@@ -500,8 +528,21 @@ export class TacoKitchenState {
       if (!relaxed && d.kind === 'burrito' && load.press >= L.pressItemCap) w = 0;
       return w;
     };
-    for (const relaxed of [false, true]) {
-      const weights = dishes.map((d) => weigh(d, relaxed));
+    const kindsInPlay = new Set(dishes.filter((d) => base(d, false) > 0).map((d) => d.kind)).size;
+    const tiers = [
+      { dup: false, relaxed: false },
+      { dup: true, relaxed: false },
+      { dup: true, relaxed: true },
+    ];
+    for (const t of tiers) {
+      if (!t.dup && !V.avoidDuplicateInOrder) continue;
+      const weights = dishes.map((d) => {
+        let w = base(d, t.relaxed);
+        if (w <= 0) return 0;
+        if (!t.dup && chosen.includes(d.id)) return 0;
+        if (!t.relaxed) w *= recencyMult(V, recent, d.id) * kindMult(V, recentKinds, d.kind, kindsInPlay);
+        return w;
+      });
       const total = weights.reduce((a, b) => a + b, 0);
       if (total <= 0) continue;
       let r = this.rng() * total;
@@ -537,7 +578,8 @@ export class TacoKitchenState {
     const drinks = this.drinks;
     const items: string[] = [];
     for (let i = 0; i < size; i++) {
-      if (drinks.length > 0 && this.rng() < this.taco.settings.drinkChance) items.push(drinks[randInt(this.rng, 0, drinks.length - 1)].id);
+      const sofar = [...items.map((id) => this.dishDef(id)?.kind ?? 'drink').reverse(), ...this.history.items];
+      if (drinks.length > 0 && this.rng() < drinkChanceNow(this.variety, this.taco.settings.drinkChance, sofar)) items.push(drinks[randInt(this.rng, 0, drinks.length - 1)].id);
       else items.push(this.pickDish(items.filter((k) => this.dishDef(k))).id);
     }
     const cap = this.taco.learning.practiceMaxItems;
@@ -561,7 +603,7 @@ export class TacoKitchenState {
     let seat = 0;
     while (used.has(seat)) seat++;
     // A dish nobody has served yet is ordered once, alone, by a regular customer who waits a little longer (a gentle first try).
-    const items: string[] = intro ? [intro.id] : this.pickItems(Math.min(this.taco.settings.maxOrderSize, randInt(this.rng, info.orderSize[0], info.orderSize[1]) + type.extraItems));
+    const items: string[] = intro ? [intro.id] : this.pickItems(Math.min(this.taco.settings.maxOrderSize, pickOrderSize(info.orderSize, rampFor(this.taco, this.menuStep).bigOrderShare, this.rng) + type.extraItems));
     // Named regular: about one arrival in ten from menu step 4. Their favourite dish is always in the order (it replaces the first item, so the order
     // keeps its size, and only a dish the player already knows well). The roll uses a separate random stream. Never an introduction order or an event's forced customer.
     let regular: (typeof tacoRegulars)[number] | undefined;
@@ -570,10 +612,26 @@ export class TacoKitchenState {
       const pool = eligibleTacoRegulars(this.menuStep, this.dishes.filter((d) => this.familiarity(d.id) === 'normal').map((d) => d.id), this.customers.flatMap((x) => (x.regular ? [x.regular] : [])));
       const pick = this.regularRng();
       if (roll < tacoRegularSettings.chance && pool.length > 0) {
-        regular = pool[Math.min(pool.length - 1, Math.floor(pick * pool.length))];
+        // The regular who comes is chosen by the same variety weights as a dish, so the same favourite does not keep turning up.
+        const ws = pool.map((r) => this.varietyWeight(r.favorite, items));
+        const total = ws.reduce((a, b) => a + b, 0);
+        let at = Math.min(pool.length - 1, Math.floor(pick * pool.length));
+        if (ws.some((w) => w !== ws[0]) && total > 0) {
+          let r = pick * total;
+          at = pool.length - 1;
+          for (let i = 0; i < pool.length; i++) {
+            r -= ws[i];
+            if (r <= 0) {
+              at = i;
+              break;
+            }
+          }
+        }
+        regular = pool[at];
         if (!items.includes(regular.favorite)) items[0] = regular.favorite;
       }
     }
+    this.history = recordOrder(this.variety, this.history, items.map((id) => ({ id, kind: this.dishDef(id)?.kind ?? 'drink' })));
     const price = Math.round(items.reduce((sum, k) => sum + this.itemDef(k).price, 0) * type.payMult);
     const closes = Math.min(this.closesAtLevel.get(this.level) ?? 0, 3);
     const patienceMax = info.patience * rampFor(this.taco, this.menuStep).patienceMult * type.patienceMult * this.mods.patience * (1 + 0.1 * closes) * (intro ? this.taco.learning.introPatienceMult : 1);
@@ -973,6 +1031,7 @@ export class TacoKitchenState {
     this.plates.forEach((p) => (p.item = null));
     for (const k of Object.keys(this.pours)) this.pours[k] = this.pours[k].map(() => null);
     this.customers = [];
+    this.history = emptyHistory();
     this.nextArrival = 1;
     this.combo = 0;
     this.streak = 0;

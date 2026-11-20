@@ -71,6 +71,27 @@ export interface TacoRamp {
   seats: number;
   orderSize: [number, number];
   patienceMult: number;
+  /** Chance that an order is as big as `orderSize` allows, when the range spans three or more items. Missing: every size is equally likely (the old behaviour). */
+  bigOrderShare?: number;
+}
+/** How orders are mixed up so the truck does not feel repetitive (see tacoVariety.ts). All numbers are first-pass, tuned in data/taco.json. Missing in a config: every effect is off. */
+export interface TacoVariety {
+  /** How many of the last ordered dishes are remembered. */
+  recentDishes: number;
+  /** Chance multiplier for the dish ordered most recently, the one before, and so on. A dish is never fully excluded by this. */
+  recencyWeights: number[];
+  /** How many of the last ordered items (dishes and drinks) are looked at to see which category is over- or under-used. */
+  kindWindow: number;
+  /** 0 = categories are ignored. Higher pushes harder towards the categories that have been ordered least lately. */
+  kindStrength: number;
+  kindMin: number;
+  kindMax: number;
+  /** Same idea for the drink chance: drinks ordered a lot lately make the next one less likely, and the other way round. */
+  drinkStrength: number;
+  drinkMin: number;
+  drinkMax: number;
+  /** One customer does not order the same dish twice while the menu has another dish to offer. */
+  avoidDuplicateInOrder: boolean;
 }
 /** How a new dish is brought in, so the player is never thrown into it (see tacoLearning.ts). All numbers are first-pass, tuned in data/taco.json. */
 export interface TacoLearning {
@@ -115,6 +136,8 @@ export interface TacoConfig {
   restaurant: { id: string; name: string; unlockLevel: number; cost: number };
   settings: TacoSettings;
   learning: TacoLearning;
+  /** Order variety. Optional so older configs (tests) keep the plain random behaviour. */
+  variety?: TacoVariety;
   upgrades: TacoUpgradeDef[];
   proteins: Record<Protein, TimedDef>;
   timed: { crispy_shell: TimedDef; melt: TimedDef; press: TimedDef };
