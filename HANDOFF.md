@@ -1,3 +1,14 @@
+# IN PROGRESS (2026-11-20, Claude) - PROGRESSION + TACO VARIETY - branch `feature/progression-taco-variety` (from main e1fab86)
+Rules: stay on this branch, no merge to main, no deploy, no force-push, CrazyGames SDK/ads/rewards untouched, no change to existing saves (only safe migration), use "Lv N" wording only. Owner said commit is allowed; GitHub push is currently refused (Claude GitHub app not installed for this repo), so commits stay local until that is fixed.
+Plan (tick as done):
+- [x] 1. DONE. Diner: ice cream Lv 12 -> Lv 8 (data/recipes.json, data/restaurants.json zone, src/views/StockViews.ts, data/intros.json keep id lv12_icecream so nobody sees it twice, data/story.json ice_cream card, data/progression.json items/unlocks). Keep all 20 Lv (cutting to 15 would strand saves at Lv 16-20).
+- [x] 2. DONE. Diner: impatient customers from Lv 9 (12%) and Lv 10 (15%, same as Lv 11 as before). Why: ice cream at Lv 8 made Lv 6-10 easier, which steepened the Lv 11 jump. Measured over 40 average-bot seeds: Lv 11-15 / Lv 6-10 close-rate ratio 1.71 -> 1.49, Lv 16-20 / Lv 6-10 2.06 -> 1.76 (smoother). Cost: median time to Lv 15 about 9% longer (1721 s -> 1884 s). tests/sim_late.test.ts ramp check now uses 30 seeds (3 seeds was noise). Story/intro cards re-sorted by Lv; intro id lv12_icecream kept on purpose so nobody sees it twice. Full vitest 742 passed (use --testTimeout=600000 on this slow machine).
+- [ ] 3. Taco unlock Lv 10 (data/taco.json + tests/restaurant_purchase.test.ts); price only after a measured coin audit.
+- [ ] 4. Taco orders: recent-order history, category-aware weighting, no duplicate dish in one order when alternatives exist, gentler 3-item orders (TacoKitchenState.pickDish/pickItems, tacoConfig.ts, data/taco.json).
+- [ ] 5. Learning flow polish + tacoServed migration safety (tacoLearning.ts, SaveSystem.ts, TacoScene.ts debug seeding).
+- [ ] 6. Tests + before/after order simulation report; typecheck, vitest, build, build:crazygames.
+Baseline (current generator, 20000 orders per step, steady state): step 3 repeats a dish from the previous customer 41.8% of the time, step 5 25.4%, step 7 21.7%, step 10 14.3%; duplicate dish inside one order 20.3% / 10.1% / 7.8% / 4.8%; 3-item orders about 36%.
+
 # In progress: port Taco midnight to main (2026-11-16)
 Branch port/taco-midnight-to-main from local main (0dcb1da). Approved by user: PREPARE only, do not merge into main, do not push unless told.
 - [x] 1. cherry-pick 1b2a563 (diner extras Lv 1-14)

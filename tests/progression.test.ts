@@ -55,19 +55,19 @@ describe('progression data, Lv 1 to 20', () => {
       expect((l.types.regular ?? 0) / total).toBeGreaterThanOrEqual(0.5);
     }
   });
-  it('introduces impatient customers at Lv 11, VIPs at Lv 14 and critics at Lv 16, and never takes one away', () => {
+  it('introduces impatient customers at Lv 9, VIPs at Lv 14 and critics at Lv 16, and never takes one away', () => {
     const first = (type: string) => levels.find((l) => (l.types?.[type] ?? 0) > 0)?.level;
-    expect(first('impatient')).toBe(11);
+    expect(first('impatient')).toBe(9);
     expect(first('vip')).toBe(14);
     expect(first('critic')).toBe(16);
     for (let i = 1; i < levels.length; i++) {
       for (const [k, w] of Object.entries(levels[i - 1].types ?? {})) if (k !== 'regular' && w > 0) expect(levels[i].types?.[k] ?? 0).toBeGreaterThan(0);
     }
-    for (const l of levels.slice(0, 10)) expect(l.types).toBeUndefined(); // Lv 1-10 stay regular only
+    for (const l of levels.slice(0, 8)) expect(l.types).toBeUndefined(); // Lv 1-8 stay regular only
   });
   it('announces each new customer type and the fourth seat in the unlock text', () => {
     const text = (n: number) => levels[n - 1].unlocks.join(' ').toLowerCase();
-    expect(text(11)).toContain('impatient');
+    expect(text(9)).toContain('impatient');
     expect(text(13)).toContain('four');
     expect(text(14)).toContain('vip');
     expect(text(16)).toContain('critic');
@@ -156,8 +156,9 @@ describe('the model draws customer types from the level weights', () => {
     }
     return seen;
   };
-  it('Lv 10 has regular customers only', () => {
-    expect(Object.keys(draw(10))).toEqual(['regular']);
+  it('Lv 8 has regular customers only, Lv 9 adds impatient ones', () => {
+    expect(Object.keys(draw(8))).toEqual(['regular']);
+    expect(draw(9).impatient).toBeGreaterThan(0);
   });
   it('Lv 12 has regular and impatient customers, never VIPs or critics', () => {
     const seen = draw(12);

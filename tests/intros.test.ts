@@ -8,7 +8,7 @@ const zones = (restaurantsJson as { restaurants: RestaurantDef[] }).restaurants.
 
 describe('station intro cards: data', () => {
   it('the shipped cards match the diner zones exactly', () => expect(validateIntros(defaultIntros, zones)).toEqual([]));
-  it('cards exist for Lv 2, 4, 5, 6, 10 and 12', () => expect(defaultIntros.map((c) => c.level)).toEqual([2, 4, 5, 6, 10, 12]));
+  it('cards exist for Lv 2, 4, 5, 6, 8 and 10', () => expect(defaultIntros.map((c) => c.level)).toEqual([2, 4, 5, 6, 8, 10]));
   it('every station that unlocks after Lv 1 is in exactly one card', () => {
     const late = zones.filter((z) => z.unlockLevel > 1).map((z) => z.id).sort();
     expect(defaultIntros.flatMap((c) => c.zones).sort()).toEqual(late);
@@ -49,7 +49,7 @@ describe('station intro cards: saves', () => {
   it('a new save starts with none seen', () => expect(defaultSave().seenIntros).toEqual([]));
   it('an old save without the field has every unlock up to its Lv marked seen, so nothing pops up on first load', () => {
     const s = parseSave(JSON.stringify({ version: 2, level: 11, xp: 5, coins: 100 }));
-    expect(s.seenIntros).toEqual(['lv2_burger', 'lv4_nuggets', 'lv5_pizza', 'lv6_drinks', 'lv10_prep']);
+    expect(s.seenIntros).toEqual(['lv2_burger', 'lv4_nuggets', 'lv5_pizza', 'lv6_drinks', 'lv12_icecream', 'lv10_prep']); // the ice cream card keeps its old id so nobody sees it twice
     expect(dueIntros(defaultIntros, 11, s.seenIntros)).toEqual([]);
   });
   it('a save that has the field keeps it (cleaned) and later unlocks still show', () => {

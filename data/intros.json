@@ -4,7 +4,7 @@
     { "id": "lv4_nuggets", "level": 4, "name": "Nuggets bin", "zones": ["nuggets_bin"] },
     { "id": "lv5_pizza", "level": 5, "name": "Pizza oven", "zones": ["dough_bases", "pizza_oven"] },
     { "id": "lv6_drinks", "level": 6, "name": "Drink dispenser", "zones": ["drink_dispenser"] },
-    { "id": "lv10_prep", "level": 10, "name": "Prep station", "zones": ["prep_station"] },
-    { "id": "lv12_icecream", "level": 12, "name": "Ice cream machine", "zones": ["ice_cream_machine"] }
+    { "id": "lv12_icecream", "level": 8, "name": "Ice cream machine", "zones": ["ice_cream_machine"] },
+    { "id": "lv10_prep", "level": 10, "name": "Prep station", "zones": ["prep_station"] }
   ]
 }
