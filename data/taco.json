@@ -2,8 +2,8 @@
  "restaurant": {
   "id": "taco_truck",
   "name": "Taco Truck",
-  "unlockLevel": 15,
-  "cost": 2000
+  "unlockLevel": 10,
+  "cost": 1500
  },
  "settings": {
   "pans": 4,

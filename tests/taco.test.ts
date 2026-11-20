@@ -25,9 +25,9 @@ describe('taco data', () => {
     expect(Math.max(...lvl('crispy_taco'))).toBeLessThan(Math.min(...lvl('burrito')));
     expect(Math.max(...lvl('burrito'))).toBeLessThan(Math.min(...lvl('nachos')));
   });
-  it('the owner numbers: Lv 15 and 2,000 coins', () => {
-    expect(cfg.restaurant.unlockLevel).toBe(15);
-    expect(cfg.restaurant.cost).toBe(2000);
+  it('the owner numbers: Lv 10 and 1,500 coins (2026-11-20)', () => {
+    expect(cfg.restaurant.unlockLevel).toBe(10);
+    expect(cfg.restaurant.cost).toBe(1500);
   });
   it('no dish is the start of another (a finished plate is never ambiguous)', () => {
     for (const a of cfg.dishes) for (const b of cfg.dishes) if (a !== b) expect(b.steps.slice(0, a.steps.length)).not.toEqual(a.steps);
