@@ -44,6 +44,7 @@ import { ChestCard } from '../views/ChestViews';
 import { defaultChests, dueChests, openedAfter } from '../game/chests';
 import { BatFlyers } from '../views/BatViews';
 import { dxKey, hasDinerArt, loadDinerArt } from '../views/dinerArt';
+import { loadGhostLooks } from '../views/ghostArt';
 import { defaultBadges, newlyEarned, track, type BadgeEvent } from '../game/badges';
 import { batSchedule } from '../game/spooky';
 import { defaultIntros, dueIntros, introText, seenAfterIntro } from '../game/intros';
@@ -1229,6 +1230,7 @@ export class GameScene extends Phaser.Scene {
     if (this.state.level >= 7) loadDinerArt(this, 'bat');
     if (this.state.level >= 4) loadDinerArt(this, 'decor', () => this.syncDecor()); // the decor art (shop pieces from Lv 5 and the chest prizes)
     if (this.state.level >= 7) loadDinerArt(this, 'badges'); // the regulars' heart and the badge icons
+    loadGhostLooks(this, this.state.level); // the blue yeti (Lv 3), pink fuzz (Lv 5) and mummy ghost (Lv 7), fetched one Lv early
   }
 
   /** A spooky event began: change the room's look, or send the bat on its flights. */

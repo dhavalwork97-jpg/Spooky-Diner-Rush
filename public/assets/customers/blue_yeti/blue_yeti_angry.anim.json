@@ -1,0 +1,13 @@
+{
+  "frames": 31,
+  "columns": 8,
+  "frameWidth": 256,
+  "frameHeight": 256,
+  "fps": 12,
+  "loop": true,
+  "bodyTop": 73,
+  "bodyBottom": 232,
+  "bodyHeight": 159,
+  "bodyWidth": 130,
+  "edgeAlpha": 0
+}

@@ -930,3 +930,11 @@ D1-D3 dispenser code written: src/views/TacoDispensers.ts + hook; needs screensh
 DONE dispensers (uncommitted): TacoDispensers.ts, tools/make_dispenser_sheets.py, 6 sheets/bases, cup zones moved in data/taco.json, tests/taco_dispensers.test.ts. tsc/vitest/builds pass.
 Griddle left-edge fix (uncommitted): tools/make_griddle_art.py clears the old griddle frame strip before compositing; kitchen_front.webp regenerated, zones unchanged.
 Griddle bottom-left overlap fix: old counter corner kept in front (COUNTER_X/Y in make_griddle_art.py); kitchen_front.webp regenerated. Uncommitted.
+
+## 2026-11-21: 3 new ghost customers + first-minute pacing (feature/progression-taco-variety)
+DONE, committed: blue_yeti, pink_fuzz, mummy_ghost (calm/upset/angry/happy clips, lazy-loaded webp in public/assets/customers/*).
+- Looks unlock by diner level (Lv 3/5/7 via LOOK_UNLOCK_LEVELS in KitchenState.ts); Taco Truck stays mint-ghost only. Art loads lazily one level ahead (src/views/ghostArt.ts); CustomerView falls back to mint ghost if art not loaded; skipped on devices reporting <4 GB.
+- Fresh player downloads none of the new art (browser check). Lv 8 player: 11 files, ~14 s, no errors.
+- Tests: tests/ghost_looks.test.ts (new), customermotion updated. typecheck, vitest (802 pass), build, build:crazygames OK.
+Pacing finding (NO XP change made): first minute already fast (Lv2 ~22 s, Lv3 ~60 s). Slow zone is Lv 8-10 (Lv 9 XP cliff 500->820; Taco at ~11 min). Smoothing it needs the Lv-20 pace floor in tests/sim_late.test.ts lowered (owner approval).
+Not done: real-device memory test; regulars using new looks.

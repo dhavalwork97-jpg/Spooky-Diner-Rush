@@ -1,6 +1,6 @@
 import { advanceCook, cookPhase, isEdible, type CookPhase } from '../cook';
 import { defaultConfig, levelDef, xpForLevel, type EventDef, type GameConfig } from '../config';
-import { CUSTOMER_LOOK_COUNT, CUSTOMER_LOOK_MIN, type ActiveEvent, type SaveSlice } from '../KitchenState';
+import { CUSTOMER_LOOK_MIN, TACO_LOOK_MAX, type ActiveEvent, type SaveSlice } from '../KitchenState';
 import { makeRng, randInt, randRange, type Rng } from '../rng';
 import { batBagCoins } from '../spooky';
 import { clampStep, levelForStep, MAX_MENU_STEP, rampFor, stepFromLevel, stepXpNeeded } from './tacoMenu';
@@ -638,7 +638,7 @@ export class TacoKitchenState {
     const c: TacoCustomer = {
       id: this.nextId++,
       seat,
-      look: randInt(this.rng, CUSTOMER_LOOK_MIN, CUSTOMER_LOOK_COUNT - 1),
+      look: randInt(this.rng, CUSTOMER_LOOK_MIN, TACO_LOOK_MAX),
       items,
       delivered: items.map(() => false),
       price,
