@@ -165,9 +165,12 @@
         "burger",
         "nuggets",
         "pizza",
-        "drink"
+        "drink",
+        "icecream"
       ],
-      "unlocks": []
+      "unlocks": [
+        "Ice cream"
+      ]
     },
     {
       "level": 9,
@@ -186,9 +189,16 @@
         "burger",
         "nuggets",
         "pizza",
-        "drink"
+        "drink",
+        "icecream"
       ],
-      "unlocks": []
+      "unlocks": [
+        "Impatient customers"
+      ],
+      "types": {
+        "regular": 88,
+        "impatient": 12
+      }
     },
     {
       "level": 10,
@@ -207,9 +217,14 @@
         "burger",
         "nuggets",
         "pizza",
-        "drink"
+        "drink",
+        "icecream"
       ],
-      "unlocks": []
+      "unlocks": [],
+      "types": {
+        "regular": 85,
+        "impatient": 15
+      }
     },
     {
       "level": 11,
@@ -228,15 +243,14 @@
         "burger",
         "nuggets",
         "pizza",
-        "drink"
+        "drink",
+        "icecream"
       ],
       "types": {
         "regular": 85,
         "impatient": 15
       },
-      "unlocks": [
-        "Impatient customers"
-      ]
+      "unlocks": []
     },
     {
       "level": 12,
@@ -262,9 +276,7 @@
         "regular": 82,
         "impatient": 18
       },
-      "unlocks": [
-        "Ice cream"
-      ]
+      "unlocks": []
     },
     {
       "level": 13,

@@ -25,22 +25,22 @@
       "text": "Chef here! The counter has three seats now. Three hungry ghosts at once, so keep every pan busy and the tickets moving."
     },
     {
-      "id": "sous_chef",
-      "level": 10,
-      "title": "Sous Chef",
-      "text": "You run this kitchen like a pro. A full counter of hungry ghosts is no trouble for you."
+      "id": "ice_cream",
+      "level": 8,
+      "title": "Ice cream is open",
+      "text": "The ice cream machine is ready! Swirl a cone and serve it before it melts. A cold treat is a big hit with ghosts."
     },
     {
       "id": "impatient_ghosts",
-      "level": 11,
+      "level": 9,
       "title": "Impatient ghosts",
       "text": "Some ghosts are in a real hurry now. They run out of patience fast, but they tip double when you are quick. Fast hands, chef!"
     },
     {
-      "id": "ice_cream",
-      "level": 12,
-      "title": "Ice cream is open",
-      "text": "The ice cream machine is ready! Swirl a cone and serve it before it melts. A cold treat is a big hit with ghosts."
+      "id": "sous_chef",
+      "level": 10,
+      "title": "Sous Chef",
+      "text": "You run this kitchen like a pro. A full counter of hungry ghosts is no trouble for you."
     },
     {
       "id": "vip_ghosts",

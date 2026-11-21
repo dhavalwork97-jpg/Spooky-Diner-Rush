@@ -21,6 +21,9 @@ const casual = [1, 2].map((seed) => play(seed, 2.0, 4800, { upgrades: true }));
 // bracket holds only a handful of closes (even the game without Burn Guard and Calm Kitchen dips under the old per-run
 // floor at 60 seeds). They use 150 seeds with the SAME bounds (the ramp check was off by sampling noise at 30 seeds: 2.33, against 1.81 at 150).
 const fastMany = Array.from({ length: 150 }, (_, i) => i + 1).map((seed) => play(seed, 0.8, 6500, { upgrades: true }));
+// The average bot's Lv 6-10 bracket holds only a few closes per run, so 3 seeds swing the ramp ratio by tens of percent (Lv 6-10 ice cream and impatient ghosts, 2026-11-20:
+// 40 seeds measured 1.49 and 1.76 for Lv 11-15 and Lv 16-20 against Lv 6-10; 3 seeds gave anything from 1.3 to 2.8). The ratio check below uses 30 seeds with the SAME bounds.
+const averageMany = Array.from({ length: 30 }, (_, i) => i + 1).map((seed) => play(seed, 1.3, 5700, { upgrades: true }));
 
 const rates = (runs: typeof fast) => [closeRate(runs, 6, 10), closeRate(runs, 11, 15), closeRate(runs, 16, 20), closeRate(runs, 21, 25)];
 const times = (runs: typeof fast, lv: number) => runs.map((r) => r.levelTimes[lv]);
@@ -59,7 +62,7 @@ describe('Lv 11-20 balance simulation', () => {
     // Milestone 6 note: drinks (Lv 6) are cheap and easy, so the fast bot closes only about 0.2 a minute at
     // Lv 6-10 and its ratio to later brackets is no longer a useful anchor (a handful of closes). The ratio
     // check therefore uses the average bot, and the fast bot is held by the absolute bounds below.
-    const [a, b, c] = rates(average);
+    const [a, b, c] = rates(averageMany);
     expect(b).toBeLessThanOrEqual(a * 2);
     expect(c).toBeLessThanOrEqual(a * 2.5);
   });

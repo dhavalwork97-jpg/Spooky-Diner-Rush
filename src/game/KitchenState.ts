@@ -136,9 +136,25 @@ export interface SaveSlice {
 }
 
 /** Number of supplied customer characters (cosmetic). A test keeps this equal to `CUSTOMER_LOOKS` in anim/customerMotion.ts. */
-export const CUSTOMER_LOOK_COUNT = 9;
+export const CUSTOMER_LOOK_COUNT = 12;
 /** First look that can spawn. Looks 0-7 are the people (their art is blank now), 8 on are the ghosts; customers are ghosts only for now (set to 0 to mix people back in). */
 export const CUSTOMER_LOOK_MIN = 8;
+/**
+ * The diner Lv at which each look from CUSTOMER_LOOK_MIN on can first walk in, in CUSTOMER_LOOKS order: the mint ghost from the start, then the blue yeti,
+ * the pink fuzz and the mummy ghost. They arrive one at a time so the first minutes stay simple and their art (about 70 MB of texture in all) is only
+ * fetched once it is needed. A test keeps this the same length as the ghosts in CUSTOMER_LOOKS.
+ */
+export const LOOK_UNLOCK_LEVELS: readonly number[] = [1, 3, 5, 7];
+/** The highest look number that can spawn at this diner Lv. Always at least CUSTOMER_LOOK_MIN. */
+export function maxLookForLevel(level: number): number {
+  let max = CUSTOMER_LOOK_MIN;
+  LOOK_UNLOCK_LEVELS.forEach((lv, i) => {
+    if (level >= lv) max = Math.max(max, CUSTOMER_LOOK_MIN + i);
+  });
+  return Math.min(max, CUSTOMER_LOOK_COUNT - 1);
+}
+/** The Taco Truck keeps its customers as the mint ghost only (owner decision 2026-11-07), which also keeps its texture budget unchanged. */
+export const TACO_LOOK_MAX = CUSTOMER_LOOK_MIN;
 const LEAVE_DELAY = 0.9;
 const ARRIVE_GRACE = 0.7;
 const LAYER_LABEL: Record<string, string> = {
@@ -498,7 +514,7 @@ export class KitchenState {
     const c: Customer = {
       id: this.nextId++,
       seat,
-      look: randInt(this.rng, CUSTOMER_LOOK_MIN, CUSTOMER_LOOK_COUNT - 1), // cosmetic only: picks one of the ghosts (same RNG draw count as before; always drawn, a regular overrides it below)
+      look: randInt(this.rng, CUSTOMER_LOOK_MIN, maxLookForLevel(this.level)), // cosmetic only: picks one of the ghosts open at this Lv (one RNG draw, as before; always drawn, a regular overrides it below)
       items,
       delivered: items.map(() => false),
       price,

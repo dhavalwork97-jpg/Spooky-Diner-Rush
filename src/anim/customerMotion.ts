@@ -10,8 +10,8 @@
 /** Order matters: it is the index the model stores in `Customer.look`. */
 export const CUSTOMER_LOOKS = [
   'kid', 'grandma', 'businessman', 'foodie', 'teen', 'chef_fan', 'athlete', 'sleepy',
-  // ghosts (index 8 on). More are coming: add each new one here, in PERSONALITIES, FIGURE_W and LOOK_ART, and raise CUSTOMER_LOOK_COUNT.
-  'mint_ghost',
+  // ghosts (index 8 on). To add one: add it here, in PERSONALITIES, FIGURE_W, LOOK_ART, data/assets.json (lazy) and LOOK_UNLOCK_LEVELS, and raise CUSTOMER_LOOK_COUNT.
+  'mint_ghost', 'blue_yeti', 'pink_fuzz', 'mummy_ghost',
 ] as const;
 export type CustomerLook = (typeof CUSTOMER_LOOKS)[number];
 
@@ -31,10 +31,15 @@ export const lookKey = (look: number): CustomerLook => CUSTOMER_LOOKS[lookIndex(
 export const CUSTOMER_SHEET = 'customers';
 export const CELL_W = 192;
 export const CELL_H = 384;
-export const SHADOW_FRAME = CUSTOMER_LOOKS.length;
-export const HEART_FRAME = CUSTOMER_LOOKS.length + 1;
+/**
+ * Cells in the shared sheet that belong to looks: the 8 people and the mint ghost (blank cells). The ghosts added after the sheet was built
+ * (blue_yeti, pink_fuzz, mummy_ghost) have no cell: they are drawn only from their own animation sheets, so the shadow and heart stay where they are.
+ */
+export const SHEET_LOOK_CELLS = 9;
+export const SHADOW_FRAME = SHEET_LOOK_CELLS;
+export const HEART_FRAME = SHEET_LOOK_CELLS + 1;
 /** Width of each figure inside its cell, in sheet pixels (same order as CUSTOMER_LOOKS). Used for shadow size. */
-export const FIGURE_W = [138, 142, 132, 122, 122, 151, 152, 131, 0] as const;
+export const FIGURE_W = [138, 142, 132, 122, 122, 151, 152, 131, 0, 130, 129, 150] as const;
 
 /**
  * Customers drawn from their own animation sheets instead of a still frame of the shared `customers` sheet.
@@ -85,6 +90,36 @@ export const LOOK_ART: Partial<Record<CustomerLook, LookArt>> = {
     leaveHappy: { key: 'mint_ghost_leave_happy', file: 'assets/customers/mint_ghost/ghost_leave_happy.webp', frames: 127, size: 216, fps: LEAVE_FPS, loop: false, footY: 197 / 216, scale: 159 / 142, lazy: true },
     bodyH: 159,
     bodyW: 148,
+  },
+  // The three below come from the ghost customers pack (12 fps, 192 px calm/waiting clips, 256 px angry/happy clips). Nothing is fetched at boot: src/views/ghostArt.ts
+  // loads calm, waiting and angry in the background once the diner Lv is near the customer's unlock Lv (LOOK_UNLOCK_LEVELS), and the happy clip is requested
+  // like the mint ghost's leave clips. There is no separate angry-leave clip, so leaveAngry plays the angry loop once (same texture key).
+  blue_yeti: {
+    calm: { key: 'blue_yeti_calm', file: 'assets/customers/blue_yeti/blue_yeti_calm.webp', frames: 24, size: 192, fps: 12, loop: true, footY: 181 / 192, scale: 1, lazy: true },
+    upset: { key: 'blue_yeti_upset', file: 'assets/customers/blue_yeti/blue_yeti_upset.webp', frames: 32, size: 192, fps: 12, loop: true, footY: 181 / 192, scale: 1, lazy: true },
+    angry: { key: 'blue_yeti_angry', file: 'assets/customers/blue_yeti/blue_yeti_angry.webp', frames: 31, size: 256, fps: 12, loop: true, footY: 232 / 256, scale: 1, lazy: true },
+    leaveHappy: { key: 'blue_yeti_happy', file: 'assets/customers/blue_yeti/blue_yeti_happy.webp', frames: 30, size: 256, fps: 12, loop: false, footY: 232 / 256, scale: 1, lazy: true },
+    leaveAngry: { key: 'blue_yeti_angry', file: 'assets/customers/blue_yeti/blue_yeti_angry.webp', frames: 31, size: 256, fps: 12, loop: false, footY: 232 / 256, scale: 1, lazy: true },
+    bodyH: 159,
+    bodyW: 130,
+  },
+  pink_fuzz: {
+    calm: { key: 'pink_fuzz_calm', file: 'assets/customers/pink_fuzz/pink_fuzz_calm.webp', frames: 28, size: 192, fps: 12, loop: true, footY: 181 / 192, scale: 1, lazy: true },
+    upset: { key: 'pink_fuzz_upset', file: 'assets/customers/pink_fuzz/pink_fuzz_upset.webp', frames: 23, size: 192, fps: 12, loop: true, footY: 181 / 192, scale: 1, lazy: true },
+    angry: { key: 'pink_fuzz_angry', file: 'assets/customers/pink_fuzz/pink_fuzz_angry.webp', frames: 18, size: 256, fps: 12, loop: true, footY: 232 / 256, scale: 1, lazy: true },
+    leaveHappy: { key: 'pink_fuzz_happy', file: 'assets/customers/pink_fuzz/pink_fuzz_happy.webp', frames: 20, size: 256, fps: 12, loop: false, footY: 232 / 256, scale: 1, lazy: true },
+    leaveAngry: { key: 'pink_fuzz_angry', file: 'assets/customers/pink_fuzz/pink_fuzz_angry.webp', frames: 18, size: 256, fps: 12, loop: false, footY: 232 / 256, scale: 1, lazy: true },
+    bodyH: 159,
+    bodyW: 129,
+  },
+  mummy_ghost: {
+    calm: { key: 'mummy_ghost_calm', file: 'assets/customers/mummy_ghost/mummy_ghost_calm.webp', frames: 32, size: 192, fps: 12, loop: true, footY: 181 / 192, scale: 1, lazy: true },
+    upset: { key: 'mummy_ghost_upset', file: 'assets/customers/mummy_ghost/mummy_ghost_upset.webp', frames: 28, size: 192, fps: 12, loop: true, footY: 181 / 192, scale: 1, lazy: true },
+    angry: { key: 'mummy_ghost_angry', file: 'assets/customers/mummy_ghost/mummy_ghost_angry.webp', frames: 16, size: 256, fps: 12, loop: true, footY: 232 / 256, scale: 1, lazy: true },
+    leaveHappy: { key: 'mummy_ghost_happy', file: 'assets/customers/mummy_ghost/mummy_ghost_happy.webp', frames: 36, size: 256, fps: 12, loop: false, footY: 232 / 256, scale: 1, lazy: true },
+    leaveAngry: { key: 'mummy_ghost_angry', file: 'assets/customers/mummy_ghost/mummy_ghost_angry.webp', frames: 16, size: 256, fps: 12, loop: false, footY: 232 / 256, scale: 1, lazy: true },
+    bodyH: 159,
+    bodyW: 150,
   },
 };
 /** Width of the ellipse drawn in the shadow frame, in sheet pixels. */
@@ -141,6 +176,12 @@ export const PERSONALITIES: Record<CustomerLook, Personality> = {
   // Ghosts hover a little above the stool and bob; stepMs / stepBounce describe the glide bob while moving.
   // Mint Ghost: friendly and light. The supplied animation already moves the body, so the extra float is small.
   mint_ghost: { breathMs: 2600, breath: 0, sway: 1, stepMs: 520, stepBounce: 3, tapMs: 420, tapLift: 3, hop: 11, hopMs: 400, eatMs: 380, eat: 2.5, nod: 0, watchEveryMs: null, hearts: 4, sparkles: 5, ghost: { hover: 3, bob: 2, bobMs: 2600 } },
+  // Blue Yeti: big and calm, plods in, slow to chew. Stands on the floor (no ghost setting).
+  blue_yeti: { breathMs: 2800, breath: 0.012, sway: 0.8, stepMs: 270, stepBounce: 5, tapMs: 620, tapLift: 2, hop: 9, hopMs: 440, eatMs: 560, eat: 2, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 3 },
+  // Pink Fuzz: small and bouncy, can hardly stand still. Stands on the floor.
+  pink_fuzz: { breathMs: 1700, breath: 0.016, sway: 1.2, stepMs: 205, stepBounce: 8, tapMs: 320, tapLift: 4, hop: 14, hopMs: 340, eatMs: 280, eat: 3, nod: 0, watchEveryMs: null, hearts: 4, sparkles: 5 },
+  // Mummy Ghost: floats and already bobs in its footage, so no extra bob (bob 0).
+  mummy_ghost: { breathMs: 2600, breath: 0, sway: 0.8, stepMs: 520, stepBounce: 3, tapMs: 520, tapLift: 2, hop: 8, hopMs: 460, eatMs: 420, eat: 2, nod: 0, watchEveryMs: null, hearts: 3, sparkles: 4, ghost: { hover: 3, bob: 0, bobMs: 2600 } },
 };
 
 /** One frame of transform. dx/dy are px (negative dy is up); sx/sy multiply the base scale; angle is degrees. */

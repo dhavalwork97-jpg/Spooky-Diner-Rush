@@ -17,6 +17,7 @@ import {
   warnScale,
   warnSeverity,
   SHADOW_FRAME,
+  SHEET_LOOK_CELLS,
   LUNGE_MS,
   floatPose,
   glidePose,
@@ -45,7 +46,9 @@ import {
   stepPose,
   watchPose,
 } from '../src/anim/customerMotion';
-import { CUSTOMER_LOOK_COUNT, CUSTOMER_LOOK_MIN, KitchenState } from '../src/game/KitchenState';
+import { CUSTOMER_LOOK_COUNT, CUSTOMER_LOOK_MIN, KitchenState, LOOK_UNLOCK_LEVELS, TACO_LOOK_MAX, maxLookForLevel } from '../src/game/KitchenState';
+import { TacoKitchenState } from '../src/game/taco/TacoKitchenState';
+import { defaultTacoConfig } from '../src/game/taco/tacoConfig';
 import { defaultConfig } from '../src/game/config';
 
 const assets = assetsJson.assets;
@@ -59,8 +62,10 @@ describe('customer art', () => {
     expect(sheet!.frameWidth).toBe(CELL_W);
     expect(sheet!.frameHeight).toBe(CELL_H);
     expect(files[`../public/${sheet!.file}`]).toBeTruthy();
-    expect(SHADOW_FRAME).toBe(CUSTOMER_LOOKS.length);
-    expect(HEART_FRAME).toBe(CUSTOMER_LOOKS.length + 1);
+    // The shipped sheet has 8 people + the mint ghost, then the shadow and the heart. Ghosts added later have no cell, so these two do not move with the look count.
+    expect(SHEET_LOOK_CELLS).toBe(9);
+    expect(SHADOW_FRAME).toBe(SHEET_LOOK_CELLS);
+    expect(HEART_FRAME).toBe(SHEET_LOOK_CELLS + 1);
     expect(FIGURE_W).toHaveLength(CUSTOMER_LOOKS.length);
     for (const w of FIGURE_W) expect(w).toBeLessThanOrEqual(CELL_W);
   });
@@ -69,28 +74,64 @@ describe('customer art', () => {
   });
   it('keeps the model look count equal to the art count', () => {
     expect(CUSTOMER_LOOK_COUNT).toBe(CUSTOMER_LOOKS.length);
-    expect(CUSTOMER_LOOKS).toHaveLength(9);
+    expect(CUSTOMER_LOOKS).toHaveLength(12);
   });
   it('maps any look number to a character, even out of range', () => {
     expect(lookKey(0)).toBe('kid');
-    expect(lookKey(9)).toBe('kid');
+    expect(lookKey(12)).toBe('kid');
     expect(lookKey(8)).toBe('mint_ghost');
-    expect(lookKey(-1)).toBe('mint_ghost');
+    expect(lookKey(9)).toBe('blue_yeti');
+    expect(lookKey(11)).toBe('mummy_ghost');
+    expect(lookKey(-1)).toBe('mummy_ghost');
     expect(lookIndex(3)).toBe(3);
-    expect(lookIndex(12)).toBe(3);
+    expect(lookIndex(15)).toBe(3);
   });
-  it('the model only produces ghost looks', () => {
-    const s = new KitchenState({ level: 8, xp: 0, coins: 0 }, defaultConfig, 7);
+  it('the model only produces ghost looks, and each new one walks in at its own Lv', () => {
+    const seenAt = (level: number): number[] => {
+      const s = new KitchenState({ level, xp: 0, coins: 0 }, defaultConfig, 7 + level);
+      const seen = new Set<number>();
+      for (let i = 0; i < 3000; i++) {
+        s.update(1);
+        for (const c of s.customers) seen.add(c.look);
+        s.customers.length = 0;
+      }
+      return [...seen].sort((a, b) => a - b);
+    };
+    expect(seenAt(1)).toEqual([8]); // the first minutes only ever see the mint ghost
+    expect(seenAt(2)).toEqual([8]);
+    expect(seenAt(3)).toEqual([8, 9]);
+    expect(seenAt(4)).toEqual([8, 9]);
+    expect(seenAt(5)).toEqual([8, 9, 10]);
+    expect(seenAt(7)).toEqual([8, 9, 10, 11]);
+    expect(seenAt(15)).toEqual([8, 9, 10, 11]);
+    for (const l of seenAt(15)) {
+      expect(l).toBeGreaterThanOrEqual(CUSTOMER_LOOK_MIN);
+      expect(l).toBeLessThan(CUSTOMER_LOOK_COUNT);
+      expect(PERSONALITIES[lookKey(l)]).toBeTruthy();
+    }
+  });
+  it('the unlock Lv list has one entry per ghost, rising, starting with the mint ghost at Lv 1', () => {
+    expect(LOOK_UNLOCK_LEVELS).toHaveLength(CUSTOMER_LOOK_COUNT - CUSTOMER_LOOK_MIN);
+    expect(LOOK_UNLOCK_LEVELS[0]).toBe(1);
+    expect([...LOOK_UNLOCK_LEVELS].sort((a, b) => a - b)).toEqual([...LOOK_UNLOCK_LEVELS]);
+    expect(LOOK_UNLOCK_LEVELS.slice(1).every((lv) => lv >= 3)).toBe(true); // nothing new before Lv 3: keep the first minutes simple
+    expect(maxLookForLevel(0)).toBe(CUSTOMER_LOOK_MIN);
+    expect(maxLookForLevel(1)).toBe(8);
+    expect(maxLookForLevel(3)).toBe(9);
+    expect(maxLookForLevel(5)).toBe(10);
+    expect(maxLookForLevel(7)).toBe(11);
+    expect(maxLookForLevel(99)).toBe(CUSTOMER_LOOK_COUNT - 1);
+  });
+  it('the Taco Truck keeps the mint ghost only, even for a player at a high Lv', () => {
+    expect(TACO_LOOK_MAX).toBe(CUSTOMER_LOOK_MIN);
+    const s = new TacoKitchenState({ level: 30, xp: 0, coins: 0, menuStep: 10 }, defaultConfig, defaultTacoConfig, 3);
     const seen = new Set<number>();
     for (let i = 0; i < 400; i++) {
-      s.update(1);
-      for (const c of s.customers) seen.add(c.look);
       s.customers.length = 0;
+      s.spawnCustomer();
+      seen.add(s.customers[0].look);
     }
-    for (const l of seen) expect(l).toBeGreaterThanOrEqual(CUSTOMER_LOOK_MIN), expect(l).toBeLessThan(CUSTOMER_LOOK_COUNT);
-    // customers are ghosts only (one so far: the mint ghost) and no person appears
-    expect(seen.size).toBe(1);
-    for (const l of seen) expect(isGhost(l)).toBe(true);
+    expect([...seen]).toEqual([8]);
   });
 });
 
@@ -236,18 +277,21 @@ describe('customer motion', () => {
   });
 });
 
-const GHOST_NAMES = ['mint_ghost'] as const;
+const GHOST_NAMES = ['mint_ghost', 'blue_yeti', 'pink_fuzz', 'mummy_ghost'] as const;
+/** The ghosts that float above the stool; the yeti and the fuzz stand on the floor. */
+const FLOATING = new Set<string>(['mint_ghost', 'mummy_ghost']);
 const mintFiles = import.meta.glob('../public/assets/customers/mint_ghost/*.webp', { query: '?url', import: 'default' });
 const mintMeta = import.meta.glob('../public/assets/customers/mint_ghost/*.anim.json', { eager: true, import: 'default' }) as Record<string, { frames: number; columns: number; frameWidth: number; frameHeight: number; fps: number; loop: boolean; bodyTop: number; bodyBottom: number; bodyHeight: number; bodyWidth: number; edgeAlpha: number }>;
 const oldGhostFiles = import.meta.glob('../public/assets/customers/ghosts/**/*', { query: '?url', import: 'default' });
 
 describe('ghost customers', () => {
-  it('are the last looks, flagged as ghosts; people are not', () => {
+  it('are the last looks; the floating ones are flagged as ghosts, the standing ones and the people are not', () => {
     GHOST_NAMES.forEach((n, i) => {
       expect(CUSTOMER_LOOKS[8 + i]).toBe(n);
-      expect(isGhost(8 + i)).toBe(true);
-      expect(PERSONALITIES[n].ghost!.hover).toBeGreaterThan(0);
+      expect(isGhost(8 + i), n).toBe(FLOATING.has(n));
+      if (FLOATING.has(n)) expect(PERSONALITIES[n].ghost!.hover).toBeGreaterThan(0);
     });
+    expect(PERSONALITIES.mummy_ghost.ghost!.bob).toBe(0); // its footage already bobs
     for (let i = 0; i < 8; i++) expect(isGhost(i)).toBe(false);
   });
   it('the old ghosts (cutouts and scare sheets) are gone from the game and the asset list', () => {
@@ -302,7 +346,7 @@ describe('ghost customers', () => {
     expect(Object.keys(SCARES)).toHaveLength(0);
   });
   it('float stays within a few px and a few degrees; calm ghosts do not shimmy', () => {
-    for (const n of GHOST_NAMES) {
+    for (const n of GHOST_NAMES.filter((g) => FLOATING.has(g))) {
       const p = PERSONALITIES[n];
       for (let t = 0; t < 9000; t += 41) {
         const f = floatPose(p, t, 0.7);

@@ -4,6 +4,7 @@ import { INK, LEAF, MUSTARD, TOMATO } from '../art/builders';
 import { SaveSystem } from '../systems/SaveSystem';
 import { defaultRegulars } from '../game/regulars';
 import { dxKey, hasDinerArt } from './dinerArt';
+import { lookIsReady } from './ghostArt';
 import { SEATS_X, CUSTOMER_FLOOR_Y, Layout } from './layout';
 import { ParticlePool } from '../anim/ParticlePool';
 import {
@@ -45,6 +46,7 @@ import {
   lungePose,
   shimmyPose,
   type ScareDef,
+  CUSTOMER_LOOKS,
   HEART_FRAME,
   SHADOW_ART_W,
   SHADOW_FRAME,
@@ -145,10 +147,14 @@ export class CustomerView {
     this.x = layout.x(SEATS_X[c.seat]);
     const bottom = layout.y(CUSTOMER_FLOOR_Y);
     this.baseY = bottom;
-    this.look = c.look;
-    this.persona = PERSONALITIES[lookKey(c.look)];
+    // A ghost whose art has not arrived yet (slow download, or a device that keeps the mint ghost only) is drawn as the mint ghost, persona included.
+    const wanted = lookKey(c.look);
+    const wantedArt = LOOK_ART[wanted];
+    const key = wantedArt && !lookIsReady(scene, wantedArt) ? 'mint_ghost' : wanted;
+    this.look = CUSTOMER_LOOKS.indexOf(key);
+    this.persona = PERSONALITIES[key];
     this.hover = this.persona.ghost?.hover ?? 0;
-    this.art = LOOK_ART[lookKey(c.look)]; // before requestLeaveClips, which needs it
+    this.art = LOOK_ART[key]; // before requestLeaveClips, which needs it
     this.requestScare();
     this.requestLeaveClips();
     this.seed = seedFor(c.id);
