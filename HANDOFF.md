@@ -1,3 +1,5 @@
+# IN PROGRESS (2026-11-22) - B4 mastery + Daily Special DONE (see docs/progress.md); next B5 Delivery Rush after the owner says Continue
+
 # IN PROGRESS (2026-11-22) - B3 build-your-own DONE (see docs/progress.md); next B4 mastery + daily special after the owner says Continue
 
 

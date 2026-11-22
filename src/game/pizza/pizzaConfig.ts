@@ -94,6 +94,8 @@ export interface PizzaConfig {
     /** Toppings never asked for: fresh_mozzarella has no supplied icon yet, so a bubble could not show it. */
     excludeToppings: string[];
   };
+  /** The Pizza Place Daily Special starts at this menu step (the bonus and the serves it waits for are the shared ones in data/extras.json). */
+  dailySpecial: { fromStep: number };
   perfectBake: { share: number; tipFraction: number };
   comboMeal: { coinBonus: number; xpBonus: number };
   oven: { doorMinGap: number; openSeconds: number; closeSeconds: number; slotXFractions: number[]; slotYFraction: number };

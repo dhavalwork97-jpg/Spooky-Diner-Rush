@@ -182,7 +182,8 @@ export class PizzaCustomers {
     const h = ICON + 14;
     const g = this.scene.add.graphics();
     g.fillStyle(0xfff4dc, 1).fillRoundedRect(-w / 2, -h, w, h, 12);
-    g.lineStyle(3, 0x2b1b17, 1).strokeRoundedRect(-w / 2, -h, w, h, 12);
+    // Today's Daily Special customer has a gold bubble edge.
+    g.lineStyle(c.special ? 5 : 3, c.special ? 0xf6c445 : 0x2b1b17, 1).strokeRoundedRect(-w / 2, -h, w, h, 12);
     g.fillStyle(0xfff4dc, 1).fillTriangle(-7, 0, 7, 0, 0, 9);
     box.add(g);
     let left = -w / 2 + 5;

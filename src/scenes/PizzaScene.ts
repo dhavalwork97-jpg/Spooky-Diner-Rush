@@ -1,3 +1,5 @@
+import { pizzaMasteryDue, pizzaMasteryGrid, pizzaMasteryTiers, pizzaPaidAfter } from '../game/pizza/pizzaExtras';
+import { defaultExtras, localDateKey } from '../game/extras';
 import { parseCustom } from '../game/pizza/pizzaCustom';
 import Phaser from 'phaser';
 import { fitBackground, logicalToNorm, type BackgroundPlacement } from '../kitchen/zones';
@@ -11,7 +13,7 @@ import { clampPizzaStep, pizzaMilestones } from '../game/pizza/pizzaMenu';
 import { recipeSteps } from '../game/pizza/pizzaRecipes';
 import { titleEarnedAt } from '../game/career';
 import type { RestaurantSelectData } from './RestaurantSelectScene';
-import type { BookRow, RecipeBookData } from './RecipeBookScene';
+import type { BookRow, MasteryBookData, RecipeBookData } from './RecipeBookScene';
 import { startRestaurant, PIZZA_ID } from './restaurantRoute';
 import { SaveSystem } from '../systems/SaveSystem';
 import { CrazyGames } from '../sdk/crazygames';
@@ -59,6 +61,8 @@ export class PizzaScene extends Phaser.Scene {
   private menuButtons!: MenuButtons;
   private tutorial!: TacoTutorialView;
   private customToasts = 0;
+  /** The player's calendar day when this visit started (for the Daily Special). */
+  private dayKey = '';
   private tutorialOn = false;
   private lesson: { dish: string; mode: 'full' | 'reminder'; active: boolean } | null = null;
   /** ?debug&speed=N: time runs N times faster (testing only). */
@@ -111,6 +115,8 @@ export class PizzaScene extends Phaser.Scene {
     // The Pizza Place uses its own upgrades only (the diner's and the truck's shop upgrades do not carry over).
     this.state.mods = pizzaModsFor(defaultPizzaConfig.upgrades, save.pizzaOwned);
     this.applyDebugFlags();
+    this.dayKey = localDateKey();
+    this.state.enableSpecial(this.dayKey, save.pizzaSpecialDay === this.dayKey);
 
     this.fx = new ParticlePool(this, 140);
     this.views = new PizzaViews(this, this.bg, this.state, this.fx, (x, y, r) => new Ring(this, x, y, r, true));
@@ -246,14 +252,15 @@ export class PizzaScene extends Phaser.Scene {
       case 'perfectBake':
         this.views.sparkle(e.where, e.index);
         break;
+      case 'arrive': {
+        const sc = this.state.customers.find((c) => c.id === e.customer);
+        if (sc?.special) this.toast.show(`Pizza of the day: ${this.state.dishDef(sc.items[0])?.name ?? 'pizza'}! +${Math.round(defaultExtras.dailySpecial.bonus * 100)}% coins`);
+        break;
+      }
       case 'comboMeal': {
         // Small popup above the customer, same floating-text style as the coins; the +coins text follows from orderDone.
         const head = this.customers.headOf(e.customer);
-        if (head) {
-          const t = this.add.text(head.x, head.y - 84, 'Combo meal', { fontFamily: FONT, fontSize: '26px', color: '#FFD54A', stroke: '#2B1B17', strokeThickness: 6 }).setOrigin(0.5).setDepth(46);
-          if (SaveSystem.reduceMotion()) this.time.delayedCall(1300, () => t.destroy());
-          else this.tweens.add({ targets: t, y: t.y - 30, alpha: 0, delay: 500, duration: 800, onComplete: () => t.destroy() });
-        }
+        if (head) this.popup(head.x, head.y - 84, 'Combo meal');
         break;
       }
       case 'orderDone': {
@@ -269,7 +276,14 @@ export class PizzaScene extends Phaser.Scene {
       }
       case 'recipeServed':
         this.onRecipeServed(e.dish, e.learned);
+        this.payMastery();
         break;
+      case 'specialDone': {
+        const at = this.customers.headOf(e.customer);
+        if (at) this.popup(at.x, at.y - 120, `Pizza of the day! +${e.bonus}`);
+        this.saveNow();
+        break;
+      }
       case 'wrongDrop':
         if (e.customer !== null) this.customers.shake(e.customer);
         if (e.penalty) this.toast.show('That is not what they ordered');
@@ -584,6 +598,7 @@ export class PizzaScene extends Phaser.Scene {
       onClose,
       onPick: (id: string) => (id === PIZZA_ID ? this.scene.restart() : startRestaurant(this, id)),
       rows: key === 'RecipeBook' ? this.recipeRows() : undefined,
+      mastery: key === 'RecipeBook' ? this.masteryData() : undefined,
       tips: key === 'RecipeBook' ? 'Tap the dough, then a sauce, a cheese and toppings. Tap the pizza to finish it, again to bake it. Take it out when the ring turns green, then drag it to the customer.' : undefined,
     };
     this.scene.launch(key, data);
@@ -600,17 +615,62 @@ export class PizzaScene extends Phaser.Scene {
       const f = iconFrame(d);
       const steps = d.kind === 'pizza' ? recipeSteps(d).map((id) => (id === 'dough' ? 'dough' : (p.stepLabels[id] ?? id).replace(/^an? /, ''))) : [d.kind === 'side' ? 'small oven' : d.kind === 'fried' ? 'fryer' : 'ice cream machine'];
       const learning = !locked && this.state.familiarity(d.id) !== 'normal' ? '   (learning)' : '';
+      const today = this.state.special?.dish === d.id ? (this.state.special.done ? '   Pizza of the day: done' : '   Pizza of the day: +50% coins') : '';
       return {
         name: d.name,
         icon: { key: f.atlas, frame: f.frame as unknown as number },
-        stats: locked ? `Unlocks at Pizza menu step ${d.unlockStep} (about Lv ${when[d.unlockStep - 1].lv})` : `${d.price} coins   +${d.xp} XP${learning}`,
+        stats: locked ? `Unlocks at Pizza menu step ${d.unlockStep} (about Lv ${when[d.unlockStep - 1].lv})` : `${d.price} coins   +${d.xp} XP${learning}${today}`,
         steps,
         locked,
       };
     });
   }
 
+  // ---------------------------------------------------------------- mastery
+
+  /** Pays every badge the serve counts of the ten pizzas have earned and not yet been paid, once each. Coins come from data/extras.json. */
+  private payMastery(): void {
+    const save = SaveSystem.data;
+    const awards = pizzaMasteryDue(this.state.pizza.dishes, this.state.dishServes, save.pizzaMastery);
+    if (awards.length === 0) return;
+    save.pizzaMastery = pizzaPaidAfter(save.pizzaMastery, awards);
+    let coins = 0;
+    const lines: string[] = [];
+    for (const a of awards) {
+      coins += a.coins;
+      lines.push(`${this.state.dishDef(a.dish)?.name ?? a.dish}: ${a.name} badge! +${a.coins} coins`);
+    }
+    this.state.coins += coins;
+    this.toast.show(lines.join('\n'));
+    this.saveNow();
+  }
+
+  /** The mastery tab of the Recipe Book: the ten pizzas, five to a row, from the real serve counts. */
+  private masteryData(): MasteryBookData {
+    const grid = pizzaMasteryGrid(this.state.pizza.dishes, this.state.dishServes, this.state.menuStep);
+    const tiers = pizzaMasteryTiers();
+    const bronze = this.state.pizza.dishes.filter((d) => d.kind === 'pizza' && (this.state.dishServes[d.id] ?? 0) >= tiers[0].serves).length;
+    return {
+      rowLabels: ['Menu 1-5', 'Menu 6-10'],
+      colLabels: grid[0].map(() => ''),
+      cells: grid.map((row) =>
+        row.map((c) => {
+          const f = iconFrame(this.state.dishDef(c.dish)!);
+          return { name: c.name.replace(/ pizza$/, ''), icon: { key: f.atlas, frame: f.frame as unknown as number }, count: c.count, tier: c.tier, next: c.next ? `${c.next.remaining} more for ${c.next.name}` : 'Gold!', onMenu: c.onMenu };
+        }),
+      ),
+      footer: `${tiers.map((t) => `${t.name} ${t.serves}`).join(', ')} served. ${bronze} / 10 pizzas Bronze.`,
+    };
+  }
+
   // ---------------------------------------------------------------- helpers
+
+  /** Small gold popup text (combo meal, pizza of the day). Reduced motion: shown still for a moment, no movement or fade. */
+  private popup(x: number, y: number, text: string): void {
+    const t = this.add.text(x, y, text, { fontFamily: FONT, fontSize: '26px', color: '#FFD54A', stroke: '#2B1B17', strokeThickness: 6 }).setOrigin(0.5).setDepth(46);
+    if (SaveSystem.reduceMotion()) this.time.delayedCall(1300, () => t.destroy());
+    else this.tweens.add({ targets: t, y: t.y - 30, alpha: 0, delay: 500, duration: 800, onComplete: () => t.destroy() });
+  }
 
   private floatText(customerId: number, text: string): void {
     const at = this.customers.headOf(customerId);
@@ -627,6 +687,7 @@ export class PizzaScene extends Phaser.Scene {
     SaveSystem.data.pizzaStep = this.state.menuStep;
     SaveSystem.data.pizzaXp = this.state.menuXp;
     SaveSystem.data.pizzaServed = { ...this.state.dishServes };
+    if (this.state.special?.done) SaveSystem.data.pizzaSpecialDay = this.dayKey;
     SaveSystem.save();
     this.lastSave = performance.now();
   }

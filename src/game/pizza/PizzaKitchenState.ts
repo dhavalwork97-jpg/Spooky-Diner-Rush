@@ -1,5 +1,7 @@
 import { comboBonus, isComboMeal } from './pizzaCombo';
 import { isPerfectBake, perfectTip } from './pizzaPerfect';
+import { pizzaSpecialFor } from './pizzaExtras';
+import { defaultExtras, type Extras } from '../extras';
 import { customDish, isCustomId, rollCustom } from './pizzaCustom';
 import { advanceCook, cookPhase, isEdible, type CookPhase } from '../cook';
 import { defaultConfig, levelDef, xpForLevel, type EventDef, type GameConfig } from '../config';
@@ -77,6 +79,8 @@ export interface PizzaCustomer {
   comboPaid?: boolean;
   /** Extra tip collected from perfect bakes among the items already delivered. */
   perfectTips?: number;
+  /** Today's Daily Special customer: asks for the pizza of the day. */
+  special?: boolean;
 }
 
 export type PizzaEvent =
@@ -101,6 +105,7 @@ export type PizzaEvent =
   | { type: 'eventStart'; id: string; name: string; duration: number }
   | { type: 'eventEnd'; id: string }
   | { type: 'streakBonus'; xp: number }
+  | { type: 'specialDone'; customer: number; bonus: number }
   | { type: 'customOrder'; customer: number; dish: string }
   | { type: 'perfectBake'; where: 'oven' | 'small' | 'fryer'; index: number }
   | { type: 'comboMeal'; customer: number; coins: number; xp: number }
@@ -208,6 +213,20 @@ export class PizzaKitchenState {
     return this.pizza.dishes.find((d) => d.id === id) ?? this.customDishes.get(id);
   }
   /** Virtual recipes of custom orders seen so far. Not saved, never on the menu or in the Recipe Book. */
+  /** Today's Daily Special (pizza of the day) and whether it is already done. Off until `enableSpecial`, so plain games and tests are unchanged. */
+  special: { dish: string; done: boolean } | null = null;
+  private specialQueued = false;
+  private servedToday = 0;
+  private extras: Extras = defaultExtras;
+  /** Turn on the Pizza Place Daily Special: a customer who asks for the pizza of the day, +50% coins once a day. The pizza is picked from the learned pizzas on the menu. */
+  enableSpecial(dateKey: string, done: boolean, extras: Extras = defaultExtras): void {
+    this.extras = extras;
+    this.special = null;
+    if (this.menuStep < this.pizza.dailySpecial.fromStep) return;
+    const pool = this.dishes.filter((d) => d.kind === 'pizza' && this.familiarity(d.id) === 'normal').map((d) => d.id);
+    const dish = pizzaSpecialFor(dateKey, pool);
+    if (dish) this.special = { dish, done };
+  }
   private customDishes = new Map<string, DishDef>();
   /** The recipe list the build rules see: the menu plus the custom pizzas a waiting customer or a board still needs. */
   private recipeCfg(): PizzaConfig {
@@ -335,6 +354,7 @@ export class PizzaKitchenState {
         if (c.patience <= 0) {
           c.patience = 0;
           c.mood = 'angry';
+          if (c.special) this.specialQueued = true; // missed it: the special comes back with the next customer
           c.leaveIn = LEAVE_DELAY;
           this.emit({ type: 'angryLeave', customer: c.id });
           this.streak = 0;
@@ -513,7 +533,13 @@ export class PizzaKitchenState {
     while (used.has(seat)) seat++;
     const size = Math.min(this.pizza.settings.maxOrderSize, pickOrderSize(info.orderSize, pizzaRampFor(this.pizza, this.menuStep).bigOrderShare, this.rng) + type.extraItems);
     const items: string[] = intro ? [intro.id] : this.pickItems(size);
-    const custom = intro || forceType ? null : this.makeCustom(items);
+    // Daily Special: swap in the pizza of the day once it is due. After every random draw above, so the random sequence is unchanged.
+    const special = !intro && !forceType && this.specialQueued && this.special !== null && !this.special.done;
+    if (special) {
+      items.splice(0, items.length, this.special!.dish);
+      this.specialQueued = false;
+    }
+    const custom = intro || forceType || special ? null : this.makeCustom(items);
     this.history = recordOrder(this.variety, this.history, items.map((id) => ({ id, kind: this.kindOf(id) })));
     const price = Math.round(items.reduce((sum, k) => sum + this.itemDef(k).price, 0) * type.payMult);
     const closes = Math.min(this.closesAtLevel.get(this.level) ?? 0, 3);
@@ -531,6 +557,7 @@ export class PizzaKitchenState {
       type: typeKey,
       mood: 'waiting',
       leaveIn: 0,
+      ...(special ? { special: true } : {}),
     };
     this.customers.push(c);
     this.emit({ type: 'arrive', customer: c.id });
@@ -937,6 +964,15 @@ export class PizzaKitchenState {
     this.addReputation(this.cfg.xp.reputation.serveGain + (this.combo >= cc.comboReputationFrom ? cc.comboReputationGain : 0));
     if (combo) this.emit({ type: 'comboMeal', customer: c.id, coins: combo.coins, xp: combo.xp });
     this.emit({ type: 'orderDone', customer: c.id, coins, tip, xp, fast, rush, combo: this.combo, mult });
+    const sp = this.special;
+    if (sp && !sp.done) {
+      if (c.special) {
+        const bonus = Math.round(coins * this.extras.dailySpecial.bonus);
+        sp.done = true;
+        this.coins += bonus;
+        this.emit({ type: 'specialDone', customer: c.id, bonus });
+      } else if (++this.servedToday >= this.extras.dailySpecial.afterServes) this.specialQueued = true;
+    }
     this.addXp(xp);
     this.streak++;
     if (this.streak >= cc.streak.servesNeeded) {

@@ -155,6 +155,7 @@
     }
   },
   "custom": { "fromStep": 5, "chance": [0.1, 0.12, 0.15, 0.18, 0.2, 0.22], "maxToppings": [1, 1, 2, 2, 3, 3], "countWeights": [[1], [0.6, 0.4], [0.4, 0.35, 0.25]], "basePrice": 26, "toppingPrice": 7, "sauceExtra": 3, "cheeseExtra": 4, "xpBase": 32, "xpPerTopping": 5, "excludeToppings": ["fresh_mozzarella"] },
+  "dailySpecial": { "fromStep": 2 },
   "perfectBake": { "share": 0.5, "tipFraction": 0.1 },
   "comboMeal": { "coinBonus": 0.25, "xpBonus": 0.25 },
   "ice": {

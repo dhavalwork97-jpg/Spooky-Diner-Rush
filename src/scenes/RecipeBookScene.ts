@@ -208,6 +208,8 @@ export class RecipeBookScene extends Phaser.Scene {
     const cellH = 108;
     const top = 150;
     const tierColor = [0x999999, 0xcd7f32, 0xb8c0c8, 0xf6c445];
+    // Five-across grids (the Pizza Place) have narrower cells than the 4-across ones, so their text and badge are a little smaller and keep clear of each other.
+    const compact = cellW < 200;
     m.colLabels.forEach((c, i) => this.add.text(x0 + 20 + labelW + cellW * i + cellW / 2, 124, c, { fontFamily: FONT, fontSize: '22px', color: '#2B1B17' }).setOrigin(0.5));
     m.cells.forEach((row, r) => {
       const y = top + r * (cellH + 6);
@@ -217,12 +219,14 @@ export class RecipeBookScene extends Phaser.Scene {
         const g = this.add.graphics();
         g.fillStyle(c.onMenu ? 0xfaedd0 : 0xe6dcc4, 1).fillRoundedRect(x + 4, y, cellW - 8, cellH, 14);
         g.lineStyle(3, INK, c.onMenu ? 0.7 : 0.35).strokeRoundedRect(x + 4, y, cellW - 8, cellH, 14);
-        const icon = this.add.image(x + 52, y + cellH / 2, c.icon.key, c.icon.frame);
-        icon.setScale(72 / Math.max(icon.width, icon.height));
+        const icon = this.add.image(x + (compact ? 40 : 52), y + cellH / 2, c.icon.key, c.icon.frame);
+        icon.setScale((compact ? 56 : 72) / Math.max(icon.width, icon.height));
         if (!c.onMenu) icon.setTint(0x555555).setAlpha(0.55);
-        this.add.circle(x + cellW - 28, y + 24, 14, tierColor[c.tier], 1).setStrokeStyle(3, INK, c.tier > 0 ? 1 : 0.4);
-        this.add.text(x + 96, y + 20, c.onMenu ? `${c.count} served` : 'Not on the menu yet', { fontFamily: FONT, fontSize: '20px', color: '#2B1B17' });
-        this.add.text(x + 96, y + 52, c.onMenu ? c.next : '', { fontFamily: FONT, fontSize: '16px', color: c.tier > 0 ? '#B8730F' : '#5a463e', wordWrap: { width: cellW - 110 } });
+        const textX = x + (compact ? 74 : 96);
+        this.add.circle(x + cellW - (compact ? 22 : 28), y + (compact ? 20 : 24), compact ? 11 : 14, tierColor[c.tier], 1).setStrokeStyle(3, INK, c.tier > 0 ? 1 : 0.4);
+        this.add.text(textX, y + (compact ? 34 : 20), c.onMenu ? `${c.count} served` : 'Not on the menu yet', { fontFamily: FONT, fontSize: compact ? '17px' : '20px', color: '#2B1B17', wordWrap: { width: cellW - (textX - x) - 8 } });
+        this.add.text(textX, y + (compact ? 60 : 52), c.onMenu ? c.next : '', { fontFamily: FONT, fontSize: compact ? '15px' : '16px', color: c.tier > 0 ? '#B8730F' : '#5a463e', wordWrap: { width: cellW - (textX - x) - 8 } });
+        if (compact) this.add.text(x + cellW / 2, y + 8, c.name, { fontFamily: FONT, fontSize: '15px', color: '#5a463e' }).setOrigin(0.5, 0);
       });
     });
     this.add.text(x0 + PANEL_W / 2, 618, m.footer, { fontFamily: FONT, fontSize: '20px', color: '#5a463e', align: 'center', wordWrap: { width: PANEL_W - 80 } }).setOrigin(0.5, 0);

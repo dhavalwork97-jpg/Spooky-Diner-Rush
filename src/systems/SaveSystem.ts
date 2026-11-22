@@ -65,6 +65,8 @@ export interface SaveData {
   pizzaLessons: Record<string, number>;
   /** Pizza mastery tiers already paid: dish id -> tiers paid (1 bronze to 3 gold). */
   pizzaMastery: Record<string, number>;
+  /** Day (YYYY-MM-DD) the Pizza Place Daily Special was last completed. Separate from the Diner's `specialDay`. */
+  pizzaSpecialDay: string;
   /** Pizza mini-goal state and lifetime counters (id -> count). */
   pizzaGoal: Record<string, number>;
   pizzaStats: Record<string, number>;
@@ -110,6 +112,7 @@ export function defaultSave(): SaveData {
     pizzaServed: {},
     pizzaLessons: {},
     pizzaMastery: {},
+    pizzaSpecialDay: '',
     pizzaGoal: {},
     pizzaStats: {},
     settings: { reduceMotion: null, musicVolume: 0.6, sfxVolume: 0.8, muted: false },
@@ -235,6 +238,7 @@ export function parseSave(raw: string | null): SaveData {
       pizzaServed: cleanCounts(p.pizzaServed),
       pizzaLessons: cleanOwned(p.pizzaLessons),
       pizzaMastery: cleanCounts(p.pizzaMastery),
+      pizzaSpecialDay: typeof p.pizzaSpecialDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.pizzaSpecialDay) ? p.pizzaSpecialDay : '',
       pizzaGoal: cleanCounts(p.pizzaGoal),
       pizzaStats: cleanCounts(p.pizzaStats),
       settings: {

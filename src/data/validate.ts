@@ -300,6 +300,7 @@ export function validatePizza(data: unknown): string[] {
   if (!r || r.id !== 'pizza_place' || !isStr(r.name) || !isNum(r.unlockLevel) || !isNum(r.cost)) errors.push('pizza: restaurant needs id pizza_place, name, unlockLevel and cost');
   const cu = d.custom;
   if (!cu || !isNum(cu.fromStep) || cu.fromStep < 1 || cu.fromStep > 10 || !Array.isArray(cu.chance) || !Array.isArray(cu.maxToppings) || cu.chance.some((x: number) => !isNum(x) || x < 0 || x > 1) || cu.maxToppings.some((x: number) => !isNum(x) || x < 1 || x > 3) || !Array.isArray(cu.countWeights) || cu.countWeights.length !== 3 || !isNum(cu.basePrice) || !isNum(cu.toppingPrice) || !isNum(cu.xpBase) || !Array.isArray(cu.excludeToppings)) errors.push('pizza: custom is missing or has bad values');
+  if (!d.dailySpecial || !isNum(d.dailySpecial.fromStep) || d.dailySpecial.fromStep < 1 || d.dailySpecial.fromStep > 10) errors.push('pizza: dailySpecial.fromStep must be 1 to 10');
   const pb = d.perfectBake;
   if (!pb || !isNum(pb.share) || !isNum(pb.tipFraction) || pb.share <= 0 || pb.share > 1 || pb.tipFraction < 0 || pb.tipFraction > 1) errors.push('pizza: perfectBake needs share (0 to 1) and tipFraction (0 to 1)');
   const cm = d.comboMeal;
