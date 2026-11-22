@@ -5,3 +5,6 @@ HANDOFF_PACK.txt
 reply.txt
 .env.android.local
 dist-android
+
+# Python cache from tools/*.py
+__pycache__/
