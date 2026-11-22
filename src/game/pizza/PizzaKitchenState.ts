@@ -1,3 +1,4 @@
+import { comboBonus, isComboMeal } from './pizzaCombo';
 import { advanceCook, cookPhase, isEdible, type CookPhase } from '../cook';
 import { defaultConfig, levelDef, xpForLevel, type EventDef, type GameConfig } from '../config';
 import { CUSTOMER_LOOK_MIN, TACO_LOOK_MAX, type ActiveEvent, type SaveSlice } from '../KitchenState';
@@ -68,6 +69,8 @@ export interface PizzaCustomer {
   type: string;
   mood: 'waiting' | 'happy' | 'angry';
   leaveIn: number;
+  /** Set once the combo meal bonus was paid, so it can never be paid twice for one order. */
+  comboPaid?: boolean;
 }
 
 export type PizzaEvent =
@@ -92,6 +95,7 @@ export type PizzaEvent =
   | { type: 'eventStart'; id: string; name: string; duration: number }
   | { type: 'eventEnd'; id: string }
   | { type: 'streakBonus'; xp: number }
+  | { type: 'comboMeal'; customer: number; coins: number; xp: number }
   | { type: 'orderDone'; customer: number; coins: number; tip: number; xp: number; fast: boolean; rush: boolean; combo: number; mult: number }
   | { type: 'angryLeave'; customer: number }
   | { type: 'leave'; customer: number }
@@ -867,14 +871,23 @@ export class PizzaKitchenState {
     const mult = this.comboMultiplier;
     const coinMult = this.event?.def.coinMult ?? 1;
     const tip = fast ? Math.round(c.price * this.cfg.xp.tipFraction * frac * type.tipMult * (rush ? cc.rush.tipMultiplier : 1) * this.mods.tips) : 0;
-    const coins = Math.round((c.price + tip) * mult * coinMult);
+    let coins = Math.round((c.price + tip) * mult * coinMult);
     const baseXp = c.items.reduce((s, k) => s + this.itemDef(k).xp, 0);
-    const xp = Math.round((baseXp + (fast ? this.cfg.xp.speedBonusXp : 0) + (rush ? cc.rush.bonusXp : 0)) * mult);
+    let xp = Math.round((baseXp + (fast ? this.cfg.xp.speedBonusXp : 0) + (rush ? cc.rush.bonusXp : 0)) * mult);
+    // Combo meal: only a COMPLETE order with a pizza, a side and an ice cream, paid once.
+    let combo: { coins: number; xp: number } | null = null;
+    if (!c.comboPaid && isComboMeal(c.items.map((k) => this.kindOf(k)))) {
+      c.comboPaid = true;
+      combo = comboBonus(coins, xp, this.pizza.comboMeal.coinBonus, this.pizza.comboMeal.xpBonus);
+      coins += combo.coins;
+      xp += combo.xp;
+    }
     c.mood = 'happy';
     c.leaveIn = LEAVE_DELAY;
     this.served++;
     this.coins += coins;
     this.addReputation(this.cfg.xp.reputation.serveGain + (this.combo >= cc.comboReputationFrom ? cc.comboReputationGain : 0));
+    if (combo) this.emit({ type: 'comboMeal', customer: c.id, coins: combo.coins, xp: combo.xp });
     this.emit({ type: 'orderDone', customer: c.id, coins, tip, xp, fast, rush, combo: this.combo, mult });
     this.addXp(xp);
     this.streak++;

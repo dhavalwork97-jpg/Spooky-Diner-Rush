@@ -154,6 +154,7 @@
       "burnWindow": 5
     }
   },
+  "comboMeal": { "coinBonus": 0.25, "xpBonus": 0.25 },
   "ice": {
     "fillSeconds": 5
   },

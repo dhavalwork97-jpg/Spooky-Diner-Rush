@@ -231,6 +231,16 @@ export class PizzaScene extends Phaser.Scene {
         audio.play('pop');
         break;
       }
+      case 'comboMeal': {
+        // Small popup above the customer, same floating-text style as the coins; the +coins text follows from orderDone.
+        const head = this.customers.headOf(e.customer);
+        if (head) {
+          const t = this.add.text(head.x, head.y - 84, 'Combo meal', { fontFamily: FONT, fontSize: '26px', color: '#FFD54A', stroke: '#2B1B17', strokeThickness: 6 }).setOrigin(0.5).setDepth(46);
+          if (SaveSystem.reduceMotion()) this.time.delayedCall(1300, () => t.destroy());
+          else this.tweens.add({ targets: t, y: t.y - 30, alpha: 0, delay: 500, duration: 800, onComplete: () => t.destroy() });
+        }
+        break;
+      }
       case 'orderDone': {
         this.customers.celebrate(e.customer);
         const at = this.customers.centerOf(e.customer);

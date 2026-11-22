@@ -1,3 +1,8 @@
+# IN PROGRESS (2026-11-22, Claude) - PIZZA Part B1 combo meals (Part C committed eb867dd)
+- [x] B1a. Model: when a customer's order holds a pizza + a side + an ice cream and the LAST item is delivered, ONE combo bonus (+25% coins, +25% XP, once per order; never on partial/abandoned orders). Pure helper + PizzaEvent 'combo'.
+- [x] B1b. View: small "Combo meal" popup (existing floating-text conventions, reduced motion safe).
+- [x] B1c. Tests (incomplete, complete, duplicate serve, reward maths), docs/progress.md, then STOP and report B1.
+
 # IN PROGRESS (2026-11-22, Claude) - PIZZA: Global Lv display + Part C (goal banner fade) - branch `feature/pizza-place` (Part A committed 846d65e)
 Finding: Pizza menu steps cost 1300..1940 XP (steps 1-9) and the SAME XP feeds global Lv (Lv 30..49 cost 2500..4020 each). So the menu is finished near global Lv 35, not Lv 49; the spec's Lv 31-49 list (one dish per Lv) does not match real unlock timing. Global XP is NOT changed. Plan:
 - [x] G1. pizzaMenu.ts: `pizzaMilestones(cfg,p)` DERIVES "about Lv N" per menu step from the real XP curve (cannot drift); data milestones list becomes a note only. Test: derived rows match XP math, dishes all listed, never unlocks anything.

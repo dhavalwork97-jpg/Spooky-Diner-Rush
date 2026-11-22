@@ -320,3 +320,9 @@ Ten additive features: station intro cards (Lv 2/4/5/6/10/12), mastery from Lv 6
 - Lv display: `pizzaMilestones()` (src/game/pizza/pizzaMenu.ts) works out "about Lv N" per menu step from the real XP curve. Finding: the same XP fills the Pizza menu bar and the global Lv bar, so the 10-step menu is finished around Lv 35, not Lv 49; the data list in `levelProgression.milestones` (one dish per Lv 31-49) is kept as the spec's reference but is NOT what the screens show. Shown on the Pizza card ("Full menu by about Lv 35") and in the Recipe Book (locked rows). Display only; nothing unlocks by Lv.
 - New-recipe card now names the station and ingredients (`pizzaStationName`). The shared StoryCard has no icon slot and was left alone.
 - Goal banner: pure `GoalBannerTimer` in src/game/goalBannerTiming.ts (6 s new/replaced goal, 3 s progress or completion, 0.6 s fade out, 0.25 s fade in; hidden while a popup, overlay, tutorial hand, Lv 1-2 tutorial, level-up card, chest card, pause or Closed screen is up; reduced motion = same timing, no fade). `GoalBanner.update(goal, {dtMs, completed, blocked})` in src/views/Hud.ts draws it. Only the Diner has goals today; Taco/Pizza mini-goals and the daily plate must reuse this class.
+
+## Pizza B1: combo meals (2026-11-22)
+- An order holding a pizza + a side (small oven or fryer) + an ice cream pays ONE bonus when its last item is served: about +25% coins and +25% XP (`comboMeal` in data/pizza.json, first-pass values). Pure rule in `src/game/pizza/pizzaCombo.ts`; paid once per customer (`comboPaid`); partial or abandoned orders get nothing.
+- Pizza model emits a `comboMeal` event; PizzaScene shows a small "Combo meal" text above the customer (no tween in reduced motion). The Diner and Taco Truck are untouched.
+- Bot check (40 seeds, step 10): about 5% of orders are combo orders. Not human-tested; the 25% is a first-pass number.
+- Tests: tests/pizza_combo.test.ts (9).

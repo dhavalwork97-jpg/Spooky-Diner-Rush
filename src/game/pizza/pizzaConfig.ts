@@ -76,6 +76,8 @@ export interface PizzaConfig {
   kindWeights: Record<DishKind, number>;
   timed: { pizza: TimedDef; side: TimedDef; fries: TimedDef; wings: TimedDef };
   ice: { fillSeconds: number };
+  /** First-pass values: extra share of the coins and XP of an order that holds a pizza, a side and an ice cream. */
+  comboMeal: { coinBonus: number; xpBonus: number };
   oven: { doorMinGap: number; openSeconds: number; closeSeconds: number; slotXFractions: number[]; slotYFraction: number };
   upgrades: PizzaUpgradeDef[];
   ramp: TacoRamp[];
