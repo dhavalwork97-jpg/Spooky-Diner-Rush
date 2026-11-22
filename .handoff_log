@@ -13,3 +13,5 @@ P1-P3 coded + tests; next F2 final checks + chromium
 2026-11-16T01:12:53Z feature/crazygames-responsive-optimization: stage 1 audit done, plan written
 2026-11-16T01:25:40Z responsive+cleanup stages 2-8 done on feature/crazygames-responsive-optimization (local, not pushed)
 2026-11-16T01:30:56Z save key renamed to spooky-diner-rush-save with legacy read; android/ excluded locally via .git/info/exclude
+2026-11-21 pizza place: inspection done, plan written to HANDOFF.md, waiting for owner approval (branch feature/pizza-place, nothing else changed)
+2026-11-21 pizza A1 done (save fields + purchase rule + tests), next A2

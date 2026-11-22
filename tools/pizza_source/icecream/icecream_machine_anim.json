@@ -1,0 +1,43 @@
+{
+  "name": "icecream_machine_anim",
+  "source_video": "gemini_generated_video_ad7216d9.mp4",
+  "clip_fps": 12,
+  "playback_note": "dispense plays about 4 s at normal speed",
+  "sheet": {
+    "webp": "icecream_machine_anim_spritesheet.webp",
+    "png": "icecream_machine_anim_spritesheet.png",
+    "columns": 10,
+    "rows": 7,
+    "frame_width": 301,
+    "frame_height": 316,
+    "scale_vs_full": 0.7,
+    "full_res_frame_size": [
+      430,
+      452
+    ],
+    "frame_count": 64,
+    "clips": {
+      "dispense": {
+        "frames": [
+          0,
+          61
+        ],
+        "loop": false,
+        "note": "lever pulls, soft-serve swirls into the cup, lever returns up"
+      }
+    },
+    "frames": {
+      "idle_empty": 62,
+      "done_full": 63
+    }
+  },
+  "source_origin_in_video_frame": [
+    472,
+    134
+  ],
+  "notes": [
+    "Frame idle_empty: empty cup, lever in its resting slot. Frame done_full: full cup, lever up.",
+    "The lever swings out to the right of the machine while pulled and ends pointing up. Keep the sprite's full canvas so the lever is not cropped.",
+    "Swirl is white vanilla. Chocolate or strawberry can be tinted in code over the swirl area, or generated as separate clips."
+  ]
+}

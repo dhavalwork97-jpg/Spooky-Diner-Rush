@@ -1,0 +1,65 @@
+{
+  "atlas_webp": "fried_plate_items_atlas.webp",
+  "atlas_png": "fried_plate_items_atlas.png",
+  "atlas_size": [
+    1656,
+    498
+  ],
+  "sprites_dir": "items",
+  "sprites": {
+    "fries_raw": {
+      "x": 2,
+      "y": 7,
+      "w": 410,
+      "h": 234
+    },
+    "fries_ready": {
+      "x": 416,
+      "y": 7,
+      "w": 410,
+      "h": 234
+    },
+    "fries_overcooking": {
+      "x": 830,
+      "y": 7,
+      "w": 410,
+      "h": 234
+    },
+    "fries_burnt": {
+      "x": 1244,
+      "y": 7,
+      "w": 410,
+      "h": 234
+    },
+    "wings_raw": {
+      "x": 6,
+      "y": 251,
+      "w": 401,
+      "h": 245
+    },
+    "wings_ready": {
+      "x": 420,
+      "y": 251,
+      "w": 401,
+      "h": 245
+    },
+    "wings_overcooking": {
+      "x": 834,
+      "y": 251,
+      "w": 401,
+      "h": 245
+    },
+    "wings_burnt": {
+      "x": 1248,
+      "y": 251,
+      "w": 401,
+      "h": 245
+    }
+  },
+  "layout": "row 1 fries, row 2 wings; columns raw, ready, overcooking, burnt",
+  "usage": [
+    "Serving plates only receive READY and OVERCOOKING items. Burnt items are never put on a plate.",
+    "The four states of an item share the same canvas size, so they can be swapped in place.",
+    "Each sprite has a cream sticker outline. Scale down to the plate size in code."
+  ]
+}

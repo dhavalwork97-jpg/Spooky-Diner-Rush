@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { startRestaurant } from './restaurantRoute';
 import { fitBackground, logicalToNorm, type BackgroundPlacement } from '../kitchen/zones';
 import { TacoKitchenState, type TacoEvent } from '../game/taco/TacoKitchenState';
 import { defaultTacoConfig, type TacoZone } from '../game/taco/tacoConfig';
@@ -752,7 +753,7 @@ export class TacoScene extends Phaser.Scene {
       taco: key === 'Shop' ? { menuStep: this.state.menuStep } : undefined,
       current: defaultTacoConfig.restaurant.id,
       onClose,
-      onPick: (id: string) => (id === defaultTacoConfig.restaurant.id ? this.scene.restart() : this.scene.start('Game', { restaurantId: id })),
+      onPick: (id: string) => (id === defaultTacoConfig.restaurant.id ? this.scene.restart() : startRestaurant(this, id)),
       rows: key === 'RecipeBook' ? this.recipeRows() : undefined,
       mastery: key === 'RecipeBook' ? this.masteryData() : undefined,
       badges: key === 'RecipeBook' ? { defs: tacoBadges, stats: SaveSystem.data.tacoStats, have: SaveSystem.data.tacoBadges } : undefined,

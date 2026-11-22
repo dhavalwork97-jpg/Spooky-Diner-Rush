@@ -1,0 +1,22 @@
+{
+  "cups": {
+    "full": {
+      "cup_png": "icecream_cup_full.png",
+      "size": [
+        252,
+        320
+      ],
+      "icon_256": "icecream_full_icon_256.png",
+      "icon_128": "icecream_full_icon_128.png"
+    },
+    "empty": {
+      "cup_png": "icecream_cup_empty.png",
+      "size": [
+        252,
+        320
+      ],
+      "icon_256": "icecream_empty_icon_256.png",
+      "icon_128": "icecream_empty_icon_128.png"
+    }
+  }
+}

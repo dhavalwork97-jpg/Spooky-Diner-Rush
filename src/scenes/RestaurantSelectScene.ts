@@ -4,6 +4,7 @@ import type { RestaurantDef } from '../data/validate';
 import type { GameConfig } from '../game/config';
 import { purchaseRestaurant, restaurantCards, type PlayableRestaurant } from '../game/restaurants';
 import { defaultTacoConfig } from '../game/taco/tacoConfig';
+import { defaultPizzaConfig } from '../game/pizza/pizzaConfig';
 import { SaveSystem } from '../systems/SaveSystem';
 import { audio } from '../systems/AudioSystem';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
@@ -35,6 +36,15 @@ const TACO_CARD: PlayableRestaurant = {
   cost: defaultTacoConfig.restaurant.cost,
 };
 
+/** The Pizza Place card is built from data/pizza.json the same way (Lv 30, 3,000 coins). */
+const PIZZA_CARD: PlayableRestaurant = {
+  id: defaultPizzaConfig.restaurant.id,
+  name: defaultPizzaConfig.restaurant.name,
+  unlockLevel: defaultPizzaConfig.restaurant.unlockLevel,
+  background: 'pizza_thumb',
+  cost: defaultPizzaConfig.restaurant.cost,
+};
+
 /**
  * Restaurant select: one card per restaurant. Open ones can be picked, locked ones show "Lv N",
  * the Taco Truck can be bought once the Lv is reached, and not-yet-built ones show "Coming soon".
@@ -63,7 +73,7 @@ export class RestaurantSelectScene extends Phaser.Scene {
     g.lineStyle(5, INK, 1).strokeRoundedRect(x0, 8, PANEL_W, h - 24, 24);
     this.add.text(x0 + 32, 44, 'Restaurants', { fontFamily: FONT, fontSize: '44px', color: '#F28C28', stroke: '#2B1B17', strokeThickness: 7 }).setOrigin(0, 0.5);
 
-    const playable = [...(this.registry.get('restaurants') as RestaurantDef[]), TACO_CARD];
+    const playable = [...(this.registry.get('restaurants') as RestaurantDef[]), TACO_CARD, PIZZA_CARD];
     const cards = restaurantCards(playable, this.d.state.cfg.restaurantMenu.comingSoon, this.d.state.level, this.d.current, SaveSystem.data.restaurants);
     const total = cards.length * CARD_W + (cards.length - 1) * GAP;
     const left = (w - total) / 2;
@@ -127,7 +137,7 @@ export class RestaurantSelectScene extends Phaser.Scene {
     if (this.closing) return;
     const save = SaveSystem.data;
     const s = this.d.state;
-    const r = { level: s.level, coins: s.coins, restaurants: [...save.restaurants], tacoStep: save.tacoStep, tacoXp: save.tacoXp };
+    const r = { level: s.level, coins: s.coins, restaurants: [...save.restaurants], tacoStep: save.tacoStep, tacoXp: save.tacoXp, pizzaStep: save.pizzaStep, pizzaXp: save.pizzaXp };
     const check = purchaseRestaurant({ id, unlockLevel, cost }, r);
     if (!check.ok) {
       audio.play('click');
@@ -138,6 +148,8 @@ export class RestaurantSelectScene extends Phaser.Scene {
     save.restaurants = r.restaurants;
     save.tacoStep = r.tacoStep ?? save.tacoStep;
     save.tacoXp = r.tacoXp ?? save.tacoXp;
+    save.pizzaStep = r.pizzaStep ?? save.pizzaStep;
+    save.pizzaXp = r.pizzaXp ?? save.pizzaXp;
     SaveSystem.save();
     audio.play('click');
     this.scene.restart(this.d); // draw the cards again: the Taco Truck now says Play

@@ -6,6 +6,7 @@ import { ShopScene } from './scenes/ShopScene';
 import { RecipeBookScene } from './scenes/RecipeBookScene';
 import { RestaurantSelectScene } from './scenes/RestaurantSelectScene';
 import { TacoScene } from './scenes/TacoScene';
+import { PizzaScene } from './scenes/PizzaScene';
 import { CrazyGames } from './sdk/crazygames';
 import { initOrientation } from './systems/Orientation';
 import { audio } from './systems/AudioSystem';
@@ -20,7 +21,7 @@ const start = (): Phaser.Game =>
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     input: { activePointers: 2 },
     render: { antialias: true, roundPixels: false },
-    scene: [BootScene, TitleScene, GameScene, ShopScene, RecipeBookScene, RestaurantSelectScene, TacoScene],
+    scene: [BootScene, TitleScene, GameScene, ShopScene, RecipeBookScene, RestaurantSelectScene, TacoScene, PizzaScene],
   });
 
 initOrientation(); // phones: the first tap enters fullscreen and locks landscape

@@ -809,6 +809,14 @@
       "frameHeight": 256,
       "preferFallback": false,
       "lazy": true
+    },
+    {
+      "key": "pizza_thumb",
+      "type": "image",
+      "file": "assets/pizza/background/pizza_thumb.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": false
     }
   ]
 }

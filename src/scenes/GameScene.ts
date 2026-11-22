@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { startRestaurant } from './restaurantRoute';
 import type { RestaurantDef } from '../data/validate';
 import { fitBackground, hitTestZone, logicalToNorm, normToLogical, type BackgroundPlacement, type Rect, type ZoneDef } from '../kitchen/zones';
 import { handleStationTap, registerStationHandler, clearStationHandlers, type TapPoint } from '../kitchen/stationHandlers';
@@ -910,7 +911,7 @@ export class GameScene extends Phaser.Scene {
         this.syncDecor();
         this.scene.resume();
       },
-      onPick: (id: string) => (id === 'taco_truck' ? this.scene.start('Taco') : this.scene.start('Game', { restaurantId: id })),
+      onPick: (id: string) => startRestaurant(this, id),
     };
     this.scene.launch(key, data);
     this.scene.pause();

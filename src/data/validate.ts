@@ -290,3 +290,79 @@ export function validateXp(data: unknown): string[] {
 export function assertValid(name: string, errors: string[]): void {
   if (errors.length > 0) throw new Error(`${name} failed validation:\n- ${errors.join('\n- ')}`);
 }
+
+/** Pizza Place data (data/pizza.json). Returns a list of problems; empty means valid. */
+export function validatePizza(data: unknown): string[] {
+  const errors: string[] = [];
+  const d = data as Record<string, any> | null;
+  if (!d || typeof d !== 'object') return ['pizza: not an object'];
+  const r = d.restaurant;
+  if (!r || r.id !== 'pizza_place' || !isStr(r.name) || !isNum(r.unlockLevel) || !isNum(r.cost)) errors.push('pizza: restaurant needs id pizza_place, name, unlockLevel and cost');
+  const ing = d.ingredients ?? {};
+  const known = new Set<string>();
+  for (const [kind, list] of [['sauce', ing.sauces], ['cheese', ing.cheeses], ['topping', ing.toppings]] as const) {
+    if (!Array.isArray(list) || list.length === 0) errors.push(`pizza: ingredients.${kind}s missing`);
+    for (const i of list ?? []) {
+      if (!isStr(i.id) || !isStr(i.name) || !isNum(i.unlockStep) || i.unlockStep < 1 || i.unlockStep > 10) errors.push(`pizza: bad ${kind} ${i?.id}`);
+      known.add(`${kind}:${i.id}`);
+    }
+  }
+  const stepOf = new Map<string, number>();
+  for (const [kind, list] of [['sauce', ing.sauces], ['cheese', ing.cheeses], ['topping', ing.toppings]] as const) for (const i of list ?? []) stepOf.set(`${kind}:${i.id}`, i.unlockStep);
+  const ids = new Set<string>();
+  const kinds = ['pizza', 'side', 'fried', 'dessert'];
+  for (const dish of d.dishes ?? []) {
+    if (!isStr(dish.id) || ids.has(dish.id)) errors.push(`pizza: dish id missing or repeated: ${dish.id}`);
+    ids.add(dish.id);
+    if (!kinds.includes(dish.kind)) errors.push(`pizza: ${dish.id} has unknown kind ${dish.kind}`);
+    if (!isStr(dish.name) || !isStr(dish.icon)) errors.push(`pizza: ${dish.id} needs name and icon`);
+    if (!isNum(dish.unlockStep) || dish.unlockStep < 1 || dish.unlockStep > 10) errors.push(`pizza: ${dish.id} unlockStep must be 1-10`);
+    if (!isNum(dish.price) || dish.price <= 0 || !isNum(dish.xp) || dish.xp <= 0) errors.push(`pizza: ${dish.id} needs a price and xp`);
+    if (dish.kind === 'pizza') {
+      const rc = dish.recipe;
+      if (!rc) {
+        errors.push(`pizza: ${dish.id} has no recipe`);
+        continue;
+      }
+      const parts = [`sauce:${rc.sauce}`, `cheese:${rc.cheese}`, ...(rc.toppings ?? []).map((t: string) => `topping:${t}`)];
+      for (const part of parts) {
+        if (!known.has(part)) errors.push(`pizza: ${dish.id} uses unknown ingredient ${part}`);
+        else if ((stepOf.get(part) ?? 99) > dish.unlockStep) errors.push(`pizza: ${dish.id} needs ${part} before it is on the menu`);
+      }
+      if (new Set(rc.toppings).size !== rc.toppings.length || rc.toppings.length > 3) errors.push(`pizza: ${dish.id} toppings must be 0-3 and different`);
+    } else if (dish.recipe) errors.push(`pizza: ${dish.id} is not a pizza but has a recipe`);
+    if (dish.kind === 'fried' && ![0, 1].includes(dish.basket)) errors.push(`pizza: ${dish.id} needs basket 0 or 1`);
+  }
+  const pizzas = (d.dishes ?? []).filter((x: any) => x.kind === 'pizza');
+  const sig = new Set<string>();
+  for (const p of pizzas) {
+    const k = `${p.recipe?.sauce}|${p.recipe?.cheese}|${[...(p.recipe?.toppings ?? [])].sort().join(',')}`;
+    if (sig.has(k)) errors.push(`pizza: ${p.id} has the same recipe as another pizza`);
+    sig.add(k);
+  }
+  for (let s = 1; s <= 10; s++) if (!(d.dishes ?? []).some((x: any) => x.unlockStep === s)) errors.push(`pizza: nothing joins the menu at step ${s}`);
+  if ((d.ramp ?? []).length !== 10) errors.push('pizza: ramp needs one row per step (10)');
+  for (const u of d.upgrades ?? []) {
+    if (!isStr(u.id) || !isStr(u.name) || !isStr(u.description) || !isStr(u.mod)) errors.push(`pizza: bad upgrade ${u?.id}`);
+    let prev = 0;
+    for (const t of u.tiers ?? []) {
+      if (!isNum(t.cost) || t.cost <= 0 || !isNum(t.value) || t.value <= 1 || !isNum(t.step) || t.step < 1 || t.step > 10 || t.step < prev) errors.push(`pizza: upgrade ${u.id} has a bad tier`);
+      prev = t.step;
+    }
+  }
+  const zoneIds = new Set<string>();
+  for (const z of d.zones ?? []) {
+    if (!isStr(z.id) || zoneIds.has(z.id)) errors.push(`pizza: zone id missing or repeated: ${z.id}`);
+    zoneIds.add(z.id);
+    if (![z.x, z.y, z.width, z.height].every(isNum) || z.x < 0 || z.y < 0 || z.width <= 0 || z.height <= 0 || z.x + z.width > 1 || z.y + z.height > 1) errors.push(`pizza: zone ${z.id} is outside 0-1`);
+  }
+  const zs = d.zones ?? [];
+  for (let i = 0; i < zs.length; i++)
+    for (let j = i + 1; j < zs.length; j++) {
+      const a = zs[i], b = zs[j];
+      if (a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height) errors.push(`pizza: zones ${a.id} and ${b.id} overlap`);
+    }
+  const cw = d.customerWindow;
+  if (!cw || !Array.isArray(cw.slots) || cw.slots.length < 5) errors.push('pizza: customerWindow needs 5 slots');
+  return errors;
+}

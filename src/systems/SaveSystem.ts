@@ -54,6 +54,20 @@ export interface SaveData {
   badges: string[];
   /** Lifetime counters behind the badges (id -> count). Additive; missing in older saves. */
   stats: Record<string, number>;
+  /** Pizza Place (all additive; missing in older saves). Its menu step (1-10) and the XP towards the next one: separate from Lv, so buying it at Lv 30+ still starts at step 1. */
+  pizzaStep: number;
+  pizzaXp: number;
+  /** The Pizza Place's own upgrades: upgrade id -> tier bought. Separate from `owned` (diner) and `tacoOwned`. */
+  pizzaOwned: Record<string, number>;
+  /** Times each Pizza Place dish was served: decides when a new dish counts as learned. */
+  pizzaServed: Record<string, number>;
+  /** Pointer tutorial state per Pizza Place dish: times shown (1, 2) or 9 once done. */
+  pizzaLessons: Record<string, number>;
+  /** Pizza mastery tiers already paid: dish id -> tiers paid (1 bronze to 3 gold). */
+  pizzaMastery: Record<string, number>;
+  /** Pizza mini-goal state and lifetime counters (id -> count). */
+  pizzaGoal: Record<string, number>;
+  pizzaStats: Record<string, number>;
   settings: { reduceMotion: boolean | null; musicVolume: number; sfxVolume: number; muted: boolean };
 }
 
@@ -90,6 +104,14 @@ export function defaultSave(): SaveData {
     tacoChests: [],
     badges: [],
     stats: {},
+    pizzaStep: 1,
+    pizzaXp: 0,
+    pizzaOwned: {},
+    pizzaServed: {},
+    pizzaLessons: {},
+    pizzaMastery: {},
+    pizzaGoal: {},
+    pizzaStats: {},
     settings: { reduceMotion: null, musicVolume: 0.6, sfxVolume: 0.8, muted: false },
   };
 }
@@ -207,6 +229,14 @@ export function parseSave(raw: string | null): SaveData {
       tacoChests: cleanLevels(p.tacoChests),
       badges: cleanIds(p.badges),
       stats: cleanCounts(p.stats),
+      pizzaStep: typeof p.pizzaStep === 'number' && Number.isFinite(p.pizzaStep) ? Math.min(10, Math.max(1, Math.floor(p.pizzaStep))) : 1,
+      pizzaXp: num(p.pizzaXp, 0),
+      pizzaOwned: cleanOwned(p.pizzaOwned),
+      pizzaServed: cleanCounts(p.pizzaServed),
+      pizzaLessons: cleanOwned(p.pizzaLessons),
+      pizzaMastery: cleanCounts(p.pizzaMastery),
+      pizzaGoal: cleanCounts(p.pizzaGoal),
+      pizzaStats: cleanCounts(p.pizzaStats),
       settings: {
         reduceMotion: typeof p.settings?.reduceMotion === 'boolean' ? p.settings.reduceMotion : null,
         musicVolume: Math.min(1, num(p.settings?.musicVolume, base.settings.musicVolume)),
