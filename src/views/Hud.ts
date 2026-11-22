@@ -1,3 +1,4 @@
+import { GoalBannerTimer } from '../game/goalBannerTiming';
 import Phaser from 'phaser';
 import { CREAM, INK, LEAF, MUSTARD, NAVY, ORANGE, TOMATO } from '../art/builders';
 import type { Goal } from '../game/goals';
@@ -147,6 +148,7 @@ export class GoalBanner {
   private bar: Phaser.GameObjects.Graphics;
   private shownKey = '';
   private shownProgress = -1;
+  private timer = new GoalBannerTimer();
 
   constructor(private scene: Phaser.Scene) {
     const bg = scene.add.graphics();
@@ -158,20 +160,25 @@ export class GoalBanner {
     this.box = scene.add.container(194, 138, [bg, this.title, this.bar]).setDepth(861).setVisible(false);
   }
 
-  /** Show `goal` (null hides the banner). Cheap to call every frame: it only redraws when the goal or its progress changes. */
-  update(goal: Goal | null): void {
-    if (!goal) {
+  /**
+   * Draw `goal` (null hides the banner). WHEN it is on screen comes from the pure `GoalBannerTimer`: shown for a while when a goal starts, comes back for a
+   * short time on progress or completion, never under a popup. Cheap to call every frame: it only redraws when the goal or its progress changes.
+   */
+  update(goal: Goal | null, ctx: { dtMs: number; completed: number; blocked: boolean }): void {
+    const frame = this.timer.update(ctx.dtMs, { key: goal ? goal.text : null, progress: goal ? Math.min(goal.progress, goal.target) : 0, completed: ctx.completed, blocked: ctx.blocked, reduceMotion: SaveSystem.reduceMotion() });
+    if (!goal || !frame.visible) {
       this.box.setVisible(false);
-      this.shownKey = '';
+      if (!goal) this.shownKey = '';
       return;
     }
     const key = `${goal.text}`;
     const progress = Math.min(goal.progress, goal.target);
-    if (key === this.shownKey && progress === this.shownProgress && this.box.visible) return;
-    const fresh = key !== this.shownKey || !this.box.visible;
+    const wasHidden = !this.box.visible;
+    this.box.setVisible(true).setAlpha(frame.alpha);
+    if (key === this.shownKey && progress === this.shownProgress && !wasHidden) return;
+    const fresh = key !== this.shownKey || wasHidden;
     this.shownKey = key;
     this.shownProgress = progress;
-    this.box.setVisible(true);
     this.title.setText(goal.kind === 'fastRow' || goal.kind === 'item' || goal.kind === 'orders' ? `${goal.text}  ${progress}/${goal.target}` : goal.text);
     // Long texts shrink to fit the plate instead of spilling over its edge.
     this.title.setScale(Math.min(1, (GOAL_W - 28) / Math.max(1, this.title.width)));
@@ -181,7 +188,7 @@ export class GoalBanner {
     this.bar.fillStyle(0x3b2a24, 1).fillRoundedRect(-bw / 2, 8, bw, 8, 4);
     if (frac > 0.001) this.bar.fillStyle(ORANGE, 1).fillRoundedRect(-bw / 2, 8, Math.max(8, bw * frac), 8, 4);
     this.bar.lineStyle(2, INK, 1).strokeRoundedRect(-bw / 2, 8, bw, 8, 4);
-    if (fresh && !SaveSystem.reduceMotion()) {
+    if (fresh && !SaveSystem.reduceMotion() && frame.alpha >= 1) {
       this.scene.tweens.killTweensOf(this.box);
       this.box.setScale(0.85);
       this.scene.tweens.add({ targets: this.box, scale: 1, duration: 180, ease: 'Back.Out' });

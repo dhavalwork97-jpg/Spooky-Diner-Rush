@@ -1003,7 +1003,9 @@ export class GameScene extends Phaser.Scene {
       this.goals.ensure(env);
       this.goals.tick(dt, env);
     }
-    this.goalBanner.update(ok ? this.goals.current : null);
+    // Goals keep tracking in the model while the banner is hidden; the pure timer decides when the banner shows (6 s for a new goal, 3 s on progress/completion).
+    const unlocked = goalsUnlocked(this.state.level, tutorialActive(this.state));
+    this.goalBanner.update(unlocked ? this.goals.current : null, { dtMs: dt * 1000, completed: this.goals.completed, blocked: !ok || this.hand.visible || this.chestCard.isShowing });
     const msg = ok && !this.toast.visible ? this.goalToasts.splice(0, 1)[0] : undefined;
     if (msg) this.toast.show(msg);
   }

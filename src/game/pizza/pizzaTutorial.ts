@@ -19,14 +19,17 @@ const zoneId = (p: PizzaConfig, action: string, match: { arg?: string; index?: n
 
 const label = (p: PizzaConfig, step: string): string => (p.stepLabels[step] ?? step).replace(/^an? /, '');
 
+/** Which station a dish is made at, in plain words (shown on the new-recipe card; the tutorial hand highlights the same station). */
+export const pizzaStationName = (dish: DishDef): string => (dish.kind === 'pizza' ? 'brick oven' : dish.kind === 'side' ? 'small oven' : dish.kind === 'fried' ? 'fryer' : 'ice cream machine');
+
 export function pizzaRecipeIntro(p: PizzaConfig, dish: DishDef): { title: string; text: string } {
   if (dish.kind !== 'pizza') {
     const how = dish.kind === 'side' ? 'Put it in the small oven, then tap it when it is ready.' : dish.kind === 'fried' ? 'Drop it in the fryer, then tap the basket when it is ready.' : 'Tap the ice cream machine, then tap the cone when it is full.';
-    return { title: dish.name, text: `New on the menu!\n${how}` };
+    return { title: dish.name, text: `New on the menu!\nStation: ${pizzaStationName(dish)}.\n${how}` };
   }
   const parts = recipeSteps(dish).slice(1).map((id) => label(p, id));
   const first = parts.slice(0, 4).join(', ');
-  return { title: dish.name, text: `New recipe! Dough, then ${first}${parts.length > 4 ? ' and more' : ''}.\nFollow the hand!` };
+  return { title: dish.name, text: `New recipe! Dough, then ${first}${parts.length > 4 ? ' and more' : ''}.\nStation: ${pizzaStationName(dish)}. Follow the hand!` };
 }
 
 /** The customer a lesson is about: the first waiting customer who still wants this dish. */

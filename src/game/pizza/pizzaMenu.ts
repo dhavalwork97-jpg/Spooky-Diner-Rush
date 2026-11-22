@@ -28,3 +28,30 @@ export function pizzaRampFor(p: PizzaConfig, step: number): TacoRamp {
 export function levelMilestones(p: PizzaConfig): { lv: number; text: string }[] {
   return p.levelProgression.milestones;
 }
+
+export interface PizzaMilestone {
+  step: number;
+  /** About which global Lv a player reaches this menu step, if they play only the Pizza Place from the Lv it unlocks at. */
+  lv: number;
+  dishes: string[];
+}
+
+/**
+ * Display only, and worked out from the real XP curve so it cannot drift: the same XP fills the Pizza menu bar AND the global Lv bar, so the menu
+ * is finished around Lv 35, not Lv 49. Nothing here unlocks anything; recipes unlock by menu step only.
+ */
+export function pizzaMilestones(cfg: GameConfig, p: PizzaConfig): PizzaMilestone[] {
+  const out: PizzaMilestone[] = [];
+  let lv = p.restaurant.unlockLevel;
+  let into = 0; // XP already inside the current global Lv
+  for (let step = 1; step <= MAX_PIZZA_STEP; step++) {
+    out.push({ step, lv, dishes: p.dishes.filter((d) => d.unlockStep === step).map((d) => d.name) });
+    const gain = pizzaStepXpNeeded(cfg, Math.min(step, MAX_PIZZA_STEP - 1));
+    into += gain;
+    while (into >= xpForLevel(cfg, lv)) {
+      into -= xpForLevel(cfg, lv);
+      lv++;
+    }
+  }
+  return out;
+}

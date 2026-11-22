@@ -14,6 +14,10 @@ export class TutorialHand {
     this.hand = scene.add.image(0, 0, 'hand').setScale(0.5).setOrigin(0.3, 0.05).setDepth(1200).setVisible(false);
   }
 
+  get visible(): boolean {
+    return this.hand.visible;
+  }
+
   hide(): void {
     this.hand.setVisible(false);
     this.tween?.stop();

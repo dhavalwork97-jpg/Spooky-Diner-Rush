@@ -1,3 +1,10 @@
+# IN PROGRESS (2026-11-22, Claude) - PIZZA: Global Lv display + Part C (goal banner fade) - branch `feature/pizza-place` (Part A committed 846d65e)
+Finding: Pizza menu steps cost 1300..1940 XP (steps 1-9) and the SAME XP feeds global Lv (Lv 30..49 cost 2500..4020 each). So the menu is finished near global Lv 35, not Lv 49; the spec's Lv 31-49 list (one dish per Lv) does not match real unlock timing. Global XP is NOT changed. Plan:
+- [x] G1. pizzaMenu.ts: `pizzaMilestones(cfg,p)` DERIVES "about Lv N" per menu step from the real XP curve (cannot drift); data milestones list becomes a note only. Test: derived rows match XP math, dishes all listed, never unlocks anything.
+- [x] G2. Show it on the Pizza restaurant card (locked/buy) + a menu-progress line in the Pizza Recipe Book. Tests for stay-at-step-1, tutorial persists, Diner/Taco unchanged.
+- [x] G3 (text card: station + ingredients; shared StoryCard has no icon slot, untouched). Recipe-unlocked notification (icon, name, ingredients, highlighted stations).
+- [x] C1. Pure `goalBannerTiming` (no Phaser) + tests; C2. wire into GoalBanner (Hud.ts); C3. Chromium check; STOP and report after Part C.
+
 # IN PROGRESS (2026-11-21, Claude) - PIZZA PLACE (third restaurant) - branch `feature/pizza-place` (from main 8c737c5). PLAN APPROVED by owner; commit allowed when all of Part A is done (owner: 'commit when all tasks are done').
 Rules: no commit/push/merge/deploy until the owner says so; edit through shell (a PostToolUse hook runs `handoff.py snap` on Edit/Write); never weaken tests; wording "Lv N" only; Diner and Taco Truck untouched except the shared goal banner (Part C).
 Baseline (untouched main, 2026-11-21): `npx vitest run --testTimeout=60000` = 69 files, 802 passed, 1 skipped, 0 failed. The old documented baseline failures (sim_late Lv 20 pace, balance_upgrades 5 s timeout) do NOT reproduce any more. tsc, build, build:crazygames passed earlier today (npm ci not re-run).

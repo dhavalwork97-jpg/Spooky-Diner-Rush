@@ -110,3 +110,32 @@ describe('pizza recipes', () => {
     }
   });
 });
+
+import { pizzaMilestones } from '../src/game/pizza/pizzaMenu';
+import { pizzaRecipeIntro, pizzaStationName } from '../src/game/pizza/pizzaTutorial';
+
+describe('Pizza Lv display (derived from the real XP curve)', () => {
+  const rows = pizzaMilestones(defaultConfig, cfg);
+  it('lists every dish once, starts at the unlock Lv and never goes down', () => {
+    expect(rows).toHaveLength(10);
+    expect(rows[0].lv).toBe(cfg.restaurant.unlockLevel);
+    expect(rows.flatMap((r) => r.dishes).sort()).toEqual(cfg.dishes.map((d) => d.name).sort());
+    for (let i = 1; i < rows.length; i++) expect(rows[i].lv).toBeGreaterThanOrEqual(rows[i - 1].lv);
+  });
+  it('matches the XP maths: the same XP feeds the menu and the global Lv, so the menu ends well before Lv 49', () => {
+    expect(rows[9].lv).toBeGreaterThanOrEqual(34);
+    expect(rows[9].lv).toBeLessThanOrEqual(36);
+  });
+  it('is display only: global Lv cannot skip menu steps', () => {
+    expect(unlockedDishes(cfg, 1).map((d) => d.id)).toEqual(['cheese_pizza']);
+    expect(unlockedDishes(cfg, 1)).toHaveLength(1);
+  });
+  it('the new-recipe card names the station and ingredients', () => {
+    for (const d of cfg.dishes) {
+      const t = pizzaRecipeIntro(cfg, d);
+      expect(t.text).toContain(pizzaStationName(d));
+      expect(t.title).toBe(d.name);
+    }
+    expect(pizzaRecipeIntro(cfg, cfg.dishes[0]).text).toMatch(/Dough, then/);
+  });
+});

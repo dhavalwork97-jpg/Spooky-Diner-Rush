@@ -5,6 +5,7 @@ import type { GameConfig } from '../game/config';
 import { purchaseRestaurant, restaurantCards, type PlayableRestaurant } from '../game/restaurants';
 import { defaultTacoConfig } from '../game/taco/tacoConfig';
 import { defaultPizzaConfig } from '../game/pizza/pizzaConfig';
+import { pizzaMilestones } from '../game/pizza/pizzaMenu';
 import { SaveSystem } from '../systems/SaveSystem';
 import { audio } from '../systems/AudioSystem';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
@@ -98,6 +99,11 @@ export class RestaurantSelectScene extends Phaser.Scene {
       const status =
         c.state === 'soon' ? 'Coming soon' : c.state === 'locked' ? `Unlocks at Lv ${c.unlockLevel}` : c.state === 'buy' ? `${COIN_FORMAT.format(c.cost ?? 0)} coins` : c.current ? 'Playing now' : 'Ready';
       this.add.text(cx, top + 282, status, { fontFamily: FONT, fontSize: '22px', color: '#5a463e' }).setOrigin(0.5);
+      if (c.id === PIZZA_CARD.id && !live) {
+        // Display only, worked out from the real XP curve: roughly where the 10 menu steps fall on the global Lv bar.
+        const m = pizzaMilestones(this.d.state.cfg, defaultPizzaConfig);
+        this.add.text(cx, top + 214, `Full menu by about Lv ${m[m.length - 1].lv}`, { fontFamily: FONT, fontSize: '18px', color: '#7a6358' }).setOrigin(0.5);
+      }
       if (live) {
         const label = c.current ? 'Continue' : 'Play';
         this.makeButton(cx, top + 352, label, 220, 92, ORANGE, () => this.pick(c.id, c.current));

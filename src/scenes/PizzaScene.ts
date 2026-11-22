@@ -6,7 +6,7 @@ import { hitTestPizza, tapPizzaZone } from '../game/pizza/pizzaZones';
 import { PIZZA_TUTORIAL_ID, nextPizzaHint, pizzaRecipeIntro, pizzaTutorialDue } from '../game/pizza/pizzaTutorial';
 import { lessonDone, lessonMode, lessonShown, seedPizzaLearned } from '../game/pizza/pizzaLearning';
 import { pizzaModsFor } from '../game/pizza/pizzaShop';
-import { clampPizzaStep } from '../game/pizza/pizzaMenu';
+import { clampPizzaStep, pizzaMilestones } from '../game/pizza/pizzaMenu';
 import { recipeSteps } from '../game/pizza/pizzaRecipes';
 import { titleEarnedAt } from '../game/career';
 import type { RestaurantSelectData } from './RestaurantSelectScene';
@@ -569,6 +569,7 @@ export class PizzaScene extends Phaser.Scene {
   /** The Pizza Place's real recipes for the Recipe Book: available, still locked (with the menu step that unlocks them) and the learning state. */
   private recipeRows(): BookRow[] {
     const p = this.state.pizza;
+    const when = pizzaMilestones(this.state.cfg, p);
     return p.dishes.map((d) => {
       const locked = d.unlockStep > this.state.menuStep;
       const f = iconFrame(d);
@@ -577,7 +578,7 @@ export class PizzaScene extends Phaser.Scene {
       return {
         name: d.name,
         icon: { key: f.atlas, frame: f.frame as unknown as number },
-        stats: locked ? `Unlocks at Pizza menu step ${d.unlockStep}` : `${d.price} coins   +${d.xp} XP${learning}`,
+        stats: locked ? `Unlocks at Pizza menu step ${d.unlockStep} (about Lv ${when[d.unlockStep - 1].lv})` : `${d.price} coins   +${d.xp} XP${learning}`,
         steps,
         locked,
       };
