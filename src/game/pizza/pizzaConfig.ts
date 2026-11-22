@@ -77,6 +77,8 @@ export interface PizzaConfig {
   timed: { pizza: TimedDef; side: TimedDef; fries: TimedDef; wings: TimedDef };
   ice: { fillSeconds: number };
   /** First-pass values: extra share of the coins and XP of an order that holds a pizza, a side and an ice cream. */
+  /** First-pass values: how much of the READY phase counts as perfect (0.5 = the first half) and the extra tip as a share of the item price. */
+  perfectBake: { share: number; tipFraction: number };
   comboMeal: { coinBonus: number; xpBonus: number };
   oven: { doorMinGap: number; openSeconds: number; closeSeconds: number; slotXFractions: number[]; slotYFraction: number };
   upgrades: PizzaUpgradeDef[];

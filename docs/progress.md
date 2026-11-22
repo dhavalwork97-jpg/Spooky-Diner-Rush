@@ -326,3 +326,11 @@ Ten additive features: station intro cards (Lv 2/4/5/6/10/12), mastery from Lv 6
 - Pizza model emits a `comboMeal` event; PizzaScene shows a small "Combo meal" text above the customer (no tween in reduced motion). The Diner and Taco Truck are untouched.
 - Bot check (40 seeds, step 10): about 5% of orders are combo orders. Not human-tested; the 25% is a first-pass number.
 - Tests: tests/pizza_combo.test.ts (9).
+
+## Pizza B2: perfect bake bonus (2026-11-22)
+- Taking a pizza, a small-oven side or fried food out during the FIRST HALF of its READY phase is a perfect bake. READY lasts until half of the burn window is used, so the perfect window is the first quarter of the burn window after the food is ready (pizza: 9.0 s up to but not including 10.5 s on the cook clock). The start counts, the exact end does not. Pure rule: `src/game/pizza/pizzaPerfect.ts`.
+- Reward: a small flat extra tip, 10% of the item price (min 1 coin, scaled by the tip upgrade), added to that order's coins when the order completes (`perfectBake` in data/pizza.json, first-pass values). Not multiplied by the streak. Ice cream has no ready window so it never counts.
+- Late collection: nothing changes. Cook and burn timers are untouched (a test checks ready/warning/burnt seconds); late food is served for normal pay, burnt food is still thrown away with the usual penalty.
+- Sparkle: PizzaViews.sparkle uses the supplied `sparkle_gold_*` and `glint_white` effect frames; with reduced motion they show still for a moment.
+- Tests: tests/pizza_perfect.test.ts (10). Browser: sparkle seen at the brick oven (desktop 1280x720, headless).
+- Seen in passing (not changed): the "+coins" floating text adds `tip` on top of `coins`, which already includes the tip. This is the same in the Diner, Taco Truck and Pizza.

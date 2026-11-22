@@ -231,6 +231,9 @@ export class PizzaScene extends Phaser.Scene {
         audio.play('pop');
         break;
       }
+      case 'perfectBake':
+        this.views.sparkle(e.where, e.index);
+        break;
       case 'comboMeal': {
         // Small popup above the customer, same floating-text style as the coins; the +coins text follows from orderDone.
         const head = this.customers.headOf(e.customer);

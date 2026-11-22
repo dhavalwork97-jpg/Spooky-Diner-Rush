@@ -1,4 +1,5 @@
 import { comboBonus, isComboMeal } from './pizzaCombo';
+import { isPerfectBake, perfectTip } from './pizzaPerfect';
 import { advanceCook, cookPhase, isEdible, type CookPhase } from '../cook';
 import { defaultConfig, levelDef, xpForLevel, type EventDef, type GameConfig } from '../config';
 import { CUSTOMER_LOOK_MIN, TACO_LOOK_MAX, type ActiveEvent, type SaveSlice } from '../KitchenState';
@@ -36,6 +37,8 @@ export interface PizzaItem {
   bakedPhase: CookPhase | null;
   /** Oven slot while status is 'baking'. */
   oven: number | null;
+  /** Taken out in the first half of its READY phase: earns a small extra tip when served. */
+  perfect?: boolean;
 }
 export interface PizzaBoard {
   index: number;
@@ -71,6 +74,8 @@ export interface PizzaCustomer {
   leaveIn: number;
   /** Set once the combo meal bonus was paid, so it can never be paid twice for one order. */
   comboPaid?: boolean;
+  /** Extra tip collected from perfect bakes among the items already delivered. */
+  perfectTips?: number;
 }
 
 export type PizzaEvent =
@@ -95,6 +100,7 @@ export type PizzaEvent =
   | { type: 'eventStart'; id: string; name: string; duration: number }
   | { type: 'eventEnd'; id: string }
   | { type: 'streakBonus'; xp: number }
+  | { type: 'perfectBake'; where: 'oven' | 'small' | 'fryer'; index: number }
   | { type: 'comboMeal'; customer: number; coins: number; xp: number }
   | { type: 'orderDone'; customer: number; coins: number; tip: number; xp: number; fast: boolean; rush: boolean; combo: number; mult: number }
   | { type: 'angryLeave'; customer: number }
@@ -649,8 +655,10 @@ export class PizzaKitchenState {
       item.status = 'baked';
       item.oven = null;
       item.bakedPhase = o.phase;
+      item.perfect = this.perfectNow(o.t, this.pizza.timed.pizza);
     }
     this.emit({ type: 'collect', slot, board: o.board, phase: o.phase });
+    if (item?.perfect) this.emit({ type: 'perfectBake', where: 'oven', index: slot });
     return true;
   }
 
@@ -737,7 +745,8 @@ export class PizzaKitchenState {
     const c = this.receiver(t.dish, customerId);
     if (!c) return false;
     list[index] = null;
-    this.deliverTo(c, t.dish, where, index);
+    const def = where === 'small' ? this.pizza.timed.side : this.dishDef(t.dish)?.basket === 1 ? this.pizza.timed.wings : this.pizza.timed.fries;
+    this.deliverTo(c, t.dish, where, index, this.perfectNow(t.t, def));
     return true;
   }
 
@@ -840,13 +849,22 @@ export class PizzaKitchenState {
       return false;
     }
     this.boards[board].item = null;
-    this.deliverTo(c, item.dish, 'board', board);
+    this.deliverTo(c, item.dish, 'board', board, !!item.perfect);
     return true;
   }
 
-  private deliverTo(c: PizzaCustomer, dish: string, from: 'board' | 'small' | 'fryer' | 'ice', index: number): void {
+  /** Perfect only counts while the food is READY; the cook clock and the burn rules are never touched. */
+  private perfectNow(t: number, def: { readyAfter: number; burnWindow: number }): boolean {
+    return isPerfectBake(t, def.readyAfter, this.burnWindow(def.burnWindow), this.pizza.perfectBake.share);
+  }
+
+  private deliverTo(c: PizzaCustomer, dish: string, from: 'board' | 'small' | 'fryer' | 'ice', index: number, perfect = false): void {
     const need = c.items.findIndex((k, i) => k === dish && !c.delivered[i]);
     c.delivered[need] = true;
+    if (perfect) {
+      c.perfectTips = (c.perfectTips ?? 0) + perfectTip(this.itemDef(dish).price, this.pizza.perfectBake.tipFraction, this.mods.tips);
+      if (from !== 'board') this.emit({ type: 'perfectBake', where: from === 'small' ? 'small' : 'fryer', index });
+    }
     this.emit({ type: 'deliver', customer: c.id, dish, itemIndex: need, from, index });
     this.countServe(dish);
     if (c.delivered.every(Boolean)) this.completeOrder(c);
@@ -871,7 +889,9 @@ export class PizzaKitchenState {
     const mult = this.comboMultiplier;
     const coinMult = this.event?.def.coinMult ?? 1;
     const tip = fast ? Math.round(c.price * this.cfg.xp.tipFraction * frac * type.tipMult * (rush ? cc.rush.tipMultiplier : 1) * this.mods.tips) : 0;
-    let coins = Math.round((c.price + tip) * mult * coinMult);
+    // Perfect bakes add a small flat tip on top (not multiplied by the streak, so it stays small and predictable).
+    const perfectExtra = c.perfectTips ?? 0;
+    let coins = Math.round((c.price + tip) * mult * coinMult) + perfectExtra;
     const baseXp = c.items.reduce((s, k) => s + this.itemDef(k).xp, 0);
     let xp = Math.round((baseXp + (fast ? this.cfg.xp.speedBonusXp : 0) + (rush ? cc.rush.bonusXp : 0)) * mult);
     // Combo meal: only a COMPLETE order with a pizza, a side and an ice cream, paid once.

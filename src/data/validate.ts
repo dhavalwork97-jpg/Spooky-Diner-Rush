@@ -298,6 +298,8 @@ export function validatePizza(data: unknown): string[] {
   if (!d || typeof d !== 'object') return ['pizza: not an object'];
   const r = d.restaurant;
   if (!r || r.id !== 'pizza_place' || !isStr(r.name) || !isNum(r.unlockLevel) || !isNum(r.cost)) errors.push('pizza: restaurant needs id pizza_place, name, unlockLevel and cost');
+  const pb = d.perfectBake;
+  if (!pb || !isNum(pb.share) || !isNum(pb.tipFraction) || pb.share <= 0 || pb.share > 1 || pb.tipFraction < 0 || pb.tipFraction > 1) errors.push('pizza: perfectBake needs share (0 to 1) and tipFraction (0 to 1)');
   const cm = d.comboMeal;
   if (!cm || !isNum(cm.coinBonus) || !isNum(cm.xpBonus) || cm.coinBonus < 0 || cm.xpBonus < 0 || cm.coinBonus > 1 || cm.xpBonus > 1) errors.push('pizza: comboMeal needs coinBonus and xpBonus between 0 and 1');
   const ing = d.ingredients ?? {};

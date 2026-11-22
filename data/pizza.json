@@ -154,6 +154,7 @@
       "burnWindow": 5
     }
   },
+  "perfectBake": { "share": 0.5, "tipFraction": 0.1 },
   "comboMeal": { "coinBonus": 0.25, "xpBonus": 0.25 },
   "ice": {
     "fillSeconds": 5

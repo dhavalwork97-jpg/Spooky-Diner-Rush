@@ -420,6 +420,30 @@ export class PizzaViews {
     this.fx.burst(at.x, at.y, 0xfff1b8, 4, 20, 260);
   }
 
+  /** Sparkle for a perfect bake, drawn with the supplied sparkle and glint art. Reduced motion: shown still for a moment, no movement. */
+  sparkle(where: 'oven' | 'small' | 'fryer', index: number): void {
+    const at = where === 'oven' ? this.ovenSlotSpot(index) : where === 'fryer' ? this.zoneSpot('fryer', index) : this.zoneSpot('small_oven');
+    if (!at) return;
+    const atlas = atlasKey('effects');
+    if (!this.scene.textures.exists(atlas)) return;
+    const frames = ['sparkle_gold_1', 'glint_white', 'sparkle_gold_2', 'glint_white'];
+    const offs = [[-22, -18], [20, -24], [-6, -36], [26, -2]];
+    frames.forEach((f, i) => {
+      const img = this.scene.add.image(at.x + offs[i][0], at.y + offs[i][1], atlas, f).setDepth(DEPTH_ITEMS + 5).setScale(0.55 + 0.1 * (i % 2));
+      if (SaveSystem.reduceMotion()) {
+        this.scene.time.delayedCall(700, () => img.destroy());
+        return;
+      }
+      img.setAlpha(0).setAngle(i * 20);
+      this.scene.tweens.add({ targets: img, alpha: 1, scale: img.scale * 1.25, angle: img.angle + 40, y: img.y - 10, duration: 220, delay: i * 70, yoyo: true, hold: 120, onComplete: () => img.destroy() });
+    });
+  }
+
+  private zoneSpot(action: string, index?: number): Spot | null {
+    const z = this.cfg.zones.find((q) => q.action === action && (index === undefined || q.index === index));
+    return z ? this.spot(z) : null;
+  }
+
   ovenFullShake(): void {
     if (this.ovenBig) shake(this.scene, this.ovenBig, this.ovenFullShakeKey, 6, 260);
     for (const p of this.ovenPics) if (p.box.visible) shake(this.scene, p.box, `${this.ovenFullShakeKey}_p`, 5, 260);

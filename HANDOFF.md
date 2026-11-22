@@ -1,3 +1,5 @@
+# IN PROGRESS (2026-11-22) - B2 perfect bake DONE (see docs/progress.md); next B3 build-your-own orders after the owner says Continue
+
 # IN PROGRESS (2026-11-22, Claude) - PIZZA Part B1 combo meals (Part C committed eb867dd)
 - [x] B1a. Model: when a customer's order holds a pizza + a side + an ice cream and the LAST item is delivered, ONE combo bonus (+25% coins, +25% XP, once per order; never on partial/abandoned orders). Pure helper + PizzaEvent 'combo'.
 - [x] B1b. View: small "Combo meal" popup (existing floating-text conventions, reduced motion safe).
