@@ -1,5 +1,6 @@
 import { comboBonus, isComboMeal } from './pizzaCombo';
 import { isPerfectBake, perfectTip } from './pizzaPerfect';
+import { customDish, isCustomId, rollCustom } from './pizzaCustom';
 import { advanceCook, cookPhase, isEdible, type CookPhase } from '../cook';
 import { defaultConfig, levelDef, xpForLevel, type EventDef, type GameConfig } from '../config';
 import { CUSTOMER_LOOK_MIN, TACO_LOOK_MAX, type ActiveEvent, type SaveSlice } from '../KitchenState';
@@ -100,6 +101,7 @@ export type PizzaEvent =
   | { type: 'eventStart'; id: string; name: string; duration: number }
   | { type: 'eventEnd'; id: string }
   | { type: 'streakBonus'; xp: number }
+  | { type: 'customOrder'; customer: number; dish: string }
   | { type: 'perfectBake'; where: 'oven' | 'small' | 'fryer'; index: number }
   | { type: 'comboMeal'; customer: number; coins: number; xp: number }
   | { type: 'orderDone'; customer: number; coins: number; tip: number; xp: number; fast: boolean; rush: boolean; combo: number; mult: number }
@@ -203,7 +205,18 @@ export class PizzaKitchenState {
     return unlockedIngredients(this.pizza, this.menuStep);
   }
   dishDef(id: string): DishDef | undefined {
-    return this.pizza.dishes.find((d) => d.id === id);
+    return this.pizza.dishes.find((d) => d.id === id) ?? this.customDishes.get(id);
+  }
+  /** Virtual recipes of custom orders seen so far. Not saved, never on the menu or in the Recipe Book. */
+  private customDishes = new Map<string, DishDef>();
+  /** The recipe list the build rules see: the menu plus the custom pizzas a waiting customer or a board still needs. */
+  private recipeCfg(): PizzaConfig {
+    const active = new Set<string>();
+    for (const c of this.customers) c.items.forEach((id, i) => isCustomId(id) && !c.delivered[i] && active.add(id));
+    for (const b of this.boards) if (b.item?.dish && isCustomId(b.item.dish)) active.add(b.item.dish);
+    if (active.size === 0) return this.pizza;
+    const extra = [...active].map((id) => this.customDishes.get(id)).filter((d): d is DishDef => !!d);
+    return { ...this.pizza, dishes: [...this.pizza.dishes, ...extra] };
   }
   private emit(e: PizzaEvent) {
     this.events.push(e);
@@ -220,11 +233,11 @@ export class PizzaKitchenState {
   }
   /** What the next ingredient taps may be for this pizza (empty once nothing more fits). */
   nextFor(item: PizzaItem): string[] {
-    return nextIngredients(this.pizza, this.menuStep, item.placed.filter((s) => s !== 'dough'));
+    return nextIngredients(this.recipeCfg(), this.menuStep, item.placed.filter((s) => s !== 'dough'));
   }
   /** Pizzas that could still come out of what is on the board. */
   candidates(item: PizzaItem): DishDef[] {
-    return candidatePizzas(this.pizza, this.menuStep, item.placed.filter((s) => s !== 'dough'));
+    return candidatePizzas(this.recipeCfg(), this.menuStep, item.placed.filter((s) => s !== 'dough'));
   }
   private layers(item: PizzaItem): string[] {
     return item.placed.filter((s) => s !== 'dough');
@@ -357,6 +370,7 @@ export class PizzaKitchenState {
   // ----- learning -----
 
   familiarity(dishId: string): Familiarity {
+    if (isCustomId(dishId)) return 'normal'; // a custom order is built from known ingredients, so it never needs a lesson
     return this.learning ? familiarityOf(this.pizza.learning, this.dishServes[dishId] ?? 0) : 'normal';
   }
   unfamiliarDishes(): DishDef[] {
@@ -499,6 +513,7 @@ export class PizzaKitchenState {
     while (used.has(seat)) seat++;
     const size = Math.min(this.pizza.settings.maxOrderSize, pickOrderSize(info.orderSize, pizzaRampFor(this.pizza, this.menuStep).bigOrderShare, this.rng) + type.extraItems);
     const items: string[] = intro ? [intro.id] : this.pickItems(size);
+    const custom = intro || forceType ? null : this.makeCustom(items);
     this.history = recordOrder(this.variety, this.history, items.map((id) => ({ id, kind: this.kindOf(id) })));
     const price = Math.round(items.reduce((sum, k) => sum + this.itemDef(k).price, 0) * type.payMult);
     const closes = Math.min(this.closesAtLevel.get(this.level) ?? 0, 3);
@@ -519,6 +534,19 @@ export class PizzaKitchenState {
     };
     this.customers.push(c);
     this.emit({ type: 'arrive', customer: c.id });
+    if (custom) this.emit({ type: 'customOrder', customer: c.id, dish: custom });
+  }
+
+  /** From the custom-orders step on, sometimes swap ONE ordinary pizza of the order for a build-your-own pizza. Returns its id, or null. */
+  private makeCustom(items: string[]): string | null {
+    const at = items.findIndex((id) => this.kindOf(id) === 'pizza' && this.familiarity(id) === 'normal');
+    if (at < 0) return null;
+    const r = rollCustom(this.pizza, this.menuStep, () => this.rng());
+    if (!r) return null;
+    const d = customDish(this.pizza, r);
+    this.customDishes.set(d.id, d);
+    items[at] = d.id;
+    return d.id;
   }
 
   private itemDef(id: string): DishDef {
@@ -588,7 +616,7 @@ export class PizzaKitchenState {
     if (this.closed) return false;
     const item = this.boards[board]?.item;
     if (!item || item.status !== 'building') return false;
-    const d = finishedPizza(this.pizza, this.menuStep, this.layers(item));
+    const d = finishedPizza(this.recipeCfg(), this.menuStep, this.layers(item));
     if (!d) {
       this.invalid('That is not a recipe yet');
       return false;
@@ -866,7 +894,7 @@ export class PizzaKitchenState {
       if (from !== 'board') this.emit({ type: 'perfectBake', where: from === 'small' ? 'small' : 'fryer', index });
     }
     this.emit({ type: 'deliver', customer: c.id, dish, itemIndex: need, from, index });
-    this.countServe(dish);
+    if (!isCustomId(dish)) this.countServe(dish); // custom pizzas are not recipes: nothing to learn or save
     if (c.delivered.every(Boolean)) this.completeOrder(c);
   }
 

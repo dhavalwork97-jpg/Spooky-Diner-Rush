@@ -1,3 +1,4 @@
+import { parseCustom } from '../game/pizza/pizzaCustom';
 import Phaser from 'phaser';
 import { fitBackground, logicalToNorm, type BackgroundPlacement } from '../kitchen/zones';
 import { PizzaKitchenState, type PizzaEvent } from '../game/pizza/PizzaKitchenState';
@@ -57,6 +58,7 @@ export class PizzaScene extends Phaser.Scene {
   private storyCard!: StoryCard;
   private menuButtons!: MenuButtons;
   private tutorial!: TacoTutorialView;
+  private customToasts = 0;
   private tutorialOn = false;
   private lesson: { dish: string; mode: 'full' | 'reminder'; active: boolean } | null = null;
   /** ?debug&speed=N: time runs N times faster (testing only). */
@@ -229,6 +231,16 @@ export class PizzaScene extends Phaser.Scene {
         const at = this.customers.centerOf(e.customer);
         if (at) this.fx.burst(at.x, at.y, 0xffffff, 6, 26, 320);
         audio.play('pop');
+        break;
+      }
+      case 'customOrder': {
+        // The first few build-your-own orders say what is on them, in words, since the icons are small.
+        const r = parseCustom(e.dish);
+        if (r && this.customToasts < 3) {
+          this.customToasts++;
+          const label = (st: string) => this.state.pizza.stepLabels[st] ?? st;
+          this.toast.show(`Custom pizza: ${[`sauce:${r.sauce}`, `cheese:${r.cheese}`, ...r.toppings.map((t) => `topping:${t}`)].map(label).join(', ')}`);
+        }
         break;
       }
       case 'perfectBake':

@@ -1,3 +1,5 @@
+import { defaultPizzaConfig, unlockedIngredients } from '../src/game/pizza/pizzaConfig';
+import { parseCustom } from '../src/game/pizza/pizzaCustom';
 import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/game/config';
 import { CUSTOMER_LOOK_MIN, TACO_LOOK_MAX } from '../src/game/KitchenState';
@@ -300,6 +302,13 @@ describe('small oven, fryer, ice cream', () => {
   });
 });
 
+const isValidCustomFor = (id: string, step: number): boolean => {
+  const r = parseCustom(id);
+  if (!r) return false;
+  const on = new Set(unlockedIngredients(defaultPizzaConfig, step));
+  return on.has(`sauce:${r.sauce}`) && on.has(`cheese:${r.cheese}`) && r.toppings.length >= 1 && r.toppings.every((t) => on.has(`topping:${t}`));
+};
+
 describe('customers, orders and progress', () => {
   it('only ever orders unlocked dishes, never more than 5 seats, mint-ghost look only', () => {
     for (let step = 1; step <= 10; step++) {
@@ -309,7 +318,8 @@ describe('customers, orders and progress', () => {
       for (let i = 0; i < 4000; i++) {
         k.update(0.25);
         for (const c of k.customers) {
-          expect(c.items.every((x) => ids.has(x))).toBe(true);
+          // A build-your-own pizza is the one allowed extra: it must be a valid custom recipe made only of ingredients on the menu at this step.
+          expect(c.items.every((x) => ids.has(x) || (step >= 5 && isValidCustomFor(x, step)))).toBe(true);
           expect(c.look).toBeGreaterThanOrEqual(CUSTOMER_LOOK_MIN);
           expect(c.look).toBeLessThanOrEqual(TACO_LOOK_MAX);
         }

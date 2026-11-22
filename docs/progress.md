@@ -334,3 +334,12 @@ Ten additive features: station intro cards (Lv 2/4/5/6/10/12), mastery from Lv 6
 - Sparkle: PizzaViews.sparkle uses the supplied `sparkle_gold_*` and `glint_white` effect frames; with reduced motion they show still for a moment.
 - Tests: tests/pizza_perfect.test.ts (10). Browser: sparkle seen at the brick oven (desktop 1280x720, headless).
 - Seen in passing (not changed): the "+coins" floating text adds `tip` on top of `coins`, which already includes the tip. This is the same in the Diner, Taco Truck and Pizza.
+
+## Pizza B3: build-your-own orders (2026-11-22)
+- No second recipe system: a custom order is a temporary "virtual recipe" (`custom:<sauce>:<cheese>:<toppings sorted>`) made from the same sauce, cheese and topping steps, handed to the same build/finish/oven/serve rules the ten real pizzas use. It is only accepted while a waiting customer or a board still needs it. Pure rules: `src/game/pizza/pizzaCustom.ts`; values in `data/pizza.json` under `custom` (first-pass).
+- Starts at menu step 5 with ONE topping (10% of orders), grows to up to 2 toppings at steps 7-8 and up to 3 at steps 9-10 (chance 10% to 22%). One ordinary pizza of an order is swapped for the custom one; never equal to a real recipe (those are re-rolled); only ingredients on the menu at that step; fresh mozzarella is left out because there is no supplied icon for it yet. Random numbers are only used from step 5, so steps 1-4 play exactly as before.
+- Exact match: sauce, cheese and the SET of toppings (topping order does not matter). Plain sauce + cheese finishes as a cheese pizza, so it is refused for a custom order; a different real pizza is refused too.
+- Reward: price = 26 + 7 per topping (+3 for a special sauce, +4 for white cheese); XP = 32 + 5 per topping. Not saved, not a recipe: no lesson cards, no Recipe Book row, nothing added to `pizzaServed`.
+- Bubble: a plate with the sauce, cheese and topping icons in build order, next to the pizza icon; the first three custom orders also show a toast naming the ingredients in words.
+- Test change (not weakened): `tests/pizza_kitchen.test.ts` "only ever orders unlocked dishes" now also accepts a valid custom pizza (step 5+, made only of ingredients on the menu at that step, 1+ toppings); everything else in it is unchanged.
+- Tests: tests/pizza_custom.test.ts (14). Browser: bubble and toast seen on desktop and phone size (headless).

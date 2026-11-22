@@ -4,13 +4,16 @@ import type { BackgroundPlacement } from '../kitchen/zones';
 import type { PizzaCustomer, PizzaKitchenState } from '../game/pizza/PizzaKitchenState';
 import { SaveSystem } from '../systems/SaveSystem';
 import { pop, shake } from '../anim/helpers';
-import { iconFrame } from './PizzaViews';
+import { iconFrame, ingredientFrame } from './PizzaViews';
+import { parseCustom } from '../game/pizza/pizzaCustom';
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 /** Between the back layer (0) and the front counter layer (20), as the art pack asks. */
 const BODY_DEPTH = 10;
 const UI_DEPTH = 30;
 const ICON = 40;
+/** Ingredient icons inside a custom-order plate. */
+const SMALL = 30;
 /** The ghost body is drawn about this fraction of the customer band's height. */
 const BODY_FRACTION = 0.8;
 const art = LOOK_ART.mint_ghost!;
@@ -165,31 +168,58 @@ export class PizzaCustomers {
     g.fillStyle(frac > 0.5 ? 0x5cc46b : frac > 0.25 ? 0xf6c445 : 0xe5533d, 1).fillRoundedRect(x, y, Math.max(2, w * frac), 7, 3);
   }
 
+  /** Width of one order item in the bubble: a dish icon, or a plate with the sauce, cheese and topping icons of a custom pizza. */
+  private itemWidth(id: string): number {
+    const r = parseCustom(id);
+    return r ? (2 + r.toppings.length) * (SMALL + 2) + 10 : ICON + 6;
+  }
+
   private drawBubble(v: View, c: PizzaCustomer, done: boolean): void {
     const box = v.bubble;
     box.removeAll(true);
     if (done) return;
-    const n = c.items.length;
-    const w = n * (ICON + 6) + 10;
+    const w = c.items.reduce((n, id) => n + this.itemWidth(id), 0) + 10;
     const h = ICON + 14;
     const g = this.scene.add.graphics();
     g.fillStyle(0xfff4dc, 1).fillRoundedRect(-w / 2, -h, w, h, 12);
     g.lineStyle(3, 0x2b1b17, 1).strokeRoundedRect(-w / 2, -h, w, h, 12);
     g.fillStyle(0xfff4dc, 1).fillTriangle(-7, 0, 7, 0, 0, 9);
     box.add(g);
+    let left = -w / 2 + 5;
     c.items.forEach((id, i) => {
-      const cx = -w / 2 + 8 + ICON / 2 + 3 + i * (ICON + 6);
-      const img = this.iconFor(id);
-      if (!img) return;
-      const k = Math.min(ICON / img.width, ICON / img.height);
-      img.setScale(k).setPosition(cx, -h / 2);
+      const iw = this.itemWidth(id);
+      const cx = left + iw / 2;
+      left += iw;
+      const parts: Phaser.GameObjects.Image[] = [];
+      const custom = parseCustom(id);
+      if (custom) {
+        // Build-your-own: the plate lists exactly what to put on, in build order (sauce, cheese, toppings).
+        const plate = this.scene.add.graphics();
+        plate.fillStyle(0xf3dcae, 1).fillRoundedRect(cx - iw / 2 + 2, -h + 6, iw - 4, h - 12, 9);
+        plate.lineStyle(2, 0xc49a5a, 1).strokeRoundedRect(cx - iw / 2 + 2, -h + 6, iw - 4, h - 12, 9);
+        box.add(plate);
+        const steps = [`sauce:${custom.sauce}`, `cheese:${custom.cheese}`, ...custom.toppings.map((t) => `topping:${t}`)];
+        steps.forEach((st, j) => {
+          const f = ingredientFrame(st);
+          if (!this.scene.textures.exists(f.atlas)) return;
+          const img = this.scene.add.image(cx - iw / 2 + 5 + (SMALL + 2) / 2 + 3 + j * (SMALL + 2), -h / 2, f.atlas, f.frame);
+          img.setScale(Math.min(SMALL / img.width, SMALL / img.height));
+          parts.push(img);
+        });
+      } else {
+        const img = this.iconFor(id);
+        if (img) {
+          img.setScale(Math.min(ICON / img.width, ICON / img.height)).setPosition(cx, -h / 2);
+          parts.push(img);
+        }
+      }
       if (c.delivered[i]) {
-        img.setAlpha(0.3);
+        parts.forEach((p) => p.setAlpha(0.3));
         box.add(this.scene.add.text(cx, -h / 2, '✓', { fontFamily: FONT, fontSize: '30px', color: '#2E8B3E', stroke: '#FFF4DC', strokeThickness: 4 }).setOrigin(0.5));
       }
-      box.add(img);
-      box.sendToBack(g);
+      parts.forEach((p) => box.add(p));
     });
+    box.sendToBack(g);
   }
 
   private iconFor(id: string): Phaser.GameObjects.Image | null {

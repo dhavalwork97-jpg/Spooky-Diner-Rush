@@ -1,3 +1,6 @@
+# IN PROGRESS (2026-11-22) - B3 build-your-own DONE (see docs/progress.md); next B4 mastery + daily special after the owner says Continue
+
+
 # IN PROGRESS (2026-11-22) - B2 perfect bake DONE (see docs/progress.md); next B3 build-your-own orders after the owner says Continue
 
 # IN PROGRESS (2026-11-22, Claude) - PIZZA Part B1 combo meals (Part C committed eb867dd)

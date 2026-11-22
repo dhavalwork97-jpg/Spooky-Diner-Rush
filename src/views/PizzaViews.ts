@@ -1,3 +1,4 @@
+import { isCustomId } from '../game/pizza/pizzaCustom';
 import Phaser from 'phaser';
 import type { BackgroundPlacement } from '../kitchen/zones';
 import type { CookPhase } from '../game/cook';
@@ -43,7 +44,8 @@ export function loadPizzaArt(scene: Phaser.Scene): void {
 export function iconFrame(dish: DishDef): { atlas: string; frame: string } {
   switch (dish.kind) {
     case 'pizza':
-      return { atlas: atlasKey('pizza_icons'), frame: dish.id.replace(/_pizza$/, '') };
+      // A custom (build-your-own) pizza has no picture of its own: it shows as a plain pizza when carried; its bubble lists the ingredients.
+      return { atlas: atlasKey('pizza_icons'), frame: isCustomId(dish.id) ? 'cheese' : dish.id.replace(/_pizza$/, '') };
     case 'side':
       return { atlas: atlasKey('sides_items'), frame: `${dish.id}_ready` };
     case 'fried':

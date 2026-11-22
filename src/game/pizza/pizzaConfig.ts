@@ -78,6 +78,22 @@ export interface PizzaConfig {
   ice: { fillSeconds: number };
   /** First-pass values: extra share of the coins and XP of an order that holds a pizza, a side and an ice cream. */
   /** First-pass values: how much of the READY phase counts as perfect (0.5 = the first half) and the extra tip as a share of the item price. */
+  /** First-pass values for build-your-own orders: they start at menu step `fromStep`, one topping first, and grow. Indexed from `fromStep`. */
+  custom: {
+    fromStep: number;
+    chance: number[];
+    maxToppings: number[];
+    /** For a max of 1, 2 or 3 toppings: how likely 1, 2 or 3 toppings are. */
+    countWeights: number[][];
+    basePrice: number;
+    toppingPrice: number;
+    sauceExtra: number;
+    cheeseExtra: number;
+    xpBase: number;
+    xpPerTopping: number;
+    /** Toppings never asked for: fresh_mozzarella has no supplied icon yet, so a bubble could not show it. */
+    excludeToppings: string[];
+  };
   perfectBake: { share: number; tipFraction: number };
   comboMeal: { coinBonus: number; xpBonus: number };
   oven: { doorMinGap: number; openSeconds: number; closeSeconds: number; slotXFractions: number[]; slotYFraction: number };
