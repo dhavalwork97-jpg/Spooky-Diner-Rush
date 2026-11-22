@@ -430,6 +430,11 @@ export class PizzaViews {
     if (target) shake(this.scene, target, `pz_wobble_${where}_${index}`, 4, 220);
   }
 
+  /** A pizza being dragged to a customer dims on its board (the carried picture follows the finger). */
+  setCarried(i: number, carried: boolean): void {
+    this.boards[i]?.box.setAlpha(carried ? 0.3 : 1);
+  }
+
   boardPop(i: number): void {
     const b = this.boards[i]?.box;
     if (b) pop(this.scene, b, `pz_board_${i}`, 1.08, 160);

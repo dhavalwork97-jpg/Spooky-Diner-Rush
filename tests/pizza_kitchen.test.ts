@@ -387,3 +387,48 @@ describe('customers, orders and progress', () => {
     expect(k.ovens[0]?.phase).toBe('ready');
   });
 });
+
+describe('dragging a dish to a customer', () => {
+  it('a baked pizza dragged to the customer who ordered it serves exactly that customer, not the oldest', () => {
+    const k = make();
+    const first = cust(k, ['cheese_pizza']);
+    const second = cust(k, ['cheese_pizza']);
+    const a = buildCheese(k);
+    k.sendToOven(a);
+    k.update(10);
+    k.tapOven(0);
+    expect(k.serveBoard(a, second.id)).toBe(true);
+    expect(second.mood).toBe('happy');
+    expect(first.mood).toBe('waiting');
+    expect(k.boards[a].item).toBeNull();
+  });
+  it('a ready side, fried basket or ice cream dragged to the right customer is served; to the wrong one it costs patience and stays', () => {
+    const k = make();
+    const wants = cust(k, ['garlic_bread', 'fries', 'ice_cream']);
+    const other = cust(k, ['cheese_pizza']);
+    k.startSide('garlic_bread');
+    k.startFried('fries');
+    k.startIce();
+    k.update(8);
+    expect(k.serveTray('small', 0, other.id)).toBe(false);
+    expect(other.patience).toBeLessThan(other.patienceMax);
+    expect(k.smallOven[0]).not.toBeNull();
+    expect(k.serveTray('small', 0, wants.id)).toBe(true);
+    expect(k.serveTray('fryer', 0, wants.id)).toBe(true);
+    expect(k.serveIce(0, wants.id)).toBe(true);
+    expect(wants.mood).toBe('happy');
+  });
+  it('a cooking tray dragged anywhere only wobbles, and a burnt one is thrown away, never served', () => {
+    const k = make();
+    const c = cust(k, ['garlic_bread']);
+    k.startSide('garlic_bread');
+    k.update(2);
+    expect(k.serveTray('small', 0, c.id)).toBe(false);
+    expect(k.smallOven[0]).not.toBeNull();
+    k.update(20);
+    expect(k.smallOven[0]?.phase).toBe('burnt');
+    expect(k.serveTray('small', 0, c.id)).toBe(true); // clears it (penalty), the order is not delivered
+    expect(c.delivered[0]).toBe(false);
+    expect(k.smallOven[0]).toBeNull();
+  });
+});

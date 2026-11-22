@@ -710,7 +710,12 @@ export class PizzaKitchenState {
   tapFryer(index: number): boolean {
     return this.tapTray('fryer', index);
   }
+  /** Tap a tray or basket: cooking only wobbles, burnt is thrown away, ready goes to the oldest customer who ordered it. */
   private tapTray(where: 'small' | 'fryer', index: number): boolean {
+    return this.serveTray(where, index);
+  }
+  /** Serve a ready tray or basket. With `customerId` (a drag) that customer gets it, or loses patience if they did not order it. */
+  serveTray(where: 'small' | 'fryer', index: number, customerId?: number): boolean {
     if (this.closed) return false;
     const list = where === 'small' ? this.smallOven : this.fryer;
     const t = list[index];
@@ -725,17 +730,18 @@ export class PizzaKitchenState {
       this.emit({ type: 'discard', where, index, penalty: true });
       return true;
     }
-    const c = this.oldestNeeding(t.dish);
-    if (!c) {
-      this.invalid('Nobody ordered that');
-      return false;
-    }
+    const c = this.receiver(t.dish, customerId);
+    if (!c) return false;
     list[index] = null;
     this.deliverTo(c, t.dish, where, index);
     return true;
   }
 
   tapIce(lane: number): boolean {
+    return this.serveIce(lane);
+  }
+  /** Serve a full cone (to the oldest customer who ordered ice cream, or to the one it was dragged to). */
+  serveIce(lane: number, customerId?: number): boolean {
     if (this.closed) return false;
     const p = this.ice[lane];
     if (!p) return false;
@@ -744,14 +750,34 @@ export class PizzaKitchenState {
       return false;
     }
     const dessert = this.dishes.find((d) => d.kind === 'dessert');
-    const c = dessert ? this.oldestNeeding(dessert.id) : undefined;
-    if (!dessert || !c) {
-      this.invalid('Nobody ordered that');
-      return false;
-    }
+    const c = dessert ? this.receiver(dessert.id, customerId) : undefined;
+    if (!dessert || !c) return false;
     this.ice[lane] = null;
     this.deliverTo(c, dessert.id, 'ice', lane);
     return true;
+  }
+
+  /**
+   * Who gets a dish. No customer named (a tap): the oldest one who ordered it, "Nobody ordered that" when there is none.
+   * A customer named (a drag): that one, or a wrong-drop with the usual patience penalty when they did not order it.
+   */
+  private receiver(dish: string, customerId?: number): PizzaCustomer | undefined {
+    if (customerId === undefined) {
+      const c = this.oldestNeeding(dish);
+      if (!c) this.invalid('Nobody ordered that');
+      return c;
+    }
+    const c = this.customers.find((x) => x.id === customerId);
+    if (!c || c.mood !== 'waiting') {
+      this.emit({ type: 'wrongDrop', customer: c?.id ?? null });
+      return undefined;
+    }
+    if (!c.items.some((k, i) => k === dish && !c.delivered[i])) {
+      c.patience = Math.max(0, c.patience - c.patienceMax * this.cfg.combo.wrongItemPatiencePenalty);
+      this.emit({ type: 'wrongDrop', customer: c.id, penalty: true });
+      return undefined;
+    }
+    return c;
   }
 
   // ----- trash -----

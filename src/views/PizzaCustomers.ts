@@ -58,18 +58,6 @@ export class PizzaCustomers {
     return v ? { x: v.x, y: v.bottomY - this.bodyH } : null;
   }
 
-  /** Middle of a customer's body, where a dish is dropped and coins start from. */
-  centerOf(id: number): { x: number; y: number } | null {
-    const v = this.views.get(id);
-    return v ? { x: v.x, y: v.bottomY - this.bodyH / 2 } : null;
-  }
-
-  /** A short head-shake for a wrong drop. */
-  shake(id: number): void {
-    const v = this.views.get(id);
-    if (v && !v.leaving) shake(this.scene, v.body, `pz_cust_${id}`, 6, 240);
-  }
-
   /** The waiting customer under a screen point, using the window's drop area and the nearest seat. */
   customerAt(px: number, py: number): PizzaCustomer | null {
     const d = this.s.pizza.customerWindow.dropZone;
@@ -87,6 +75,18 @@ export class PizzaCustomers {
       }
     }
     return best ? (this.s.customers.find((c) => c.id === best!.id) ?? null) : null;
+  }
+
+  /** Middle of a customer's body, where a dish is dropped and coins start from. */
+  centerOf(id: number): { x: number; y: number } | null {
+    const v = this.views.get(id);
+    return v ? { x: v.x, y: v.bottomY - this.bodyH / 2 } : null;
+  }
+
+  /** A short head-shake for a wrong drop. */
+  shake(id: number): void {
+    const v = this.views.get(id);
+    if (v && !v.leaving) shake(this.scene, v.body, `pz_cust_${id}`, 6, 240);
   }
 
   /** A short happy hop when an order is complete. */

@@ -23,7 +23,7 @@ import { MuteButton } from '../views/MuteButton';
 import { EventBanner, LevelUpCard, Overlay, StoryCard, Toast } from '../views/Popups';
 import { TacoTutorialView } from '../views/TacoTutorialView';
 import { ParticlePool } from '../anim/ParticlePool';
-import { flyCoins } from '../anim/fly';
+import { arcTo, flyCoins } from '../anim/fly';
 import { audio } from '../systems/AudioSystem';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 
@@ -32,6 +32,10 @@ const SAVE_EVERY_MS = 5000;
 /** Extra reach (0-1 of the art) for taps that miss every zone, so a finger can hit small zones. */
 const TAP_SLOP = 0.025;
 const PIZZA_INTRO_ID = 'pizza_intro_seen';
+
+/** A ready dish being dragged to a customer. `from` says where it comes from, so the model serves the right thing. */
+type DragFrom = { kind: 'board'; index: number } | { kind: 'small' | 'fryer'; index: number } | { kind: 'ice'; index: number };
+type Drag = { from: DragFrom; img: Phaser.GameObjects.Image; home: { x: number; y: number }; tx: number; ty: number; sx: number; sy: number; moved: boolean; zone: PizzaZone };
 
 /**
  * The Pizza Place. The kitchen model (PizzaKitchenState) runs the game; this scene is only the picture and the input.
@@ -59,6 +63,8 @@ export class PizzaScene extends Phaser.Scene {
   private speed = 1;
   private lessonPauseUntil = 0;
   private lastSave = 0;
+  /** A ready dish being dragged to a customer. */
+  private drag: Drag | null = null;
   private panelOpen = false;
   private adActive = false;
   private adPending = false;
@@ -85,6 +91,7 @@ export class PizzaScene extends Phaser.Scene {
       this.scene.start('Game', { restaurantId: 'burger_diner' });
       return;
     }
+    this.drag = null;
     this.panelOpen = false;
     this.tutorialOn = false;
     this.lesson = null;
@@ -121,6 +128,8 @@ export class PizzaScene extends Phaser.Scene {
     this.startTutorial();
 
     this.input.on('pointerdown', this.onTap, this);
+    this.input.on('pointermove', this.onMove, this);
+    this.input.on('pointerup', this.onRelease, this);
     this.input.keyboard?.on('keydown-B', this.openShop, this);
     this.input.keyboard?.on('keydown-R', this.openBook, this);
     this.input.keyboard?.on('keydown-T', this.openRestaurants, this);
@@ -141,7 +150,7 @@ export class PizzaScene extends Phaser.Scene {
     if (save.seenStory.includes(PIZZA_INTRO_ID)) return begin();
     save.seenStory.push(PIZZA_INTRO_ID);
     this.saveNow();
-    this.storyCard.show({ id: PIZZA_INTRO_ID, title: 'Welcome to the Pizza Place!', text: "Tap the dough, add sauce and cheese, then bake it in the oven. Let's make your first pizza!" }, begin);
+    this.storyCard.show({ id: PIZZA_INTRO_ID, title: 'Welcome to the Pizza Place!', text: "Tap the dough, add sauce and cheese, bake it in the oven, then drag it to the customer. Let's make your first pizza!" }, begin);
   }
 
   private finishTutorial(message: string, finished = false): void {
@@ -162,6 +171,7 @@ export class PizzaScene extends Phaser.Scene {
     for (const e of this.state.drainEvents()) this.handle(e);
     this.views.sync();
     this.customers.sync();
+    this.followDrag(real);
     this.hud.update(this.state, real);
     if (this.state.event) this.banner.update(this.state.event.remaining);
     this.updateTutorial();
@@ -412,8 +422,110 @@ export class PizzaScene extends Phaser.Scene {
     const n = logicalToNorm(p.worldX, p.worldY, this.bg);
     const z = hitTestPizza(defaultPizzaConfig.zones, n.x, n.y, TAP_SLOP);
     if (!z) return;
+    // A ready dish is dragged to a customer (a plain tap still serves the oldest customer who ordered it).
+    const carry = this.carryable(z);
+    if (carry) return this.startDrag(z, p, carry.from, carry.frame);
     this.views.tapFeedback(z);
     tapPizzaZone(this.state, z);
+  }
+
+  /** What a zone offers to drag right now: a baked pizza on its board, a ready tray or basket, a full ice cream cone. */
+  private carryable(z: PizzaZone): { from: DragFrom; frame: { atlas: string; frame: string } } | null {
+    const s = this.state;
+    const edible = (p: string) => p !== 'cooking' && p !== 'burnt';
+    if (z.action === 'board') {
+      const item = s.boards[z.index ?? 0]?.item;
+      const d = item?.status === 'baked' && item.dish ? s.dishDef(item.dish) : undefined;
+      return d ? { from: { kind: 'board', index: z.index ?? 0 }, frame: iconFrame(d) } : null;
+    }
+    if (z.action === 'small_oven') {
+      const i = s.smallOven.findIndex((t) => t && edible(t.phase));
+      const d = i >= 0 ? s.dishDef(s.smallOven[i]!.dish) : undefined;
+      return d ? { from: { kind: 'small', index: i }, frame: iconFrame(d) } : null;
+    }
+    if (z.action === 'fryer' && z.id.startsWith('fryer_basket')) {
+      const t = s.fryer[z.index ?? 0];
+      const d = t && edible(t.phase) ? s.dishDef(t.dish) : undefined;
+      return d ? { from: { kind: 'fryer', index: z.index ?? 0 }, frame: iconFrame(d) } : null;
+    }
+    if (z.action === 'ice') {
+      const i = s.ice.findIndex((l) => l && l.phase === 'ready');
+      const d = i >= 0 ? s.dishes.find((x) => x.kind === 'dessert') : undefined;
+      return d ? { from: { kind: 'ice', index: i }, frame: iconFrame(d) } : null;
+    }
+    return null;
+  }
+
+  /** Pick the dish up: it lifts off its spot and glides to the finger, so it never jumps. */
+  private startDrag(z: PizzaZone, p: Phaser.Input.Pointer, from: DragFrom, pic: { atlas: string; frame: string }): void {
+    const home = this.views.spot(z);
+    const img = this.add.image(home.x, home.y, pic.atlas, pic.frame).setDepth(50).setAlpha(0.95);
+    const base = 90 / img.width;
+    img.setScale(base);
+    if (!SaveSystem.reduceMotion()) this.tweens.add({ targets: img, scale: base * 1.12, duration: 110, ease: 'Back.Out' });
+    if (from.kind === 'board') this.views.setCarried(from.index, true);
+    this.drag = { from, img, home: { x: home.x, y: home.y }, tx: p.worldX, ty: p.worldY, sx: p.worldX, sy: p.worldY, moved: false, zone: z };
+  }
+
+  private onMove(p: Phaser.Input.Pointer): void {
+    const d = this.drag;
+    if (!d) return;
+    d.tx = p.worldX;
+    d.ty = p.worldY;
+    if (Math.hypot(p.worldX - d.sx, p.worldY - d.sy) > 12) d.moved = true;
+  }
+
+  /** The carried picture eases towards the finger every frame (frame-rate independent). */
+  private followDrag(dtSec: number): void {
+    const d = this.drag;
+    if (!d || !d.moved) return;
+    const k = SaveSystem.reduceMotion() ? 1 : 1 - Math.pow(0.0004, dtSec);
+    d.img.x += (d.tx - d.img.x) * k;
+    d.img.y += (d.ty - d.img.y) * k;
+  }
+
+  private serveDragged(from: DragFrom, customerId: number): boolean {
+    const s = this.state;
+    if (from.kind === 'board') return s.serveBoard(from.index, customerId);
+    if (from.kind === 'ice') return s.serveIce(from.index, customerId);
+    return s.serveTray(from.kind, from.index, customerId);
+  }
+
+  private onRelease(p: Phaser.Input.Pointer): void {
+    const d = this.drag;
+    if (!d) return;
+    this.drag = null;
+    if (!d.moved) {
+      // A tap, not a drag: serve the oldest customer who ordered it.
+      this.endDrag(d);
+      this.views.tapFeedback(d.zone);
+      return tapPizzaZone(this.state, d.zone);
+    }
+    const target = this.customers.customerAt(p.worldX, p.worldY);
+    const ok = target ? this.serveDragged(d.from, target.id) : false;
+    const to = ok && target ? this.customers.centerOf(target.id) : null;
+    if (to) {
+      // Served: the dish flies the last bit into the customer and shrinks away.
+      if (d.from.kind === 'board') this.views.setCarried(d.from.index, false);
+      arcTo(this, d.img, to, 200, 24, () => this.endDrag(d));
+      if (!SaveSystem.reduceMotion()) this.tweens.add({ targets: d.img, scale: d.img.scale * 0.5, alpha: 0.2, duration: 200 });
+      return;
+    }
+    // Dropped on nothing or on the wrong customer: it glides back to where it came from.
+    if (SaveSystem.reduceMotion()) return this.endDrag(d);
+    this.tweens.add({ targets: d.img, x: d.home.x, y: d.home.y, duration: 190, ease: 'Quad.Out', onComplete: () => this.endDrag(d) });
+  }
+
+  private endDrag(d: Drag): void {
+    this.tweens.killTweensOf(d.img);
+    d.img.destroy();
+    if (d.from.kind === 'board') this.views.setCarried(d.from.index, false);
+  }
+
+  private cancelDrag(): void {
+    const d = this.drag;
+    this.drag = null;
+    if (d) this.endDrag(d);
   }
 
   // ---------------------------------------------------------------- panels
@@ -430,6 +542,7 @@ export class PizzaScene extends Phaser.Scene {
 
   private openPanel(key: 'Shop' | 'RecipeBook' | 'RestaurantSelect'): void {
     if (this.panelOpen || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing) return;
+    this.cancelDrag();
     this.tutorial.hide();
     audio.setSizzle(0);
     this.saveNow();
@@ -446,7 +559,7 @@ export class PizzaScene extends Phaser.Scene {
       onClose,
       onPick: (id: string) => (id === PIZZA_ID ? this.scene.restart() : startRestaurant(this, id)),
       rows: key === 'RecipeBook' ? this.recipeRows() : undefined,
-      tips: key === 'RecipeBook' ? 'Tap the dough, then a sauce, a cheese and toppings. Tap the pizza to finish it, again to bake it. Take it out when the ring turns green, then tap it to serve.' : undefined,
+      tips: key === 'RecipeBook' ? 'Tap the dough, then a sauce, a cheese and toppings. Tap the pizza to finish it, again to bake it. Take it out when the ring turns green, then drag it to the customer.' : undefined,
     };
     this.scene.launch(key, data);
     this.scene.bringToTop(key);
@@ -498,7 +611,10 @@ export class PizzaScene extends Phaser.Scene {
       Object.assign(SaveSystem.data, JSON.parse(this.debugBackup));
       this.debugBackup = null;
     } else if (this.state) this.saveNow();
+    this.cancelDrag();
     this.input.off('pointerdown', this.onTap, this);
+    this.input.off('pointermove', this.onMove, this);
+    this.input.off('pointerup', this.onRelease, this);
     this.input.keyboard?.off('keydown-B', this.openShop, this);
     this.input.keyboard?.off('keydown-R', this.openBook, this);
     this.input.keyboard?.off('keydown-T', this.openRestaurants, this);
