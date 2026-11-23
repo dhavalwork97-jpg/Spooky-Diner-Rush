@@ -22,7 +22,9 @@ import { CrazyGames } from '../sdk/crazygames';
 import { iconFrame, loadPizzaArt, PizzaViews } from '../views/PizzaViews';
 import { PizzaTickets } from '../views/PizzaTickets';
 import { PizzaCustomers } from '../views/PizzaCustomers';
-import { Hud } from '../views/Hud';
+import { GoalBanner, Hud } from '../views/Hud';
+import { PizzaGoalTracker, toPizzaGoalEvent, type PizzaGoalEnv } from '../game/pizza/pizzaGoals';
+import { unlockedDishes } from '../game/pizza/pizzaConfig';
 import { Ring } from '../views/Ring';
 import { MenuButtons, type MenuKind } from '../views/MenuButtons';
 import { MuteButton } from '../views/MuteButton';
@@ -56,6 +58,9 @@ export class PizzaScene extends Phaser.Scene {
   private customers!: PizzaCustomers;
   private tickets!: PizzaTickets;
   private dailyPlate!: DailyGoalPlate;
+  private goals!: PizzaGoalTracker;
+  private goalBanner!: GoalBanner;
+  private goalToasts: string[] = [];
   private fx!: ParticlePool;
   private hud!: Hud;
   private toast!: Toast;
@@ -132,6 +137,9 @@ export class PizzaScene extends Phaser.Scene {
     this.toast = new Toast(this, LOGICAL_WIDTH / 2, 300);
     this.banner = new EventBanner(this, 551, 42);
     this.dailyPlate = new DailyGoalPlate(this);
+    this.goals = new PizzaGoalTracker(Date.now());
+    this.goalBanner = new GoalBanner(this, 640, 170);
+    this.goalToasts = [];
     this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330);
     this.overlay = new Overlay(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.storyCard = new StoryCard(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
@@ -189,6 +197,7 @@ export class PizzaScene extends Phaser.Scene {
     this.tickets.sync();
     this.followDrag(real);
     this.hud.update(this.state, real);
+    this.updateGoals(real);
     this.dailyPlate.update(DailyGoalSystem.progress(), { dtMs: real * 1000, claimed: DailyGoalSystem.claimed, blocked: this.lessonBlocked() || this.tutorialOn });
     if (this.state.event) this.banner.update(this.state.event.remaining);
     this.updateTutorial();
@@ -206,6 +215,7 @@ export class PizzaScene extends Phaser.Scene {
   }
 
   private handle(e: PizzaEvent): void {
+    this.countGoal(e);
     switch (e.type) {
       case 'boardStart':
       case 'ingredient': {
@@ -427,6 +437,33 @@ export class PizzaScene extends Phaser.Scene {
   private zoneSpot(z: PizzaZone): { x: number; y: number; w: number; h: number } {
     const c = this.views.spot(z);
     return { x: c.x, y: c.y, w: z.width * this.bg.width, h: z.height * this.bg.height };
+  }
+
+  private goalEnv(): PizzaGoalEnv {
+    const kinds = new Set(unlockedDishes(this.state.pizza, this.state.menuStep).map((d) => d.kind));
+    return { level: this.state.level, comboPossible: kinds.has('pizza') && (kinds.has('side') || kinds.has('fried')) && kinds.has('dessert'), customPossible: this.state.menuStep >= this.state.pizza.custom.fromStep };
+  }
+
+  /** Goals keep counting while their banner is hidden; the shared timer decides when the banner shows (Part C). Never during the tutorial, a lesson, a popup or Closed. */
+  private updateGoals(real: number): void {
+    const allowed = !this.tutorialOn && !this.lessonBlocked();
+    const env = this.goalEnv();
+    if (allowed) {
+      this.goals.ensure(env);
+      this.goals.tick(real, env);
+    }
+    this.goalBanner.update(this.tutorialOn ? null : this.goals.current, { dtMs: real * 1000, completed: this.goals.completed, blocked: !allowed });
+    const msg = allowed && !this.toast.visible ? this.goalToasts.splice(0, 1)[0] : undefined;
+    if (msg) this.toast.show(msg);
+  }
+
+  private countGoal(e: PizzaEvent): void {
+    if (this.tutorialOn || !this.goals.current) return;
+    const ge = toPizzaGoalEvent(e);
+    const done = ge ? this.goals.onEvent(ge, this.goalEnv()) : null;
+    if (!done) return;
+    this.state.awardGoal(done.coins, done.xp);
+    this.goalToasts.push(`Goal complete! +${done.coins} coins  +${done.xp} XP`);
   }
 
   private lessonBlocked(): boolean {
@@ -743,6 +780,7 @@ export class PizzaScene extends Phaser.Scene {
     this.customers?.destroy();
     this.tickets?.destroy();
     this.dailyPlate?.destroy();
+    this.goalBanner?.destroy();
     this.fx?.destroy();
     audio.setSizzle(0);
     audio.stopMusic();

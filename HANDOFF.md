@@ -5,7 +5,7 @@ B5 Delivery Rush plan (pizza only, Diner/Taco untouched):
  3. serving: tap a ticket or drag a pizza onto it; tapBoard falls back to tickets
  4. view PizzaTickets (left column) + PizzaScene wiring + banner
  5. tests, headless check (desktop + phone), docs/progress.md, commit + push
-Steps done so far: B7 DONE (23 tests, wired in 3 scenes, docs), committing. Next: B8 pizza mini-goals, D, E, G, optimize
+Steps done so far: B8 DONE (14 tests, wired, docs), running full suite then commit. Next: Part D leftovers, E testing report, G docs, optimize, final regression
 
 # IN PROGRESS (2026-11-22) - B4 mastery + Daily Special DONE (see docs/progress.md); next B5 Delivery Rush after the owner says Continue
 

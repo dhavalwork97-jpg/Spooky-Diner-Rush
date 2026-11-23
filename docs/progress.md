@@ -373,3 +373,9 @@ Ten additive features: station intro cards (Lv 2/4/5/6/10/12), mastery from Lv 6
 - Wiring: each scene counts on its own `orderDone` event (`DailyGoalSystem.record`), so `KitchenState` and `TacoKitchenState` are not changed. The reward is added to the scene's coins with a toast. Pizza Delivery Rush tickets are not customers and do not count.
 - HUD: `DailyGoalPlate`, a small plate at the top centre, driven by the shared `GoalBannerTimer` (Part C fade: 6 s on open, 3 s on progress or reward, never under a popup or tutorial). The Diner shows it from Lv 3 like the mini-goals.
 - Tests: `tests/daily_goal.test.ts` (23): ownership, progress, claims, date changes, save compatibility. Checked in headless Chromium (Pizza scene). Not tested on a real phone.
+
+## Pizza B8: Pizza mini-goals (2026-11-23)
+- Chosen approach: option 2, a small Pizza-specific picker (`src/game/pizza/pizzaGoals.ts`). The Diner's `goals.ts` is built around burger items, so it is untouched and `tests/goals.test.ts` still passes. It reuses the shared `Goal` shape, `goalReward`, the 75 s stale time and the shared `GoalBanner` (now with an optional position), so it looks and fades exactly like the Diner's (Part C).
+- Goals: Serve 3 customers quickly in a row; Bake 3 pizzas (taken out good to eat, burnt ones do not count); Serve 2 combo meals; Make 3 perfect bakes; Serve 3 custom pizzas. Combo and custom goals only come up when the menu can make them. Never the same kind twice in a row.
+- Reward: the shared level-scaled coins and XP, through a new `PizzaKitchenState.awardGoal`. Nothing is saved (as in the Diner). No goals during the tutorial, a lesson card, a popup or Closed.
+- Banner sits at the top centre under the daily plate. Tests: `tests/pizza_goals.test.ts` (14). Checked in headless Chromium; not on a real phone.

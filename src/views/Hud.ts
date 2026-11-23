@@ -150,14 +150,14 @@ export class GoalBanner {
   private shownProgress = -1;
   private timer = new GoalBannerTimer();
 
-  constructor(private scene: Phaser.Scene) {
+  constructor(private scene: Phaser.Scene, x = 194, y = 138) {
     const bg = scene.add.graphics();
     bg.fillStyle(0x000000, 0.22).fillRoundedRect(-GOAL_W / 2 + 3, -GOAL_H / 2 + 6, GOAL_W, GOAL_H, 18);
     bg.fillStyle(CREAM, 1).fillRoundedRect(-GOAL_W / 2, -GOAL_H / 2, GOAL_W, GOAL_H, 18);
     bg.lineStyle(4, INK, 1).strokeRoundedRect(-GOAL_W / 2, -GOAL_H / 2, GOAL_W, GOAL_H, 18);
     this.title = scene.add.text(0, -6, '', { fontFamily: FONT, fontSize: '20px', color: '#2B1B17' }).setOrigin(0.5);
     this.bar = scene.add.graphics();
-    this.box = scene.add.container(194, 138, [bg, this.title, this.bar]).setDepth(861).setVisible(false);
+    this.box = scene.add.container(x, y, [bg, this.title, this.bar]).setDepth(861).setVisible(false);
   }
 
   /**

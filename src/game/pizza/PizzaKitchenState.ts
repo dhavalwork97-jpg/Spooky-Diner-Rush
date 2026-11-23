@@ -946,6 +946,12 @@ export class PizzaKitchenState {
     return true;
   }
 
+  /** A finished mini-goal pays a little coin and XP (same as the Diner's). */
+  awardGoal(coins: number, xp: number): void {
+    this.coins += coins;
+    this.addXp(xp);
+  }
+
   private completeTicket(t: PizzaCustomer): void {
     const rush = this.pizza.events.delivery_rush;
     const coins = rushTicketCoins(t.price, rush.coinMult, t.perfectTips ?? 0);
