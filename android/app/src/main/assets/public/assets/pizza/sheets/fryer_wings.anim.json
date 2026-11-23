@@ -1,0 +1,68 @@
+{
+ "key": "fryer_wings",
+ "image": "fryer_wings.webp",
+ "frameWidth": 109,
+ "frameHeight": 207,
+ "columns": 8,
+ "rows": 5,
+ "frameCount": 40,
+ "clips": {
+  "intro": {
+   "from": 0,
+   "to": 8,
+   "fps": 12,
+   "loop": false
+  },
+  "cook_loop": {
+   "from": 9,
+   "to": 16,
+   "fps": 8,
+   "loop": true
+  },
+  "ready_loop": {
+   "from": 17,
+   "to": 22,
+   "fps": 8,
+   "loop": true
+  },
+  "overcook_loop": {
+   "from": 23,
+   "to": 30,
+   "fps": 8,
+   "loop": true
+  },
+  "burnt_loop": {
+   "from": 31,
+   "to": 38,
+   "fps": 8,
+   "loop": true
+  },
+  "idle_empty": {
+   "from": 39,
+   "to": 39,
+   "fps": 1,
+   "loop": false
+  }
+ },
+ "half": "right",
+ "splitX": 146,
+ "sourceFrame": [
+  302,
+  296
+ ],
+ "kitchenPlace": {
+  "fryerTopLeft2752": [
+   1744.3,
+   1019.7
+  ],
+  "videoToKitchen": 1.3113,
+  "frameOriginInVideo": [
+   336,
+   0
+  ],
+  "fryerTopLeftInVideo": [
+   369,
+   137
+  ]
+ }
+}

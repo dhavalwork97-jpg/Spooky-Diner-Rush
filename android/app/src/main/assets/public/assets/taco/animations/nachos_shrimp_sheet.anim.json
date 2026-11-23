@@ -1,0 +1,25 @@
+{
+ "key": "nachos_shrimp",
+ "image": "nachos_shrimp_sheet.webp",
+ "frameWidth": 288,
+ "frameHeight": 208,
+ "columns": 5,
+ "rows": 1,
+ "frameCount": 5,
+ "suggestedFps": 2,
+ "frameLabels": [
+  "chips",
+  "cheese_raw",
+  "cheese_melted",
+  "protein_and_toppings",
+  "finished"
+ ],
+ "anchorPx": {
+  "x": 144,
+  "y": 202
+ },
+ "originX": 0.5,
+ "originY": 0.9712,
+ "anchorNote": "Anchor = bottom-centre of the food (steam rises above).",
+ "note": "Frames 1-5 are build steps (one per tap/step). Frame 3 (melted cheese) is the oven step. The last frame is also exported as sprites/nachos_<protein>.png. A faint sparkle mark remains on the bottom-right of the veggie finished frame."
+}
