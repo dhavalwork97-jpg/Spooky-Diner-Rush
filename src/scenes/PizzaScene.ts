@@ -1,4 +1,6 @@
 import { pizzaMasteryDue, pizzaMasteryGrid, pizzaMasteryTiers, pizzaPaidAfter } from '../game/pizza/pizzaExtras';
+import { DailyGoalPlate } from '../views/DailyGoalPlate';
+import { DailyGoalSystem } from '../systems/DailyGoalSystem';
 import { defaultExtras, localDateKey } from '../game/extras';
 import { parseCustom } from '../game/pizza/pizzaCustom';
 import Phaser from 'phaser';
@@ -53,6 +55,7 @@ export class PizzaScene extends Phaser.Scene {
   private views!: PizzaViews;
   private customers!: PizzaCustomers;
   private tickets!: PizzaTickets;
+  private dailyPlate!: DailyGoalPlate;
   private fx!: ParticlePool;
   private hud!: Hud;
   private toast!: Toast;
@@ -128,6 +131,7 @@ export class PizzaScene extends Phaser.Scene {
     this.hud = new Hud(this, this.state);
     this.toast = new Toast(this, LOGICAL_WIDTH / 2, 300);
     this.banner = new EventBanner(this, 551, 42);
+    this.dailyPlate = new DailyGoalPlate(this);
     this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330);
     this.overlay = new Overlay(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.storyCard = new StoryCard(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
@@ -185,6 +189,7 @@ export class PizzaScene extends Phaser.Scene {
     this.tickets.sync();
     this.followDrag(real);
     this.hud.update(this.state, real);
+    this.dailyPlate.update(DailyGoalSystem.progress(), { dtMs: real * 1000, claimed: DailyGoalSystem.claimed, blocked: this.lessonBlocked() || this.tutorialOn });
     if (this.state.event) this.banner.update(this.state.event.remaining);
     this.updateTutorial();
     this.updateLesson();
@@ -269,6 +274,13 @@ export class PizzaScene extends Phaser.Scene {
         break;
       }
       case 'orderDone': {
+        {
+          const bonus = DailyGoalSystem.record('pizza_place');
+          if (bonus > 0) {
+            this.state.coins += bonus;
+            this.toast.show(`Daily goal complete! +${bonus} coins`);
+          }
+        }
         this.customers.celebrate(e.customer);
         const at = this.customers.centerOf(e.customer);
         if (at) {
@@ -730,6 +742,7 @@ export class PizzaScene extends Phaser.Scene {
     this.views?.destroy();
     this.customers?.destroy();
     this.tickets?.destroy();
+    this.dailyPlate?.destroy();
     this.fx?.destroy();
     audio.setSizzle(0);
     audio.stopMusic();

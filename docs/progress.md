@@ -365,3 +365,11 @@ Ten additive features: station intro cards (Lv 2/4/5/6/10/12), mastery from Lv 6
 - It is only a picture: nothing waits for it, so the next ingredient tap works straight away and experienced players are not slowed. Turning Reduced Motion on skips it completely (this is the skip option). A missing ball frame also skips it quietly.
 - Code: `PizzaViews.rollDough`, called from the `boardStart` event in `PizzaScene`. Checked in headless Chromium (mid-roll frame looks right, no errors). It is a visual effect, so there is no unit test.
 - Not built: a tap-to-roll mini game. It would slow players, which the spec forbids; it can be added later behind an option if wanted.
+
+## Pizza B7: three-restaurant daily goal (2026-11-23)
+- Goal: "Serve 5 customers in each restaurant today". Counts only restaurants the player owns (Diner, Tacos, Pizza); the goal grows if a restaurant is bought later that day. Reward 50 coins, paid once per day, when every owned restaurant reaches 5.
+- Rules are in `src/game/dailyGoal.ts` (pure) and reuse `dayNumber` from `loginBonus.ts`, so the daily reset matches the login bonus and the Daily Special: a new day starts at zero, a clock set backwards keeps the saved day (no second claim), unreadable dates change nothing.
+- Save: new field `dailyGoal {day, counts, claimed}`. Older saves load with an empty goal; junk is cleaned. Login bonus fields are untouched.
+- Wiring: each scene counts on its own `orderDone` event (`DailyGoalSystem.record`), so `KitchenState` and `TacoKitchenState` are not changed. The reward is added to the scene's coins with a toast. Pizza Delivery Rush tickets are not customers and do not count.
+- HUD: `DailyGoalPlate`, a small plate at the top centre, driven by the shared `GoalBannerTimer` (Part C fade: 6 s on open, 3 s on progress or reward, never under a popup or tutorial). The Diner shows it from Lv 3 like the mini-goals.
+- Tests: `tests/daily_goal.test.ts` (23): ownership, progress, claims, date changes, save compatibility. Checked in headless Chromium (Pizza scene). Not tested on a real phone.

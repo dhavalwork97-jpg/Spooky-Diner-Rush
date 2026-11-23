@@ -1,4 +1,7 @@
 import Phaser from 'phaser';
+import { DailyGoalPlate } from '../views/DailyGoalPlate';
+import { DailyGoalSystem } from '../systems/DailyGoalSystem';
+import { NO_PROGRESS } from '../game/dailyGoal';
 import { startRestaurant } from './restaurantRoute';
 import type { RestaurantDef } from '../data/validate';
 import { fitBackground, hitTestZone, logicalToNorm, normToLogical, type BackgroundPlacement, type Rect, type ZoneDef } from '../kitchen/zones';
@@ -88,6 +91,7 @@ export class GameScene extends Phaser.Scene {
   private hud!: Hud;
   private goals!: GoalTracker;
   private goalBanner!: GoalBanner;
+  private dailyPlate!: DailyGoalPlate;
   /** "Goal complete" messages waiting for a moment with no card on screen. */
   private goalToasts: string[] = [];
   private toast!: Toast;
@@ -176,6 +180,7 @@ export class GameScene extends Phaser.Scene {
     this.banner = new EventBanner(this, 551, 42);
     this.goals = new GoalTracker(Date.now());
     this.goalBanner = new GoalBanner(this);
+    this.dailyPlate = new DailyGoalPlate(this);
     this.goalToasts = [];
     this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330, () => this.afterLevelUpCards());
     this.chestCard = new ChestCard(this, this.fx, LOGICAL_WIDTH / 2, 360);
@@ -757,6 +762,13 @@ export class GameScene extends Phaser.Scene {
         audio.play('ding');
         break;
       case 'orderDone': {
+        {
+          const bonus = DailyGoalSystem.record('burger_diner');
+          if (bonus > 0) {
+            this.state.coins += bonus;
+            this.toast.show(`Daily goal complete! +${bonus} coins`);
+          }
+        }
         this.badgeEvent({ type: 'serve', rush: e.rush, atMaxCombo: e.combo >= this.state.cfg.combo.maxCombo, duringMoon: this.state.event?.def.id === 'full_moon', regular: !!e.regular });
         const cv = this.custViews.get(e.customer);
         this.flyCoins(cv?.center ?? { x: 640, y: 150 }, Math.min(6, 2 + Math.floor(e.coins / 10)));
@@ -1006,6 +1018,7 @@ export class GameScene extends Phaser.Scene {
     // Goals keep tracking in the model while the banner is hidden; the pure timer decides when the banner shows (6 s for a new goal, 3 s on progress/completion).
     const unlocked = goalsUnlocked(this.state.level, tutorialActive(this.state));
     this.goalBanner.update(unlocked ? this.goals.current : null, { dtMs: dt * 1000, completed: this.goals.completed, blocked: !ok || this.hand.visible || this.chestCard.isShowing });
+    this.dailyPlate.update(unlocked ? DailyGoalSystem.progress() : NO_PROGRESS, { dtMs: dt * 1000, claimed: DailyGoalSystem.claimed, blocked: !ok || this.hand.visible || this.chestCard.isShowing });
     const msg = ok && !this.toast.visible ? this.goalToasts.splice(0, 1)[0] : undefined;
     if (msg) this.toast.show(msg);
   }
@@ -1377,6 +1390,7 @@ export class GameScene extends Phaser.Scene {
     this.hand.destroy();
     this.storyCard.destroy();
     this.goalBanner.destroy();
+    this.dailyPlate?.destroy();
     this.fx.destroy();
     this.atmosphere?.destroy();
     this.atmosphere = undefined;
