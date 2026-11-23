@@ -359,3 +359,9 @@ Ten additive features: station intro cards (Lv 2/4/5/6/10/12), mastery from Lv 6
 - Files: `src/game/pizza/pizzaRush.ts` (pure), `src/views/PizzaTickets.ts`, `PizzaKitchenState` (`tickets`, `serveTicket`, `startRush`, `endRush`), `PizzaScene`, validation in `src/data/validate.ts`. Tests: `tests/pizza_rush.test.ts` (15).
 - Checked in headless Chromium at 1280x720 and 844x390: cards, banner, serving and +coins popup work, no console errors. Not tested on a real phone.
 - Note: `tests/balance_upgrades.test.ts` (Diner balance bot) can hit vitest's 5 s timeout when the whole suite runs in parallel; it passes alone. Not related to this change.
+
+## Pizza B6: dough rolling (2026-11-23)
+- When dough goes on a board, a dough ball flattens into the dough disc (260 ms crossfade, code only) with the flour puff the board already shows. Uses the existing `dough_ball` and `dough_disc` frames; no rolling-pin art is needed.
+- It is only a picture: nothing waits for it, so the next ingredient tap works straight away and experienced players are not slowed. Turning Reduced Motion on skips it completely (this is the skip option). A missing ball frame also skips it quietly.
+- Code: `PizzaViews.rollDough`, called from the `boardStart` event in `PizzaScene`. Checked in headless Chromium (mid-roll frame looks right, no errors). It is a visual effect, so there is no unit test.
+- Not built: a tap-to-roll mini game. It would slow players, which the spec forbids; it can be added later behind an option if wanted.

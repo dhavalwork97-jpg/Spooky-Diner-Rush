@@ -206,6 +206,7 @@ export class PizzaScene extends Phaser.Scene {
       case 'ingredient': {
         const at = this.spotOf(e);
         if (at) this.fx.burst(at.x, at.y, e.type === 'ingredient' ? 0xffe08a : 0xf0d9a8, 6, 34, 380);
+        if (e.type === 'boardStart') this.views.rollDough(e.board);
         this.views.boardPop(e.board);
         audio.play('pop');
         break;

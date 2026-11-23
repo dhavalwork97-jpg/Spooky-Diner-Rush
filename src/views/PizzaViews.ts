@@ -74,6 +74,8 @@ const TINT: Record<string, number> = { cooking: 0xe9e1d2, ready: 0xffffff, warni
 const TOP_FRAMES_A = new Set(['pepperoni', 'mushroom', 'olive', 'bell_pepper', 'red_onion', 'jalapeno']);
 const DEPTH_OVEN = 22;
 const DEPTH_ITEMS = 26;
+/** Length of the dough-rolling crossfade. */
+const ROLL_MS = 260;
 
 /** A pizza picture built from the layer atlases. `top` is the flat view on a board; `oven` squashes it for the brick oven. Rebuilt when its signature changes. */
 class PizzaPicture {
@@ -155,6 +157,7 @@ export class PizzaViews {
   private bigDoor: OvenDoorMachine;
   private smallDoor: OvenDoorMachine;
   private boards: PizzaPicture[] = [];
+  private boardDiameter = 0;
   private ovenPics: PizzaPicture[] = [];
   private rings = new Map<string, Ring>();
   private smallPics: (TrayPic | null)[] = [];
@@ -171,6 +174,7 @@ export class PizzaViews {
     const boardD = Math.min(...cfg.zones.filter((z) => z.action === 'board').map((z) => Math.min(z.width * bg.width, z.height * bg.height))) * 0.98;
     for (let i = 0; i < s.boards.length; i++) {
       this.boards.push(new PizzaPicture(scene, boardD, DEPTH_ITEMS));
+      this.boardDiameter = boardD;
     }
     const m = SHEETS.oven_big;
     const k = this.k('ovenBig', m);
@@ -459,6 +463,31 @@ export class PizzaViews {
   /** A pizza being dragged to a customer dims on its board (the carried picture follows the finger). */
   setCarried(i: number, carried: boolean): void {
     this.boards[i]?.box.setAlpha(carried ? 0.3 : 1);
+  }
+
+  /**
+   * Dough rolling: a dough ball flattens into the disc (a quick crossfade), with the flour puff the scene already draws.
+   * Purely visual and over in about a quarter of a second: nothing waits for it, so the next tap works at once.
+   * Skipped when Reduced Motion is on, or when the ball frame is missing.
+   */
+  rollDough(i: number): void {
+    const pic = this.boards[i]?.box;
+    const raw = atlasKey('raw_layers');
+    if (!pic || SaveSystem.reduceMotion() || !hasFrame(this.scene, raw, 'dough_ball')) return;
+    const ball = this.scene.add.image(pic.x, pic.y, raw, 'dough_ball').setDepth(DEPTH_ITEMS + 1);
+    const full = (this.boardDiameter * 0.9) / ball.width;
+    ball.setScale(full * 0.55);
+    pic.setAlpha(0);
+    this.scene.tweens.add({
+      targets: ball,
+      scale: full * 1.05,
+      alpha: 0,
+      duration: ROLL_MS,
+      ease: 'Quad.Out',
+      onUpdate: () => ball.setPosition(pic.x, pic.y),
+      onComplete: () => ball.destroy(),
+    });
+    this.scene.tweens.add({ targets: pic, alpha: 1, duration: ROLL_MS, ease: 'Quad.In', onComplete: () => pic.setAlpha(1) });
   }
 
   boardPop(i: number): void {
