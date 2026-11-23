@@ -26,7 +26,8 @@ export default defineConfig(({ mode }) => {
   return {
     base: './',
     plugins: [dropSourceArt(outDir), ...(crazygames ? [dropIntroVideo(outDir)] : [])],
-    build: { outDir, chunkSizeWarningLimit: 1500 },
+    // Phaser is its own file: it never changes between releases, so players (and the CrazyGames CDN) keep it cached when only the game code changes.
+    build: { outDir, chunkSizeWarningLimit: 1500, rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'phaser', test: /node_modules[\\/]phaser/ }] } } } },
     test: { include: ['tests/**/*.test.ts'] },
   } as never;
 });

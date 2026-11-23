@@ -16,3 +16,4 @@ P1-P3 coded + tests; next F2 final checks + chromium
 2026-11-21 pizza place: inspection done, plan written to HANDOFF.md, waiting for owner approval (branch feature/pizza-place, nothing else changed)
 2026-11-21 pizza A1 done (save fields + purchase rule + tests), next A2
 2026-11-22 plan: Global Lv display (derived milestones) then Part C
+2026-11-23T06:47:22Z final regression + optimisation committed on feature/pizza-place

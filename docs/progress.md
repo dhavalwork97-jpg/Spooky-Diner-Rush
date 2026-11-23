@@ -379,3 +379,47 @@ Ten additive features: station intro cards (Lv 2/4/5/6/10/12), mastery from Lv 6
 - Goals: Serve 3 customers quickly in a row; Bake 3 pizzas (taken out good to eat, burnt ones do not count); Serve 2 combo meals; Make 3 perfect bakes; Serve 3 custom pizzas. Combo and custom goals only come up when the menu can make them. Never the same kind twice in a row.
 - Reward: the shared level-scaled coins and XP, through a new `PizzaKitchenState.awardGoal`. Nothing is saved (as in the Diner). No goals during the tutorial, a lesson card, a popup or Closed.
 - Banner sits at the top centre under the daily plate. Tests: `tests/pizza_goals.test.ts` (14). Checked in headless Chromium; not on a real phone.
+
+## Final regression and optimisation (2026-11-23)
+Branch `feature/pizza-place`. `main` untouched.
+
+| Check | Result |
+|---|---|
+| npm ci | Pass (0 vulnerabilities) |
+| TypeScript (`npx tsc --noEmit`) | Pass |
+| Vitest (`npx vitest run --testTimeout=60000`) | Pass: 83 files, 1004 passed, 2 skipped |
+| Production build | Pass |
+| CrazyGames build | Pass |
+| Pizza Chromium desktop (1280x720) | Pass: Rush, dough rolling, mini-goals, daily plate; no page errors |
+| Pizza Chromium phone (844x390) | Pass: Rush cards, banner, serving; no page errors |
+| Diner Chromium desktop | Pass: goal banner shows, fades, comes back on progress, hides under overlay and level-up card |
+| Diner Chromium phone | Pass: same checks |
+| Taco regression | Pass: loads and runs, no page errors (load check only; its gameplay tests are in Vitest) |
+
+- Baseline note: with the default 5 s timeout, `tests/balance_upgrades.test.ts` (a Diner balance bot) can time out when the whole suite runs in parallel; it passes with `--testTimeout=60000` and alone. It failed the same way with this work stashed, so it is not caused by the Pizza changes.
+- Browser test note: the Diner chest card (daily chest) appears a few seconds after load and correctly hides the goal banner; the test script now taps it away.
+- Console note: the CrazyGames SDK script cannot load in the sandbox (no network), which logs one resource error. It is not a game bug.
+
+### Optimisation (measured)
+- Phaser is now its own JS file (`vite.config.ts`). Before: one 1,827 kB file (492 kB gzip) and a size warning. After: game code 459 kB (135 kB gzip) + Phaser 1,367 kB (357 kB gzip), no warning. Players keep the Phaser file cached when only game code changes. Total size is the same. The built game loads and runs in Chromium from `dist`.
+- The daily goal progress is worked out at most twice a second instead of every frame in all three scenes.
+- Already efficient, left alone: Pizza and Taco art load only when that restaurant opens (not at boot); all art is WebP.
+
+### Part D report
+- Pizza runtime art: 18 WebP files in `public/assets/pizza/` (10 atlases, 3 backgrounds, 5 sheets), 2.23 MB on disk. No duplicate file names anywhere in `public/`; `sides_items_atlas.webp` exists only once, in `tools/pizza_source/` (source, not shipped).
+- GPU texture estimate for the Pizza Place: 50.1 MB (largest: the two 1679x937 backgrounds at 6.0 MB each, oven_big 5.5 MB). The existing gate is 85 MB; it was not raised.
+- Missing art and what stands in for it (no gameplay waits for any of it):
+  - Takeout ticket cards and Delivery Rush: code-drawn cards (rounded box, pizza icon, countdown bar). No pizza-box art.
+  - Dough rolling: code crossfade of the existing `dough_ball` to `dough_disc` plus the existing flour puff. No rolling-pin art.
+  - Build-your-own pizza icon: reuses the cheese pizza icon.
+  - Daily goal plate and Pizza goal banner: code-drawn, same look as the Diner goal banner.
+  - Mastery badges and the Lv 31-49 list: shared UI, no Pizza-specific art.
+
+### Not tested
+- Real phone gameplay (only headless Chromium at phone size).
+- CrazyGames SDK integration (the SDK cannot load here).
+- Human balance play (only the automatic balance bots).
+- Android build (`feature/android-capacitor`) was not touched or built.
+
+### Not implemented
+- A tap-to-roll dough mini game (see B6).
