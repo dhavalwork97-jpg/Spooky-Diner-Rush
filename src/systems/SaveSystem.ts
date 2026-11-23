@@ -1,7 +1,7 @@
 import { dayNumber } from '../game/loginBonus';
 import { emptyDailyGoal, type DailyGoalState } from '../game/dailyGoal';
 import { seedMasteryPaid } from '../game/taco/tacoExtras';
-import { CrazyGames } from '../sdk/crazygames';
+import { Portal } from '../sdk/portal';
 import { defaultTacoConfig } from '../game/taco/tacoConfig';
 import { seedLearned } from '../game/taco/tacoLearning';
 import { clampStep, stepFromLevel } from '../game/taco/tacoMenu';
@@ -125,7 +125,7 @@ export function defaultSave(): SaveData {
 }
 
 function read(key: string): string | null {
-  const fromSdk = CrazyGames.getItem(key);
+  const fromSdk = Portal.getItem(key);
   if (fromSdk !== null) return fromSdk;
   try {
     return globalThis.localStorage?.getItem(key) ?? null;
@@ -135,7 +135,7 @@ function read(key: string): string | null {
 }
 
 function write(key: string, value: string): void {
-  if (CrazyGames.setItem(key, value)) return;
+  if (Portal.setItem(key, value)) return;
   try {
     globalThis.localStorage?.setItem(key, value);
   } catch {

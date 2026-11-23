@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { IS_POKI_BUILD } from '../build/target';
 import { CREAM, INK, MUSTARD, ORANGE } from '../art/builders';
 import { SaveSystem } from '../systems/SaveSystem';
 import { audio } from '../systems/AudioSystem';
@@ -130,6 +131,11 @@ export class LevelUpCard {
 }
 
 /** Full-screen overlay used for "Closed" (with a Reopen button) and "Paused". */
+// Poki rules for a rewarded offer (https://developers.poki.com/guide/requirements-quality): the normal button is at least as big as the rewarded one and
+// sits above it, the rewarded button is not green and carries a video icon. Only the Poki build changes; the other builds keep their look.
+const MAIN_W = IS_POKI_BUILD ? 460 : 300;
+const EXTRA_COLOR = IS_POKI_BUILD ? 0x3b5ea8 : 0x2f7d4f;
+
 export class Overlay {
   private root: Phaser.GameObjects.Container;
   private title: Phaser.GameObjects.Text;
@@ -148,12 +154,12 @@ export class Overlay {
       .setOrigin(0.5);
     this.sub = scene.add.text(w / 2, h / 2 - 40, '', { fontFamily: FONT, fontSize: '28px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5, align: 'center' }).setOrigin(0.5);
     const g = scene.add.graphics();
-    g.fillStyle(0x000000, 0.25).fillRoundedRect(-150, -38, 300, 92, 20);
-    g.fillStyle(0xc4661a, 1).fillRoundedRect(-150, -44, 300, 92, 20);
-    g.fillStyle(ORANGE, 1).fillRoundedRect(-150, -48, 300, 88, 20);
-    g.lineStyle(5, INK, 1).strokeRoundedRect(-150, -48, 300, 88, 20);
+    g.fillStyle(0x000000, 0.25).fillRoundedRect(-MAIN_W / 2, -38, MAIN_W, 92, 20);
+    g.fillStyle(0xc4661a, 1).fillRoundedRect(-MAIN_W / 2, -44, MAIN_W, 92, 20);
+    g.fillStyle(ORANGE, 1).fillRoundedRect(-MAIN_W / 2, -48, MAIN_W, 88, 20);
+    g.lineStyle(5, INK, 1).strokeRoundedRect(-MAIN_W / 2, -48, MAIN_W, 88, 20);
     this.buttonText = scene.add.text(0, -4, '', { fontFamily: FONT, fontSize: '40px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 6 }).setOrigin(0.5);
-    this.button = scene.add.container(w / 2, h / 2 + 70, [g, this.buttonText]).setSize(300, 92).setInteractive({ useHandCursor: true });
+    this.button = scene.add.container(w / 2, h / 2 + 70, [g, this.buttonText]).setSize(MAIN_W, 92).setInteractive({ useHandCursor: true });
     this.button.on('pointerdown', () => {
       this.button.setScale(0.94);
     });
@@ -166,9 +172,14 @@ export class Overlay {
     // Optional second button (a rewarded ad offer): wider, calmer colour, only shown when `show` is given one.
     const eg = scene.add.graphics();
     eg.fillStyle(0x000000, 0.25).fillRoundedRect(-230, -30, 460, 80, 18);
-    eg.fillStyle(0x2f7d4f, 1).fillRoundedRect(-230, -36, 460, 76, 18);
+    eg.fillStyle(EXTRA_COLOR, 1).fillRoundedRect(-230, -36, 460, 76, 18);
     eg.lineStyle(5, INK, 1).strokeRoundedRect(-230, -36, 460, 76, 18);
-    this.extraText = scene.add.text(0, 2, '', { fontFamily: FONT, fontSize: '30px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 }).setOrigin(0.5);
+    if (IS_POKI_BUILD) {
+      // A clear video icon (a camera drawn in code), left of the label.
+      eg.fillStyle(0xfff4dc, 1).fillRoundedRect(-212, -14, 34, 26, 5);
+      eg.fillTriangle(-176, -1, -160, -14, -160, 12);
+    }
+    this.extraText = scene.add.text(IS_POKI_BUILD ? 22 : 0, 2, '', { fontFamily: FONT, fontSize: '30px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 }).setOrigin(0.5);
     this.extra = scene.add.container(w / 2, h / 2 + 190, [eg, this.extraText]).setSize(460, 76).setInteractive({ useHandCursor: true }).setVisible(false);
     this.extra.on('pointerdown', () => this.extra.setScale(0.96));
     this.extra.on('pointerout', () => this.extra.setScale(1));
@@ -184,6 +195,7 @@ export class Overlay {
     this.extra.setVisible(!!extra);
     if (extra) {
       this.extraText.setText(extra.label);
+      if (IS_POKI_BUILD) this.extraText.setScale(Math.min(1, 380 / Math.max(1, this.extraText.width)));
       this.onExtra = extra.onPress;
     }
     this.title.setText(title);
@@ -200,6 +212,11 @@ export class Overlay {
 
   hide(): void {
     this.root.setVisible(false);
+  }
+
+  /** Press the main button from the keyboard (ESC or space while paused). */
+  press(): void {
+    if (this.root.visible) this.onPress?.();
   }
 
   get visible(): boolean {

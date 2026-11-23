@@ -10,7 +10,7 @@ import decorJson from '../../data/decor.json';
 import recipebookJson from '../../data/recipebook.json';
 import restaurantMenuJson from '../../data/restaurant_menu.json';
 import { assertValid, validateXp, validateAssets, validateRestaurants, validateUpgrades, validateCareer, validateChef, validateStory, validateDecor, validateRecipeBook, validateRestaurantMenu, type AssetDef, type RestaurantDef } from '../data/validate';
-import { CrazyGames } from '../sdk/crazygames';
+import { Portal } from '../sdk/portal';
 import { SaveSystem } from '../systems/SaveSystem';
 import { buildAllTextures } from '../art/builders';
 import { defaultConfig } from '../game/config';
@@ -23,7 +23,7 @@ import { dinerArtRows } from '../views/dinerArt';
 import { defaultRegulars, defaultRegularSettings, validateRegulars } from '../game/regulars';
 import { validateEvents } from '../game/spooky';
 import { chooseFirstScene, hasSavedProgress } from '../game/startup';
-import { IS_CRAZYGAMES_BUILD } from '../build/target';
+import { SKIP_TITLE } from '../build/target';
 
 export const LOGICAL_WIDTH = 1280;
 export const LOGICAL_HEIGHT = 698;
@@ -82,9 +82,9 @@ export class BootScene extends Phaser.Scene {
     // New players see the title screen (with the intro video) first; returning players, ?debug and the CrazyGames build go straight in (see src/game/startup.ts).
     const params = new URLSearchParams(location.search);
     // ?debug&pizza opens the Pizza Place directly (flags: ?step, ?coins, ?level, ?speed). ?debug&taco opens the Taco Truck directly (see TacoScene for its ?step, ?speed and ?coins flags).
-    const next = chooseFirstScene({ debug: params.has('debug'), taco: params.has('taco'), pizza: params.has('pizza'), returning: hasSavedProgress(SaveSystem.data), skipTitle: IS_CRAZYGAMES_BUILD });
+    const next = chooseFirstScene({ debug: params.has('debug'), taco: params.has('taco'), pizza: params.has('pizza'), returning: hasSavedProgress(SaveSystem.data), skipTitle: SKIP_TITLE });
     const go = (): void => {
-      CrazyGames.loadingStop();
+      Portal.loadingStop();
       void this.scene.start(next, { restaurantId: start });
     };
     const fonts = typeof document !== 'undefined' ? document.fonts : undefined;

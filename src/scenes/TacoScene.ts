@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { IS_POKI_BUILD } from '../build/target';
 import { DailyGoalPlate } from '../views/DailyGoalPlate';
 import { DailyGoalSystem } from '../systems/DailyGoalSystem';
 import { startRestaurant } from './restaurantRoute';
@@ -24,7 +25,7 @@ import { makeRng } from '../game/rng';
 import { newlyEarned, track, type BadgeEvent } from '../game/badges';
 import { tacoBadges, tacoEvents, tacoHaunted, TACO_BAT_LANE } from '../game/taco/tacoExtras';
 import { SaveSystem } from '../systems/SaveSystem';
-import { CrazyGames } from '../sdk/crazygames';
+import { Portal } from '../sdk/portal';
 import { loadTacoArt, sheetKey, spriteKey, TacoViews } from '../views/TacoViews';
 import { TacoCustomers } from '../views/TacoCustomers';
 import { Hud } from '../views/Hud';
@@ -113,6 +114,7 @@ export class TacoScene extends Phaser.Scene {
   private dailyPlate!: DailyGoalPlate;
   /** An ad is loading or playing: the truck is frozen (same idea as the diner's `paused`). */
   private adActive = false;
+  private paused = false;
   private adPending = false;
 
   constructor() {
@@ -134,6 +136,7 @@ export class TacoScene extends Phaser.Scene {
     this.lesson = null;
     this.lessonPauseUntil = 0;
     this.adActive = false;
+    this.paused = false;
     this.adPending = false;
     const a = defaultTacoConfig.art;
     this.bg = fitBackground(LOGICAL_WIDTH, LOGICAL_HEIGHT, a.width, a.height);
@@ -178,11 +181,13 @@ export class TacoScene extends Phaser.Scene {
     this.input.on('pointerdown', this.onTap, this);
     this.input.on('pointermove', this.onMove, this);
     this.input.on('pointerup', this.onRelease, this);
+    if (IS_POKI_BUILD) this.input.keyboard?.on('keydown-ESC', this.togglePause, this);
+    if (IS_POKI_BUILD) this.input.keyboard?.on('keydown-SPACE', this.resumeFromKey, this);
     this.input.keyboard?.on('keydown-B', this.openShop, this);
     this.input.keyboard?.on('keydown-R', this.openBook, this);
     this.input.keyboard?.on('keydown-T', this.openRestaurants, this);
     this.lastSave = performance.now();
-    CrazyGames.gameplayStart();
+    Portal.gameplayStart();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.cleanup());
     this.exposeTestHooks();
   }
@@ -218,7 +223,7 @@ export class TacoScene extends Phaser.Scene {
 
   override update(_time: number, delta: number): void {
     const real = Math.min(delta, 100) / 1000;
-    if (!this.storyCard.isShowing && !this.adActive) this.state.update(real * this.speed);
+    if (!this.storyCard.isShowing && !this.adActive && !this.paused) this.state.update(real * this.speed);
     for (const e of this.state.drainEvents()) this.handle(e);
     this.views.sync();
     this.customers.sync();
@@ -364,7 +369,7 @@ export class TacoScene extends Phaser.Scene {
         this.cancelDrag();
         this.banner.hide();
         audio.setSizzle(0);
-        CrazyGames.gameplayStop();
+        Portal.gameplayStop();
         // The same Closed screen and buttons as the diner: Reopen (55 reputation) and, when an ad can play, the rewarded full reopen (100).
         // The reputation numbers live in the kitchen model's `reopen`; nothing is calculated here.
         this.overlay.show(
@@ -372,18 +377,40 @@ export class TacoScene extends Phaser.Scene {
           'Too many unhappy customers.\nYour level, XP and coins are safe.',
           'Reopen',
           () => this.breakAd(() => this.state.reopen()),
-          CrazyGames.canShowRewarded() ? { label: 'Watch an ad: reopen at full reputation', onPress: () => this.reviveWithAd() } : undefined,
+          Portal.canShowRewarded() ? { label: 'Watch an ad: reopen at full reputation', onPress: () => this.reviveWithAd() } : undefined,
         );
         break;
       case 'reopened':
         this.overlay.hide();
         this.banner.hide();
-        CrazyGames.gameplayStart();
+        Portal.gameplayStart();
         break;
       case 'invalid':
         this.toast.show(e.message);
         break;
     }
+  }
+
+  private resumeFromKey(): void {
+    if (this.paused) this.overlay.press();
+  }
+
+  /** Poki asks for ESC to pause and resume (Space presses the Resume button too). Only the Poki build listens for it. */
+  private togglePause(): void {
+    if (this.paused) {
+      this.overlay.press();
+      return;
+    }
+    if (this.adActive || this.adPending || this.state.closed || this.overlay.visible || this.panelOpen || this.storyCard.isShowing) return;
+    this.paused = true;
+    Portal.gameplayStop();
+    audio.pauseAll();
+    this.overlay.show('Paused', '', 'Resume', () => {
+      this.paused = false;
+      this.overlay.hide();
+      audio.resumeAll();
+      this.breakAd(() => Portal.gameplayStart()); // Poki: a commercial break when returning from the pause menu
+    });
   }
 
   // ---------------------------------------------------------------- ads (same flow as the diner's Closed screen)
@@ -392,7 +419,7 @@ export class TacoScene extends Phaser.Scene {
   private breakAd(then?: () => void): void {
     if (this.adActive || this.adPending) return;
     this.adPending = true;
-    void CrazyGames.midgameAd(() => this.adStarted()).then((shown) => {
+    void Portal.midgameAd(() => this.adStarted()).then((shown) => {
       this.adPending = false;
       if (shown) this.adEnded();
       then?.();
@@ -403,7 +430,7 @@ export class TacoScene extends Phaser.Scene {
   private reviveWithAd(): void {
     if (this.adActive || this.adPending || !this.state.closed) return;
     this.adPending = true;
-    void CrazyGames.rewardedAd(() => this.adStarted()).then((finished) => {
+    void Portal.rewardedAd(() => this.adStarted()).then((finished) => {
       this.adPending = false;
       if (this.adActive) this.adEnded();
       if (finished) this.state.reopen(true);
@@ -414,13 +441,13 @@ export class TacoScene extends Phaser.Scene {
   private adStarted(): void {
     this.adActive = true;
     audio.pauseAll();
-    CrazyGames.gameplayStop();
+    Portal.gameplayStop();
   }
 
   private adEnded(): void {
     this.adActive = false;
     audio.resumeAll();
-    if (!this.state.closed) CrazyGames.gameplayStart();
+    if (!this.state.closed) Portal.gameplayStart();
   }
 
   // ---------------------------------------------------------------- tutorial
@@ -825,6 +852,8 @@ export class TacoScene extends Phaser.Scene {
     this.input.off('pointerdown', this.onTap, this);
     this.input.off('pointermove', this.onMove, this);
     this.input.off('pointerup', this.onRelease, this);
+    this.input.keyboard?.off('keydown-ESC', this.togglePause, this);
+    this.input.keyboard?.off('keydown-SPACE', this.resumeFromKey, this);
     this.input.keyboard?.off('keydown-B', this.openShop, this);
     this.input.keyboard?.off('keydown-R', this.openBook, this);
     this.input.keyboard?.off('keydown-T', this.openRestaurants, this);
@@ -839,7 +868,7 @@ export class TacoScene extends Phaser.Scene {
     this.fx.destroy();
     audio.setSizzle(0);
     audio.stopMusic();
-    CrazyGames.gameplayStop();
+    Portal.gameplayStop();
   }
 
   /**

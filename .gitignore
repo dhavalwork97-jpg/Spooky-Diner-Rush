@@ -8,3 +8,4 @@ dist-android
 
 # Python cache from tools/*.py
 __pycache__/
+dist-poki

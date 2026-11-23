@@ -20,12 +20,21 @@ const dropIntroVideo = (outDir: string) => ({
   },
 });
 
+/** The Poki build loads the Poki SDK instead of the CrazyGames one (the two are never both in a build). */
+const swapPortalScript = {
+  name: 'poki-sdk-script',
+  transformIndexHtml(html: string): string {
+    return html.replace(/<script src="https:\/\/sdk\.crazygames\.com\/[^"]*"><\/script>/, '<script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>');
+  },
+};
+
 export default defineConfig(({ mode }) => {
   const crazygames = mode === 'crazygames';
-  const outDir = crazygames ? 'dist-crazygames' : 'dist';
+  const poki = mode === 'poki';
+  const outDir = crazygames ? 'dist-crazygames' : poki ? 'dist-poki' : 'dist';
   return {
     base: './',
-    plugins: [dropSourceArt(outDir), ...(crazygames ? [dropIntroVideo(outDir)] : [])],
+    plugins: [dropSourceArt(outDir), ...(crazygames || poki ? [dropIntroVideo(outDir)] : []), ...(poki ? [swapPortalScript] : [])],
     // Phaser is its own file: it never changes between releases, so players (and the CrazyGames CDN) keep it cached when only the game code changes.
     build: { outDir, chunkSizeWarningLimit: 1500, rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'phaser', test: /node_modules[\\/]phaser/ }] } } } },
     test: { include: ['tests/**/*.test.ts'] },

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { IS_POKI_BUILD } from '../build/target';
 import { DailyGoalPlate } from '../views/DailyGoalPlate';
 import { DailyGoalSystem } from '../systems/DailyGoalSystem';
 import { NO_PROGRESS } from '../game/dailyGoal';
@@ -24,7 +25,7 @@ import { MenuButtons, type MenuKind } from '../views/MenuButtons';
 import { MuteButton } from '../views/MuteButton';
 import { arcTo, flyCoins } from '../anim/fly';
 import { audio } from '../systems/AudioSystem';
-import { CrazyGames } from '../sdk/crazygames';
+import { Portal } from '../sdk/portal';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
 import { levelDef, type DecorDef, type EventDef } from '../game/config';
 import { nextHint, tutorialActive } from '../game/tutorial';
@@ -212,6 +213,8 @@ export class GameScene extends Phaser.Scene {
     this.input.on('dragstart', this.onDragStart, this);
     this.input.on('drag', this.onDrag, this);
     this.input.on('dragend', this.onDragEnd, this);
+    if (IS_POKI_BUILD) this.input.keyboard?.on('keydown-ESC', this.togglePause, this);
+    if (IS_POKI_BUILD) this.input.keyboard?.on('keydown-SPACE', this.resumeFromKey, this);
     this.input.keyboard?.on('keydown-Z', () => this.setShowAll(!this.showAll));
     this.input.keyboard?.on('keydown-B', this.openShop, this);
     this.input.keyboard?.on('keydown-R', this.openRecipeBook, this);
@@ -220,7 +223,7 @@ export class GameScene extends Phaser.Scene {
 
     this.game.events.on(Phaser.Core.Events.BLUR, this.onBlur, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanup, this);
-    CrazyGames.gameplayStart();
+    Portal.gameplayStart();
     this.lastSave = performance.now();
 
     (window as unknown as { __chefRush?: unknown }).__chefRush = {
@@ -823,13 +826,13 @@ export class GameScene extends Phaser.Scene {
         this.hand.hide();
         audio.play('close');
         audio.setSizzle(0);
-        CrazyGames.gameplayStop();
+        Portal.gameplayStop();
         this.overlay.show(
           'Closed',
           'Too many unhappy customers.\nYour level, XP and coins are safe.' + this.comeBackLine(),
           'Reopen',
           () => this.breakAd(() => this.state.reopen()),
-          CrazyGames.canShowRewarded() ? { label: 'Watch an ad: reopen at full reputation', onPress: () => this.reviveWithAd() } : undefined,
+          Portal.canShowRewarded() ? { label: 'Watch an ad: reopen at full reputation', onPress: () => this.reviveWithAd() } : undefined,
         );
         break;
       case 'reopened':
@@ -843,7 +846,7 @@ export class GameScene extends Phaser.Scene {
         this.custViews.forEach((c) => c.destroy());
         this.custViews.clear();
         this.overlay.hide();
-        CrazyGames.gameplayStart();
+        Portal.gameplayStart();
         break;
       case 'invalid':
         this.toast.show(e.message);
@@ -1186,11 +1189,11 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.adPending = true;
-    void CrazyGames.midgameAd(() => {
+    void Portal.midgameAd(() => {
       this.adActive = true;
       this.paused = true;
       audio.pauseAll();
-      CrazyGames.gameplayStop();
+      Portal.gameplayStop();
     }).then(() => {
       this.adPending = false;
       // Always undo what the ad start did, whatever the result (timeout, error), or the game stays frozen.
@@ -1198,7 +1201,7 @@ export class GameScene extends Phaser.Scene {
         this.adActive = false;
         this.paused = false;
         audio.resumeAll();
-        if (!this.state.closed) CrazyGames.gameplayStart();
+        if (!this.state.closed) Portal.gameplayStart();
       }
       then?.();
       this.flushAfterAd();
@@ -1218,11 +1221,11 @@ export class GameScene extends Phaser.Scene {
   private reviveWithAd(): void {
     if (this.adActive || this.adPending || !this.state.closed) return;
     this.adPending = true;
-    void CrazyGames.rewardedAd(() => {
+    void Portal.rewardedAd(() => {
       this.adActive = true;
       this.paused = true;
       audio.pauseAll();
-      CrazyGames.gameplayStop();
+      Portal.gameplayStop();
     }).then((finished) => {
       this.adPending = false;
       if (this.adActive) {
@@ -1353,17 +1356,29 @@ export class GameScene extends Phaser.Scene {
     this.breakAd();
   }
 
+  /** Poki asks for ESC (or space) to pause and resume. Space already presses the open overlay's button in the other scenes; here ESC does both. */
+  private resumeFromKey(): void {
+    if (this.paused) this.overlay.press();
+  }
+
+  private togglePause(): void {
+    if (this.paused) this.overlay.press();
+    else this.onBlur();
+  }
+
   private onBlur(): void {
     if (this.adActive) return;
     if (this.paused || this.state.closed) return;
     this.paused = true;
-    CrazyGames.gameplayStop();
+    Portal.gameplayStop();
     audio.pauseAll();
     this.overlay.show('Paused', '', 'Resume', () => {
       this.paused = false;
       this.overlay.hide();
       audio.resumeAll();
-      CrazyGames.gameplayStart();
+      // Poki: a commercial break is requested when the player returns to gameplay from the pause menu (https://developers.poki.com/guide/requirements-quality).
+      if (IS_POKI_BUILD) this.breakAd(() => Portal.gameplayStart());
+      else Portal.gameplayStart();
     });
   }
 
@@ -1375,6 +1390,8 @@ export class GameScene extends Phaser.Scene {
     this.decorGlows = [];
     this.introGlow.destroy();
     this.bats.destroy();
+    this.input.keyboard?.off('keydown-ESC', this.togglePause, this);
+    this.input.keyboard?.off('keydown-SPACE', this.resumeFromKey, this);
     this.input.keyboard?.off('keydown-B', this.openShop, this);
     this.input.keyboard?.off('keydown-R', this.openRecipeBook, this);
     this.input.keyboard?.off('keydown-T', this.openRestaurants, this);
@@ -1400,6 +1417,6 @@ export class GameScene extends Phaser.Scene {
     this.views = [];
     audio.setSizzle(0);
     audio.stopMusic();
-    CrazyGames.gameplayStop();
+    Portal.gameplayStop();
   }
 }

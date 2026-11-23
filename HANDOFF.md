@@ -1,7 +1,7 @@
 # IN PROGRESS (2026-11-23) - Poki release on branch release/poki (from main). Poki-only, separate from CrazyGames and AdMob.
 Plan: 1 target.ts IS_POKI_BUILD (no intro video, skip title) | 2 src/sdk/poki.ts + src/sdk/portal.ts (scenes use Portal) | 3 vite mode `poki` -> dist-poki, Poki SDK script instead of CrazyGames | 4 Poki ad rules: no own cooldown/timer, commercialBreak at natural breaks, rewarded button not green + video icon + standard button equal or larger | 5 ESC/space pause, first-input gameplayStart, block page scroll keys | 6 tests | 7 docs/POKI_RELEASE.md checklist | 8 build + headless check + push.
 Poki rules source: https://developers.poki.com/guide/requirements-quality and linked pages. Web exclusivity: cannot be on CrazyGames at the same time (owner decision).
-Steps done so far: (none)
+Steps done so far: ALL code steps done (SDK, build mode, pause, button, dev params, scroll keys, tests, docs/POKI_RELEASE.md). Remaining: owner decisions listed in docs/POKI_RELEASE.md
 
 # STATUS (2026-11-23) - ALL spec parts done on feature/pizza-place (A1-A7, C, B1-B8, D, E, G). Final regression table is at the end of docs/progress.md. Nothing in progress. Not merged to main (needs owner approval).
 
