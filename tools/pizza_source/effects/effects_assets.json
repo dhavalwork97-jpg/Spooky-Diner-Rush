@@ -1,0 +1,112 @@
+{
+  "atlas_alpha": "effects_atlas_alpha.webp",
+  "atlas_additive": "effects_atlas_add.webp",
+  "atlas_size": [
+    3096,
+    1110
+  ],
+  "sprites": {
+    "smoke_light_1": {
+      "x": 4,
+      "y": 83,
+      "w": 508,
+      "h": 389,
+      "cx": 258.0,
+      "cy": 277.5
+    },
+    "smoke_light_2": {
+      "x": 616,
+      "y": 4,
+      "w": 316,
+      "h": 547,
+      "cx": 774.0,
+      "cy": 277.5
+    },
+    "smoke_light_3": {
+      "x": 1177,
+      "y": 11,
+      "w": 225,
+      "h": 532,
+      "cx": 1289.5,
+      "cy": 277.0
+    },
+    "smoke_dark_1": {
+      "x": 1565,
+      "y": 98,
+      "w": 482,
+      "h": 358,
+      "cx": 1806.0,
+      "cy": 277.0
+    },
+    "smoke_dark_2": {
+      "x": 2171,
+      "y": 12,
+      "w": 301,
+      "h": 530,
+      "cx": 2321.5,
+      "cy": 277.0
+    },
+    "smoke_dark_3": {
+      "x": 2731,
+      "y": 30,
+      "w": 214,
+      "h": 495,
+      "cx": 2838.0,
+      "cy": 277.5
+    },
+    "sparkle_gold_1": {
+      "x": 91,
+      "y": 658,
+      "w": 333,
+      "h": 349,
+      "cx": 257.5,
+      "cy": 832.5
+    },
+    "sparkle_gold_2": {
+      "x": 615,
+      "y": 663,
+      "w": 318,
+      "h": 339,
+      "cx": 774.0,
+      "cy": 832.5
+    },
+    "glint_white": {
+      "x": 1135,
+      "y": 665,
+      "w": 310,
+      "h": 335,
+      "cx": 1290.0,
+      "cy": 832.5
+    },
+    "dot_white": {
+      "x": 1688,
+      "y": 693,
+      "w": 236,
+      "h": 279,
+      "cx": 1806.0,
+      "cy": 832.5
+    },
+    "dot_warm_1": {
+      "x": 2256,
+      "y": 765,
+      "w": 132,
+      "h": 134,
+      "cx": 2322.0,
+      "cy": 832.0
+    },
+    "dot_warm_2": {
+      "x": 2783,
+      "y": 776,
+      "w": 109,
+      "h": 112,
+      "cx": 2837.5,
+      "cy": 832.0
+    }
+  },
+  "usage": {
+    "smoke_light_*": "steam over hot food or ovens: alpha version, normal blend",
+    "smoke_dark_*": "burnt food: alpha version, normal blend (core is nearly opaque dark gray)",
+    "sparkle_gold_*, glint_white, dot_*": "READY sparkles: use the additive atlas with ADD blend (black = transparent) or the alpha version with normal blend",
+    "note": "Animate in code by scaling up and fading out while drifting up (smoke) or by twinkling scale and rotation (sparkles)."
+  }
+}

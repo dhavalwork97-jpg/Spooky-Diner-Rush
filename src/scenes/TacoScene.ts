@@ -1,4 +1,7 @@
 import Phaser from 'phaser';
+import { DailyGoalPlate } from '../views/DailyGoalPlate';
+import { DailyGoalSystem } from '../systems/DailyGoalSystem';
+import { startRestaurant } from './restaurantRoute';
 import { fitBackground, logicalToNorm, type BackgroundPlacement } from '../kitchen/zones';
 import { TacoKitchenState, type TacoEvent } from '../game/taco/TacoKitchenState';
 import { defaultTacoConfig, type TacoZone } from '../game/taco/tacoConfig';
@@ -109,6 +112,7 @@ export class TacoScene extends Phaser.Scene {
   private drag: Drag | null = null;
   private lastSave = 0;
   private panelOpen = false;
+  private dailyPlate!: DailyGoalPlate;
   /** An ad is loading or playing: the truck is frozen (same idea as the diner's `paused`). */
   private adActive = false;
   private adPending = false;
@@ -159,6 +163,7 @@ export class TacoScene extends Phaser.Scene {
     this.hud = new Hud(this, this.state);
     this.toast = new Toast(this, LOGICAL_WIDTH / 2, 300);
     this.banner = new EventBanner(this, 551, 42);
+    this.dailyPlate = new DailyGoalPlate(this);
     this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330);
     this.overlay = new Overlay(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.storyCard = new StoryCard(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
@@ -220,6 +225,7 @@ export class TacoScene extends Phaser.Scene {
     this.views.sync();
     this.customers.sync();
     this.hud.update(this.state, real);
+    this.dailyPlate.update(DailyGoalSystem.progress(), { dtMs: real * 1000, claimed: DailyGoalSystem.claimed, blocked: this.lessonBlocked() || this.tutorialOn });
     if (this.state.event) this.banner.update(this.state.event.remaining);
     if (this.state.event?.def.bat) this.bats.update(this.state.event.def.duration - this.state.event.remaining);
     this.followDrag(real);
@@ -273,6 +279,13 @@ export class TacoScene extends Phaser.Scene {
         break;
       }
       case 'orderDone': {
+        {
+          const bonus = DailyGoalSystem.record('taco_truck');
+          if (bonus > 0) {
+            this.state.coins += bonus;
+            this.toast.show(`Daily goal complete! +${bonus} coins`);
+          }
+        }
         this.customers.celebrate(e.customer);
         const at = this.customers.centerOf(e.customer);
         if (at) {
@@ -756,7 +769,7 @@ export class TacoScene extends Phaser.Scene {
       taco: key === 'Shop' ? { menuStep: this.state.menuStep } : undefined,
       current: defaultTacoConfig.restaurant.id,
       onClose,
-      onPick: (id: string) => (id === defaultTacoConfig.restaurant.id ? this.scene.restart() : this.scene.start('Game', { restaurantId: id })),
+      onPick: (id: string) => (id === defaultTacoConfig.restaurant.id ? this.scene.restart() : startRestaurant(this, id)),
       rows: key === 'RecipeBook' ? this.recipeRows() : undefined,
       mastery: key === 'RecipeBook' ? this.masteryData() : undefined,
       badges: key === 'RecipeBook' ? { defs: tacoBadges, stats: SaveSystem.data.tacoStats, have: SaveSystem.data.tacoBadges } : undefined,
@@ -812,6 +825,7 @@ export class TacoScene extends Phaser.Scene {
 
   private cleanup(): void {
     this.saveNow();
+    this.dailyPlate?.destroy();
     this.input.off('pointerdown', this.onTap, this);
     this.input.off('pointermove', this.onMove, this);
     this.input.off('pointerup', this.onRelease, this);

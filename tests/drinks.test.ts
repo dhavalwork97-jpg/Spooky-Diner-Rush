@@ -95,11 +95,11 @@ describe('drinks', () => {
 });
 
 describe('ice cream', () => {
-  it('is locked until Lv 12', () => {
-    const s = at(11);
+  it('is locked until Lv 8', () => {
+    const s = at(7);
     s.tapIceCream();
     expect(s.cones[0]).toBeNull();
-    expect(lastInvalid(s)[0]).toMatch(/Lv 12/);
+    expect(lastInvalid(s)[0]).toMatch(/Lv 8/);
   });
 
   it('swirls and a ready cone stays in its lane', () => {

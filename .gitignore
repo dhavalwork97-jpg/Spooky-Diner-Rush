@@ -8,3 +8,6 @@ reply.txt
 dist-android
 .env.local
 .env.*.local
+
+# Python cache from tools/*.py
+__pycache__/

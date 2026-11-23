@@ -689,6 +689,134 @@
       "type": "spritesheet",
       "frameWidth": 325,
       "frameHeight": 534
+    },
+    {
+      "key": "blue_yeti_calm",
+      "type": "spritesheet",
+      "file": "assets/customers/blue_yeti/blue_yeti_calm.webp",
+      "scale": 1,
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "blue_yeti_upset",
+      "type": "spritesheet",
+      "file": "assets/customers/blue_yeti/blue_yeti_upset.webp",
+      "scale": 1,
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "blue_yeti_angry",
+      "type": "spritesheet",
+      "file": "assets/customers/blue_yeti/blue_yeti_angry.webp",
+      "scale": 1,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "blue_yeti_happy",
+      "type": "spritesheet",
+      "file": "assets/customers/blue_yeti/blue_yeti_happy.webp",
+      "scale": 1,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "pink_fuzz_calm",
+      "type": "spritesheet",
+      "file": "assets/customers/pink_fuzz/pink_fuzz_calm.webp",
+      "scale": 1,
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "pink_fuzz_upset",
+      "type": "spritesheet",
+      "file": "assets/customers/pink_fuzz/pink_fuzz_upset.webp",
+      "scale": 1,
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "pink_fuzz_angry",
+      "type": "spritesheet",
+      "file": "assets/customers/pink_fuzz/pink_fuzz_angry.webp",
+      "scale": 1,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "pink_fuzz_happy",
+      "type": "spritesheet",
+      "file": "assets/customers/pink_fuzz/pink_fuzz_happy.webp",
+      "scale": 1,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "mummy_ghost_calm",
+      "type": "spritesheet",
+      "file": "assets/customers/mummy_ghost/mummy_ghost_calm.webp",
+      "scale": 1,
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "mummy_ghost_upset",
+      "type": "spritesheet",
+      "file": "assets/customers/mummy_ghost/mummy_ghost_upset.webp",
+      "scale": 1,
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "mummy_ghost_angry",
+      "type": "spritesheet",
+      "file": "assets/customers/mummy_ghost/mummy_ghost_angry.webp",
+      "scale": 1,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "mummy_ghost_happy",
+      "type": "spritesheet",
+      "file": "assets/customers/mummy_ghost/mummy_ghost_happy.webp",
+      "scale": 1,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "preferFallback": false,
+      "lazy": true
+    },
+    {
+      "key": "pizza_thumb",
+      "type": "image",
+      "file": "assets/pizza/background/pizza_thumb.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": false
     }
   ]
 }

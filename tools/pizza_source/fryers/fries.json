@@ -1,0 +1,110 @@
+{
+  "name": "fryer_fries_states",
+  "source_video": "Untitled___Made_with_FlexClip__online-video-cutter_com_.mp4",
+  "clip_fps": 12,
+  "note_stabilized": "The source video was stitched from segments with different zoom. Every frame was scaled and aligned to the same fryer position and size, so all clips line up.",
+  "body": {
+    "sheet_webp": "fryer_fries_states_body_spritesheet.webp",
+    "sheet_png": "fryer_fries_states_body_spritesheet.png",
+    "columns": 12,
+    "rows": 8,
+    "frame_width": 302,
+    "frame_height": 296,
+    "scale_vs_full": 0.5,
+    "full_res_frame_size": [
+      604,
+      591
+    ],
+    "frame_count": 89,
+    "clips": {
+      "intro": {
+        "frames": [
+          0,
+          18
+        ],
+        "loop": false
+      },
+      "cook_loop": {
+        "frames": [
+          19,
+          39
+        ],
+        "loop": true
+      },
+      "ready_loop": {
+        "frames": [
+          40,
+          60
+        ],
+        "loop": true
+      },
+      "overcook_loop": {
+        "frames": [
+          61,
+          69
+        ],
+        "loop": true
+      },
+      "burnt_loop": {
+        "frames": [
+          70,
+          87
+        ],
+        "loop": true
+      },
+      "idle_empty": {
+        "frames": [
+          88,
+          88
+        ],
+        "loop": false
+      }
+    }
+  },
+  "fx": {
+    "sheet_webp": "fryer_fries_states_fx_spritesheet.webp",
+    "sheet_png": "fryer_fries_states_fx_spritesheet.png",
+    "columns": 12,
+    "rows": 8,
+    "frame_width": 242,
+    "frame_height": 236,
+    "scale_vs_full": 0.4,
+    "frame_count": 89,
+    "same_frame_indices_as_body": true,
+    "note": "Steam (white) and smoke (dark gray, burnt state) outside the fryer outline, as a normal alpha layer. Draw it over the body at the same offset. Steam and smoke inside the fryer outline are baked into the body frames."
+  },
+  "split_between_baskets_x_in_frame": [
+    292,
+    604
+  ],
+  "split_note": "x=292 (full-res frame px) separates the left and right baskets. Crop each half and play each basket on its own timeline.",
+  "place_in_kitchen": {
+    "kitchen_image_size": [
+      2752,
+      1536
+    ],
+    "fryer_top_left_in_kitchen_px": [
+      1744.3,
+      1019.7
+    ],
+    "fryer_size_in_kitchen_px": [
+      413.3,
+      340.3
+    ],
+    "video_px_per_kitchen_px": 1.3113,
+    "frame_origin_in_video": [
+      336,
+      0
+    ],
+    "fryer_top_left_in_video": [
+      369,
+      137
+    ],
+    "note": "To overlay on the kitchen art: kitchen_px = fryer_top_left_in_kitchen + (video_px - fryer_top_left_in_video) / video_px_per_kitchen_px. body frames start at video px (frame_origin_in_video)."
+  },
+  "usage": [
+    "Play intro once when the item is dropped in, then loop cook_loop while it is COOKING.",
+    "READY: crossfade (about 0.3 s) to ready_loop. OVERCOOKING: crossfade to overcook_loop. BURNT: crossfade to burnt_loop.",
+    "Each loop is crossfaded so it repeats smoothly."
+  ]
+}

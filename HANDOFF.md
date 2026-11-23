@@ -1,3 +1,130 @@
+# STATUS (2026-11-23) - ALL spec parts done on feature/pizza-place (A1-A7, C, B1-B8, D, E, G). Final regression table is at the end of docs/progress.md. Nothing in progress. Not merged to main (needs owner approval).
+
+
+# IN PROGRESS (2026-11-22) - B3 build-your-own DONE (see docs/progress.md); next B4 mastery + daily special after the owner says Continue
+
+
+# IN PROGRESS (2026-11-22) - B2 perfect bake DONE (see docs/progress.md); next B3 build-your-own orders after the owner says Continue
+
+# IN PROGRESS (2026-11-22, Claude) - PIZZA Part B1 combo meals (Part C committed eb867dd)
+- [x] B1a. Model: when a customer's order holds a pizza + a side + an ice cream and the LAST item is delivered, ONE combo bonus (+25% coins, +25% XP, once per order; never on partial/abandoned orders). Pure helper + PizzaEvent 'combo'.
+- [x] B1b. View: small "Combo meal" popup (existing floating-text conventions, reduced motion safe).
+- [x] B1c. Tests (incomplete, complete, duplicate serve, reward maths), docs/progress.md, then STOP and report B1.
+
+# IN PROGRESS (2026-11-22, Claude) - PIZZA: Global Lv display + Part C (goal banner fade) - branch `feature/pizza-place` (Part A committed 846d65e)
+Finding: Pizza menu steps cost 1300..1940 XP (steps 1-9) and the SAME XP feeds global Lv (Lv 30..49 cost 2500..4020 each). So the menu is finished near global Lv 35, not Lv 49; the spec's Lv 31-49 list (one dish per Lv) does not match real unlock timing. Global XP is NOT changed. Plan:
+- [x] G1. pizzaMenu.ts: `pizzaMilestones(cfg,p)` DERIVES "about Lv N" per menu step from the real XP curve (cannot drift); data milestones list becomes a note only. Test: derived rows match XP math, dishes all listed, never unlocks anything.
+- [x] G2. Show it on the Pizza restaurant card (locked/buy) + a menu-progress line in the Pizza Recipe Book. Tests for stay-at-step-1, tutorial persists, Diner/Taco unchanged.
+- [x] G3 (text card: station + ingredients; shared StoryCard has no icon slot, untouched). Recipe-unlocked notification (icon, name, ingredients, highlighted stations).
+- [x] C1. Pure `goalBannerTiming` (no Phaser) + tests; C2. wire into GoalBanner (Hud.ts); C3. Chromium check; STOP and report after Part C.
+
+# IN PROGRESS (2026-11-21, Claude) - PIZZA PLACE (third restaurant) - branch `feature/pizza-place` (from main 8c737c5). PLAN APPROVED by owner; commit allowed when all of Part A is done (owner: 'commit when all tasks are done').
+Rules: no commit/push/merge/deploy until the owner says so; edit through shell (a PostToolUse hook runs `handoff.py snap` on Edit/Write); never weaken tests; wording "Lv N" only; Diner and Taco Truck untouched except the shared goal banner (Part C).
+Baseline (untouched main, 2026-11-21): `npx vitest run --testTimeout=60000` = 69 files, 802 passed, 1 skipped, 0 failed. The old documented baseline failures (sim_late Lv 20 pace, balance_upgrades 5 s timeout) do NOT reproduce any more. tsc, build, build:crazygames passed earlier today (npm ci not re-run).
+Findings:
+- Routing: GameScene.onPick hardcodes `id === 'taco_truck' ? Taco : Game`; RestaurantSelectScene builds the truck card from defaultTacoConfig; purchaseRestaurant() resets tacoStep/tacoXp only for taco_truck; data/restaurant_menu.json has a Pizza coming-soon card at Lv 20 (to be removed).
+- No Pizza code exists. Only art words in recipes/diner data (diner has pizza-unrelated hits).
+- Supplied art: background is a 1679x937 WEBP (spec says 2752x1536 PNG; the fryer JSON confirms the original kitchen is 2752x1536, so all coordinates are scaled by 1679/2752). Not supplied: hotspot JSON, window cut-out, small-oven slot data (small_oven.json has none), big-oven slot coordinates (pizza_oven_big.json has none: fallback slots 641,571 and 884,571 from the spec in the 1523x859 sheet frame).
+- Two sides_items_atlas.webp copies (same size 1036x614, bytes differ) - must compare visually before choosing one. Wings fryer sheet: 85 frames (effects zip) has overcook+burnt; 49-frame copy does not (use the 85). Fries fryer sheet has 89 frames with overcook+burnt. Fryer split x = 292 (wings json) / 604-wide frame; fries json 292.
+- Oven art has a chimney+cap baked into the body sheet (to crop); flames sheet is additive.
+- XP: XP to leave Lv n = 100 + 80n, so Lv 30 -> 31 needs 2,600 XP and Lv 31-49 together need about 61,000 XP (about 2 hours of play at today's XP rate). Every-Lv unlocks (the 20-row table) would duplicate the 10 menu steps and make Lv 49 almost unreachable.
+Proposed order (stop and report after each): A1 save+purchase -> A2 data+validators -> A3 PizzaKitchenState (pure) -> A4 boards/oven/fryer/small oven model -> scene+views (PizzaScene, registered in main.ts) -> A5 customers -> A6 upgrades -> A7 selection/routing/debug/tests -> report. Then C, B1..B8, final regression.
+Owner answers (2026-11-21): (1) unlock recipes only through the 10 Pizza menu steps; the Lv 31-49 list is display only. (2) pizzaStep/pizzaXp separate fields OK. (3) small oven = 2 tray capacity. (4) ice cream: use the supplied zips (icecream_machine_anim sheet in effectsfiles + icecream_new cups), not the diner art. Plan approved.
+- [x] A1 DONE (uncommitted): SaveSystem pizzaStep/pizzaXp/pizzaOwned/pizzaServed/pizzaLessons/pizzaMastery/pizzaGoal/pizzaStats (tolerant parse, defaults); purchaseRestaurant resets pizzaStep/pizzaXp for pizza_place only; RestaurantSelectScene.buy passes/saves them. tests/pizza_save_purchase.test.ts (13 tests). tsc clean; full vitest passes.
+- [x] A2 DONE (uncommitted): data/pizza.json, src/game/pizza/{pizzaConfig,pizzaMenu,pizzaRecipes,pizzaLearning,pizzaShop}.ts, validatePizza, tests/pizza_data.test.ts (14), tools/make_pizza_art.py -> public/assets/pizza (GPU est 50.1 MB vs 85 gate), pizza_thumb in assets.json.
+- [x] A3 DONE (uncommitted): src/game/pizza/PizzaKitchenState.ts (pure) + tests/pizza_kitchen.test.ts (32 tests; seats use pizza ramp 3->5 directly because diner table caps at 4; arrivals wait for a free window slot).
+- [x] A4-A7 code written (uncommitted): pizzaZones/pizzaOvenDoor/pizzaTutorial (pure, tests/pizza_zones_door.test.ts), views PizzaViews/PizzaCustomers, src/scenes/PizzaScene.ts (registered in main.ts), restaurantRoute.ts (diner/Taco/Pizza routing), Pizza card in RestaurantSelect, Shop pizza rows, startup ?debug&pizza, data/pizza_sheets.json.
+- [x] Screenshot-verified in headless Chromium (desktop 1280x720): stations, pizzas, customers, rings OK. Bot sim + wiring tests added. wording rule: 'stage' renamed to 'status'.
+- [ ] NEXT: final full checks, commit+push feature/pizza-place, Part A report. Then Global Lv display, Part C, Part B. Then A4-A7 views/scene/routing/debug/tests, then commit+push feature/pizza-place and report.
+Questions for the owner are in the chat report (Lv schedule, background file, small-oven slots, ice cream pour, where Pizza lives in the save).
+
+# DONE, WAITING FOR REVIEW (2026-11-20, Claude) - PROGRESSION + TACO VARIETY - branch `feature/progression-taco-variety` (from main e1fab86)
+Rules: stay on this branch, no merge to main, no deploy, no force-push, CrazyGames SDK/ads/rewards untouched, no change to existing saves (only safe migration), use "Lv N" wording only. Owner said commit is allowed; GitHub push is currently refused (Claude GitHub app not installed for this repo), so commits stay local until that is fixed.
+Plan (tick as done):
+- [x] 1. DONE. Diner: ice cream Lv 12 -> Lv 8 (data/recipes.json, data/restaurants.json zone, src/views/StockViews.ts, data/intros.json keep id lv12_icecream so nobody sees it twice, data/story.json ice_cream card, data/progression.json items/unlocks). Keep all 20 Lv (cutting to 15 would strand saves at Lv 16-20).
+- [x] 2. DONE. Diner: impatient customers from Lv 9 (12%) and Lv 10 (15%, same as Lv 11 as before). Why: ice cream at Lv 8 made Lv 6-10 easier, which steepened the Lv 11 jump. Measured over 40 average-bot seeds: Lv 11-15 / Lv 6-10 close-rate ratio 1.71 -> 1.49, Lv 16-20 / Lv 6-10 2.06 -> 1.76 (smoother). Cost: median time to Lv 15 about 9% longer (1721 s -> 1884 s). tests/sim_late.test.ts ramp check now uses 30 seeds (3 seeds was noise). Story/intro cards re-sorted by Lv; intro id lv12_icecream kept on purpose so nobody sees it twice. Full vitest 742 passed (use --testTimeout=600000 on this slow machine).
+- [x] 3. DONE. Taco unlock Lv 10 / 1,500 coins (data/taco.json; tests taco, taco_wiring, restaurant_purchase updated, plus new tests: old-rules owners keep truck, coins and dish progress). Coin audit (bots, no upgrade spending): about 2,800 gross coins on reaching Lv 10, about 700-800 coins per level at Lv 9-14; a bot that buys every diner upgrade holds only about 400 coins at Lv 10-12 and reaches 1,500 near Lv 13. So 1,500 is about 2 levels of earnings: achievable, a real choice versus upgrades, never a wall. Caution: the average-skill bot needs about 12.5 min to reach Lv 10 (fast bot 7 min); CrazyGames sessions average 5.5-6.5 min.
+- [x] 4. DONE. Taco orders: new src/game/taco/tacoVariety.ts (pure helpers) + data/taco.json `variety` block and `bigOrderShare` per ramp step, wired into TacoKitchenState (history cleared on reopen; pickDish has 3 tiers: no-duplicate, duplicate allowed, relaxed; drink chance and regular choice use the same weights; order size by pickOrderSize). Config without `variety` = old behaviour exactly (oldTacoConfig in tests). Measured (docs/taco-variety-report.md): any dish repeated from previous customer 41.7% -> 23.1% (step 3), 25.2% -> 13.3% (step 5), 14.5% -> 5.8% (step 10); same dish twice in one order 0% from step 3; 3-item orders about 37% -> 29%. Economy check unchanged within noise. Known, unchanged: a regular's favourite dish can push a station past its limit (same rate as before, bounded +2). New tests: tests/taco_variety.test.ts (23). Full vitest 767 passed.
+- [x] 5. DONE (tests only, no code change needed). Audit: parseSave always writes tacoServed, so the TacoKitchenState 'no tacoServed = everything learned' path is reached only by bare callers/tests, not by real saves. Legacy saves without tacoServed are seeded only for dishes BEFORE the current step (tacoLearning.seedLearned), so later dishes still get the intro flow. stepFromLevel uses MENU_LEVEL_BASE=14, NOT the unlock Lv, so the Lv 10 change does not move old owners' steps. New tests/taco_save_migration.test.ts (19): fresh, legacy, partial, full, damaged counts, new dish joins, buying/switching, refresh via SaveSystem save/load, old-key save. Learning speed measured old vs new (30 seeds/step): median customers to learn a step's dishes is lower or equal at 9 of 10 steps (step 10: 74 -> 61, p90 104 -> 99); step 5 median 28 -> 32 (noise, p90 62 -> 42). Steps 8-10 still need about 46-61 customers to learn both dishes: possible follow-up (lower practiceWeight cost) but not changed.
+- [x] 6. DONE. typecheck clean; vitest 68 files, 786 passed, 1 skipped; npm run build and build:crazygames both OK. Report: docs/taco-variety-report.md. Pushed to origin/feature/progression-taco-variety (NOT merged, no PR yet). Repo was renamed: Chef-Rush is now Spooky-Diner-Rush on GitHub (same repo). NOT DONE / follow-ups: Phase 8 extras (customer reactions, bonus orders) and Phase 10 mobile review were not touched; average-skill bot needs about 12.5 min to reach Lv 10 while CrazyGames sessions average 5.5-6.5 min, so most sessions still will not reach the truck; steps 8-10 take about 46-61 customers to learn both new dishes. Needs a human: play-test on a real phone and desktop, then review before any merge.
+Baseline (current generator, 20000 orders per step, steady state): step 3 repeats a dish from the previous customer 41.8% of the time, step 5 25.4%, step 7 21.7%, step 10 14.3%; duplicate dish inside one order 20.3% / 10.1% / 7.8% / 4.8%; 3-item orders about 36%.
+
+# In progress: port Taco midnight to main (2026-11-16)
+Branch port/taco-midnight-to-main from local main (0dcb1da). Approved by user: PREPARE only, do not merge into main, do not push unless told.
+- [x] 1. cherry-pick 1b2a563 (diner extras Lv 1-14)
+- [x] 2. cherry-pick a0bb4f7 (taco midnight + B1-B7)
+- [x] 3. cherry-pick 91f9fa2 (Phase 2)
+- [x] 4. npm ci, tsc, full vitest, build + build:crazygames (browser must stay CrazyGames only, no AdMob/LevelPlay)
+- [x] 5. report conflicts and results
+  RESULT: branch port/taco-midnight-to-main = main 0dcb1da + 3 cherry-picks (1b2a563, a0bb4f7, 91f9fa2). Only HANDOFF.md/.handoff_log conflicts (kept both). tsc clean, vitest 735 passed + 3 balance_upgrades tests hit the 5 s default timeout on this slow machine (same file also times out on plain main; with --testTimeout=120000 all 12 pass on the port), build + build:crazygames ok, no admob/levelplay strings in dist. Not merged into main, not pushed. Untracked android/ folder in the working dir is not part of this port.
+
+# IN PROGRESS (2026-11-16, Claude) - RESPONSIVE OPTIMIZATION + ASSET CLEANUP - branch `feature/crazygames-responsive-optimization` (from origin/main cca9676; backup/main-2026-11-15 verified on GitHub at cca9676)
+Rules: stay on this branch, commit in logical stages (only when the owner has said commit - see standing rule), no merge to main, no deploy, no force-push, keep CrazyGames SDK/ads/rewards untouched, no gameplay/art/timer/economy changes, never claim a device was tested if it was not (only headless Chromium emulation here).
+Stage 1 findings so far:
+- Scaling today: src/main.ts Phaser.Scale.FIT + CENTER_BOTH, logical size from BootScene (LOGICAL_WIDTH/HEIGHT), activePointers 2; index.html has viewport-fit=cover, touch-action none, user-select none, a portrait "turn your phone" overlay (<900 px wide portrait) and src/systems/Orientation.ts (first tap enters fullscreen + landscape lock on phones, skipped in the CrazyGames iframe).
+- Assets: 185 files under public/. Static + dynamic-name audit: the only files whose names appear nowhere in src/data/tests/tools (16: pan_{red,blue}_{chicken,shrimp,veggies} sheets + json, round/taco dispenser bases, Fredoka-OFL.txt, icon-512.png) ARE loaded through built names (`pan_${colour}_${protein}`, dispenserBaseKey, manifest) or are a font licence, so NONE is confirmed unused yet. Runtime network trace still to do before any deletion. tools/taco_source/old (3 webp, dev-only backups of replaced art, not shipped) is a candidate.
+- Naming: active "Chef Rush" text only in .github/workflows/verify.yml (name + artifact), RELEASE_NOTES_CRAZYGAMES.md title, docs/release.md, package name. KEEP (compat): save key 'chef-rush-save' (renaming would wipe saves), RNG seed string 'chef-rush:' in src/game/extras.ts (changes daily extras), window.__chefRush test hook, asset key/file logo_chef_rush (active art), package.json name.
+- [x] 1. Audit + plan (this block)
+- [x] 2. Scaling foundation: verify FIT/resize/orientation/fullscreen with Playwright at the listed sizes, fix only what is shown to be wrong
+- [x] 3. Desktop sizes 1280x720 .. 1920x1080
+- [x] 4. Mobile 360x640 .. 430x932 portrait + landscape, touch targets, safe areas
+- [x] 5. Tablet 768x1024, 800x1280, 1024x768, 1180x820
+- [x] 6. Fullscreen + lifecycle (blur/visibility/pause/resume, audio unlock, CG SDK calls unchanged)
+- [x] 7. Asset cleanup (runtime trace first; delete only confirmed; report in HANDOFF) + safe naming cleanup
+- [x] 8. Full tsc/vitest/builds, screenshots, final report
+RESULTS (2026-11-16, headless Chromium emulation only; NO real phone, tablet or CrazyGames iframe was tested):
+- Scaling: the existing Phaser FIT + CENTER_BOTH setup (logical 1280x698) was already correct. Swept desktop 1280x720, 1366x768, 1440x900, 1600x900, 1920x1080; tablet 768x1024, 800x1280, 1024x768, 1180x820 (+ rotated); mobile 360x640, 375x667, 390x844, 412x915, 430x932 (+ rotated, dpr 2): canvas ratio 1.834 at every size, inside the viewport, centred, no page overflow, no page errors. Portrait phones and tablets up to 899 px wide show the existing "turn sideways / tap to play in landscape" overlay (deliberate: the game is landscape).
+- Input: a click/tap at logical (788,447) reported worldX/worldY (788,447) at 1280x720, 1920x1080, 1024x768, 1180x820, 844x390, 932x430, 667x375 (mouse on desktop, touch on tablet/phone).
+- Resize while playing (1920x1080, 900x500, 390x844, 844x390, 1024x768, back to 1280x720): canvas refits each time and the rotate overlay toggles correctly. Fullscreen enter/exit works in headless Chromium but layout did not change there, so this is NOT a real fullscreen test. Window blur/focus raised no errors (GameScene's existing blur handler untouched; CrazyGames SDK calls untouched; the SDK host is blocked in this sandbox so the SDK itself was NOT exercised).
+- CHANGED (index.html only): #game uses 100dvh where supported (follows the mobile address bar) and is inset by env(safe-area-inset-left/right) (viewport-fit=cover notches). Verified the sweep and click mapping with it in place. No game code, layout, art, timers or economy changed.
+- Not changed on purpose: tablets keep the same FIT layout (a separate tablet layout would mean moving machines; the brief forbids that without a verified problem). iPad-class portrait >= 900 px wide (e.g. 1024x1366) plays in a small letterboxed canvas, no overlay: left as is, flag for owner.
+ASSET CLEANUP:
+- Method: static + dynamic-name search of src/data/tests/tools/index, import.meta.glob check, and a runtime request trace of the diner, Taco Truck and title/intro runs; then a second run after deletion with 0 HTTP errors and 0 page errors (diner 1366x768, taco 1920x1080 / 1180x820 / 844x390).
+- REMOVED (8 files, about 400 KB, recoverable from git history and backup/main-2026-11-15): public/assets/taco/icons/icons_atlas.webp, icons_atlas.atlas.json, icons.json (no code or data refers to them; only tools/taco_source notes); public/assets/taco/sprites/crema_bowl.webp, guacamole_bowl.webp, lime_pile.webp (the bowls are painted into the kitchen art; loader only loads dish, raw_/cooked_ protein and plate sprites), pan_blue.webp, pan_red.webp (never in the loader list). Duplicates removed: none found.
+- KEPT because loaded dynamically or conditionally: all taco *_sheet.webp/.anim.json (anim json via import.meta.glob, sheets via loadTacoArt), pan_{red,blue}_{protein}_sheet, dispenser bases (dispenserBaseKey), lazy art in data/assets.json (cheese, onion, pickle, drink_cup, drink_soda, bg_taco, logo_chef_rush: lazy:true, loaded when unlocked), mint_ghost clips (customerMotion), diner_extras/manifest.json (lazy loader), fonts incl. fredoka-600 and the OFL licence, icon-512.png (manifest).
+- UNCERTAIN, not deleted: tools/taco_source/old/*.webp (3 dev-only backups of the replaced midnight art, not shipped; kept as rollback).
+NAMING: changed .github/workflows/verify.yml (workflow name, artifact name), RELEASE_NOTES_CRAZYGAMES.md title, docs/release.md zip filename. SAVE KEY RENAMED (owner request, same day): now 'spooky-diner-rush-save'; an old 'chef-rush-save' is read once if the new key is empty, copied on the next save, and never deleted or overwritten (tests/save_key.test.ts). RETAINED technical references (renaming would break compatibility): RNG seed text 'chef-rush:' in src/game/extras.ts (changing it would change the daily extras), window.__chefRush test hook, package.json name 'chef-rush', asset key/file logo_chef_rush, old HANDOFF/git history. Repository URL in this checkout still says chef-rush (GitHub redirects to Spooky-Diner-Rush).
+CHECKS: tsc clean; vitest 65 files, 738 passed + 1 skipped with --testTimeout=120000 (3 balance_upgrades tests exceed the 5 s default on this slow machine, also on plain main); npm run build and build:crazygames ok.
+Status: committed on the feature branch locally; NOT pushed, NOT merged to main, NOT deployed.
+
+
+# LATEST MAIN UPDATE (2026-11-15) - PR #34 MERGED
+
+Owner approved merging the committed Diner Extras + Taco Truck Midnight work. This update records the completed push to `main`.
+
+- [x] PR #34 merged: [Merge diner extras and Taco Truck midnight expansion](https://github.com/dhavalwork97-jpg/Spooky-Diner-Rush/pull/34)
+- [x] Base: `main`; source: `feat/taco-midnight`.
+- [x] Merge method: squash merge.
+- [x] Main merge commit: `21da2843d32b4d6a14a45ffb7476460ae7e0620e`.
+- [x] Merged change size: 129 files, 5,425 additions, 92 deletions (5 source commits).
+- [x] PR state verified after merge: closed, `merged: true`.
+- [x] Source branch checks recorded in its handoff: TypeScript clean; Vitest 725 passed + 1 skipped; standard and CrazyGames builds passed; Chromium desktop and phone-layout checks completed. These are branch-recorded checks, not a fresh rerun after the squash merge.
+- [ ] No PR-triggered GitHub Actions workflow runs were returned for the source commit during the merge check; do not describe CI as having passed.
+
+## What is now on main
+
+The merged committed work includes the Diner Extras branch content and Taco Truck Midnight art/overlays plus Taco Truck features B1-B7:
+- Taco Mastery grid (4x4), named regulars, and milestone chests at menu steps 3/6/10.
+- Taco-only Full Moon and Bat Delivery events, haunted-window combo reactions, and additional Taco sounds.
+- Supporting midnight art, overlay/zone alignment work, tests, and documentation from the merged branch.
+
+The merge did not include Pizza Place changes or ad-logic changes.
+
+## Still not included - Taco Phase 2 work
+
+The following three features were marked complete in the source handoff but were explicitly recorded as **not committed/pushed** at merge time, so they were not part of PR #34 and are not on `main`:
+1. Haunted-window pumpkin taps (+2 coins, 60-second per-pumpkin cooldown).
+2. Taco Ghost Party event (menu step 6+, party of 3, 30% bonus under the documented success rules).
+3. Taco Badges (10 badges and a Badges tab in the Taco Recipe Book).
+
+Their implementation files were not present in the GitHub branch snapshot used for PR #34. Recover the original uncommitted working-tree changes before attempting to commit or merge them; do not recreate or claim these features are on main based only on this handoff description. The remaining unbuilt Phase 2 ideas (Ghost Pepper orders, truck stickers, ghost costumes) also remain out of scope pending explicit approval.
+
+## Next action
+
+Continue from the updated `main` commit above. First recover and inspect the three uncommitted Phase 2 features from the original local working directory; verify the diff and tests, then use a focused branch and PR. Do not force-push or rewrite the source branch history merely because its pre-squash commit graph now differs from `main`.
+
+---
+
 # IN PROGRESS (2026-11-15, Claude) - PORT taco midnight + diner extras to android-two-provider - branch `port/taco-midnight-to-android-two-provider` (local copy of origin/android-two-provider 17fd3ea; android-two-provider itself is NOT touched; nothing pushed/merged without the owner)
 Owner approved: "prepare" a port of the three commits from feat/taco-midnight: 1b2a563 (diner extras Lv 1-14), a0bb4f7 (taco midnight art + B1-B7), 91f9fa2 (taco Phase 2). The CrazyGames first-minute commits (f9a284c, 0dcb1da) are browser work on main and are NOT part of this port unless a dependency forces it.
 Plan (tick when done):
@@ -901,4 +1028,12 @@ D1-D3 dispenser code written: src/views/TacoDispensers.ts + hook; needs screensh
 DONE dispensers (uncommitted): TacoDispensers.ts, tools/make_dispenser_sheets.py, 6 sheets/bases, cup zones moved in data/taco.json, tests/taco_dispensers.test.ts. tsc/vitest/builds pass.
 Griddle left-edge fix (uncommitted): tools/make_griddle_art.py clears the old griddle frame strip before compositing; kitchen_front.webp regenerated, zones unchanged.
 Griddle bottom-left overlap fix: old counter corner kept in front (COUNTER_X/Y in make_griddle_art.py); kitchen_front.webp regenerated. Uncommitted.
+
+## 2026-11-21: 3 new ghost customers + first-minute pacing (feature/progression-taco-variety)
+DONE, committed: blue_yeti, pink_fuzz, mummy_ghost (calm/upset/angry/happy clips, lazy-loaded webp in public/assets/customers/*).
+- Looks unlock by diner level (Lv 3/5/7 via LOOK_UNLOCK_LEVELS in KitchenState.ts); Taco Truck stays mint-ghost only. Art loads lazily one level ahead (src/views/ghostArt.ts); CustomerView falls back to mint ghost if art not loaded; skipped on devices reporting <4 GB.
+- Fresh player downloads none of the new art (browser check). Lv 8 player: 11 files, ~14 s, no errors.
+- Tests: tests/ghost_looks.test.ts (new), customermotion updated. typecheck, vitest (802 pass), build, build:crazygames OK.
+Pacing finding (NO XP change made): first minute already fast (Lv2 ~22 s, Lv3 ~60 s). Slow zone is Lv 8-10 (Lv 9 XP cliff 500->820; Taco at ~11 min). Smoothing it needs the Lv-20 pace floor in tests/sim_late.test.ts lowered (owner approval).
+Not done: real-device memory test; regulars using new looks.
 Merged origin/main (943ebeb) into android-two-provider locally: TacoViews = main's version; TacoScene = main's art + Android ads door (ads, reopenWithAd). Not pushed. APK not built here.

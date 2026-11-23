@@ -34,8 +34,14 @@ export interface GoalEnv {
   wanted?: ItemKind[];
 }
 
-/** First level with goals: Lv 1-2 have the pointing hand and must stay uncluttered. */
+/** First level with every kind of goal. Lv 1 has the pointing hand and stays uncluttered; Lv 2 gets plain goals once its tutorial is over (see `goalsUnlocked`). */
 export const GOALS_FROM_LEVEL = 3;
+
+/**
+ * Whether goals may run. From Lv 3 always; at Lv 2 as soon as the Lv 2 tutorial (the first burger) is done, so the first target appears
+ * in the first minutes instead of after the third level-up. Never while the pointing hand is still teaching (Lv 1, or Lv 2 before the first burger).
+ */
+export const goalsUnlocked = (level: number, tutorialActive: boolean): boolean => level >= GOALS_FROM_LEVEL || (level === GOALS_FROM_LEVEL - 1 && !tutorialActive);
 /** A goal nobody is making progress on is swapped for another after this many seconds (no reward, no penalty). */
 export const GOAL_STALE_SECONDS = 75;
 
@@ -136,9 +142,9 @@ export class GoalTracker {
     const { coins, xp } = goalReward(env.level);
     const kinds: GoalKind[] = ['orders', 'coins'];
     if (this.skillPause > 0) this.skillPause--;
-    else kinds.push('fastRow');
+    else if (env.level >= GOALS_FROM_LEVEL) kinds.push('fastRow'); // a first-timer's first goal is a plain one
     if (env.items.length > 0) kinds.push('item', 'item'); // item goals are the most concrete, so they come up more often
-    if (env.maxCombo >= 3 && this.skillPause === 0) kinds.push('combo');
+    if (env.maxCombo >= 3 && this.skillPause === 0 && env.level >= GOALS_FROM_LEVEL) kinds.push('combo');
     // Never the same kind twice in a row, so the banner always feels like something new.
     const pool = kinds.filter((k) => k !== this.lastKind);
     const kind = pool[randInt(this.rng, 0, pool.length - 1)];

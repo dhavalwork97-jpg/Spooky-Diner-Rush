@@ -1,4 +1,4 @@
-name: Verify Chef Rush
+name: Verify Spooky Diner Rush
 
 on:
   pull_request:
@@ -27,7 +27,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always() && steps.crazygames.outcome == 'success'
         with:
-          name: Chef-Rush-CrazyGames
+          name: Spooky-Diner-Rush-CrazyGames
           path: dist-crazygames/
           if-no-files-found: error
           retention-days: 14

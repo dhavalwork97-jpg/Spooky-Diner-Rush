@@ -1,4 +1,8 @@
 import Phaser from 'phaser';
+import { DailyGoalPlate } from '../views/DailyGoalPlate';
+import { DailyGoalSystem } from '../systems/DailyGoalSystem';
+import { NO_PROGRESS } from '../game/dailyGoal';
+import { startRestaurant } from './restaurantRoute';
 import type { RestaurantDef } from '../data/validate';
 import { fitBackground, hitTestZone, logicalToNorm, normToLogical, type BackgroundPlacement, type Rect, type ZoneDef } from '../kitchen/zones';
 import { handleStationTap, registerStationHandler, clearStationHandlers, type TapPoint } from '../kitchen/stationHandlers';
@@ -25,10 +29,10 @@ import { ads } from '../ads';
 import { reopenWithAd } from '../game/reopenWithAd';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
 import { levelDef, type DecorDef, type EventDef } from '../game/config';
-import { nextHint } from '../game/tutorial';
+import { nextHint, tutorialActive } from '../game/tutorial';
 import { hasSavedProgress } from '../game/startup';
 import { LOGIN_FROM_LEVEL, checkLogin, tomorrowReward } from '../game/loginBonus';
-import { GOALS_FROM_LEVEL, GoalTracker, toGoalEvent, type GoalEnv } from '../game/goals';
+import { GoalTracker, goalsUnlocked, toGoalEvent, type GoalEnv } from '../game/goals';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 import { laneSpan } from '../kitchen/grab';
 import { BURNERS, COLD, COLD_BASE_W, COLD_LANE_DX, FRY_FROM, ICE, ICE_BASE_W, ICE_LANE_DX, Layout, SLOTS, SRC_H, SRC_W, VAT_FOOD_W, VATS } from '../views/layout';
@@ -46,6 +50,7 @@ import { ChestCard } from '../views/ChestViews';
 import { defaultChests, dueChests, openedAfter } from '../game/chests';
 import { BatFlyers } from '../views/BatViews';
 import { dxKey, hasDinerArt, loadDinerArt } from '../views/dinerArt';
+import { loadGhostLooks } from '../views/ghostArt';
 import { defaultBadges, newlyEarned, track, type BadgeEvent } from '../game/badges';
 import { batSchedule } from '../game/spooky';
 import { defaultIntros, dueIntros, introText, seenAfterIntro } from '../game/intros';
@@ -88,6 +93,7 @@ export class GameScene extends Phaser.Scene {
   private hud!: Hud;
   private goals!: GoalTracker;
   private goalBanner!: GoalBanner;
+  private dailyPlate!: DailyGoalPlate;
   /** "Goal complete" messages waiting for a moment with no card on screen. */
   private goalToasts: string[] = [];
   private toast!: Toast;
@@ -176,6 +182,7 @@ export class GameScene extends Phaser.Scene {
     this.banner = new EventBanner(this, 551, 42);
     this.goals = new GoalTracker(Date.now());
     this.goalBanner = new GoalBanner(this);
+    this.dailyPlate = new DailyGoalPlate(this);
     this.goalToasts = [];
     this.levelUpCard = new LevelUpCard(this, this.fx, LOGICAL_WIDTH / 2, 330, () => this.afterLevelUpCards());
     this.chestCard = new ChestCard(this, this.fx, LOGICAL_WIDTH / 2, 360);
@@ -757,6 +764,13 @@ export class GameScene extends Phaser.Scene {
         audio.play('ding');
         break;
       case 'orderDone': {
+        {
+          const bonus = DailyGoalSystem.record('burger_diner');
+          if (bonus > 0) {
+            this.state.coins += bonus;
+            this.toast.show(`Daily goal complete! +${bonus} coins`);
+          }
+        }
         this.badgeEvent({ type: 'serve', rush: e.rush, atMaxCombo: e.combo >= this.state.cfg.combo.maxCombo, duringMoon: this.state.event?.def.id === 'full_moon', regular: !!e.regular });
         const cv = this.custViews.get(e.customer);
         this.flyCoins(cv?.center ?? { x: 640, y: 150 }, Math.min(6, 2 + Math.floor(e.coins / 10)));
@@ -911,7 +925,7 @@ export class GameScene extends Phaser.Scene {
         this.syncDecor();
         this.scene.resume();
       },
-      onPick: (id: string) => (id === 'taco_truck' ? this.scene.start('Taco') : this.scene.start('Game', { restaurantId: id })),
+      onPick: (id: string) => startRestaurant(this, id),
     };
     this.scene.launch(key, data);
     this.scene.pause();
@@ -980,14 +994,14 @@ export class GameScene extends Phaser.Scene {
     return { level: this.state.level, items: levelDef(cfg, this.state.level).items, itemName: (k) => cfg.recipes.items[k].name, maxCombo: cfg.combo.maxCombo, wanted: this.state.customers.filter((c) => c.mood === 'waiting').flatMap((c) => c.items.filter((_, i) => !c.delivered[i])) };
   }
 
-  /** Goals need a calm screen: not in the tutorial levels, and not under a card, overlay, pause or Closed screen. */
+  /** Goals need a calm screen: not while the pointing hand is teaching (Lv 1, Lv 2 before the first burger), and not under a card, overlay, pause or Closed screen. */
   private goalsAllowed(): boolean {
-    return this.state.level >= GOALS_FROM_LEVEL && !this.paused && !this.state.closed && !this.overlay.visible && !this.storyCard.isShowing && !this.levelUpCard.isShowing;
+    return goalsUnlocked(this.state.level, tutorialActive(this.state)) && !this.paused && !this.state.closed && !this.overlay.visible && !this.storyCard.isShowing && !this.levelUpCard.isShowing;
   }
 
   /** Every kitchen event also goes to the goal tracker; a finished goal pays out and shows "Goal complete". */
   private countGoal(e: GameEvent): void {
-    if (this.state.level < GOALS_FROM_LEVEL || !this.goals.current) return;
+    if (!goalsUnlocked(this.state.level, tutorialActive(this.state)) || !this.goals.current) return;
     const ge = toGoalEvent(e, (customer, i) => this.state.customers.find((c) => c.id === customer)?.items[i]);
     if (!ge) return;
     const done = this.goals.onEvent(ge, this.goalEnv());
@@ -1003,7 +1017,10 @@ export class GameScene extends Phaser.Scene {
       this.goals.ensure(env);
       this.goals.tick(dt, env);
     }
-    this.goalBanner.update(ok ? this.goals.current : null);
+    // Goals keep tracking in the model while the banner is hidden; the pure timer decides when the banner shows (6 s for a new goal, 3 s on progress/completion).
+    const unlocked = goalsUnlocked(this.state.level, tutorialActive(this.state));
+    this.goalBanner.update(unlocked ? this.goals.current : null, { dtMs: dt * 1000, completed: this.goals.completed, blocked: !ok || this.hand.visible || this.chestCard.isShowing });
+    this.dailyPlate.update(unlocked ? DailyGoalSystem.progress() : NO_PROGRESS, { dtMs: dt * 1000, claimed: DailyGoalSystem.claimed, blocked: !ok || this.hand.visible || this.chestCard.isShowing });
     const msg = ok && !this.toast.visible ? this.goalToasts.splice(0, 1)[0] : undefined;
     if (msg) this.toast.show(msg);
   }
@@ -1234,6 +1251,7 @@ export class GameScene extends Phaser.Scene {
     if (this.state.level >= 7) loadDinerArt(this, 'bat');
     if (this.state.level >= 4) loadDinerArt(this, 'decor', () => this.syncDecor()); // the decor art (shop pieces from Lv 5 and the chest prizes)
     if (this.state.level >= 7) loadDinerArt(this, 'badges'); // the regulars' heart and the badge icons
+    loadGhostLooks(this, this.state.level); // the blue yeti (Lv 3), pink fuzz (Lv 5) and mummy ghost (Lv 7), fetched one Lv early
   }
 
   /** A spooky event began: change the room's look, or send the bat on its flights. */
@@ -1387,6 +1405,7 @@ export class GameScene extends Phaser.Scene {
     this.hand.destroy();
     this.storyCard.destroy();
     this.goalBanner.destroy();
+    this.dailyPlate?.destroy();
     this.fx.destroy();
     this.atmosphere?.destroy();
     this.atmosphere = undefined;

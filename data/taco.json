@@ -2,8 +2,8 @@
  "restaurant": {
   "id": "taco_truck",
   "name": "Taco Truck",
-  "unlockLevel": 15,
-  "cost": 2000
+  "unlockLevel": 10,
+  "cost": 1500
  },
  "settings": {
   "pans": 4,
@@ -18,14 +18,14 @@
   "ramp": [
     { "step": 1, "seats": 3, "orderSize": [1, 2], "patienceMult": 1.2 },
     { "step": 2, "seats": 4, "orderSize": [1, 2], "patienceMult": 1.15 },
-    { "step": 3, "seats": 4, "orderSize": [1, 3], "patienceMult": 1.15 },
-    { "step": 4, "seats": 5, "orderSize": [1, 3], "patienceMult": 1.15 },
-    { "step": 5, "seats": 5, "orderSize": [1, 3], "patienceMult": 1.15 },
-    { "step": 6, "seats": 5, "orderSize": [1, 3], "patienceMult": 1.15 },
-    { "step": 7, "seats": 5, "orderSize": [1, 3], "patienceMult": 1.15 },
-    { "step": 8, "seats": 5, "orderSize": [1, 3], "patienceMult": 1.15 },
-    { "step": 9, "seats": 5, "orderSize": [1, 3], "patienceMult": 1.15 },
-    { "step": 10, "seats": 5, "orderSize": [1, 3], "patienceMult": 1.15 }
+    { "step": 3, "seats": 4, "orderSize": [1, 3], "patienceMult": 1.15, "bigOrderShare": 0.12 },
+    { "step": 4, "seats": 5, "orderSize": [1, 3], "patienceMult": 1.15, "bigOrderShare": 0.2 },
+    { "step": 5, "seats": 5, "orderSize": [1, 3], "patienceMult": 1.15, "bigOrderShare": 0.25 },
+    { "step": 6, "seats": 5, "orderSize": [1, 3], "patienceMult": 1.15, "bigOrderShare": 0.25 },
+    { "step": 7, "seats": 5, "orderSize": [1, 3], "patienceMult": 1.15, "bigOrderShare": 0.25 },
+    { "step": 8, "seats": 5, "orderSize": [1, 3], "patienceMult": 1.15, "bigOrderShare": 0.25 },
+    { "step": 9, "seats": 5, "orderSize": [1, 3], "patienceMult": 1.15, "bigOrderShare": 0.25 },
+    { "step": 10, "seats": 5, "orderSize": [1, 3], "patienceMult": 1.15, "bigOrderShare": 0.25 }
   ],
  "learning": {
   "practiceServes": 3,
@@ -39,6 +39,18 @@
   "gapMaxUnfamiliar": 3,
   "ovenItemCap": 3,
   "pressItemCap": 2
+ },
+ "variety": {
+  "recentDishes": 3,
+  "recencyWeights": [0.15, 0.45, 0.75],
+  "kindWindow": 8,
+  "kindStrength": 0.6,
+  "kindMin": 0.5,
+  "kindMax": 1.6,
+  "drinkStrength": 0.8,
+  "drinkMin": 0.5,
+  "drinkMax": 1.6,
+  "avoidDuplicateInOrder": true
  },
  "upgrades": [
   {

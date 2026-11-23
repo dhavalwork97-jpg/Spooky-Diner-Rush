@@ -1,0 +1,160 @@
+{
+  "items": {
+    "garlic_bread": {
+      "states": [
+        "raw",
+        "ready",
+        "overcooking",
+        "burnt"
+      ],
+      "full_res_size": [
+        507,
+        368
+      ],
+      "atlas_rects": {
+        "raw": [
+          2,
+          1,
+          254,
+          184
+        ],
+        "ready": [
+          261,
+          1,
+          254,
+          184
+        ],
+        "overcooking": [
+          520,
+          1,
+          254,
+          184
+        ],
+        "burnt": [
+          779,
+          1,
+          254,
+          184
+        ]
+      }
+    },
+    "cheesy_breadsticks": {
+      "states": [
+        "raw",
+        "ready",
+        "overcooking",
+        "burnt"
+      ],
+      "full_res_size": [
+        514,
+        419
+      ],
+      "atlas_rects": {
+        "raw": [
+          1,
+          187,
+          257,
+          210
+        ],
+        "ready": [
+          260,
+          187,
+          257,
+          210
+        ],
+        "overcooking": [
+          519,
+          187,
+          257,
+          210
+        ],
+        "burnt": [
+          778,
+          187,
+          257,
+          210
+        ]
+      }
+    },
+    "cinnamon_twists": {
+      "states": [
+        "raw",
+        "ready",
+        "overcooking",
+        "burnt"
+      ],
+      "full_res_size": [
+        495,
+        427
+      ],
+      "atlas_rects": {
+        "raw": [
+          5,
+          399,
+          248,
+          214
+        ],
+        "ready": [
+          264,
+          399,
+          248,
+          214
+        ],
+        "overcooking": [
+          523,
+          399,
+          248,
+          214
+        ],
+        "burnt": [
+          782,
+          399,
+          248,
+          214
+        ]
+      }
+    }
+  },
+  "icons": {
+    "garlic_bread": {
+      "files": [
+        "icons/garlic_bread_icon_256.png",
+        "icons/garlic_bread_icon_128.png"
+      ],
+      "size_256": [
+        256,
+        224
+      ]
+    },
+    "cheesy_breadsticks": {
+      "files": [
+        "icons/cheesy_breadsticks_icon_256.png",
+        "icons/cheesy_breadsticks_icon_128.png"
+      ],
+      "size_256": [
+        256,
+        246
+      ]
+    },
+    "cinnamon_twists": {
+      "files": [
+        "icons/cinnamon_twists_icon_256.png",
+        "icons/cinnamon_twists_icon_128.png"
+      ],
+      "size_256": [
+        256,
+        241
+      ]
+    }
+  },
+  "items_atlas": {
+    "file": "sides_items_atlas.webp",
+    "size": [
+      1036,
+      614
+    ],
+    "scale_vs_full": 0.5,
+    "layout": "one row per item (garlic_bread, cheesy_breadsticks, cinnamon_twists), columns raw / ready / overcooking / burnt",
+    "note": "Rects are in atlas pixels. Each state of an item has the same canvas so they can be swapped in place. Burnt garlic bread has loose ash flecks inside its canvas."
+  }
+}

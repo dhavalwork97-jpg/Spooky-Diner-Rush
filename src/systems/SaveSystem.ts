@@ -1,3 +1,5 @@
+import { dayNumber } from '../game/loginBonus';
+import { emptyDailyGoal, type DailyGoalState } from '../game/dailyGoal';
 import { seedMasteryPaid } from '../game/taco/tacoExtras';
 import { CrazyGames } from '../sdk/crazygames';
 import { defaultTacoConfig } from '../game/taco/tacoConfig';
@@ -31,6 +33,8 @@ export interface SaveData {
   /** Daily login bonus: the last visit's local day (YYYY-MM-DD, '' = never) and the days-in-a-row count. Missing in older saves. */
   lastLoginDay: string;
   loginStreak: number;
+  /** Three-restaurant daily goal: the day, serves per restaurant and whether the reward was paid. Missing in older saves. */
+  dailyGoal: DailyGoalState;
   /** The Taco Truck's own upgrades: upgrade id -> tier bought. Separate from `owned` (the diner's). */
   tacoOwned: Record<string, number>;
   /** Times each Taco Truck dish was served: decides when a new dish counts as learned. Saves from before this get every dish older than the current menu step as learned. */
@@ -54,10 +58,28 @@ export interface SaveData {
   badges: string[];
   /** Lifetime counters behind the badges (id -> count). Additive; missing in older saves. */
   stats: Record<string, number>;
+  /** Pizza Place (all additive; missing in older saves). Its menu step (1-10) and the XP towards the next one: separate from Lv, so buying it at Lv 30+ still starts at step 1. */
+  pizzaStep: number;
+  pizzaXp: number;
+  /** The Pizza Place's own upgrades: upgrade id -> tier bought. Separate from `owned` (diner) and `tacoOwned`. */
+  pizzaOwned: Record<string, number>;
+  /** Times each Pizza Place dish was served: decides when a new dish counts as learned. */
+  pizzaServed: Record<string, number>;
+  /** Pointer tutorial state per Pizza Place dish: times shown (1, 2) or 9 once done. */
+  pizzaLessons: Record<string, number>;
+  /** Pizza mastery tiers already paid: dish id -> tiers paid (1 bronze to 3 gold). */
+  pizzaMastery: Record<string, number>;
+  /** Day (YYYY-MM-DD) the Pizza Place Daily Special was last completed. Separate from the Diner's `specialDay`. */
+  pizzaSpecialDay: string;
+  /** Pizza mini-goal state and lifetime counters (id -> count). */
+  pizzaGoal: Record<string, number>;
+  pizzaStats: Record<string, number>;
   settings: { reduceMotion: boolean | null; musicVolume: number; sfxVolume: number; muted: boolean };
 }
 
-const KEY = 'chef-rush-save';
+const KEY = 'spooky-diner-rush-save';
+/** The key used before the rename. Still read once so nobody loses progress; never written and never deleted (it stays as a backup). */
+export const LEGACY_SAVE_KEY = 'chef-rush-save';
 
 export function defaultSave(): SaveData {
   return {
@@ -76,6 +98,7 @@ export function defaultSave(): SaveData {
     specialDay: '',
     lastLoginDay: '',
     loginStreak: 0,
+    dailyGoal: emptyDailyGoal(),
     tacoOwned: {},
     tacoServed: {},
     tacoLessons: {},
@@ -88,6 +111,15 @@ export function defaultSave(): SaveData {
     tacoChests: [],
     badges: [],
     stats: {},
+    pizzaStep: 1,
+    pizzaXp: 0,
+    pizzaOwned: {},
+    pizzaServed: {},
+    pizzaLessons: {},
+    pizzaMastery: {},
+    pizzaSpecialDay: '',
+    pizzaGoal: {},
+    pizzaStats: {},
     settings: { reduceMotion: null, musicVolume: 0.6, sfxVolume: 0.8, muted: false },
   };
 }
@@ -165,6 +197,12 @@ function cleanLevels(v: unknown): number[] {
 }
 
 /** Merge unknown input over defaults so old or corrupt saves never crash the game. */
+/** A saved daily goal, or an empty one when it is missing or damaged. */
+function cleanDailyGoal(v: any): DailyGoalState {
+  if (!v || typeof v !== 'object' || typeof v.day !== 'string' || dayNumber(v.day) === null) return emptyDailyGoal();
+  return { day: v.day, counts: cleanCounts(v.counts), claimed: v.claimed === true };
+}
+
 export function parseSave(raw: string | null): SaveData {
   const base = defaultSave();
   if (!raw) return base;
@@ -192,6 +230,7 @@ export function parseSave(raw: string | null): SaveData {
       mastery: cleanCounts(p.mastery),
       lastLoginDay: typeof p.lastLoginDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.lastLoginDay) ? p.lastLoginDay : '',
       loginStreak: typeof p.loginStreak === 'number' && Number.isFinite(p.loginStreak) ? Math.min(100000, Math.max(0, Math.floor(p.loginStreak))) : 0,
+      dailyGoal: cleanDailyGoal(p.dailyGoal),
       specialDay: typeof p.specialDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.specialDay) ? p.specialDay : '',
       tacoOwned: cleanOwned(p.tacoOwned),
       tacoServed: p.tacoServed === undefined ? seeded.served : cleanOwned(p.tacoServed),
@@ -205,6 +244,15 @@ export function parseSave(raw: string | null): SaveData {
       tacoChests: cleanLevels(p.tacoChests),
       badges: cleanIds(p.badges),
       stats: cleanCounts(p.stats),
+      pizzaStep: typeof p.pizzaStep === 'number' && Number.isFinite(p.pizzaStep) ? Math.min(10, Math.max(1, Math.floor(p.pizzaStep))) : 1,
+      pizzaXp: num(p.pizzaXp, 0),
+      pizzaOwned: cleanOwned(p.pizzaOwned),
+      pizzaServed: cleanCounts(p.pizzaServed),
+      pizzaLessons: cleanOwned(p.pizzaLessons),
+      pizzaMastery: cleanCounts(p.pizzaMastery),
+      pizzaSpecialDay: typeof p.pizzaSpecialDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.pizzaSpecialDay) ? p.pizzaSpecialDay : '',
+      pizzaGoal: cleanCounts(p.pizzaGoal),
+      pizzaStats: cleanCounts(p.pizzaStats),
       settings: {
         reduceMotion: typeof p.settings?.reduceMotion === 'boolean' ? p.settings.reduceMotion : null,
         musicVolume: Math.min(1, num(p.settings?.musicVolume, base.settings.musicVolume)),
@@ -220,7 +268,7 @@ export function parseSave(raw: string | null): SaveData {
 export const SaveSystem = {
   data: defaultSave(),
   load(): SaveData {
-    this.data = parseSave(read(KEY));
+    this.data = parseSave(read(KEY) ?? read(LEGACY_SAVE_KEY)); // the next save() writes the new key
     return this.data;
   },
   save(): void {

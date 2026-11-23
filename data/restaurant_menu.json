@@ -1,9 +1,3 @@
 {
-  "comingSoon": [
-    {
-      "id": "pizza_place",
-      "name": "Pizza Place",
-      "unlockLevel": 20
-    }
-  ]
+  "comingSoon": []
 }

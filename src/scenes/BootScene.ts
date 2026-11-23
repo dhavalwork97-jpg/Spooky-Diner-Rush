@@ -23,6 +23,7 @@ import { dinerArtRows } from '../views/dinerArt';
 import { defaultRegulars, defaultRegularSettings, validateRegulars } from '../game/regulars';
 import { validateEvents } from '../game/spooky';
 import { chooseFirstScene, hasSavedProgress } from '../game/startup';
+import { IS_CRAZYGAMES_BUILD } from '../build/target';
 
 export const LOGICAL_WIDTH = 1280;
 export const LOGICAL_HEIGHT = 698;
@@ -78,10 +79,10 @@ export class BootScene extends Phaser.Scene {
     buildAllTextures(this, defaultConfig);
     const start = pickStartRestaurant(restaurants, SaveSystem.data.lastRestaurant, SaveSystem.data.level);
     // Canvas text does not redraw when a font arrives later, so wait for the bundled font (a missing file only delays by the timeout).
-    // New players see the title screen (with the intro video) first; returning players and ?debug go straight in (see src/game/startup.ts).
+    // New players see the title screen (with the intro video) first; returning players, ?debug and the CrazyGames build go straight in (see src/game/startup.ts).
     const params = new URLSearchParams(location.search);
-    // ?debug&taco opens the Taco Truck directly (see TacoScene for its ?step, ?speed and ?coins flags).
-    const next = chooseFirstScene({ debug: params.has('debug'), taco: params.has('taco'), returning: hasSavedProgress(SaveSystem.data) });
+    // ?debug&pizza opens the Pizza Place directly (flags: ?step, ?coins, ?level, ?speed). ?debug&taco opens the Taco Truck directly (see TacoScene for its ?step, ?speed and ?coins flags).
+    const next = chooseFirstScene({ debug: params.has('debug'), taco: params.has('taco'), pizza: params.has('pizza'), returning: hasSavedProgress(SaveSystem.data), skipTitle: IS_CRAZYGAMES_BUILD });
     const go = (): void => {
       CrazyGames.loadingStop();
       void this.scene.start(next, { restaurantId: start });

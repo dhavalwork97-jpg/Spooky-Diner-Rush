@@ -1,0 +1,124 @@
+{
+  "name": "small_oven",
+  "source_video": "1000089105.mp4",
+  "source_fps": 24,
+  "frame_step": 2,
+  "clip_fps": 12.0,
+  "recommended_playback": "play close and open at about 0.5-0.6 s each (speed up as needed)",
+  "body": {
+    "sheet_webp": "small_oven_body_spritesheet.webp",
+    "sheet_png": "small_oven_body_spritesheet.png",
+    "columns": 8,
+    "rows": 6,
+    "frame_width": 486,
+    "frame_height": 434,
+    "scale_vs_full": 0.7,
+    "full_res_frame_size": [
+      694,
+      620
+    ],
+    "frame_count": 44,
+    "clips": {
+      "close": {
+        "frames": [
+          0,
+          19
+        ],
+        "note": "door swings shut, last frame = closed, ends with a small latch bounce"
+      },
+      "open": {
+        "frames": [
+          20,
+          42
+        ],
+        "note": "door swings open, last frame = open and ready for the open-hold"
+      }
+    },
+    "frames": {
+      "open_idle": 43,
+      "closed": 19,
+      "open_hold": 43,
+      "first_open_frame": 20
+    },
+    "notes": [
+      "Frame 'closed' is the single static closed frame. Use it while cooking.",
+      "Frame 'open_hold' (last frame) is the single static open frame. Use it while the oven is open.",
+      "The first frame of the open clip may still show a small flame remnant at the door edge."
+    ],
+    "item_slots_full_res": {
+      "note": "Oven floor in the body frame (full-res pixels). Use ONE tray (slot_a) or TWO smaller items (slot_b1 and slot_b2). Decide per game design.",
+      "floor_extent_x": [
+        175,
+        520
+      ],
+      "floor_extent_y": [
+        392,
+        436
+      ],
+      "slot_a": [
+        345,
+        413
+      ],
+      "slot_a_ellipse_size": [
+        250,
+        34
+      ],
+      "slot_b1": [
+        260,
+        413
+      ],
+      "slot_b2": [
+        430,
+        413
+      ],
+      "slot_b_ellipse_size": [
+        160,
+        32
+      ]
+    },
+    "door_clip_note": "open clip starts after the flames are gone."
+  },
+  "flames": {
+    "sheet_webp": "small_oven_flames_spritesheet.webp",
+    "sheet_png": "small_oven_flames_spritesheet.png",
+    "columns": 6,
+    "rows": 4,
+    "frame_width": 464,
+    "frame_height": 360,
+    "scale_vs_full": 0.5,
+    "full_res_frame_size": [
+      928,
+      720
+    ],
+    "frame_count": 20,
+    "blend": "ADD (additive / 'lighter' / screen). Black = transparent.",
+    "clips": {
+      "intro": {
+        "frames": [
+          0,
+          7
+        ],
+        "loop": false
+      },
+      "loop": {
+        "frames": [
+          8,
+          19
+        ],
+        "loop": true
+      }
+    },
+    "offset_from_body_top_left_full_res": [
+      -117,
+      -57
+    ],
+    "notes": [
+      "Draw this layer on top of the closed door while cooking. Play intro once then loop.",
+      "On READY: fade the flame layer out in about 0.2 s, then play the door open clip."
+    ]
+  },
+  "body_origin_in_source_frame": [
+    293,
+    57
+  ]
+}

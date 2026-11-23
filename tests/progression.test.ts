@@ -55,19 +55,19 @@ describe('progression data, Lv 1 to 20', () => {
       expect((l.types.regular ?? 0) / total).toBeGreaterThanOrEqual(0.5);
     }
   });
-  it('introduces impatient customers at Lv 11, VIPs at Lv 14 and critics at Lv 16, and never takes one away', () => {
+  it('introduces impatient customers at Lv 9, VIPs at Lv 14 and critics at Lv 16, and never takes one away', () => {
     const first = (type: string) => levels.find((l) => (l.types?.[type] ?? 0) > 0)?.level;
-    expect(first('impatient')).toBe(11);
+    expect(first('impatient')).toBe(9);
     expect(first('vip')).toBe(14);
     expect(first('critic')).toBe(16);
     for (let i = 1; i < levels.length; i++) {
       for (const [k, w] of Object.entries(levels[i - 1].types ?? {})) if (k !== 'regular' && w > 0) expect(levels[i].types?.[k] ?? 0).toBeGreaterThan(0);
     }
-    for (const l of levels.slice(0, 10)) expect(l.types).toBeUndefined(); // Lv 1-10 stay regular only
+    for (const l of levels.slice(0, 8)) expect(l.types).toBeUndefined(); // Lv 1-8 stay regular only
   });
   it('announces each new customer type and the fourth seat in the unlock text', () => {
     const text = (n: number) => levels[n - 1].unlocks.join(' ').toLowerCase();
-    expect(text(11)).toContain('impatient');
+    expect(text(9)).toContain('impatient');
     expect(text(13)).toContain('four');
     expect(text(14)).toContain('vip');
     expect(text(16)).toContain('critic');
@@ -113,8 +113,20 @@ describe('xp curve for the later levels', () => {
   it('keeps rising by a fixed step from the end of the gentle early part on', () => {
     for (let n = early + 1; n < 40; n++) expect(xpForLevel(cfg, n + 1) - xpForLevel(cfg, n)).toBe(cfg.xp.perLevel);
   });
-  it('Lv 1-2 and every level after the early part keep the original curve', () => {
-    for (const n of [1, 2, early + 1, early + 2, 20, 40]) expect(xpForLevel(cfg, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
+  it('Lv 2 and every level after the early part keep the original curve', () => {
+    for (const n of [2, early + 1, early + 2, 20, 40]) expect(xpForLevel(cfg, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
+  });
+  it('only the very first level-up is cheaper (firstLevelXp), so it lands inside the first minute', () => {
+    expect(cfg.xp.firstLevelXp).toBe(100);
+    expect(xpForLevel(cfg, 1)).toBe(100);
+    expect(xpForLevel(cfg, 1)).toBeLessThan(cfg.xp.base + cfg.xp.perLevel);
+    // Fries are worth 20 XP (+10 when served fast): five plain orders, or four fast ones, finish Lv 1.
+    const fries = cfg.recipes.items.fries.xp;
+    expect(Math.ceil(xpForLevel(cfg, 1) / fries)).toBeLessThanOrEqual(5);
+  });
+  it('without firstLevelXp Lv 1 keeps the original cost', () => {
+    const plain = { ...cfg, xp: { ...cfg.xp, firstLevelXp: undefined } };
+    expect(xpForLevel(plain, 1)).toBe(cfg.xp.base + cfg.xp.perLevel);
   });
   it('Lv 3 to the early limit use the gentler slope and never cost more than before', () => {
     expect(cfg.xp.earlyPerLevel).toBe(50);
@@ -129,7 +141,7 @@ describe('xp curve for the later levels', () => {
   });
   it('without the early settings the curve is the plain linear one', () => {
     const plain = { ...cfg, xp: { ...cfg.xp, earlyPerLevel: undefined, earlyUntilLevel: undefined } };
-    for (let n = 1; n < 30; n++) expect(xpForLevel(plain, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
+    for (let n = 1; n < 30; n++) expect(xpForLevel({ ...plain, xp: { ...plain.xp, firstLevelXp: undefined } }, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
   });
 });
 
@@ -144,8 +156,9 @@ describe('the model draws customer types from the level weights', () => {
     }
     return seen;
   };
-  it('Lv 10 has regular customers only', () => {
-    expect(Object.keys(draw(10))).toEqual(['regular']);
+  it('Lv 8 has regular customers only, Lv 9 adds impatient ones', () => {
+    expect(Object.keys(draw(8))).toEqual(['regular']);
+    expect(draw(9).impatient).toBeGreaterThan(0);
   });
   it('Lv 12 has regular and impatient customers, never VIPs or critics', () => {
     const seen = draw(12);

@@ -1,0 +1,837 @@
+{
+  "raw_layers": {
+    "atlas_webp": "raw_layers_atlas.webp",
+    "atlas_png": "raw_layers_atlas.png",
+    "atlas_size": [
+      1040,
+      520
+    ],
+    "sprites_dir": "raw_layers",
+    "sprites": {
+      "dough_ball": {
+        "x": 25,
+        "y": 32,
+        "w": 209,
+        "h": 196,
+        "cx": 129.5,
+        "cy": 130.0
+      },
+      "dough_disc": {
+        "x": 262,
+        "y": 2,
+        "w": 256,
+        "h": 256,
+        "cx": 390.0,
+        "cy": 130.0
+      },
+      "sauce_tomato": {
+        "x": 529,
+        "y": 7,
+        "w": 242,
+        "h": 245,
+        "cx": 650.0,
+        "cy": 129.5
+      },
+      "sauce_bbq": {
+        "x": 790,
+        "y": 7,
+        "w": 240,
+        "h": 245,
+        "cx": 910.0,
+        "cy": 129.5
+      },
+      "sauce_garlic": {
+        "x": 10,
+        "y": 269,
+        "w": 239,
+        "h": 241,
+        "cx": 129.5,
+        "cy": 389.5
+      },
+      "sauce_hot": {
+        "x": 270,
+        "y": 270,
+        "w": 240,
+        "h": 240,
+        "cx": 390.0,
+        "cy": 390.0
+      },
+      "cheese_mozzarella": {
+        "x": 530,
+        "y": 272,
+        "w": 240,
+        "h": 236,
+        "cx": 650.0,
+        "cy": 390.0
+      },
+      "cheese_white": {
+        "x": 792,
+        "y": 274,
+        "w": 235,
+        "h": 231,
+        "cx": 909.5,
+        "cy": 389.5
+      }
+    }
+  },
+  "ingredient_icons": {
+    "atlas_webp": "ingredient_icons_atlas.webp",
+    "atlas_png": "ingredient_icons_atlas.png",
+    "atlas_size": [
+      1074,
+      462
+    ],
+    "sprites_dir": "ingredient_icons",
+    "sprites": {
+      "dough": {
+        "x": 2,
+        "y": 15,
+        "w": 175,
+        "h": 124,
+        "cx": 89.5,
+        "cy": 77.0
+      },
+      "sauce_tomato": {
+        "x": 193,
+        "y": 14,
+        "w": 150,
+        "h": 125,
+        "cx": 268.0,
+        "cy": 76.5
+      },
+      "sauce_bbq": {
+        "x": 372,
+        "y": 14,
+        "w": 150,
+        "h": 125,
+        "cx": 447.0,
+        "cy": 76.5
+      },
+      "sauce_garlic": {
+        "x": 551,
+        "y": 14,
+        "w": 151,
+        "h": 126,
+        "cx": 626.5,
+        "cy": 77.0
+      },
+      "sauce_hot": {
+        "x": 731,
+        "y": 14,
+        "w": 149,
+        "h": 125,
+        "cx": 805.5,
+        "cy": 76.5
+      },
+      "cheese_mozzarella": {
+        "x": 908,
+        "y": 19,
+        "w": 152,
+        "h": 116,
+        "cx": 984.0,
+        "cy": 77.0
+      },
+      "cheese_white": {
+        "x": 10,
+        "y": 171,
+        "w": 158,
+        "h": 119,
+        "cx": 89.0,
+        "cy": 230.5
+      },
+      "pepperoni": {
+        "x": 191,
+        "y": 167,
+        "w": 155,
+        "h": 128,
+        "cx": 268.5,
+        "cy": 231.0
+      },
+      "mushroom": {
+        "x": 371,
+        "y": 166,
+        "w": 152,
+        "h": 130,
+        "cx": 447.0,
+        "cy": 231.0
+      },
+      "olive": {
+        "x": 554,
+        "y": 171,
+        "w": 144,
+        "h": 120,
+        "cx": 626.0,
+        "cy": 231.0
+      },
+      "bell_pepper": {
+        "x": 731,
+        "y": 165,
+        "w": 149,
+        "h": 131,
+        "cx": 805.5,
+        "cy": 230.5
+      },
+      "red_onion": {
+        "x": 908,
+        "y": 167,
+        "w": 153,
+        "h": 128,
+        "cx": 984.5,
+        "cy": 231.0
+      },
+      "jalapeno": {
+        "x": 18,
+        "y": 318,
+        "w": 143,
+        "h": 133,
+        "cx": 89.5,
+        "cy": 384.5
+      },
+      "basil": {
+        "x": 192,
+        "y": 313,
+        "w": 152,
+        "h": 143,
+        "cx": 268.0,
+        "cy": 384.5
+      },
+      "ham": {
+        "x": 373,
+        "y": 316,
+        "w": 148,
+        "h": 138,
+        "cx": 447.0,
+        "cy": 385.0
+      },
+      "pineapple": {
+        "x": 551,
+        "y": 314,
+        "w": 151,
+        "h": 141,
+        "cx": 626.5,
+        "cy": 384.5
+      },
+      "chicken": {
+        "x": 729,
+        "y": 315,
+        "w": 153,
+        "h": 140,
+        "cx": 805.5,
+        "cy": 385.0
+      },
+      "spinach": {
+        "x": 907,
+        "y": 310,
+        "w": 154,
+        "h": 150,
+        "cx": 984.0,
+        "cy": 385.0
+      }
+    }
+  },
+  "toppings_a": {
+    "atlas_webp": "toppings_a_atlas.webp",
+    "atlas_png": "toppings_a_atlas.png",
+    "atlas_size": [
+      924,
+      456
+    ],
+    "sprites_dir": "toppings_a",
+    "sprites": {
+      "pepperoni_1": {
+        "x": 4,
+        "y": 4,
+        "w": 146,
+        "h": 144,
+        "cx": 77.0,
+        "cy": 76.0
+      },
+      "mushroom_1": {
+        "x": 160,
+        "y": 6,
+        "w": 142,
+        "h": 140,
+        "cx": 231.0,
+        "cy": 76.0
+      },
+      "olive_1": {
+        "x": 323,
+        "y": 17,
+        "w": 124,
+        "h": 117,
+        "cx": 385.0,
+        "cy": 75.5
+      },
+      "bell_pepper_1": {
+        "x": 473,
+        "y": 2,
+        "w": 132,
+        "h": 148,
+        "cx": 539.0,
+        "cy": 76.0
+      },
+      "red_onion_1": {
+        "x": 622,
+        "y": 4,
+        "w": 142,
+        "h": 144,
+        "cx": 693.0,
+        "cy": 76.0
+      },
+      "jalapeno_1": {
+        "x": 779,
+        "y": 8,
+        "w": 135,
+        "h": 136,
+        "cx": 846.5,
+        "cy": 76.0
+      },
+      "pepperoni_2": {
+        "x": 2,
+        "y": 164,
+        "w": 150,
+        "h": 128,
+        "cx": 77.0,
+        "cy": 228.0
+      },
+      "mushroom_2": {
+        "x": 163,
+        "y": 160,
+        "w": 136,
+        "h": 136,
+        "cx": 231.0,
+        "cy": 228.0
+      },
+      "olive_2": {
+        "x": 320,
+        "y": 169,
+        "w": 129,
+        "h": 117,
+        "cx": 384.5,
+        "cy": 227.5
+      },
+      "bell_pepper_2": {
+        "x": 465,
+        "y": 163,
+        "w": 148,
+        "h": 129,
+        "cx": 539.0,
+        "cy": 227.5
+      },
+      "red_onion_2": {
+        "x": 619,
+        "y": 159,
+        "w": 148,
+        "h": 137,
+        "cx": 693.0,
+        "cy": 227.5
+      },
+      "jalapeno_2": {
+        "x": 778,
+        "y": 164,
+        "w": 138,
+        "h": 127,
+        "cx": 847.0,
+        "cy": 227.5
+      },
+      "pepperoni_3": {
+        "x": 5,
+        "y": 316,
+        "w": 144,
+        "h": 127,
+        "cx": 77.0,
+        "cy": 379.5
+      },
+      "mushroom_3": {
+        "x": 162,
+        "y": 312,
+        "w": 138,
+        "h": 135,
+        "cx": 231.0,
+        "cy": 379.5
+      },
+      "olive_3": {
+        "x": 322,
+        "y": 319,
+        "w": 126,
+        "h": 122,
+        "cx": 385.0,
+        "cy": 380.0
+      },
+      "bell_pepper_3": {
+        "x": 470,
+        "y": 320,
+        "w": 138,
+        "h": 120,
+        "cx": 539.0,
+        "cy": 380.0
+      },
+      "red_onion_3": {
+        "x": 623,
+        "y": 311,
+        "w": 140,
+        "h": 137,
+        "cx": 693.0,
+        "cy": 379.5
+      },
+      "jalapeno_3": {
+        "x": 778,
+        "y": 313,
+        "w": 137,
+        "h": 134,
+        "cx": 846.5,
+        "cy": 380.0
+      }
+    }
+  },
+  "toppings_b": {
+    "atlas_webp": "toppings_b_atlas.webp",
+    "atlas_png": "toppings_b_atlas.png",
+    "atlas_size": [
+      918,
+      477
+    ],
+    "sprites_dir": "toppings_b",
+    "sprites": {
+      "basil_1": {
+        "x": 8,
+        "y": 4,
+        "w": 137,
+        "h": 150,
+        "cx": 76.5,
+        "cy": 79.0
+      },
+      "ham_1": {
+        "x": 162,
+        "y": 9,
+        "w": 134,
+        "h": 140,
+        "cx": 229.0,
+        "cy": 79.0
+      },
+      "pineapple_1": {
+        "x": 312,
+        "y": 12,
+        "w": 141,
+        "h": 135,
+        "cx": 382.5,
+        "cy": 79.5
+      },
+      "chicken_1": {
+        "x": 461,
+        "y": 14,
+        "w": 148,
+        "h": 131,
+        "cx": 535.0,
+        "cy": 79.5
+      },
+      "spinach_1": {
+        "x": 624,
+        "y": 4,
+        "w": 128,
+        "h": 151,
+        "cx": 688.0,
+        "cy": 79.5
+      },
+      "fresh_mozzarella_1": {
+        "x": 767,
+        "y": 11,
+        "w": 149,
+        "h": 137,
+        "cx": 841.5,
+        "cy": 79.5
+      },
+      "basil_2": {
+        "x": 7,
+        "y": 166,
+        "w": 138,
+        "h": 145,
+        "cx": 76.0,
+        "cy": 238.5
+      },
+      "ham_2": {
+        "x": 163,
+        "y": 168,
+        "w": 133,
+        "h": 141,
+        "cx": 229.5,
+        "cy": 238.5
+      },
+      "pineapple_2": {
+        "x": 313,
+        "y": 168,
+        "w": 139,
+        "h": 141,
+        "cx": 382.5,
+        "cy": 238.5
+      },
+      "chicken_2": {
+        "x": 466,
+        "y": 162,
+        "w": 139,
+        "h": 153,
+        "cx": 535.5,
+        "cy": 238.5
+      },
+      "spinach_2": {
+        "x": 622,
+        "y": 161,
+        "w": 133,
+        "h": 155,
+        "cx": 688.5,
+        "cy": 238.5
+      },
+      "fresh_mozzarella_2": {
+        "x": 767,
+        "y": 168,
+        "w": 149,
+        "h": 140,
+        "cx": 841.5,
+        "cy": 238.0
+      },
+      "basil_3": {
+        "x": 11,
+        "y": 328,
+        "w": 130,
+        "h": 138,
+        "cx": 76.0,
+        "cy": 397.0
+      },
+      "ham_3": {
+        "x": 162,
+        "y": 328,
+        "w": 134,
+        "h": 138,
+        "cx": 229.0,
+        "cy": 397.0
+      },
+      "pineapple_3": {
+        "x": 313,
+        "y": 332,
+        "w": 138,
+        "h": 131,
+        "cx": 382.0,
+        "cy": 397.5
+      },
+      "chicken_3": {
+        "x": 463,
+        "y": 330,
+        "w": 144,
+        "h": 135,
+        "cx": 535.0,
+        "cy": 397.5
+      },
+      "spinach_3": {
+        "x": 632,
+        "y": 325,
+        "w": 113,
+        "h": 144,
+        "cx": 688.5,
+        "cy": 397.0
+      },
+      "fresh_mozzarella_3": {
+        "x": 768,
+        "y": 330,
+        "w": 147,
+        "h": 134,
+        "cx": 841.5,
+        "cy": 397.0
+      }
+    }
+  },
+  "baked_layers": {
+    "atlas_webp": "baked_layers_atlas.webp",
+    "atlas_png": "baked_layers_atlas.png",
+    "atlas_size": [
+      882,
+      537
+    ],
+    "sprites_dir": "baked_layers",
+    "sprites": {
+      "dough_ready": {
+        "x": 2,
+        "y": 4,
+        "w": 290,
+        "h": 171,
+        "cx": 147.0,
+        "cy": 89.5
+      },
+      "dough_overcooking": {
+        "x": 296,
+        "y": 4,
+        "w": 289,
+        "h": 171,
+        "cx": 440.5,
+        "cy": 89.5
+      },
+      "dough_burnt": {
+        "x": 590,
+        "y": 4,
+        "w": 290,
+        "h": 171,
+        "cx": 735.0,
+        "cy": 89.5
+      },
+      "cheese_ready": {
+        "x": 14,
+        "y": 182,
+        "w": 266,
+        "h": 173,
+        "cx": 147.0,
+        "cy": 268.5
+      },
+      "cheese_overcooking": {
+        "x": 308,
+        "y": 182,
+        "w": 265,
+        "h": 173,
+        "cx": 440.5,
+        "cy": 268.5
+      },
+      "cheese_burnt": {
+        "x": 603,
+        "y": 182,
+        "w": 264,
+        "h": 172,
+        "cx": 735.0,
+        "cy": 268.0
+      },
+      "white_cheese_ready": {
+        "x": 14,
+        "y": 361,
+        "w": 266,
+        "h": 172,
+        "cx": 147.0,
+        "cy": 447.0
+      },
+      "white_cheese_overcooking": {
+        "x": 308,
+        "y": 361,
+        "w": 265,
+        "h": 172,
+        "cx": 440.5,
+        "cy": 447.0
+      },
+      "white_cheese_burnt": {
+        "x": 602,
+        "y": 360,
+        "w": 266,
+        "h": 175,
+        "cx": 735.0,
+        "cy": 447.5
+      }
+    }
+  },
+  "pizza_icons": {
+    "atlas_webp": "pizza_icons_atlas.webp",
+    "atlas_png": "pizza_icons_atlas.png",
+    "atlas_size": [
+      1015,
+      406
+    ],
+    "sprites_dir": "pizza_icons",
+    "sprites": {
+      "cheese": {
+        "x": 2,
+        "y": 2,
+        "w": 199,
+        "h": 199,
+        "cx": 101.5,
+        "cy": 101.5
+      },
+      "pepperoni": {
+        "x": 205,
+        "y": 2,
+        "w": 198,
+        "h": 199,
+        "cx": 304.0,
+        "cy": 101.5
+      },
+      "mushroom": {
+        "x": 408,
+        "y": 2,
+        "w": 198,
+        "h": 199,
+        "cx": 507.0,
+        "cy": 101.5
+      },
+      "veggie": {
+        "x": 611,
+        "y": 2,
+        "w": 199,
+        "h": 199,
+        "cx": 710.5,
+        "cy": 101.5
+      },
+      "margherita": {
+        "x": 814,
+        "y": 2,
+        "w": 199,
+        "h": 199,
+        "cx": 913.5,
+        "cy": 101.5
+      },
+      "supreme": {
+        "x": 2,
+        "y": 206,
+        "w": 198,
+        "h": 196,
+        "cx": 101.0,
+        "cy": 304.0
+      },
+      "hawaiian": {
+        "x": 205,
+        "y": 206,
+        "w": 198,
+        "h": 196,
+        "cx": 304.0,
+        "cy": 304.0
+      },
+      "bbq_chicken": {
+        "x": 408,
+        "y": 206,
+        "w": 198,
+        "h": 196,
+        "cx": 507.0,
+        "cy": 304.0
+      },
+      "white": {
+        "x": 612,
+        "y": 206,
+        "w": 197,
+        "h": 196,
+        "cx": 710.5,
+        "cy": 304.0
+      },
+      "spicy": {
+        "x": 814,
+        "y": 206,
+        "w": 198,
+        "h": 196,
+        "cx": 913.0,
+        "cy": 304.0
+      }
+    },
+    "note": "The text labels under each pizza in the source sheet are removed."
+  },
+  "stacking": {
+    "squash_vertical_ratio": 0.59,
+    "pizza_width_px_in_sheet_scale": 290,
+    "note": "The baked layers are already squashed to board perspective. Raw layers and toppings are top-down circles: scale them to the pizza width and multiply height by squash_vertical_ratio (about 1.15x for toppings so they do not look flat).",
+    "layer_order_raw": [
+      "dough_disc",
+      "sauce",
+      "cheese",
+      "toppings"
+    ],
+    "layer_order_baked": [
+      "baked dough (ready/overcooking/burnt)",
+      "baked cheese layer (melted mozzarella or white)",
+      "toppings, tinted darker for overcooking and burnt"
+    ],
+    "relative_layer_width_vs_pizza": {
+      "dough_raw": 1.0,
+      "sauce": 0.84,
+      "cheese": 0.81,
+      "baked_cheese": 0.92
+    },
+    "topping_width_relative_to_pizza": {
+      "pepperoni": 0.19,
+      "mushroom": 0.2,
+      "olive": 0.12,
+      "bell_pepper": 0.2,
+      "red_onion": 0.17,
+      "jalapeno": 0.12,
+      "basil": 0.2,
+      "ham": 0.1,
+      "pineapple": 0.13,
+      "chicken": 0.14,
+      "spinach": 0.2,
+      "fresh_mozzarella": 0.2
+    },
+    "recipes": {
+      "cheese": {
+        "sauce": "sauce_tomato",
+        "cheese": "cheese_mozzarella",
+        "toppings": {}
+      },
+      "pepperoni": {
+        "sauce": "sauce_tomato",
+        "cheese": "cheese_mozzarella",
+        "toppings": {
+          "pepperoni": 8
+        }
+      },
+      "mushroom": {
+        "sauce": "sauce_tomato",
+        "cheese": "cheese_mozzarella",
+        "toppings": {
+          "mushroom": 6
+        }
+      },
+      "veggie": {
+        "sauce": "sauce_tomato",
+        "cheese": "cheese_mozzarella",
+        "toppings": {
+          "bell_pepper": 5,
+          "red_onion": 4,
+          "olive": 5
+        }
+      },
+      "margherita": {
+        "sauce": "sauce_tomato",
+        "cheese": null,
+        "toppings": {
+          "fresh_mozzarella": 5,
+          "basil": 3
+        }
+      },
+      "supreme": {
+        "sauce": "sauce_tomato",
+        "cheese": "cheese_mozzarella",
+        "toppings": {
+          "pepperoni": 4,
+          "mushroom": 3,
+          "bell_pepper": 3,
+          "red_onion": 3
+        }
+      },
+      "hawaiian": {
+        "sauce": "sauce_tomato",
+        "cheese": "cheese_mozzarella",
+        "toppings": {
+          "ham": 7,
+          "pineapple": 6
+        }
+      },
+      "bbq_chicken": {
+        "sauce": "sauce_bbq",
+        "cheese": "cheese_mozzarella",
+        "toppings": {
+          "chicken": 6,
+          "red_onion": 4
+        }
+      },
+      "white": {
+        "sauce": "sauce_garlic",
+        "cheese": "cheese_white",
+        "toppings": {
+          "spinach": 6
+        }
+      },
+      "spicy": {
+        "sauce": "sauce_hot",
+        "cheese": "cheese_mozzarella",
+        "toppings": {
+          "pepperoni": 5,
+          "jalapeno": 6
+        }
+      }
+    },
+    "recipe_notes": [
+      "margherita has no shredded cheese layer: use fresh_mozzarella pieces and basil on the sauce.",
+      "spicy uses sauce_hot as its base sauce and pepperoni + jalapeno on top.",
+      "Place toppings at seeded random positions inside the sauce ellipse so a pizza looks the same wherever it is drawn."
+    ]
+  }
+}

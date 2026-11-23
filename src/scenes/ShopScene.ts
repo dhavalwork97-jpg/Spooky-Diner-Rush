@@ -6,6 +6,8 @@ import { buy, buyLabel, modsFor, tierOf } from '../game/shop';
 import { buyDecor, decorLabel, perkText, withDecorPerks } from '../game/decor';
 import { defaultTacoConfig } from '../game/taco/tacoConfig';
 import { buyTaco, tacoBuyLabel, tacoEffectText, tacoModsFor, tacoTierOf } from '../game/taco/tacoShop';
+import { defaultPizzaConfig } from '../game/pizza/pizzaConfig';
+import { buyPizza, pizzaBuyLabel, pizzaEffectText, pizzaModsFor, pizzaTierOf } from '../game/pizza/pizzaShop';
 import { SaveSystem } from '../systems/SaveSystem';
 import { audio } from '../systems/AudioSystem';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
@@ -29,6 +31,8 @@ export interface ShopData {
   state: ShopState;
   /** Set by the Taco Truck: the Shop then shows the truck's own upgrades (own list, own save map), with tiers opening up as the menu grows. */
   taco?: { menuStep: number };
+  /** Set by the Pizza Place: its own upgrades (own list, own save map `pizzaOwned`), tiers opening up with the Pizza menu step. */
+  pizza?: { menuStep: number };
   /** Called after the shop closes (the game scene resumes itself here). */
   onClose: () => void;
 }
@@ -48,6 +52,7 @@ export class ShopScene extends Phaser.Scene {
   private tab: 'upgrades' | 'decor' = 'upgrades';
   private page = 0;
   private taco: ShopData['taco'];
+  private pizza: ShopData['pizza'];
 
   constructor() {
     super('Shop');
@@ -57,6 +62,7 @@ export class ShopScene extends Phaser.Scene {
     this.state = data.state;
     this.onClose = data.onClose;
     this.taco = data.taco;
+    this.pizza = data.pizza;
     this.closing = false;
     this.tab = 'upgrades';
     this.page = 0;
@@ -121,11 +127,11 @@ export class ShopScene extends Phaser.Scene {
     this.rows = [];
     const s = this.state;
     const x0 = (LOGICAL_WIDTH - PANEL_W) / 2;
-    this.titleText.setText(this.taco ? `Taco Truck  ·  Lv ${s.level}` : `Lv ${s.level}  ·  ${titleForLevel(s.cfg, s.level).title}`);
+    this.titleText.setText(this.taco ? `Taco Truck  ·  Lv ${s.level}` : this.pizza ? `Pizza Place  ·  Lv ${s.level}` : `Lv ${s.level}  ·  ${titleForLevel(s.cfg, s.level).title}`);
     this.coinText.setText(String(s.coins));
 
     // The truck has no Decor tab (decor belongs to the diner's walls), just its upgrades.
-    (this.taco ? (['upgrades'] as const) : (['upgrades', 'decor'] as const)).forEach((t, i) => {
+    (this.taco || this.pizza ? (['upgrades'] as const) : (['upgrades', 'decor'] as const)).forEach((t, i) => {
       const on = this.tab === t;
       const label = t === 'upgrades' ? 'Upgrades' : 'Decor';
       this.rows.push(this.makeButton(x0 + 280 + i * 146, 52, label, 140, 60, on ? ORANGE : 0x9aa7b5, () => {
@@ -136,7 +142,7 @@ export class ShopScene extends Phaser.Scene {
       }));
     });
 
-    const pages = Math.max(1, Math.ceil(s.cfg.upgrades.upgrades.length / PAGE_SIZE));
+    const pages = Math.max(1, Math.ceil((this.pizza ? defaultPizzaConfig.upgrades.length : s.cfg.upgrades.upgrades.length) / PAGE_SIZE));
     if (this.tab === 'upgrades' && pages > 1) {
       const next = (this.page + 1) % pages;
       this.rows.push(this.makeButton(x0 + 280 + 2 * 146, 52, this.page + 1 < pages ? 'More' : 'Back', 140, 60, 0x2ba6a0, () => {
@@ -146,6 +152,7 @@ export class ShopScene extends Phaser.Scene {
     }
 
     if (this.taco) this.drawTacoRows(x0, this.taco.menuStep);
+    else if (this.pizza) this.drawPizzaRows(x0, this.pizza.menuStep);
     else if (this.tab === 'upgrades') this.drawUpgradeRows(x0);
     else this.drawDecorRows(x0);
   }
@@ -243,6 +250,50 @@ export class ShopScene extends Phaser.Scene {
     SaveSystem.data.tacoOwned = r.owned;
     SaveSystem.data.coins = r.coins;
     s.mods = tacoModsFor(ups, r.owned);
+    SaveSystem.save();
+    audio.play('levelUp');
+    this.flash(`${ups.find((u) => u.id === id)?.name ?? id} upgraded!`);
+    this.refresh();
+  }
+
+  /** The Pizza Place's upgrade rows: same layout as the diner's, with the effect in percent and a locked tier saying what has to join the menu. */
+  private drawPizzaRows(x0: number, menuStep: number): void {
+    const s = this.state;
+    const ups = defaultPizzaConfig.upgrades;
+    const owned = SaveSystem.data.pizzaOwned;
+    ups.slice(this.page * PAGE_SIZE, (this.page + 1) * PAGE_SIZE).forEach((u, i) => {
+      const { y, g } = this.rowBase(i, x0);
+      const tier = pizzaTierOf(ups, owned, u.id);
+      const label = pizzaBuyLabel(defaultPizzaConfig, owned, u.id, menuStep, s.coins);
+      u.tiers.forEach((_, ti) => {
+        const px = x0 + 390 + ti * 30;
+        const py = y + 28;
+        if (ti < tier) g.fillStyle(LEAF, 1).fillCircle(px, py, 10).lineStyle(3, INK, 1).strokeCircle(px, py, 10);
+        else g.lineStyle(3, INK, 0.7).strokeCircle(px, py, 10);
+      });
+      const name = this.add.text(x0 + 40, y + 12, u.name, { fontFamily: FONT, fontSize: '30px', color: '#2B1B17' });
+      const desc = this.add.text(x0 + 40, y + 48, u.description, { fontFamily: FONT, fontSize: '20px', color: '#5a463e' });
+      const note = label.needs
+        ? this.add.text(x0 + 600, y + 40, label.needs, { fontFamily: FONT, fontSize: '19px', color: '#8a3b1f', wordWrap: { width: 185 }, align: 'left' }).setOrigin(0, 0.5)
+        : this.add.text(x0 + 600, y + 40, pizzaEffectText(u, tier), { fontFamily: FONT, fontSize: '26px', color: '#2B1B17' }).setOrigin(0, 0.5);
+      const btn = this.makeButton(x0 + PANEL_W - 20 - 24 - BTN_W / 2, y + (ROW_H - 8) / 2, label.text, BTN_W, BTN_H, ORANGE, () => this.tryBuyPizza(u.id), label.enabled);
+      this.rows.push(g, name, desc, note, btn);
+    });
+    this.rows.push(this.add.text(LOGICAL_WIDTH / 2, ROW_TOP + Math.min(PAGE_SIZE, ups.length) * ROW_H + 14, 'Faster cooking never shortens the time before food burns.', { fontFamily: FONT, fontSize: '20px', color: '#5a463e' }).setOrigin(0.5));
+  }
+
+  private tryBuyPizza(id: string): void {
+    const s = this.state;
+    const ups = defaultPizzaConfig.upgrades;
+    const r = buyPizza(ups, SaveSystem.data.pizzaOwned, id, this.pizza?.menuStep ?? 1, s.coins);
+    if (!r.ok) {
+      this.flash('Cannot buy that right now');
+      return;
+    }
+    s.coins = r.coins;
+    SaveSystem.data.pizzaOwned = r.owned;
+    SaveSystem.data.coins = r.coins;
+    s.mods = pizzaModsFor(ups, r.owned);
     SaveSystem.save();
     audio.play('levelUp');
     this.flash(`${ups.find((u) => u.id === id)?.name ?? id} upgraded!`);

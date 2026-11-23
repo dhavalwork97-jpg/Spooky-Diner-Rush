@@ -20,12 +20,12 @@ describe('Taco Truck wiring', () => {
     expect(has(a!.file.split('/').pop()!)).toBe(true);
   });
   it('is no longer listed as coming soon', () => {
-    expect(menu.comingSoon.some((c) => c.id === 'taco_truck')).toBe(false);
+    expect((menu.comingSoon as { id: string }[]).some((c) => c.id === 'taco_truck')).toBe(false);
   });
-  it('card is locked below Lv 15, buyable at Lv 15 until owned, then open', () => {
+  it('card is locked below Lv 10, buyable at Lv 10 until owned, then open', () => {
     const state = (lv: number, owned: string[]) => restaurantCards([card], [], lv, 'burger_diner', owned)[0].state;
-    expect(state(14, ['burger_diner'])).toBe('locked');
-    expect(state(15, ['burger_diner'])).toBe('buy');
-    expect(state(15, ['burger_diner', 'taco_truck'])).toBe('open');
+    expect(state(9, ['burger_diner'])).toBe('locked');
+    expect(state(10, ['burger_diner'])).toBe('buy');
+    expect(state(10, ['burger_diner', 'taco_truck'])).toBe('open');
   });
 });

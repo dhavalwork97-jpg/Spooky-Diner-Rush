@@ -6,6 +6,7 @@ import { ShopScene } from './scenes/ShopScene';
 import { RecipeBookScene } from './scenes/RecipeBookScene';
 import { RestaurantSelectScene } from './scenes/RestaurantSelectScene';
 import { TacoScene } from './scenes/TacoScene';
+import { PizzaScene } from './scenes/PizzaScene';
 import { CrazyGames } from './sdk/crazygames';
 import { initAds } from './ads';
 import { initOrientation } from './systems/Orientation';
@@ -22,7 +23,7 @@ const start = (): Phaser.Game =>
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     input: { activePointers: 2 },
     render: { antialias: true, roundPixels: false },
-    scene: [BootScene, TitleScene, GameScene, ShopScene, RecipeBookScene, RestaurantSelectScene, TacoScene],
+    scene: [BootScene, TitleScene, GameScene, ShopScene, RecipeBookScene, RestaurantSelectScene, TacoScene, PizzaScene],
   });
 
 // Browser phones: the first tap enters fullscreen and locks landscape. The Android app is locked to landscape natively.

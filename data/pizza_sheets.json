@@ -1,0 +1,257 @@
+{
+ "fryer_fries": {
+  "key": "fryer_fries",
+  "image": "fryer_fries.webp",
+  "frameWidth": 102,
+  "frameHeight": 207,
+  "columns": 8,
+  "rows": 6,
+  "frameCount": 42,
+  "clips": {
+   "intro": {
+    "from": 0,
+    "to": 9,
+    "fps": 12,
+    "loop": false
+   },
+   "cook_loop": {
+    "from": 10,
+    "to": 17,
+    "fps": 8,
+    "loop": true
+   },
+   "ready_loop": {
+    "from": 18,
+    "to": 28,
+    "fps": 8,
+    "loop": true
+   },
+   "overcook_loop": {
+    "from": 29,
+    "to": 33,
+    "fps": 8,
+    "loop": true
+   },
+   "burnt_loop": {
+    "from": 34,
+    "to": 40,
+    "fps": 8,
+    "loop": true
+   },
+   "idle_empty": {
+    "from": 41,
+    "to": 41,
+    "fps": 1,
+    "loop": false
+   }
+  },
+  "half": "left",
+  "splitX": 146,
+  "sourceFrame": [
+   302,
+   296
+  ],
+  "kitchenPlace": {
+   "fryerTopLeft2752": [
+    1744.3,
+    1019.7
+   ],
+   "videoToKitchen": 1.3113,
+   "frameOriginInVideo": [
+    336,
+    0
+   ],
+   "fryerTopLeftInVideo": [
+    369,
+    137
+   ]
+  }
+ },
+ "fryer_wings": {
+  "key": "fryer_wings",
+  "image": "fryer_wings.webp",
+  "frameWidth": 109,
+  "frameHeight": 207,
+  "columns": 8,
+  "rows": 5,
+  "frameCount": 40,
+  "clips": {
+   "intro": {
+    "from": 0,
+    "to": 8,
+    "fps": 12,
+    "loop": false
+   },
+   "cook_loop": {
+    "from": 9,
+    "to": 16,
+    "fps": 8,
+    "loop": true
+   },
+   "ready_loop": {
+    "from": 17,
+    "to": 22,
+    "fps": 8,
+    "loop": true
+   },
+   "overcook_loop": {
+    "from": 23,
+    "to": 30,
+    "fps": 8,
+    "loop": true
+   },
+   "burnt_loop": {
+    "from": 31,
+    "to": 38,
+    "fps": 8,
+    "loop": true
+   },
+   "idle_empty": {
+    "from": 39,
+    "to": 39,
+    "fps": 1,
+    "loop": false
+   }
+  },
+  "half": "right",
+  "splitX": 146,
+  "sourceFrame": [
+   302,
+   296
+  ],
+  "kitchenPlace": {
+   "fryerTopLeft2752": [
+    1744.3,
+    1019.7
+   ],
+   "videoToKitchen": 1.3113,
+   "frameOriginInVideo": [
+    336,
+    0
+   ],
+   "fryerTopLeftInVideo": [
+    369,
+    137
+   ]
+  }
+ },
+ "icecream_machine": {
+  "key": "icecream_machine",
+  "image": "icecream_machine.webp",
+  "frameWidth": 150,
+  "frameHeight": 158,
+  "columns": 6,
+  "rows": 6,
+  "frameCount": 34,
+  "clips": {
+   "dispense": {
+    "from": 0,
+    "to": 31,
+    "fps": 8,
+    "loop": false
+   },
+   "idle_empty": {
+    "from": 32,
+    "to": 32,
+    "fps": 1,
+    "loop": false
+   },
+   "done_full": {
+    "from": 33,
+    "to": 33,
+    "fps": 1,
+    "loop": false
+   }
+  },
+  "sourceFrame": [
+   301,
+   316
+  ]
+ },
+ "oven_big": {
+  "key": "oven_big",
+  "image": "oven_big.webp",
+  "frameWidth": 289,
+  "frameHeight": 248,
+  "columns": 5,
+  "rows": 4,
+  "frameCount": 20,
+  "clips": {
+   "close": {
+    "from": 0,
+    "to": 9,
+    "fps": 18,
+    "loop": false
+   },
+   "open": {
+    "from": 10,
+    "to": 18,
+    "fps": 18,
+    "loop": false
+   }
+  },
+  "closedFrame": 9,
+  "openHoldFrame": 19,
+  "sourceFrame": [
+   482,
+   489
+  ],
+  "crop": {
+   "top": 0.15450643776824036,
+   "x": [
+    0.0,
+    1.0
+   ]
+  },
+  "slots": [
+   [
+    100.2,
+    155.4
+   ],
+   [
+    186.0,
+    155.4
+   ]
+  ],
+  "slotEllipse": [
+   75.6,
+   18.6
+  ]
+ },
+ "oven_small": {
+  "key": "oven_small",
+  "image": "oven_small.webp",
+  "frameWidth": 219,
+  "frameHeight": 195,
+  "columns": 5,
+  "rows": 5,
+  "frameCount": 24,
+  "clips": {
+   "close": {
+    "from": 0,
+    "to": 10,
+    "fps": 18,
+    "loop": false
+   },
+   "open": {
+    "from": 11,
+    "to": 22,
+    "fps": 18,
+    "loop": false
+   }
+  },
+  "closedFrame": 10,
+  "openHoldFrame": 23,
+  "sourceFrame": [
+   486,
+   434
+  ],
+  "crop": {
+   "top": 0.0,
+   "x": [
+    0.0,
+    1.0
+   ]
+  }
+ }
+}

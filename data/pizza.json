@@ -1,0 +1,1188 @@
+{
+  "restaurant": {
+    "id": "pizza_place",
+    "name": "Pizza Place",
+    "unlockLevel": 30,
+    "cost": 3000
+  },
+  "settings": {
+    "boards": 3,
+    "ovenSlots": 2,
+    "smallOvenSlots": 2,
+    "fryerBaskets": 2,
+    "iceLanes": 3,
+    "seats": 5,
+    "maxOrderSize": 3,
+    "arrivalGapMult": 1.15
+  },
+  "levelProgression": {
+    "note": "Display only (restaurant unlock screen and menu progress). Recipes unlock by Pizza menu step, never by global Lv.",
+    "milestones": [
+      {
+        "lv": 30,
+        "text": "Pizza Place opens (3,000 coins)"
+      },
+      {
+        "lv": 31,
+        "text": "Cheese Pizza"
+      },
+      {
+        "lv": 32,
+        "text": "Margherita Pizza"
+      },
+      {
+        "lv": 33,
+        "text": "Garlic Bread"
+      },
+      {
+        "lv": 34,
+        "text": "Pepperoni Pizza"
+      },
+      {
+        "lv": 35,
+        "text": "Fries"
+      },
+      {
+        "lv": 36,
+        "text": "Mushroom Pizza"
+      },
+      {
+        "lv": 37,
+        "text": "Cheesy Breadsticks"
+      },
+      {
+        "lv": 38,
+        "text": "Veggie Pizza"
+      },
+      {
+        "lv": 39,
+        "text": "Ice Cream"
+      },
+      {
+        "lv": 40,
+        "text": "Hawaiian Pizza"
+      },
+      {
+        "lv": 41,
+        "text": "Chicken Wings"
+      },
+      {
+        "lv": 42,
+        "text": "BBQ Chicken Pizza"
+      },
+      {
+        "lv": 43,
+        "text": "Cinnamon Twists"
+      },
+      {
+        "lv": 44,
+        "text": "Spicy Pizza"
+      },
+      {
+        "lv": 45,
+        "text": "Advanced sauce and topping combinations"
+      },
+      {
+        "lv": 46,
+        "text": "Supreme Pizza"
+      },
+      {
+        "lv": 47,
+        "text": "Advanced custom pizza orders"
+      },
+      {
+        "lv": 48,
+        "text": "White Pizza"
+      },
+      {
+        "lv": 49,
+        "text": "Full recipe combinations and advanced customer orders"
+      }
+    ]
+  },
+  "learning": {
+    "practiceServes": 3,
+    "introPatienceMult": 1.35,
+    "introSeats": 2,
+    "introDelay": 3,
+    "introNeedsServes": 2,
+    "practiceWeight": 0.5,
+    "practiceMaxItems": 2,
+    "gapPerUnfamiliar": 0.12,
+    "gapMaxUnfamiliar": 3,
+    "pizzaItemCap": 3,
+    "sideItemCap": 2,
+    "friedItemCap": 2
+  },
+  "variety": {
+    "recentDishes": 3,
+    "recencyWeights": [
+      0.15,
+      0.45,
+      0.75
+    ],
+    "kindWindow": 8,
+    "kindStrength": 0.6,
+    "kindMin": 0.5,
+    "kindMax": 1.6,
+    "drinkStrength": 0,
+    "drinkMin": 1,
+    "drinkMax": 1,
+    "avoidDuplicateInOrder": true
+  },
+  "kindWeights": {
+    "pizza": 3,
+    "side": 1,
+    "fried": 1,
+    "dessert": 1
+  },
+  "timed": {
+    "pizza": {
+      "readyAfter": 9,
+      "burnWindow": 6
+    },
+    "side": {
+      "readyAfter": 6,
+      "burnWindow": 5
+    },
+    "fries": {
+      "readyAfter": 5,
+      "burnWindow": 5
+    },
+    "wings": {
+      "readyAfter": 8,
+      "burnWindow": 5
+    }
+  },
+  "custom": { "fromStep": 5, "chance": [0.1, 0.12, 0.15, 0.18, 0.2, 0.22], "maxToppings": [1, 1, 2, 2, 3, 3], "countWeights": [[1], [0.6, 0.4], [0.4, 0.35, 0.25]], "basePrice": 26, "toppingPrice": 7, "sauceExtra": 3, "cheeseExtra": 4, "xpBase": 32, "xpPerTopping": 5, "excludeToppings": ["fresh_mozzarella"] },
+  "dailySpecial": { "fromStep": 2 },
+  "perfectBake": { "share": 0.5, "tipFraction": 0.1 },
+  "comboMeal": { "coinBonus": 0.25, "xpBonus": 0.25 },
+  "ice": {
+    "fillSeconds": 5
+  },
+  "oven": {
+    "doorMinGap": 0.5,
+    "openSeconds": 0.55,
+    "closeSeconds": 0.55,
+    "slotXFractions": [
+      0.28,
+      0.72
+    ],
+    "slotYFraction": 0.62
+  },
+  "upgrades": [
+    {
+      "id": "brick_oven",
+      "name": "Brick Oven",
+      "description": "Pizzas and sides bake faster.",
+      "mod": "ovenSpeed",
+      "tiers": [
+        {
+          "cost": 500,
+          "value": 1.1,
+          "step": 1
+        },
+        {
+          "cost": 900,
+          "value": 1.2,
+          "step": 4
+        },
+        {
+          "cost": 1400,
+          "value": 1.3,
+          "step": 7
+        },
+        {
+          "cost": 2000,
+          "value": 1.4,
+          "step": 9
+        }
+      ]
+    },
+    {
+      "id": "fast_fryer",
+      "name": "Fast Fryer",
+      "description": "Fries and wings cook faster.",
+      "mod": "fryerSpeed",
+      "tiers": [
+        {
+          "cost": 400,
+          "value": 1.1,
+          "step": 2
+        },
+        {
+          "cost": 800,
+          "value": 1.2,
+          "step": 5
+        },
+        {
+          "cost": 1300,
+          "value": 1.3,
+          "step": 8
+        }
+      ]
+    },
+    {
+      "id": "burn_guard",
+      "name": "Burn Guard",
+      "description": "Food waits longer before it burns.",
+      "mod": "burnWindow",
+      "tiers": [
+        {
+          "cost": 600,
+          "value": 1.15,
+          "step": 3
+        },
+        {
+          "cost": 1000,
+          "value": 1.3,
+          "step": 6
+        },
+        {
+          "cost": 1500,
+          "value": 1.45,
+          "step": 9
+        }
+      ]
+    },
+    {
+      "id": "calm_kitchen",
+      "name": "Calm Kitchen",
+      "description": "Burnt food costs less reputation.",
+      "mod": "calm",
+      "tiers": [
+        {
+          "cost": 600,
+          "value": 1.14,
+          "step": 4
+        },
+        {
+          "cost": 1100,
+          "value": 1.33,
+          "step": 8
+        }
+      ]
+    },
+    {
+      "id": "comfy_booths",
+      "name": "Comfy Booths",
+      "description": "Customers wait a little longer.",
+      "mod": "patience",
+      "tiers": [
+        {
+          "cost": 400,
+          "value": 1.05,
+          "step": 2
+        },
+        {
+          "cost": 750,
+          "value": 1.1,
+          "step": 4
+        },
+        {
+          "cost": 1200,
+          "value": 1.16,
+          "step": 7
+        },
+        {
+          "cost": 1800,
+          "value": 1.22,
+          "step": 10
+        }
+      ]
+    },
+    {
+      "id": "quick_scoop",
+      "name": "Quick Scoop",
+      "description": "Ice cream fills faster.",
+      "mod": "pourSpeed",
+      "tiers": [
+        {
+          "cost": 300,
+          "value": 1.2,
+          "step": 2
+        },
+        {
+          "cost": 600,
+          "value": 1.4,
+          "step": 5
+        },
+        {
+          "cost": 1000,
+          "value": 1.65,
+          "step": 8
+        }
+      ]
+    },
+    {
+      "id": "tip_jar",
+      "name": "Tip Jar",
+      "description": "Fast serves earn bigger tips.",
+      "mod": "tips",
+      "tiers": [
+        {
+          "cost": 500,
+          "value": 1.25,
+          "step": 3
+        },
+        {
+          "cost": 900,
+          "value": 1.5,
+          "step": 6
+        },
+        {
+          "cost": 1500,
+          "value": 2.0,
+          "step": 9
+        }
+      ]
+    }
+  ],
+  "ramp": [
+    {
+      "step": 1,
+      "seats": 3,
+      "orderSize": [
+        1,
+        2
+      ],
+      "patienceMult": 1.2
+    },
+    {
+      "step": 2,
+      "seats": 4,
+      "orderSize": [
+        1,
+        2
+      ],
+      "patienceMult": 1.15
+    },
+    {
+      "step": 3,
+      "seats": 4,
+      "orderSize": [
+        1,
+        3
+      ],
+      "patienceMult": 1.15,
+      "bigOrderShare": 0.12
+    },
+    {
+      "step": 4,
+      "seats": 5,
+      "orderSize": [
+        1,
+        3
+      ],
+      "patienceMult": 1.15,
+      "bigOrderShare": 0.2
+    },
+    {
+      "step": 5,
+      "seats": 5,
+      "orderSize": [
+        1,
+        3
+      ],
+      "patienceMult": 1.15,
+      "bigOrderShare": 0.25
+    },
+    {
+      "step": 6,
+      "seats": 5,
+      "orderSize": [
+        1,
+        3
+      ],
+      "patienceMult": 1.15,
+      "bigOrderShare": 0.25
+    },
+    {
+      "step": 7,
+      "seats": 5,
+      "orderSize": [
+        1,
+        3
+      ],
+      "patienceMult": 1.15,
+      "bigOrderShare": 0.25
+    },
+    {
+      "step": 8,
+      "seats": 5,
+      "orderSize": [
+        1,
+        3
+      ],
+      "patienceMult": 1.15,
+      "bigOrderShare": 0.25
+    },
+    {
+      "step": 9,
+      "seats": 5,
+      "orderSize": [
+        1,
+        3
+      ],
+      "patienceMult": 1.15,
+      "bigOrderShare": 0.25
+    },
+    {
+      "step": 10,
+      "seats": 5,
+      "orderSize": [
+        1,
+        3
+      ],
+      "patienceMult": 1.15,
+      "bigOrderShare": 0.25
+    }
+  ],
+  "ingredients": {
+    "sauces": [
+      {
+        "id": "tomato",
+        "name": "tomato sauce",
+        "unlockStep": 1
+      },
+      {
+        "id": "bbq",
+        "name": "BBQ sauce",
+        "unlockStep": 7
+      },
+      {
+        "id": "garlic",
+        "name": "garlic sauce",
+        "unlockStep": 8
+      },
+      {
+        "id": "hot",
+        "name": "hot sauce",
+        "unlockStep": 8
+      }
+    ],
+    "cheeses": [
+      {
+        "id": "mozzarella",
+        "name": "mozzarella",
+        "unlockStep": 1
+      },
+      {
+        "id": "white",
+        "name": "white cheese",
+        "unlockStep": 10
+      }
+    ],
+    "toppings": [
+      {
+        "id": "basil",
+        "name": "basil",
+        "unlockStep": 2
+      },
+      {
+        "id": "fresh_mozzarella",
+        "name": "fresh mozzarella",
+        "unlockStep": 2
+      },
+      {
+        "id": "pepperoni",
+        "name": "pepperoni",
+        "unlockStep": 3
+      },
+      {
+        "id": "mushroom",
+        "name": "mushrooms",
+        "unlockStep": 4
+      },
+      {
+        "id": "bell_pepper",
+        "name": "bell pepper",
+        "unlockStep": 5
+      },
+      {
+        "id": "olive",
+        "name": "olives",
+        "unlockStep": 5
+      },
+      {
+        "id": "red_onion",
+        "name": "red onion",
+        "unlockStep": 5
+      },
+      {
+        "id": "ham",
+        "name": "ham",
+        "unlockStep": 6
+      },
+      {
+        "id": "pineapple",
+        "name": "pineapple",
+        "unlockStep": 6
+      },
+      {
+        "id": "chicken",
+        "name": "chicken",
+        "unlockStep": 7
+      },
+      {
+        "id": "jalapeno",
+        "name": "jalapenos",
+        "unlockStep": 8
+      },
+      {
+        "id": "spinach",
+        "name": "spinach",
+        "unlockStep": 10
+      }
+    ]
+  },
+  "stepLabels": {
+    "sauce:tomato": "tomato sauce",
+    "sauce:bbq": "BBQ sauce",
+    "sauce:garlic": "garlic sauce",
+    "sauce:hot": "hot sauce",
+    "cheese:mozzarella": "mozzarella",
+    "cheese:white": "white cheese",
+    "topping:basil": "basil",
+    "topping:fresh_mozzarella": "fresh mozzarella",
+    "topping:pepperoni": "pepperoni",
+    "topping:mushroom": "mushrooms",
+    "topping:bell_pepper": "bell pepper",
+    "topping:olive": "olives",
+    "topping:red_onion": "red onion",
+    "topping:ham": "ham",
+    "topping:pineapple": "pineapple",
+    "topping:chicken": "chicken",
+    "topping:jalapeno": "jalapenos",
+    "topping:spinach": "spinach",
+    "dough": "dough"
+  },
+  "dishes": [
+    {
+      "id": "cheese_pizza",
+      "name": "Cheese pizza",
+      "kind": "pizza",
+      "unlockStep": 1,
+      "price": 24,
+      "xp": 30,
+      "recipe": {
+        "sauce": "tomato",
+        "cheese": "mozzarella",
+        "toppings": []
+      },
+      "icon": "pizza_icon_cheese_pizza"
+    },
+    {
+      "id": "margherita_pizza",
+      "name": "Margherita pizza",
+      "kind": "pizza",
+      "unlockStep": 2,
+      "price": 30,
+      "xp": 36,
+      "recipe": {
+        "sauce": "tomato",
+        "cheese": "mozzarella",
+        "toppings": [
+          "basil",
+          "fresh_mozzarella"
+        ]
+      },
+      "icon": "pizza_icon_margherita_pizza"
+    },
+    {
+      "id": "garlic_bread",
+      "name": "Garlic bread",
+      "kind": "side",
+      "unlockStep": 2,
+      "price": 14,
+      "xp": 20,
+      "icon": "garlic_bread"
+    },
+    {
+      "id": "pepperoni_pizza",
+      "name": "Pepperoni pizza",
+      "kind": "pizza",
+      "unlockStep": 3,
+      "price": 34,
+      "xp": 40,
+      "recipe": {
+        "sauce": "tomato",
+        "cheese": "mozzarella",
+        "toppings": [
+          "pepperoni"
+        ]
+      },
+      "icon": "pizza_icon_pepperoni_pizza"
+    },
+    {
+      "id": "fries",
+      "name": "Fries",
+      "kind": "fried",
+      "unlockStep": 3,
+      "price": 12,
+      "xp": 18,
+      "icon": "fries",
+      "basket": 0
+    },
+    {
+      "id": "mushroom_pizza",
+      "name": "Mushroom pizza",
+      "kind": "pizza",
+      "unlockStep": 4,
+      "price": 34,
+      "xp": 40,
+      "recipe": {
+        "sauce": "tomato",
+        "cheese": "mozzarella",
+        "toppings": [
+          "mushroom"
+        ]
+      },
+      "icon": "pizza_icon_mushroom_pizza"
+    },
+    {
+      "id": "cheesy_breadsticks",
+      "name": "Cheesy breadsticks",
+      "kind": "side",
+      "unlockStep": 4,
+      "price": 16,
+      "xp": 22,
+      "icon": "cheesy_breadsticks"
+    },
+    {
+      "id": "veggie_pizza",
+      "name": "Veggie pizza",
+      "kind": "pizza",
+      "unlockStep": 5,
+      "price": 40,
+      "xp": 46,
+      "recipe": {
+        "sauce": "tomato",
+        "cheese": "mozzarella",
+        "toppings": [
+          "bell_pepper",
+          "olive",
+          "red_onion"
+        ]
+      },
+      "icon": "pizza_icon_veggie_pizza"
+    },
+    {
+      "id": "ice_cream",
+      "name": "Ice cream",
+      "kind": "dessert",
+      "unlockStep": 5,
+      "price": 14,
+      "xp": 20,
+      "icon": "ice_cream"
+    },
+    {
+      "id": "hawaiian_pizza",
+      "name": "Hawaiian pizza",
+      "kind": "pizza",
+      "unlockStep": 6,
+      "price": 40,
+      "xp": 46,
+      "recipe": {
+        "sauce": "tomato",
+        "cheese": "mozzarella",
+        "toppings": [
+          "ham",
+          "pineapple"
+        ]
+      },
+      "icon": "pizza_icon_hawaiian_pizza"
+    },
+    {
+      "id": "chicken_wings",
+      "name": "Chicken wings",
+      "kind": "fried",
+      "unlockStep": 6,
+      "price": 20,
+      "xp": 26,
+      "icon": "wings",
+      "basket": 1
+    },
+    {
+      "id": "bbq_chicken_pizza",
+      "name": "BBQ chicken pizza",
+      "kind": "pizza",
+      "unlockStep": 7,
+      "price": 46,
+      "xp": 52,
+      "recipe": {
+        "sauce": "bbq",
+        "cheese": "mozzarella",
+        "toppings": [
+          "chicken",
+          "red_onion"
+        ]
+      },
+      "icon": "pizza_icon_bbq_chicken_pizza"
+    },
+    {
+      "id": "cinnamon_twists",
+      "name": "Cinnamon twists",
+      "kind": "side",
+      "unlockStep": 7,
+      "price": 16,
+      "xp": 22,
+      "icon": "cinnamon_twists"
+    },
+    {
+      "id": "spicy_pizza",
+      "name": "Spicy pizza",
+      "kind": "pizza",
+      "unlockStep": 8,
+      "price": 46,
+      "xp": 52,
+      "recipe": {
+        "sauce": "hot",
+        "cheese": "mozzarella",
+        "toppings": [
+          "pepperoni",
+          "jalapeno"
+        ]
+      },
+      "icon": "pizza_icon_spicy_pizza"
+    },
+    {
+      "id": "supreme_pizza",
+      "name": "Supreme pizza",
+      "kind": "pizza",
+      "unlockStep": 9,
+      "price": 52,
+      "xp": 58,
+      "recipe": {
+        "sauce": "tomato",
+        "cheese": "mozzarella",
+        "toppings": [
+          "pepperoni",
+          "mushroom",
+          "bell_pepper"
+        ]
+      },
+      "icon": "pizza_icon_supreme_pizza"
+    },
+    {
+      "id": "white_pizza",
+      "name": "White pizza",
+      "kind": "pizza",
+      "unlockStep": 10,
+      "price": 52,
+      "xp": 58,
+      "recipe": {
+        "sauce": "garlic",
+        "cheese": "white",
+        "toppings": [
+          "spinach",
+          "fresh_mozzarella"
+        ]
+      },
+      "icon": "pizza_icon_white_pizza"
+    }
+  ],
+  "art": {
+    "folder": "assets/pizza/background",
+    "back": "pizza_back",
+    "front": "pizza_front",
+    "width": 1679,
+    "height": 937
+  },
+  "customerWindow": {
+    "slots": [
+      {
+        "id": "customer_slot_1",
+        "x": 0.2206,
+        "bottomY": 0.4109
+      },
+      {
+        "id": "customer_slot_2",
+        "x": 0.3101,
+        "bottomY": 0.4109
+      },
+      {
+        "id": "customer_slot_3",
+        "x": 0.3996,
+        "bottomY": 0.4109
+      },
+      {
+        "id": "customer_slot_4",
+        "x": 0.4891,
+        "bottomY": 0.4109
+      },
+      {
+        "id": "customer_slot_5",
+        "x": 0.5786,
+        "bottomY": 0.4109
+      }
+    ],
+    "bandTop": 0.1195,
+    "bandBottom": 0.4109,
+    "bubbleY": 0.135,
+    "dropZone": {
+      "x": 0.156,
+      "y": 0.1195,
+      "width": 0.4872,
+      "height": 0.2914
+    }
+  },
+  "zones": [
+    {
+      "id": "dough_tray",
+      "action": "dough",
+      "x": 0.1668,
+      "y": 0.6937,
+      "width": 0.1042,
+      "height": 0.0662
+    },
+    {
+      "id": "sauce_tomato",
+      "action": "sauce",
+      "arg": "tomato",
+      "x": 0.0727,
+      "y": 0.4696,
+      "width": 0.0476,
+      "height": 0.0694
+    },
+    {
+      "id": "sauce_bbq",
+      "action": "sauce",
+      "arg": "bbq",
+      "x": 0.1263,
+      "y": 0.4696,
+      "width": 0.0476,
+      "height": 0.0694
+    },
+    {
+      "id": "sauce_garlic",
+      "action": "sauce",
+      "arg": "garlic",
+      "x": 0.1799,
+      "y": 0.4696,
+      "width": 0.0476,
+      "height": 0.0694
+    },
+    {
+      "id": "sauce_hot",
+      "action": "sauce",
+      "arg": "hot",
+      "x": 0.2335,
+      "y": 0.4696,
+      "width": 0.0465,
+      "height": 0.0694
+    },
+    {
+      "id": "cheese_mozzarella",
+      "action": "cheese",
+      "arg": "mozzarella",
+      "x": 0.2716,
+      "y": 0.6937,
+      "width": 0.053,
+      "height": 0.0768
+    },
+    {
+      "id": "cheese_white",
+      "action": "cheese",
+      "arg": "white",
+      "x": 0.2585,
+      "y": 0.7748,
+      "width": 0.0548,
+      "height": 0.0758
+    },
+    {
+      "id": "topping_pepperoni",
+      "action": "topping",
+      "arg": "pepperoni",
+      "x": 0.2996,
+      "y": 0.4568,
+      "width": 0.0673,
+      "height": 0.0768
+    },
+    {
+      "id": "topping_mushroom",
+      "action": "topping",
+      "arg": "mushroom",
+      "x": 0.3681,
+      "y": 0.4568,
+      "width": 0.0631,
+      "height": 0.0768
+    },
+    {
+      "id": "topping_olive",
+      "action": "topping",
+      "arg": "olive",
+      "x": 0.4342,
+      "y": 0.4568,
+      "width": 0.0637,
+      "height": 0.0768
+    },
+    {
+      "id": "topping_bell_pepper",
+      "action": "topping",
+      "arg": "bell_pepper",
+      "x": 0.5003,
+      "y": 0.4568,
+      "width": 0.0608,
+      "height": 0.0768
+    },
+    {
+      "id": "topping_red_onion",
+      "action": "topping",
+      "arg": "red_onion",
+      "x": 0.5634,
+      "y": 0.4568,
+      "width": 0.0608,
+      "height": 0.0768
+    },
+    {
+      "id": "topping_jalapeno",
+      "action": "topping",
+      "arg": "jalapeno",
+      "x": 0.6266,
+      "y": 0.4568,
+      "width": 0.0518,
+      "height": 0.0768
+    },
+    {
+      "id": "topping_basil",
+      "action": "topping",
+      "arg": "basil",
+      "x": 0.2865,
+      "y": 0.5379,
+      "width": 0.0709,
+      "height": 0.08
+    },
+    {
+      "id": "topping_ham",
+      "action": "topping",
+      "arg": "ham",
+      "x": 0.3585,
+      "y": 0.5379,
+      "width": 0.0661,
+      "height": 0.08
+    },
+    {
+      "id": "topping_pineapple",
+      "action": "topping",
+      "arg": "pineapple",
+      "x": 0.4306,
+      "y": 0.5379,
+      "width": 0.0613,
+      "height": 0.08
+    },
+    {
+      "id": "topping_chicken",
+      "action": "topping",
+      "arg": "chicken",
+      "x": 0.5009,
+      "y": 0.5379,
+      "width": 0.0655,
+      "height": 0.08
+    },
+    {
+      "id": "topping_spinach",
+      "action": "topping",
+      "arg": "spinach",
+      "x": 0.5694,
+      "y": 0.5379,
+      "width": 0.0619,
+      "height": 0.08
+    },
+    {
+      "id": "topping_fresh_mozzarella",
+      "action": "topping",
+      "arg": "fresh_mozzarella",
+      "x": 0.6373,
+      "y": 0.5379,
+      "width": 0.053,
+      "height": 0.08
+    },
+    {
+      "id": "board_1",
+      "action": "board",
+      "index": 0,
+      "x": 0.3311,
+      "y": 0.7236,
+      "width": 0.0989,
+      "height": 0.1067
+    },
+    {
+      "id": "board_2",
+      "action": "board",
+      "index": 1,
+      "x": 0.4348,
+      "y": 0.7236,
+      "width": 0.0989,
+      "height": 0.1067
+    },
+    {
+      "id": "board_3",
+      "action": "board",
+      "index": 2,
+      "x": 0.5378,
+      "y": 0.7236,
+      "width": 0.0983,
+      "height": 0.1067
+    },
+    {
+      "id": "oven_slot_1",
+      "action": "oven",
+      "index": 0,
+      "x": 0.7362,
+      "y": 0.4482,
+      "width": 0.0643,
+      "height": 0.1281
+    },
+    {
+      "id": "oven_slot_2",
+      "action": "oven",
+      "index": 1,
+      "x": 0.8017,
+      "y": 0.4482,
+      "width": 0.0631,
+      "height": 0.1281
+    },
+    {
+      "id": "small_oven",
+      "action": "small_oven",
+      "x": 0.8934,
+      "y": 0.4749,
+      "width": 0.1024,
+      "height": 0.1206
+    },
+    {
+      "id": "tray_breadsticks",
+      "action": "side",
+      "arg": "cheesy_breadsticks",
+      "x": 0.0012,
+      "y": 0.762,
+      "width": 0.0619,
+      "height": 0.0886
+    },
+    {
+      "id": "tray_garlic_bread",
+      "action": "side",
+      "arg": "garlic_bread",
+      "x": 0.0643,
+      "y": 0.762,
+      "width": 0.0453,
+      "height": 0.0886
+    },
+    {
+      "id": "tray_cinnamon_twists",
+      "action": "side",
+      "arg": "cinnamon_twists",
+      "x": 0.1114,
+      "y": 0.762,
+      "width": 0.0292,
+      "height": 0.0886
+    },
+    {
+      "id": "tray_fries",
+      "action": "fryer",
+      "arg": "fries",
+      "index": 0,
+      "x": 0.031,
+      "y": 0.6937,
+      "width": 0.0583,
+      "height": 0.0662
+    },
+    {
+      "id": "tray_wings",
+      "action": "fryer",
+      "arg": "wings",
+      "index": 1,
+      "x": 0.0911,
+      "y": 0.6937,
+      "width": 0.0685,
+      "height": 0.0598
+    },
+    {
+      "id": "fryer_basket_1",
+      "action": "fryer",
+      "arg": "fries",
+      "index": 0,
+      "x": 0.654,
+      "y": 0.7236,
+      "width": 0.056,
+      "height": 0.0875
+    },
+    {
+      "id": "fryer_basket_2",
+      "action": "fryer",
+      "arg": "wings",
+      "index": 1,
+      "x": 0.7111,
+      "y": 0.7236,
+      "width": 0.0513,
+      "height": 0.0875
+    },
+    {
+      "id": "ice_cream_machine",
+      "action": "ice",
+      "x": 0.7647,
+      "y": 0.5977,
+      "width": 0.0739,
+      "height": 0.1793
+    },
+    {
+      "id": "trash_bin",
+      "action": "trash",
+      "x": 0.9375,
+      "y": 0.8591,
+      "width": 0.0584,
+      "height": 0.1387
+    }
+  ],
+  "events": {
+    "delivery_rush": {
+      "name": "Delivery Rush",
+      "minStep": 4,
+      "duration": 45,
+      "tickets": [
+        3,
+        5
+      ],
+      "coinMult": 1.5,
+      "completeBonus": 0.25,
+      "note": "Counter-pickup tickets next to normal customers (no seats). Each ticket pays price x coinMult; serving every ticket adds completeBonus of the total."
+    }
+  },
+  "stations": {
+    "ovenBig": {
+      "sheet": "oven_big",
+      "x": 1150,
+      "y": 285,
+      "width": 369,
+      "note": "display box in 1679x937 background pixels; width scales the sheet frame"
+    },
+    "ovenSmall": {
+      "sheet": "oven_small",
+      "x": 1495,
+      "y": 425,
+      "width": 184
+    },
+    "fryerFries": {
+      "sheet": "fryer_fries",
+      "x": 1048.8,
+      "y": 558.4,
+      "width": 281,
+      "half": "left"
+    },
+    "fryerWings": {
+      "sheet": "fryer_wings",
+      "x": 1048.8,
+      "y": 558.4,
+      "width": 281,
+      "half": "right"
+    },
+    "iceMachine": {
+      "sheet": "icecream_machine",
+      "x": 1260,
+      "y": 545,
+      "width": 190
+    }
+  }
+}

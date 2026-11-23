@@ -63,7 +63,7 @@
     },
     "icecream": {
       "name": "Ice cream",
-      "unlockLevel": 12,
+      "unlockLevel": 8,
       "price": 22,
       "xp": 28,
       "readyAfter": 5,

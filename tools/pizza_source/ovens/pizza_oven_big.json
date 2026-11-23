@@ -1,0 +1,134 @@
+{
+  "name": "pizza_oven_big",
+  "source_video": "1000089114.mp4",
+  "source_fps": 24,
+  "frame_step": 2,
+  "clip_fps": 12.0,
+  "recommended_playback": "play close and open at about 0.5-0.6 s each (speed up as needed)",
+  "body": {
+    "sheet_webp": "pizza_oven_big_body_spritesheet.webp",
+    "sheet_png": "pizza_oven_big_body_spritesheet.png",
+    "columns": 8,
+    "rows": 5,
+    "frame_width": 482,
+    "frame_height": 489,
+    "scale_vs_full": 0.7,
+    "full_res_frame_size": [
+      688,
+      699
+    ],
+    "frame_count": 35,
+    "clips": {
+      "close": {
+        "frames": [
+          0,
+          17
+        ],
+        "note": "door swings shut, last frame = closed, ends with a small latch bounce"
+      },
+      "open": {
+        "frames": [
+          18,
+          33
+        ],
+        "note": "door swings open, last frame = open and ready for the open-hold"
+      }
+    },
+    "frames": {
+      "open_idle": 34,
+      "closed": 17,
+      "open_hold": 34,
+      "first_open_frame": 18
+    },
+    "notes": [
+      "Frame 'closed' is the single static closed frame. Use it while cooking.",
+      "Frame 'open_hold' (last frame) is the single static open frame. Use it while the oven is open.",
+      "The first frame of the open clip may still show a small flame remnant at the door edge."
+    ],
+    "item_slots_full_res": {
+      "note": "Pizza centers on the oven floor in the body frame (full-res pixel coordinates). Ellipse about 180 wide by 45 tall. Multiply by scale_vs_full for the sprite sheet size.",
+      "slot_1": [
+        239,
+        479
+      ],
+      "slot_2": [
+        443,
+        479
+      ],
+      "ellipse_size": [
+        180,
+        45
+      ],
+      "floor_extent_x": [
+        148,
+        535
+      ],
+      "floor_extent_y": [
+        455,
+        500
+      ]
+    },
+    "item_slots_in_sheet_px": {
+      "slot_1": [
+        167,
+        335
+      ],
+      "slot_2": [
+        310,
+        335
+      ],
+      "ellipse_size": [
+        126,
+        31
+      ]
+    },
+    "chimney": {
+      "note": "The copper pipe and the small chimney cap sit above the brick dome. The kitchen already has its own copper hood and pipe, so crop above this line or hide them.",
+      "crop_above_y_full_res": 108
+    },
+    "door_clip_note": "open clip starts as the door begins to lift; the flames layer should be faded out in about 0.2 s before it plays."
+  },
+  "flames": {
+    "sheet_webp": "pizza_oven_big_flames_spritesheet.webp",
+    "sheet_png": "pizza_oven_big_flames_spritesheet.png",
+    "columns": 6,
+    "rows": 4,
+    "frame_width": 461,
+    "frame_height": 360,
+    "scale_vs_full": 0.5,
+    "full_res_frame_size": [
+      922,
+      720
+    ],
+    "frame_count": 21,
+    "blend": "ADD (additive / 'lighter' / screen). Black = transparent.",
+    "clips": {
+      "intro": {
+        "frames": [
+          0,
+          8
+        ],
+        "loop": false
+      },
+      "loop": {
+        "frames": [
+          9,
+          20
+        ],
+        "loop": true
+      }
+    },
+    "offset_from_body_top_left_full_res": [
+      -117,
+      0
+    ],
+    "notes": [
+      "Draw this layer on top of the closed door while cooking. Play intro once then loop.",
+      "On READY: fade the flame layer out in about 0.2 s, then play the door open clip."
+    ]
+  },
+  "body_origin_in_source_frame": [
+    297,
+    0
+  ]
+}
