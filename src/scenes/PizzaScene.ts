@@ -18,6 +18,7 @@ import { startRestaurant, PIZZA_ID } from './restaurantRoute';
 import { SaveSystem } from '../systems/SaveSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { iconFrame, loadPizzaArt, PizzaViews } from '../views/PizzaViews';
+import { PizzaTickets } from '../views/PizzaTickets';
 import { PizzaCustomers } from '../views/PizzaCustomers';
 import { Hud } from '../views/Hud';
 import { Ring } from '../views/Ring';
@@ -51,6 +52,7 @@ export class PizzaScene extends Phaser.Scene {
   private bg!: BackgroundPlacement;
   private views!: PizzaViews;
   private customers!: PizzaCustomers;
+  private tickets!: PizzaTickets;
   private fx!: ParticlePool;
   private hud!: Hud;
   private toast!: Toast;
@@ -121,6 +123,7 @@ export class PizzaScene extends Phaser.Scene {
     this.fx = new ParticlePool(this, 140);
     this.views = new PizzaViews(this, this.bg, this.state, this.fx, (x, y, r) => new Ring(this, x, y, r, true));
     this.customers = new PizzaCustomers(this, this.bg, this.state);
+    this.tickets = new PizzaTickets(this, this.state);
 
     this.hud = new Hud(this, this.state);
     this.toast = new Toast(this, LOGICAL_WIDTH / 2, 300);
@@ -179,6 +182,7 @@ export class PizzaScene extends Phaser.Scene {
     for (const e of this.state.drainEvents()) this.handle(e);
     this.views.sync();
     this.customers.sync();
+    this.tickets.sync();
     this.followDrag(real);
     this.hud.update(this.state, real);
     if (this.state.event) this.banner.update(this.state.event.remaining);
@@ -293,6 +297,21 @@ export class PizzaScene extends Phaser.Scene {
         break;
       case 'eventStart':
         this.banner.show(e.name, e.duration);
+        break;
+      case 'ticketsStart':
+        this.toast.show(`Delivery Rush! ${e.tickets.length} takeout pizzas`);
+        break;
+      case 'ticketDone': {
+        const at = this.tickets.centerOf(e.ticket);
+        if (at) {
+          this.fx.burst(at.x + 80, at.y, 0xffe08a, 8, 30, 380);
+          this.popup(at.x + 150, at.y, `+${e.coins}`);
+        }
+        audio.play('pop');
+        break;
+      }
+      case 'rushComplete':
+        this.toast.show(`All delivered! Bonus +${e.bonus}`);
         break;
       case 'eventEnd':
         this.banner.hide();
@@ -540,9 +559,9 @@ export class PizzaScene extends Phaser.Scene {
       this.views.tapFeedback(d.zone);
       return tapPizzaZone(this.state, d.zone);
     }
-    const target = this.customers.customerAt(p.worldX, p.worldY);
+    const target = this.customers.customerAt(p.worldX, p.worldY) ?? this.tickets.ticketAt(p.worldX, p.worldY);
     const ok = target ? this.serveDragged(d.from, target.id) : false;
-    const to = ok && target ? this.customers.centerOf(target.id) : null;
+    const to = ok && target ? this.customers.centerOf(target.id) ?? this.tickets.centerOf(target.id) : null;
     if (to) {
       // Served: the dish flies the last bit into the customer and shrinks away.
       if (d.from.kind === 'board') this.views.setCarried(d.from.index, false);
@@ -709,6 +728,7 @@ export class PizzaScene extends Phaser.Scene {
     this.storyCard?.destroy();
     this.views?.destroy();
     this.customers?.destroy();
+    this.tickets?.destroy();
     this.fx?.destroy();
     audio.setSizzle(0);
     audio.stopMusic();

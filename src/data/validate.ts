@@ -303,6 +303,9 @@ export function validatePizza(data: unknown): string[] {
   if (!d.dailySpecial || !isNum(d.dailySpecial.fromStep) || d.dailySpecial.fromStep < 1 || d.dailySpecial.fromStep > 10) errors.push('pizza: dailySpecial.fromStep must be 1 to 10');
   const pb = d.perfectBake;
   if (!pb || !isNum(pb.share) || !isNum(pb.tipFraction) || pb.share <= 0 || pb.share > 1 || pb.tipFraction < 0 || pb.tipFraction > 1) errors.push('pizza: perfectBake needs share (0 to 1) and tipFraction (0 to 1)');
+  const dr = d.events?.delivery_rush;
+  if (!dr || !isStr(dr.name) || !isNum(dr.minStep) || !isNum(dr.duration) || dr.duration <= 0 || !Array.isArray(dr.tickets) || dr.tickets.length !== 2 || !isNum(dr.tickets[0]) || !isNum(dr.tickets[1]) || dr.tickets[0] < 1 || dr.tickets[1] < dr.tickets[0] || !isNum(dr.coinMult) || dr.coinMult < 1 || !isNum(dr.completeBonus) || dr.completeBonus < 0 || dr.completeBonus > 1)
+    errors.push('pizza: events.delivery_rush needs name, minStep, duration, tickets [min, max], coinMult (1 or more) and completeBonus (0 to 1)');
   const cm = d.comboMeal;
   if (!cm || !isNum(cm.coinBonus) || !isNum(cm.xpBonus) || cm.coinBonus < 0 || cm.xpBonus < 0 || cm.coinBonus > 1 || cm.xpBonus > 1) errors.push('pizza: comboMeal needs coinBonus and xpBonus between 0 and 1');
   const ing = d.ingredients ?? {};

@@ -1,3 +1,12 @@
+# IN PROGRESS (2026-11-23) - Owner said "Complete all the tasks n optimize the game": do B5, B6, B7, B8, Part D leftovers, E, G, then optimize, committing per part.
+B5 Delivery Rush plan (pizza only, Diner/Taco untouched):
+ 1. config: deliveryRush type + validation from data/pizza.json events.delivery_rush
+ 2. model: this.tickets (takeout, no seats), started from updateEvents at menuStep>=4, reward x1.5, expire at event end
+ 3. serving: tap a ticket or drag a pizza onto it; tapBoard falls back to tickets
+ 4. view PizzaTickets (left column) + PizzaScene wiring + banner
+ 5. tests, headless check (desktop + phone), docs/progress.md, commit + push
+Steps done so far: B5 all DONE (tests 15, headless ok, docs written); committing. Next: B6 dough rolling, B7 daily goal, B8 mini-goals, D, E, G, optimize
+
 # IN PROGRESS (2026-11-22) - B4 mastery + Daily Special DONE (see docs/progress.md); next B5 Delivery Rush after the owner says Continue
 
 # IN PROGRESS (2026-11-22) - B3 build-your-own DONE (see docs/progress.md); next B4 mastery + daily special after the owner says Continue

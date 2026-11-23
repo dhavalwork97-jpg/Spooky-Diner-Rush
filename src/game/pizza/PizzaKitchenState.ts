@@ -1,6 +1,7 @@
 import { comboBonus, isComboMeal } from './pizzaCombo';
 import { isPerfectBake, perfectTip } from './pizzaPerfect';
 import { pizzaSpecialFor } from './pizzaExtras';
+import { RUSH_ID, rushAvailable, rushCompleteBonus, rushTicketCoins, rushTicketCount } from './pizzaRush';
 import { defaultExtras, type Extras } from '../extras';
 import { customDish, isCustomId, rollCustom } from './pizzaCustom';
 import { advanceCook, cookPhase, isEdible, type CookPhase } from '../cook';
@@ -109,6 +110,11 @@ export type PizzaEvent =
   | { type: 'customOrder'; customer: number; dish: string }
   | { type: 'perfectBake'; where: 'oven' | 'small' | 'fryer'; index: number }
   | { type: 'comboMeal'; customer: number; coins: number; xp: number }
+  | { type: 'ticketsStart'; tickets: number[] }
+  | { type: 'ticketDeliver'; ticket: number; dish: string; itemIndex: number; index: number }
+  | { type: 'ticketDone'; ticket: number; coins: number; xp: number }
+  | { type: 'ticketExpired'; ticket: number }
+  | { type: 'rushComplete'; bonus: number }
   | { type: 'orderDone'; customer: number; coins: number; tip: number; xp: number; fast: boolean; rush: boolean; combo: number; mult: number }
   | { type: 'angryLeave'; customer: number }
   | { type: 'leave'; customer: number }
@@ -146,6 +152,11 @@ export class PizzaKitchenState {
   fryer: (TrayItem | null)[];
   ice: (IceLane | null)[];
   customers: PizzaCustomer[] = [];
+  /** Delivery Rush takeout tickets. They wait at the counter, take no seat and never count as customers. */
+  tickets: PizzaCustomer[] = [];
+  private rushCoins = 0;
+  private rushServed = 0;
+  private rushTotal = 0;
   events: PizzaEvent[] = [];
   served = 0;
   closesAtLevel = new Map<number, number>();
@@ -231,7 +242,7 @@ export class PizzaKitchenState {
   /** The recipe list the build rules see: the menu plus the custom pizzas a waiting customer or a board still needs. */
   private recipeCfg(): PizzaConfig {
     const active = new Set<string>();
-    for (const c of this.customers) c.items.forEach((id, i) => isCustomId(id) && !c.delivered[i] && active.add(id));
+    for (const c of [...this.customers, ...this.tickets]) c.items.forEach((id, i) => isCustomId(id) && !c.delivered[i] && active.add(id));
     for (const b of this.boards) if (b.item?.dish && isCustomId(b.item.dish)) active.add(b.item.dish);
     if (active.size === 0) return this.pizza;
     const extra = [...active].map((id) => this.customDishes.get(id)).filter((d): d is DishDef => !!d);
@@ -291,6 +302,7 @@ export class PizzaKitchenState {
     this.updateEvents(dt);
     this.updateCooking(dt);
     this.updateCustomers(dt);
+    this.updateTickets(dt);
     this.updateArrivals(dt);
   }
 
@@ -891,6 +903,8 @@ export class PizzaKitchenState {
       this.emit({ type: 'wrongDrop', customer: customerId ?? null });
       return false;
     }
+    const ticket = this.tickets.find((x) => x.mood === 'waiting' && (customerId !== undefined ? x.id === customerId : x.items.some((k, i) => k === item.dish && !x.delivered[i])));
+    if (ticket && (customerId !== undefined || !this.oldestNeeding(item.dish))) return this.serveTicket(board, ticket.id);
     const c = customerId !== undefined ? this.customers.find((x) => x.id === customerId) : this.oldestNeeding(item.dish);
     if (!c || c.mood !== 'waiting') {
       if (customerId === undefined) this.invalid('Nobody ordered that');
@@ -906,6 +920,99 @@ export class PizzaKitchenState {
     this.boards[board].item = null;
     this.deliverTo(c, item.dish, 'board', board, !!item.perfect);
     return true;
+  }
+
+  /** Serve a baked pizza from its board to a takeout ticket. A wrong pizza costs nothing: tickets are a bonus, never a penalty. */
+  serveTicket(board: number, ticketId: number): boolean {
+    if (this.closed) return false;
+    const item = this.boards[board]?.item;
+    const t = this.tickets.find((x) => x.id === ticketId);
+    if (!item || item.status !== 'baked' || !item.dish || !t || t.mood !== 'waiting') {
+      this.emit({ type: 'wrongDrop', customer: null });
+      return false;
+    }
+    const need = t.items.findIndex((k, i) => k === item.dish && !t.delivered[i]);
+    if (need < 0) {
+      this.emit({ type: 'wrongDrop', customer: null });
+      return false;
+    }
+    const perfect = !!item.perfect;
+    this.boards[board].item = null;
+    t.delivered[need] = true;
+    if (perfect) t.perfectTips = (t.perfectTips ?? 0) + perfectTip(this.itemDef(item.dish).price, this.pizza.perfectBake.tipFraction, this.mods.tips);
+    this.emit({ type: 'ticketDeliver', ticket: t.id, dish: item.dish, itemIndex: need, index: board });
+    if (!isCustomId(item.dish)) this.countServe(item.dish);
+    if (t.delivered.every(Boolean)) this.completeTicket(t);
+    return true;
+  }
+
+  private completeTicket(t: PizzaCustomer): void {
+    const rush = this.pizza.events.delivery_rush;
+    const coins = rushTicketCoins(t.price, rush.coinMult, t.perfectTips ?? 0);
+    const xp = t.items.reduce((s, k) => s + this.itemDef(k).xp, 0);
+    t.mood = 'happy';
+    t.leaveIn = LEAVE_DELAY;
+    this.coins += coins;
+    this.rushCoins += coins;
+    this.rushServed++;
+    this.emit({ type: 'ticketDone', ticket: t.id, coins, xp });
+    this.addXp(xp);
+    if (this.rushServed === this.rushTotal && this.rushTotal > 0) {
+      const bonus = rushCompleteBonus(this.rushCoins, rush.completeBonus);
+      this.coins += bonus;
+      this.emit({ type: 'rushComplete', bonus });
+    }
+  }
+
+  private updateTickets(dt: number): void {
+    for (const t of [...this.tickets]) {
+      if (t.mood === 'waiting') {
+        t.patience = Math.max(0, t.patience - dt);
+        continue;
+      }
+      t.leaveIn -= dt;
+      if (t.leaveIn <= 0) this.tickets = this.tickets.filter((x) => x.id !== t.id);
+    }
+  }
+
+  /** Start a Delivery Rush: a few takeout tickets, each one pizza (sometimes build-your-own), all due when the rush ends. */
+  private startRush(): void {
+    const rush = this.pizza.events.delivery_rush;
+    const pizzas = this.dishes.filter((d) => d.kind === 'pizza' && this.familiarity(d.id) === 'normal');
+    if (pizzas.length === 0) return;
+    const n = rushTicketCount(rush, () => this.rng());
+    this.tickets = [];
+    this.rushCoins = 0;
+    this.rushServed = 0;
+    this.rushTotal = n;
+    for (let i = 0; i < n; i++) {
+      const items = [pizzas[randInt(this.rng, 0, pizzas.length - 1)].id];
+      this.makeCustom(items);
+      this.tickets.push({
+        id: this.nextId++,
+        seat: -1,
+        look: randInt(this.rng, CUSTOMER_LOOK_MIN, TACO_LOOK_MAX),
+        items,
+        delivered: [false],
+        price: this.itemDef(items[0]).price,
+        patience: rush.duration,
+        patienceMax: rush.duration,
+        age: 0,
+        type: 'regular',
+        mood: 'waiting',
+        leaveIn: 0,
+      });
+    }
+    this.emit({ type: 'ticketsStart', tickets: this.tickets.map((t) => t.id) });
+  }
+
+  private endRush(): void {
+    for (const t of this.tickets) {
+      if (t.mood !== 'waiting') continue;
+      t.mood = 'angry';
+      t.leaveIn = LEAVE_DELAY;
+      this.emit({ type: 'ticketExpired', ticket: t.id });
+    }
   }
 
   /** Perfect only counts while the food is READY; the cook clock and the burn rules are never touched. */
@@ -994,6 +1101,7 @@ export class PizzaKitchenState {
     if (this.event) {
       this.event.remaining -= dt;
       if (this.event.remaining <= 0) {
+        if (this.event.def.id === RUSH_ID) this.endRush();
         this.emit({ type: 'eventEnd', id: this.event.def.id });
         this.event = null;
         this.nextEventIn = randRange(this.rng, this.cfg.events.gap[0], this.cfg.events.gap[1]);
@@ -1007,6 +1115,8 @@ export class PizzaKitchenState {
       return;
     }
     const pool = tacoEventPool(this.cfg.events.events, this.level, this.menuStep, []);
+    const rush = this.pizza.events.delivery_rush;
+    if (rushAvailable(rush, this.menuStep)) pool.push({ id: RUSH_ID, name: rush.name, minLevel: 0, duration: rush.duration });
     if (pool.length === 0) {
       this.nextEventIn = 10;
       return;
@@ -1017,6 +1127,7 @@ export class PizzaKitchenState {
   startEvent(def: EventDef): void {
     this.event = { def, remaining: def.duration };
     this.emit({ type: 'eventStart', id: def.id, name: def.name, duration: def.duration });
+    if (def.id === RUSH_ID) this.startRush();
     const seats = Math.min(this.levelInfo.maxCustomers, this.pizza.settings.seats);
     if (def.spawnType && this.customers.length < this.pizza.settings.seats && this.customers.filter((c) => c.mood === 'waiting').length < seats + 1) {
       this.spawnCustomer(def.spawnType);
@@ -1069,6 +1180,7 @@ export class PizzaKitchenState {
     this.fryer = this.fryer.map(() => null);
     this.ice = this.ice.map(() => null);
     this.customers = [];
+    this.tickets = [];
     this.history = emptyHistory();
     this.nextArrival = 1;
     this.combo = 0;
@@ -1081,7 +1193,7 @@ export class PizzaKitchenState {
   // ----- helpers for views and bots -----
 
   isNeeded(id: string): boolean {
-    return this.customers.some((c) => c.mood === 'waiting' && c.items.some((k, i) => k === id && !c.delivered[i]));
+    return this.tickets.some((c) => c.mood === 'waiting' && c.items.some((k, i) => k === id && !c.delivered[i])) || this.customers.some((c) => c.mood === 'waiting' && c.items.some((k, i) => k === id && !c.delivered[i]));
   }
   ovenEdible(slot: number): boolean {
     const o = this.ovens[slot];

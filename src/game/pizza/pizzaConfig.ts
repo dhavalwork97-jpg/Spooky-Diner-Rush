@@ -115,7 +115,7 @@ export interface PizzaConfig {
   zones: PizzaZone[];
   /** Where each animated station sprite sits, in pixels of the 1679 x 937 background (x, y = top left; width = display width of the whole sprite). */
   stations: Record<'ovenBig' | 'ovenSmall' | 'fryerFries' | 'fryerWings' | 'iceMachine', { sheet: string; x: number; y: number; width: number; half?: 'left' | 'right' }>;
-  events: Record<string, { name: string; minStep: number; duration: number; tickets: [number, number]; coinMult: number; note?: string }>;
+  events: Record<string, { name: string; minStep: number; duration: number; tickets: [number, number]; coinMult: number; completeBonus: number; note?: string }>;
 }
 
 export const defaultPizzaConfig: PizzaConfig = pizzaJson as unknown as PizzaConfig;

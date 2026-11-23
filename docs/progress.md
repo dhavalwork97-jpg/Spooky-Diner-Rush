@@ -350,3 +350,12 @@ Ten additive features: station intro cards (Lv 2/4/5/6/10/12), mastery from Lv 6
 - Daily Special (pizza of the day): from menu step 2 (`dailySpecial.fromStep` in pizza.json). Today's pizza is picked by date from the learned pizzas on the menu (same all day). After 3 served orders (`afterServes` from extras.json) the next customer asks for it, with a gold bubble edge and a toast; serving it pays +50% coins (`bonus` from extras.json) once a day. Missed = it comes back with the next customer. The Recipe Book row of today's pizza says "Pizza of the day". Saved in the NEW field `pizzaSpecialDay` (the Diner's `specialDay` is untouched).
 - Tests: tests/pizza_extras.test.ts (18). Browser (headless desktop): mastery tab, row tag, special customer and toast seen.
 - Not done: no all-ten-Bronze bonus (not in the spec); no phone-size check of the new tab.
+
+## Pizza B5: Delivery Rush (2026-11-23)
+- Pizza only. From menu step 4 the random event pick can also choose Delivery Rush (45 s, banner and countdown reuse the existing event banner). Diner and Taco events are untouched.
+- 3 to 5 takeout tickets (data/pizza.json `events.delivery_rush`), each one pizza (sometimes build-your-own). Tickets live in `PizzaKitchenState.tickets`, not in `customers`, so they take no seat and never count as customers, streak, combo or reputation.
+- Each ticket pays price x 1.5 plus any perfect-bake tip and gives the pizza's XP. Serving every ticket adds a 25% completion bonus once. Unserved tickets expire when the rush ends with no penalty.
+- Serve by tapping a baked pizza (a waiting customer who ordered it goes first) or by dragging it onto a ticket card (left column). A wrong pizza on a ticket costs nothing.
+- Files: `src/game/pizza/pizzaRush.ts` (pure), `src/views/PizzaTickets.ts`, `PizzaKitchenState` (`tickets`, `serveTicket`, `startRush`, `endRush`), `PizzaScene`, validation in `src/data/validate.ts`. Tests: `tests/pizza_rush.test.ts` (15).
+- Checked in headless Chromium at 1280x720 and 844x390: cards, banner, serving and +coins popup work, no console errors. Not tested on a real phone.
+- Note: `tests/balance_upgrades.test.ts` (Diner balance bot) can hit vitest's 5 s timeout when the whole suite runs in parallel; it passes alone. Not related to this change.
