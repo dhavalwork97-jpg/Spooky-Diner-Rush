@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, "fix/**"]
+    branches: [main, "fix/**", "release/poki"]
 
 jobs:
   verify:
@@ -29,5 +29,18 @@ jobs:
         with:
           name: Spooky-Diner-Rush-CrazyGames
           path: dist-crazygames/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Build Poki submission
+        id: poki
+        run: npm run build:poki
+        if: always() && github.ref == 'refs/heads/release/poki'
+      - name: Upload Poki submission files
+        uses: actions/upload-artifact@v4
+        if: always() && steps.poki.outcome == 'success'
+        with:
+          name: Spooky-Diner-Rush-Poki
+          path: dist-poki/
           if-no-files-found: error
           retention-days: 14
