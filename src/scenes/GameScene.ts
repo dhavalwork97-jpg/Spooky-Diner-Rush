@@ -1114,7 +1114,6 @@ export class GameScene extends Phaser.Scene {
     if (this.state.event) this.banner.update(this.state.event.remaining);
     this.updateHint();
     this.maybeShowStory();
-    this.runDueAd();
     if (!this.paused && !this.state.closed && this.state.clock - this.chefLastAt > CHEF_IDLE_AFTER) {
       this.chefLastAt = this.state.clock;
       this.sayChef(this.chefTalk.say('idle', this.state.clock));
@@ -1215,8 +1214,6 @@ export class GameScene extends Phaser.Scene {
     for (const action of queued) action();
   }
 
-  private adDue = false;
-
   /** Rewarded ad on the Closed screen: reopen at full reputation, but only if the ad is watched to the end. */
   private reviveWithAd(): void {
     if (this.adActive || this.adPending || !this.state.closed) return;
@@ -1285,9 +1282,8 @@ export class GameScene extends Phaser.Scene {
     this.saveNow();
   }
 
-  /** The last level-up card is gone: the calm-moment ad is queued, then any station intro card that is due shows (non-blocking). */
+  /** The last level-up card is gone; continue with the next milestone card. */
   private afterLevelUpCards(): void {
-    this.levelBreakAd();
     this.showChests();
   }
 
@@ -1341,19 +1337,6 @@ export class GameScene extends Phaser.Scene {
     this.introCard.show(introText(card));
     this.introGlow.show(card.zones.flatMap((id) => this.views.filter((v) => v.zone.id === id).map((v) => ({ id, rect: v.rect }))));
     if (due.length > 1) this.time.delayedCall(4300, () => this.showIntros());
-  }
-
-  /** After the last level-up card: an ad is due from Lv 3 on; it runs at the next calm moment (see `runDueAd`). */
-  private levelBreakAd(): void {
-    if (this.state.level >= 3) this.adDue = true;
-  }
-
-  /** Runs a due ad only when nothing else is open: no pause, closed overlay, story card or level-up card. */
-  private runDueAd(): void {
-    if (!this.adDue || this.adActive || this.adPending) return;
-    if (this.paused || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing || this.chestCard.isShowing) return;
-    this.adDue = false;
-    this.breakAd();
   }
 
   /** Poki asks for ESC (or space) to pause and resume. Space already presses the open overlay's button in the other scenes; here ESC does both. */
