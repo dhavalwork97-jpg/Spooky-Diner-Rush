@@ -100,25 +100,44 @@ export const Poki = {
     const was = playing;
     reportStop(); // Poki wants gameplayStop BEFORE the break
     let started = false;
+    let settled = false;
+    let resolveBreak!: (shown: boolean) => void;
+    const result = new Promise<boolean>((resolve) => {
+      resolveBreak = resolve;
+    });
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      inAd = false;
+      if (!started && was && wanted) reportStart();
+      resolveBreak(started);
+    }, POKI_AD_TIMEOUT_MS);
+    const finish = (shown: boolean): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      inAd = false;
+      if (!started && was && wanted) reportStart();
+      resolveBreak(shown);
+    };
     try {
-      await Promise.race([
-        s.commercialBreak(() => {
-          started = true;
-          inAd = true; // no SDK events while the video plays
-          try {
-            onStart();
-          } catch {
-            /* ignore */
-          }
-        }),
-        new Promise((resolve) => setTimeout(resolve, POKI_AD_TIMEOUT_MS)),
-      ]);
+      void s.commercialBreak(() => {
+        if (settled || started) return; // Ignore callbacks arriving after timeout or a duplicate start.
+        started = true;
+        inAd = true; // no SDK events while the video plays
+        try {
+          onStart();
+        } catch {
+          /* ignore */
+        }
+      }).then(
+        () => finish(started),
+        () => finish(false),
+      );
     } catch {
-      /* a failed ad never blocks the player */
+      finish(false);
     }
-    inAd = false;
-    if (!started && was && wanted) reportStart(); // no ad came: carry on exactly as before
-    return started;
+    return result;
   },
   /** True when the SDK is there. A rewarded video is always the player's own choice. */
   canShowRewarded(): boolean {
@@ -143,17 +162,29 @@ export const Poki = {
         /* ignore */
       }
     };
-    let success = false;
+    let settled = false;
+    let resolveReward!: (success: boolean) => void;
+    const result = new Promise<boolean>((resolve) => {
+      resolveReward = resolve;
+    });
+    const timer = setTimeout(() => finish(false), POKI_AD_TIMEOUT_MS);
+    const finish = (success: boolean): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      inAd = false;
+      resolveReward(success);
+    };
     try {
-      // The player chose this video, so the game is frozen straight away (the SDK may also call us back at the ad start; that is harmless).
-      begin();
-      const r = await Promise.race([s.rewardedBreak(begin), new Promise<boolean>((resolve) => setTimeout(() => resolve(false), POKI_AD_TIMEOUT_MS))]);
-      success = r === true;
+      // Do not pause pre-emptively: Poki invokes begin only when a rewarded ad actually starts.
+      void s.rewardedBreak(begin).then(
+        (success) => finish(success === true),
+        () => finish(false),
+      );
     } catch {
-      success = false;
+      finish(false);
     }
-    inAd = false;
-    return success;
+    return result;
   },
   gameplayStart(): void {
     wanted = true;
