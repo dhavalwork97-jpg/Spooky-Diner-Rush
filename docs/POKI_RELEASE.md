@@ -21,8 +21,7 @@ Status: prepared and tested locally only. NOT submitted, NOT approved, NOT live.
 1. Exclusivity: Poki asks for web exclusivity. This game is also prepared for CrazyGames. Choose one portal for web.
 2. Ad frequency: the 180-second interstitial cooldown is NOT applied in the Poki build (Poki bans own ad timers).
    This differs from the project rule "180 seconds" and needs your approval. Reward values (55 / 100) are unchanged.
-3. Download size: about 9.8 MB loads at start (all of the build is 26 MB). Poki recommends 5 MB initial / 8 MB total.
-   This may slow approval. Reducing it means compressing or lazy-loading art; ask before I do that.
+3. Download size: about 5.8 MB raw (roughly 4.5 MB with the JavaScript compressed) loads at start, measured network-only in headless Chromium. Poki recommends 5 MB at start and 8 MB total; the whole build is 26 MB, so the total is over the guide. The Inspector's Game Details shows the official numbers.
 4. Thumbnails (not created): static 628x628, no text, do not use colour #83FFE7; an animated one is added at Soft Release.
 
 ## Not tested (needs you)

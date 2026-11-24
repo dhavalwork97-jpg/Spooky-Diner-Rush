@@ -83,11 +83,11 @@ Branch `performance/asset-optimization` (from `release/poki`). Scope: everything
 - `intro/intro.mp4` (1.4 MB): not an image; it is already left out of the CrazyGames and Poki builds.
 - Not deleted: no asset was removed. Nothing was proven unused.
 
-## Remaining opportunities (need owner approval)
-1. Customer sheets are drawn far larger than they appear (for example `ghost_leave_happy.webp` is 3024x2160, 1 MB). Reducing the sheet size, with the frame size in the game config updated to match, could cut the 7.8 MB customer folder by more than half. This changes sheet dimensions, so it is outside this task and needs visual checks of every animation.
-2. Same idea for the Taco Truck animation sheets (9.5 MB folder) and `ice_cream_anim` / `cold_drink_anim`.
-3. Lazy-load Taco Truck and Pizza Shop art only when that restaurant is opened, so the first download is smaller (Poki recommends about 5 MB at start; the Poki build downloads about 9.8 MB at start).
-4. WebP animated or lossless sources would give real gains only if the original artwork files are re-exported, since the shipped files are already lossy.
+## Remaining opportunities (checked, mostly not worth the risk)
+1. Shrinking the customer or Taco Truck sheets was investigated and rejected. Customer frames are 192 to 256 px and are drawn at about the same size on a 1280x698 game screen (a 162 px tall body from a 192 px frame), and larger on big or high-density screens. Halving them would visibly blur the characters. The sheets are big because they hold 90 to 130 frames each, not because they are oversized.
+2. Start-up download (Poki build, measured in headless Chromium, network only): 5.78 MB raw, roughly 4.5 MB after the JavaScript is gzip-compressed (estimate). Poki recommends about 5 MB at start, so this is close to the guide. (An earlier note of 9.8 MB double-counted images the browser re-reads from memory.) The largest start-up files: first customer (mint ghost) 1.36 MB, Phaser 1.33 MB, `ice_cream_anim` 0.84 MB, `cold_drink_anim` 0.50 MB, `kitchen_full` 0.42 MB.
+3. Possible future saving, not done: load `ice_cream_anim` and `cold_drink_anim` (1.3 MB) only when those machines first appear. This changes loading order and needs animation checks, so it needs your approval.
+4. Real WebP gains need the original artwork files re-exported, since the shipped files are already lossy.
 
 ## Validation
 - Full test suite: 84 files, 1019 passed, 2 skipped, 0 failed.
