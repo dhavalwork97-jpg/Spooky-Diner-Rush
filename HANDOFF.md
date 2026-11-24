@@ -1,3 +1,9 @@
+## IN PROGRESS (2026-11-23) - Asset optimisation on branch performance/asset-optimization (from release/poki)
+Plan: 1 audit + baseline (public/ inventory, sizes, webp lossy/lossless, frames). 2 SVG (svgo) + PNG (lossless). 3 WebP: lossless re-encode only when
+pixel-identical AND smaller; lossy only for big non-sprite art if visually identical (compare). Spritesheets/animations: never resize, lossless only.
+4 validate (tests, builds, dims/alpha/frame checks, headless screenshots) 5 docs/ASSET_OPTIMIZATION_REPORT.md, commit. No merge, no deploy.
+Steps done so far: ALL done. 10 files optimised (~120 KB, 0.5%), animation sheets left byte-identical; report in docs/ASSET_OPTIMIZATION_REPORT.md; tests/builds green. Next: owner decides on bigger changes (sheet dimensions, lazy loading).
+
 # IN PROGRESS (2026-11-23) - Poki release on branch release/poki (from main). Poki-only, separate from CrazyGames and AdMob.
 Plan: 1 target.ts IS_POKI_BUILD (no intro video, skip title) | 2 src/sdk/poki.ts + src/sdk/portal.ts (scenes use Portal) | 3 vite mode `poki` -> dist-poki, Poki SDK script instead of CrazyGames | 4 Poki ad rules: no own cooldown/timer, commercialBreak at natural breaks, rewarded button not green + video icon + standard button equal or larger | 5 ESC/space pause, first-input gameplayStart, block page scroll keys | 6 tests | 7 docs/POKI_RELEASE.md checklist | 8 build + headless check + push.
 Poki rules source: https://developers.poki.com/guide/requirements-quality and linked pages. Web exclusivity: cannot be on CrazyGames at the same time (owner decision).

@@ -36,5 +36,5 @@ Status: prepared and tested locally only. NOT submitted, NOT approved, NOT live.
 3. `npx vite preview --outDir dist-poki` and open the printed address.
 4. Press ESC while playing: a Paused screen appears. Resume: an ad break is requested (nothing shows without the SDK).
 
-## Release stages at Poki
+## Poki release steps
 Submit -> Poki QA feedback -> Soft Release (animated thumbnail needed) -> full release.
