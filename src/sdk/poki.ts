@@ -152,8 +152,9 @@ export const Poki = {
     if (!s?.rewardedBreak) return false;
     reportStop();
     let started = false;
+    let settled = false;
     const begin = (): void => {
-      if (started) return;
+      if (started || settled) return;
       started = true;
       inAd = true;
       try {
@@ -162,7 +163,6 @@ export const Poki = {
         /* ignore */
       }
     };
-    let settled = false;
     let resolveReward!: (success: boolean) => void;
     const result = new Promise<boolean>((resolve) => {
       resolveReward = resolve;
