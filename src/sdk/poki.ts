@@ -167,7 +167,7 @@ export const Poki = {
     const result = new Promise<boolean>((resolve) => {
       resolveReward = resolve;
     });
-    const timer = setTimeout(() => finish(false), POKI_AD_TIMEOUT_MS);
+    let timer: ReturnType<typeof setTimeout>;
     const finish = (success: boolean): void => {
       if (settled) return;
       settled = true;
@@ -175,6 +175,7 @@ export const Poki = {
       inAd = false;
       resolveReward(success);
     };
+    timer = setTimeout(() => finish(false), POKI_AD_TIMEOUT_MS);
     try {
       // Do not pause pre-emptively: Poki invokes begin only when a rewarded ad actually starts.
       void s.rewardedBreak(begin).then(
