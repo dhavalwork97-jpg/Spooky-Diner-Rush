@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Poki } from '../src/sdk/poki';
+import { POKI_AD_TIMEOUT_MS, Poki } from '../src/sdk/poki';
 import { DEV_PARAMS, isScrollKey, stripDevParams } from '../src/build/devParams';
 
 const g = globalThis as unknown as { PokiSDK?: unknown; window?: unknown };
@@ -155,6 +155,50 @@ describe('Poki SDK wrapper', () => {
     const p = Poki.rewardedAd(() => {});
     await vi.advanceTimersByTimeAsync(91_000);
     expect(await p).toBe(false);
+  });
+
+  it('does not pause when Poki has no rewarded ad to show', async () => {
+    const onStart = vi.fn();
+    sdk({ rewardedBreak: async () => false });
+    expect(await Poki.rewardedAd(onStart)).toBe(false);
+    expect(onStart).not.toHaveBeenCalled();
+    expect(Poki._state.inAd).toBe(false);
+  });
+
+  it('ignores a rewarded ad start callback that arrives after timeout', async () => {
+    vi.useFakeTimers();
+    let lateStart: (() => void) | undefined;
+    const onStart = vi.fn();
+    sdk({ rewardedBreak: (cb?: () => void) => {
+      lateStart = cb;
+      return new Promise<boolean>(() => {});
+    } });
+    const p = Poki.rewardedAd(onStart);
+    await vi.advanceTimersByTimeAsync(POKI_AD_TIMEOUT_MS + 1);
+    expect(await p).toBe(false);
+    lateStart?.();
+    expect(onStart).not.toHaveBeenCalled();
+    expect(Poki._state.inAd).toBe(false);
+  });
+
+  it('ignores a commercial ad start callback that arrives after timeout', async () => {
+    vi.useFakeTimers();
+    const w = fakeWindow();
+    let lateStart: (() => void) | undefined;
+    const onStart = vi.fn();
+    const { calls } = sdk({ commercialBreak: (cb?: () => void) => {
+      lateStart = cb;
+      return new Promise<void>(() => {});
+    } });
+    Poki.gameplayStart();
+    w.fire();
+    const p = Poki.midgameAd(onStart);
+    await vi.advanceTimersByTimeAsync(POKI_AD_TIMEOUT_MS + 1);
+    expect(await p).toBe(false);
+    lateStart?.();
+    expect(onStart).not.toHaveBeenCalled();
+    expect(Poki._state.inAd).toBe(false);
+    expect(calls).toEqual(['start', 'stop', 'start']);
   });
 
   it('keeps no saves in the SDK', () => {
