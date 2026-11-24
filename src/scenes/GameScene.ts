@@ -1114,6 +1114,7 @@ export class GameScene extends Phaser.Scene {
     if (this.state.event) this.banner.update(this.state.event.remaining);
     this.updateHint();
     this.maybeShowStory();
+    if (!IS_POKI_BUILD) this.runDueAd();
     if (!this.paused && !this.state.closed && this.state.clock - this.chefLastAt > CHEF_IDLE_AFTER) {
       this.chefLastAt = this.state.clock;
       this.sayChef(this.chefTalk.say('idle', this.state.clock));
@@ -1175,6 +1176,7 @@ export class GameScene extends Phaser.Scene {
   /** True while a CrazyGames ad is on screen: the model and sound are frozen. */
   private adActive = false;
   private adPending = false;
+  private adDue = false;
 
   /**
    * A mid-game ad at a natural break. The game and sound stay frozen while it plays; `then` always runs afterwards,
@@ -1284,6 +1286,7 @@ export class GameScene extends Phaser.Scene {
 
   /** The last level-up card is gone; continue with the next milestone card. */
   private afterLevelUpCards(): void {
+    if (!IS_POKI_BUILD) this.levelBreakAd();
     this.showChests();
   }
 
@@ -1337,6 +1340,19 @@ export class GameScene extends Phaser.Scene {
     this.introCard.show(introText(card));
     this.introGlow.show(card.zones.flatMap((id) => this.views.filter((v) => v.zone.id === id).map((v) => ({ id, rect: v.rect }))));
     if (due.length > 1) this.time.delayedCall(4300, () => this.showIntros());
+  }
+
+  /** CrazyGames keeps its existing level-break ad cadence; Poki uses only explicit natural pause/resume breaks. */
+  private levelBreakAd(): void {
+    if (this.state.level >= 3) this.adDue = true;
+  }
+
+  /** Runs a due CrazyGames ad only when no gameplay overlay is open. */
+  private runDueAd(): void {
+    if (!this.adDue || this.adActive || this.adPending) return;
+    if (this.paused || this.state.closed || this.overlay.visible || this.storyCard.isShowing || this.levelUpCard.isShowing || this.chestCard.isShowing) return;
+    this.adDue = false;
+    this.breakAd();
   }
 
   /** Poki asks for ESC (or space) to pause and resume. Space already presses the open overlay's button in the other scenes; here ESC does both. */
