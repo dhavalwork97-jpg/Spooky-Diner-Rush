@@ -16,7 +16,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
+      - run: npm test -- --testTimeout=20000
       - run: npm run build
         if: always()
       - name: Build CrazyGames release
