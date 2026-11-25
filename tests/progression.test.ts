@@ -181,3 +181,20 @@ describe('the model draws customer types from the level weights', () => {
     expect(seen.critic).toBeGreaterThan(0);
   });
 });
+
+describe('diner-only late ramp', () => {
+  it('makes the diner harder from Lv 11 but leaves the shared table (Taco Truck, Pizza Place) alone', async () => {
+    const { defaultConfig, levelDef, dinerLevelDef } = await import('../src/game/config');
+    const cfg = defaultConfig;
+    expect(dinerLevelDef(cfg, 10)).toEqual(levelDef(cfg, 10)); // Lv 1-10 unchanged
+    for (const lv of [11, 15, 20, 30]) {
+      const d = dinerLevelDef(cfg, lv);
+      const s = levelDef(cfg, lv);
+      expect(d.patience).toBeLessThan(s.patience);
+      expect(d.items).toEqual(s.items);
+    }
+    expect(dinerLevelDef(cfg, 11).maxCustomers).toBe(4);
+    expect(dinerLevelDef(cfg, 200).patience).toBe(22); // floor
+    expect(levelDef(cfg, 15).patience).toBe(33); // shared table untouched
+  });
+});

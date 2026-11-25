@@ -1,5 +1,5 @@
 import { advanceCook, burnWindowFor, cookPhase, isEdible, type CookPhase } from './cook';
-import { defaultConfig, levelDef, xpForLevel, type EventDef, type FriedKind, type GameConfig, type ItemKind } from './config';
+import { defaultConfig, dinerLevelDef, xpForLevel, type EventDef, type FriedKind, type GameConfig, type ItemKind } from './config';
 import { makeRng, randInt, randRange, type Rng } from './rng';
 import { dailySpecialFor, defaultExtras, tiersEarned, type Extras } from './extras';
 import { batBagCoins } from './spooky';
@@ -256,7 +256,7 @@ export class KitchenState {
     return xpForLevel(this.cfg, this.level);
   }
   get levelInfo() {
-    return levelDef(this.cfg, this.level);
+    return dinerLevelDef(this.cfg, this.level);
   }
   get layers(): string[] {
     return this.cfg.recipes.items.burger.layers ?? [];
