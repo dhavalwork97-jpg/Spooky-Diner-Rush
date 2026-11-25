@@ -98,7 +98,7 @@ export const LOOK_ART: Partial<Record<CustomerLook, LookArt>> = {
     calm: { key: 'blue_yeti_calm', file: 'assets/customers/blue_yeti/blue_yeti_calm.webp', frames: 24, size: 192, fps: 12, loop: true, footY: 181 / 192, scale: 1, lazy: true },
     upset: { key: 'blue_yeti_upset', file: 'assets/customers/blue_yeti/blue_yeti_upset.webp', frames: 32, size: 192, fps: 12, loop: true, footY: 181 / 192, scale: 1, lazy: true },
     angry: { key: 'blue_yeti_angry', file: 'assets/customers/blue_yeti/blue_yeti_angry.webp', frames: 31, size: 256, fps: 12, loop: true, footY: 232 / 256, scale: 1, lazy: true },
-    leaveHappy: { key: 'blue_yeti_happy', file: 'assets/customers/blue_yeti/blue_yeti_happy.webp', frames: 30, size: 256, fps: 12, loop: false, footY: 232 / 256, scale: 1, lazy: true },
+    leaveHappy: { key: 'blue_yeti_calm', file: 'assets/customers/blue_yeti/blue_yeti_calm.webp', frames: 24, size: 192, fps: 12, loop: false, footY: 181 / 192, scale: 1, lazy: true }, // the confetti / sparkle 'happy' sheet is no longer used: a happy leave plays the calm clip once, like a plain ghost
     leaveAngry: { key: 'blue_yeti_angry', file: 'assets/customers/blue_yeti/blue_yeti_angry.webp', frames: 31, size: 256, fps: 12, loop: false, footY: 232 / 256, scale: 1, lazy: true },
     bodyH: 159,
     bodyW: 130,
@@ -107,7 +107,7 @@ export const LOOK_ART: Partial<Record<CustomerLook, LookArt>> = {
     calm: { key: 'pink_fuzz_calm', file: 'assets/customers/pink_fuzz/pink_fuzz_calm.webp', frames: 28, size: 192, fps: 12, loop: true, footY: 181 / 192, scale: 1, lazy: true },
     upset: { key: 'pink_fuzz_upset', file: 'assets/customers/pink_fuzz/pink_fuzz_upset.webp', frames: 23, size: 192, fps: 12, loop: true, footY: 181 / 192, scale: 1, lazy: true },
     angry: { key: 'pink_fuzz_angry', file: 'assets/customers/pink_fuzz/pink_fuzz_angry.webp', frames: 18, size: 256, fps: 12, loop: true, footY: 232 / 256, scale: 1, lazy: true },
-    leaveHappy: { key: 'pink_fuzz_happy', file: 'assets/customers/pink_fuzz/pink_fuzz_happy.webp', frames: 20, size: 256, fps: 12, loop: false, footY: 232 / 256, scale: 1, lazy: true },
+    leaveHappy: { key: 'pink_fuzz_calm', file: 'assets/customers/pink_fuzz/pink_fuzz_calm.webp', frames: 28, size: 192, fps: 12, loop: false, footY: 181 / 192, scale: 1, lazy: true }, // the confetti / sparkle 'happy' sheet is no longer used: a happy leave plays the calm clip once, like a plain ghost
     leaveAngry: { key: 'pink_fuzz_angry', file: 'assets/customers/pink_fuzz/pink_fuzz_angry.webp', frames: 18, size: 256, fps: 12, loop: false, footY: 232 / 256, scale: 1, lazy: true },
     bodyH: 159,
     bodyW: 129,
@@ -116,7 +116,7 @@ export const LOOK_ART: Partial<Record<CustomerLook, LookArt>> = {
     calm: { key: 'mummy_ghost_calm', file: 'assets/customers/mummy_ghost/mummy_ghost_calm.webp', frames: 32, size: 192, fps: 12, loop: true, footY: 181 / 192, scale: 1, lazy: true },
     upset: { key: 'mummy_ghost_upset', file: 'assets/customers/mummy_ghost/mummy_ghost_upset.webp', frames: 28, size: 192, fps: 12, loop: true, footY: 181 / 192, scale: 1, lazy: true },
     angry: { key: 'mummy_ghost_angry', file: 'assets/customers/mummy_ghost/mummy_ghost_angry.webp', frames: 16, size: 256, fps: 12, loop: true, footY: 232 / 256, scale: 1, lazy: true },
-    leaveHappy: { key: 'mummy_ghost_happy', file: 'assets/customers/mummy_ghost/mummy_ghost_happy.webp', frames: 36, size: 256, fps: 12, loop: false, footY: 232 / 256, scale: 1, lazy: true },
+    leaveHappy: { key: 'mummy_ghost_calm', file: 'assets/customers/mummy_ghost/mummy_ghost_calm.webp', frames: 32, size: 192, fps: 12, loop: false, footY: 181 / 192, scale: 1, lazy: true }, // the confetti / sparkle 'happy' sheet is no longer used: a happy leave plays the calm clip once, like a plain ghost
     leaveAngry: { key: 'mummy_ghost_angry', file: 'assets/customers/mummy_ghost/mummy_ghost_angry.webp', frames: 16, size: 256, fps: 12, loop: false, footY: 232 / 256, scale: 1, lazy: true },
     bodyH: 159,
     bodyW: 150,
