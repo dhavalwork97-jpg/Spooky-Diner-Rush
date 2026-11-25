@@ -1,6 +1,6 @@
 import { SaveSystem } from './SaveSystem';
 import { makeThrottle } from './throttle';
-import { BAR, BEAT, CHORDS, LOOP_BARS, MELODY } from './calmMusic';
+import { BAR, LofiPlayer } from './lofiMusic';
 
 /**
  * All sound is synthesized with WebAudio, no files. The context is created and resumed
@@ -23,6 +23,7 @@ export class AudioSystem {
   private musicGain: GainNode | null = null;
   private fryNode: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
   private musicTimer: number | null = null;
+  private lofi: LofiPlayer | null = null;
   private musicBar = 0;
   private musicNext = 0;
 
@@ -65,7 +66,7 @@ export class AudioSystem {
     if (!this.master || !this.sfxGain || !this.musicGain) return;
     this.master.gain.value = s.muted ? 0 : 1;
     this.sfxGain.gain.value = s.sfxVolume;
-    this.musicGain.gain.value = s.musicVolume * 0.25;
+    this.musicGain.gain.value = s.musicVolume * 0.6;
   }
 
   setMuted(muted: boolean): void {
@@ -150,49 +151,28 @@ export class AudioSystem {
     this.fryNode.gain.gain.setTargetAtTime(Math.min(0.14, level * 0.07), this.ctx.currentTime, 0.1);
   }
 
-  /** Calm looping background music (data in calmMusic.ts): slow soft pads, a low note and a few quiet melody notes, scheduled just ahead on the audio clock. */
+  /** Soft lofi background music (src/systems/lofiMusic.ts): scheduled one bar at a time, just ahead on the audio clock, so it never stops or stutters. */
   startMusic(): void {
     if (!this.ctx || !this.musicGain || this.musicTimer !== null) return;
+    this.lofi ??= new LofiPlayer(this.ctx, this.musicGain);
+    this.lofi.startCrackle();
     this.musicBar = 0;
     this.musicNext = 0;
     this.musicTimer = window.setInterval(() => {
       const ctx = this.ctx;
-      if (!ctx || !this.musicGain || ctx.state !== 'running') return;
+      if (!ctx || !this.lofi || ctx.state !== 'running') return;
       if (this.musicNext < ctx.currentTime) this.musicNext = ctx.currentTime + 0.1; // late (tab was hidden): restart the bar cleanly
-      while (this.musicNext < ctx.currentTime + 2) {
-        this.scheduleBar(this.musicBar++ % LOOP_BARS, this.musicNext);
+      while (this.musicNext < ctx.currentTime + 2.5) {
+        this.lofi.scheduleBar(this.musicBar++, this.musicNext);
         this.musicNext += BAR;
       }
     }, 500);
   }
 
-  /** One soft note: slow fade in and out so nothing clicks or startles. */
-  private soft(freq: number, start: number, len: number, vol: number, type: OscillatorType = 'sine'): void {
-    if (!this.ctx || !this.musicGain) return;
-    const o = this.ctx.createOscillator();
-    const g = this.ctx.createGain();
-    o.type = type;
-    o.frequency.setValueAtTime(freq, start);
-    const attack = Math.min(0.9, len * 0.4);
-    g.gain.setValueAtTime(0.0001, start);
-    g.gain.exponentialRampToValueAtTime(vol, start + attack);
-    g.gain.exponentialRampToValueAtTime(0.0001, start + len);
-    o.connect(g).connect(this.musicGain);
-    o.start(start);
-    o.stop(start + len + 0.05);
-  }
-
-  private scheduleBar(bar: number, t: number): void {
-    const chord = CHORDS[bar % CHORDS.length];
-    this.soft(chord.bass, t, BAR * 1.05, 0.3);
-    for (const f of chord.pad) this.soft(f, t, BAR * 1.15, 0.12);
-    const line = MELODY[Math.floor(bar / CHORDS.length) % MELODY.length][bar % CHORDS.length];
-    for (const n of line) this.soft(n.freq, t + n.beat * BEAT, n.len * BEAT + 0.6, 0.18, 'triangle');
-  }
-
   stopMusic(): void {
     if (this.musicTimer !== null) window.clearInterval(this.musicTimer);
     this.musicTimer = null;
+    this.lofi?.stop();
   }
 
   pauseAll(): void {
