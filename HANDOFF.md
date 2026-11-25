@@ -1,3 +1,9 @@
+# IN PROGRESS (2026-11-25) - Faster early menu steps (Taco Truck + Pizza Place), branch feature/faster-early-menu (from main)
+Owner ask: early level-ups faster so the same single dish is not cooked many times. Finding: menu step 1 costs 1300 XP (global curve at Lv 15) with only 1 dish on the menu.
+Plan: new src/game/menuPace.ts with EARLY_STEP_XP_SCALE [0.25,0.4,0.55,0.7,0.85] (steps 1-5; later steps unchanged); stepXpNeeded (taco) and pizzaStepXpNeeded use it.
+Global Lv/XP/coins curve, diner, ads and rewards are NOT touched. pizzaMilestones is derived so it follows. Tests: new menuPace test; fix any exact-value tests.
+Steps done so far: DONE. menuPace.ts + tests (menu_pace.test.ts), taco_menu test updated; full suite green. Scales [0.3,0.5,0.7,0.85,1] (0.25-0.4 for step 1 failed the Taco bot close-rate test). To transfer: cherry-pick to release/poki, android-two-provider with owner approval.
+
 # STATUS (2026-11-23) - ALL spec parts done on feature/pizza-place (A1-A7, C, B1-B8, D, E, G). Final regression table is at the end of docs/progress.md. Nothing in progress. Not merged to main (needs owner approval).
 
 

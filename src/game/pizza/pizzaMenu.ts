@@ -1,4 +1,5 @@
 import { xpForLevel, type GameConfig } from '../config';
+import { menuStepXp } from '../menuPace';
 import type { TacoRamp } from '../taco/tacoConfig';
 import type { PizzaConfig } from './pizzaConfig';
 
@@ -16,8 +17,8 @@ export function clampPizzaStep(step: number): number {
 }
 export const pizzaLevelForStep = (step: number): number => PIZZA_LEVEL_BASE + clampPizzaStep(step);
 
-/** XP to climb from this step to the next: the global curve's amount at the matching Lv. */
-export const pizzaStepXpNeeded = (cfg: GameConfig, step: number): number => xpForLevel(cfg, pizzaLevelForStep(step));
+/** XP to climb from this step to the next: the global curve's amount at the matching Lv, made smaller for the first steps (see menuPace.ts). */
+export const pizzaStepXpNeeded = (cfg: GameConfig, step: number): number => menuStepXp(cfg, clampPizzaStep(step), pizzaLevelForStep(step));
 
 export function pizzaRampFor(p: PizzaConfig, step: number): TacoRamp {
   const s = clampPizzaStep(step);

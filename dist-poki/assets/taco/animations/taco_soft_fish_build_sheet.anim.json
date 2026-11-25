@@ -1,0 +1,23 @@
+{
+ "key": "taco_soft_fish_build",
+ "image": "taco_soft_fish_build_sheet.webp",
+ "frameWidth": 218,
+ "frameHeight": 223,
+ "columns": 4,
+ "rows": 1,
+ "frameCount": 4,
+ "frameLabels": [
+  "shell",
+  "fish",
+  "shredded_cabbage",
+  "lime"
+ ],
+ "anchorPx": {
+  "x": 109,
+  "y": 215
+ },
+ "originX": 0.5,
+ "originY": 0.9641,
+ "note": "Soft flour-tortilla taco. The last frame is the finished dish; sprites/taco_soft_<protein>.png is the same dish drawn larger (use the last frame to avoid a visual pop).",
+ "buildRule": "Show frame (k-1) after the player completes step k of the recipe. Frame 0 = just the soft shell, last frame = finished taco."
+}

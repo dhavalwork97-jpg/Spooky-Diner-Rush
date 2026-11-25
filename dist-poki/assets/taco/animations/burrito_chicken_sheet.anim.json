@@ -1,0 +1,27 @@
+{
+ "key": "burrito_chicken",
+ "image": "burrito_chicken_sheet.webp",
+ "frameWidth": 212,
+ "frameHeight": 186,
+ "columns": 7,
+ "rows": 1,
+ "frameCount": 7,
+ "suggestedFps": 2,
+ "frameLabels": [
+  "tortilla",
+  "fillings",
+  "sides_folded",
+  "end_folded",
+  "rolled",
+  "grilled_steaming",
+  "cut_in_half"
+ ],
+ "anchorPx": {
+  "x": 106,
+  "y": 175
+ },
+ "originX": 0.5,
+ "originY": 0.9409,
+ "anchorNote": "Anchor = bottom-centre of the food (steam rises above).",
+ "note": "Frames 1-7 are build steps. Frame 6 = pressed/grilled in a pan, frame 7 = cut (serve). The last frame is also exported as sprites/burrito_<protein>.png. A faint sparkle mark remains on the bottom-right of the veggie cut frame."
+}

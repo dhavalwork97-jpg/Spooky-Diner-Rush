@@ -12,9 +12,10 @@ describe('menu step helpers', () => {
     expect([clampStep(0), clampStep(1), clampStep(10), clampStep(99), clampStep(NaN)]).toEqual([1, 1, 10, 10, 1]);
     expect([stepFromLevel(1), stepFromLevel(15), stepFromLevel(20), stepFromLevel(30)]).toEqual([1, 1, 6, 10]);
   });
-  it('a step costs the same XP as the global curve at 14 + step, so the pace is unchanged', () => {
+  it('a step costs the global curve at 14 + step, made smaller for the first steps only', () => {
     expect(levelForStep(1)).toBe(15);
-    expect(stepXpNeeded(defaultConfig, 1)).toBe(xpForLevel(defaultConfig, 15));
+    expect(stepXpNeeded(defaultConfig, 1)).toBe(Math.round(xpForLevel(defaultConfig, 15) * 0.3));
+    expect(stepXpNeeded(defaultConfig, 5)).toBe(xpForLevel(defaultConfig, 19));
     expect(stepXpNeeded(defaultConfig, 9)).toBe(xpForLevel(defaultConfig, 23));
   });
   it('every step has a ramp, getting busier and never shrinking', () => {

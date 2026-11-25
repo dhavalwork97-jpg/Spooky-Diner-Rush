@@ -1,0 +1,97 @@
+{
+ "key": "pan_red_chicken",
+ "image": "pan_red_chicken_sheet.webp",
+ "frameWidth": 275,
+ "frameHeight": 359,
+ "columns": 4,
+ "rows": 7,
+ "frameCount": 26,
+ "frameLabels": [
+  "empty",
+  "raw_0_src0",
+  "raw_1_src1",
+  "raw_2_src2",
+  "raw_3_src3",
+  "raw_4_src4",
+  "raw_5_src6",
+  "raw_6_src7",
+  "mid_0_src8",
+  "mid_1_src9",
+  "mid_2_src10",
+  "mid_3_src11",
+  "mid_4_src13",
+  "mid_5_src14",
+  "mid_6_src15",
+  "mid_7_src12",
+  "cooked_0_src16",
+  "cooked_1_src19",
+  "cooked_2_src18",
+  "cooked_3_src20",
+  "cooked_4_src21",
+  "cooked_5_src22",
+  "cooked_6_src23",
+  "cooked_7_src17",
+  "burnt_0_from16",
+  "burnt_7_from17"
+ ],
+ "panBox": {
+  "x": 7,
+  "y": 160,
+  "w": 262,
+  "h": 181
+ },
+ "stir": {
+  "looks": [
+   "raw",
+   "mid",
+   "cooked",
+   "burnt"
+  ],
+  "loop": 8,
+  "fps": 10,
+  "empty": 0,
+  "clips": {
+   "raw": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    1
+   ],
+   "mid": [
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+   ],
+   "cooked": [
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23
+   ],
+   "burnt": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    25
+   ]
+  }
+ },
+ "note": "Pan and food drawn together; panBox is the pan (bowl and handle) in every frame. Each look in stir.clips is an 8-step stir/toss loop with the same timeline (rest, lift, up, peak, peak, falling, landing, rest); looks cross-fade step for step. Made by tools/make_stir_sheets.py."
+}

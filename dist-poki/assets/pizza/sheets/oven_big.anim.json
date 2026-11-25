@@ -1,0 +1,50 @@
+{
+ "key": "oven_big",
+ "image": "oven_big.webp",
+ "frameWidth": 289,
+ "frameHeight": 248,
+ "columns": 5,
+ "rows": 4,
+ "frameCount": 20,
+ "clips": {
+  "close": {
+   "from": 0,
+   "to": 9,
+   "fps": 18,
+   "loop": false
+  },
+  "open": {
+   "from": 10,
+   "to": 18,
+   "fps": 18,
+   "loop": false
+  }
+ },
+ "closedFrame": 9,
+ "openHoldFrame": 19,
+ "sourceFrame": [
+  482,
+  489
+ ],
+ "crop": {
+  "top": 0.15450643776824036,
+  "x": [
+   0.0,
+   1.0
+  ]
+ },
+ "slots": [
+  [
+   100.2,
+   155.4
+  ],
+  [
+   186.0,
+   155.4
+  ]
+ ],
+ "slotEllipse": [
+  75.6,
+  18.6
+ ]
+}

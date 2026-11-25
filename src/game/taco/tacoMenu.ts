@@ -1,4 +1,5 @@
-import { xpForLevel, type GameConfig } from '../config';
+import { type GameConfig } from '../config';
+import { menuStepXp } from '../menuPace';
 import type { TacoConfig, TacoRamp } from './tacoConfig';
 
 // The Taco Truck's own "menu step": which dishes are on the menu and how busy the truck is.
@@ -24,9 +25,9 @@ export function stepFromLevel(level: number): number {
   return clampStep(level - MENU_LEVEL_BASE);
 }
 
-/** XP to climb from this step to the next: the same amounts the global curve asks at Lv 15 onwards, so the pace does not change. */
+/** XP to climb from this step to the next: the global curve's amount at Lv 15 onwards, made smaller for the first steps (see menuPace.ts). */
 export function stepXpNeeded(cfg: GameConfig, step: number): number {
-  return xpForLevel(cfg, levelForStep(step));
+  return menuStepXp(cfg, clampStep(step), levelForStep(step));
 }
 
 export function rampFor(taco: TacoConfig, step: number): TacoRamp {
