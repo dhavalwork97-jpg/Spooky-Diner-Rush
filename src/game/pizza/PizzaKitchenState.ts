@@ -54,6 +54,13 @@ export interface PizzaOvenSlot {
   /** The board this pizza came from and returns to. */
   board: number;
 }
+/** How many small plates stand beside the ice cream machine. */
+export const PLATE_COUNT = 3;
+/** A ready side waiting on a plate (it does not burn there). */
+export interface PlatedDish {
+  dish: string;
+  perfect: boolean;
+}
 export interface TrayItem {
   t: number;
   phase: CookPhase;
@@ -100,7 +107,8 @@ export type PizzaEvent =
   | { type: 'discard'; where: 'board' | 'oven' | 'small' | 'fryer'; index: number; penalty: boolean }
   | { type: 'burnt'; where: 'oven' | 'small' | 'fryer'; index: number }
   | { type: 'arrive'; customer: number }
-  | { type: 'deliver'; customer: number; dish: string; itemIndex: number; from: 'board' | 'small' | 'fryer' | 'ice'; index: number }
+  | { type: 'deliver'; customer: number; dish: string; itemIndex: number; from: 'board' | 'small' | 'fryer' | 'ice' | 'plate'; index: number }
+  | { type: 'plated'; plate: number; dish: string; index: number }
   | { type: 'wrongDrop'; customer: number | null; penalty?: boolean }
   | { type: 'comboChanged'; combo: number; max: number; broken: boolean }
   | { type: 'eventStart'; id: string; name: string; duration: number }
@@ -149,6 +157,8 @@ export class PizzaKitchenState {
   /** The brick oven slots. */
   ovens: (PizzaOvenSlot | null)[];
   smallOven: (TrayItem | null)[];
+  /** The three small plates beside the ice cream machine: a ready side from the small oven waits here, safe from burning, until it is served. */
+  plates: (PlatedDish | null)[] = Array.from({ length: PLATE_COUNT }, () => null);
   fryer: (TrayItem | null)[];
   ice: (IceLane | null)[];
   customers: PizzaCustomer[] = [];
@@ -810,10 +820,41 @@ export class PizzaKitchenState {
       return true;
     }
     const c = this.receiver(t.dish, customerId);
-    if (!c) return false;
+    // Nobody ordered it (a plain tap): a side from the small oven goes onto a free plate instead of burning in the oven.
+    if (!c) return where === 'small' && customerId === undefined ? this.plateTray(index) : false;
     list[index] = null;
     const def = where === 'small' ? this.pizza.timed.side : this.dishDef(t.dish)?.basket === 1 ? this.pizza.timed.wings : this.pizza.timed.fries;
     this.deliverTo(c, t.dish, where, index, this.perfectNow(t.t, def));
+    return true;
+  }
+
+  /** Move a ready tray from the small oven onto the first free plate. */
+  private plateTray(index: number): boolean {
+    const t = this.smallOven[index];
+    if (!t || t.phase === 'cooking' || t.phase === 'burnt') return false;
+    const free = this.plates.findIndex((p) => !p);
+    if (free < 0) {
+      this.invalid('The plates are full');
+      return false;
+    }
+    this.plates[free] = { dish: t.dish, perfect: this.perfectNow(t.t, this.pizza.timed.side) };
+    this.smallOven[index] = null;
+    this.emit({ type: 'plated', plate: free, dish: t.dish, index });
+    return true;
+  }
+
+  tapPlate(plate: number): boolean {
+    return this.servePlate(plate);
+  }
+  /** Serve a plated side: to the oldest customer who ordered it, or to the one it was dragged to. */
+  servePlate(plate: number, customerId?: number): boolean {
+    if (this.closed) return false;
+    const p = this.plates[plate];
+    if (!p) return false;
+    const c = this.receiver(p.dish, customerId);
+    if (!c) return false;
+    this.plates[plate] = null;
+    this.deliverTo(c, p.dish, 'plate', plate, p.perfect);
     return true;
   }
 
@@ -1026,12 +1067,12 @@ export class PizzaKitchenState {
     return isPerfectBake(t, def.readyAfter, this.burnWindow(def.burnWindow), this.pizza.perfectBake.share);
   }
 
-  private deliverTo(c: PizzaCustomer, dish: string, from: 'board' | 'small' | 'fryer' | 'ice', index: number, perfect = false): void {
+  private deliverTo(c: PizzaCustomer, dish: string, from: 'board' | 'small' | 'fryer' | 'ice' | 'plate', index: number, perfect = false): void {
     const need = c.items.findIndex((k, i) => k === dish && !c.delivered[i]);
     c.delivered[need] = true;
     if (perfect) {
       c.perfectTips = (c.perfectTips ?? 0) + perfectTip(this.itemDef(dish).price, this.pizza.perfectBake.tipFraction, this.mods.tips);
-      if (from !== 'board') this.emit({ type: 'perfectBake', where: from === 'small' ? 'small' : 'fryer', index });
+      if (from !== 'board' && from !== 'plate') this.emit({ type: 'perfectBake', where: from === 'small' ? 'small' : 'fryer', index });
     }
     this.emit({ type: 'deliver', customer: c.id, dish, itemIndex: need, from, index });
     if (!isCustomId(dish)) this.countServe(dish); // custom pizzas are not recipes: nothing to learn or save
@@ -1183,6 +1224,7 @@ export class PizzaKitchenState {
     this.boards.forEach((b) => (b.item = null));
     this.ovens = this.ovens.map(() => null);
     this.smallOven = this.smallOven.map(() => null);
+    this.plates = this.plates.map(() => null);
     this.fryer = this.fryer.map(() => null);
     this.ice = this.ice.map(() => null);
     this.customers = [];

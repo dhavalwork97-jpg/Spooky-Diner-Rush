@@ -237,12 +237,13 @@ describe('small oven, fryer, ice cream', () => {
     expect(c.mood).toBe('happy');
     expect(k.smallOven[0]).toBeNull();
   });
-  it('a ready side nobody ordered stays in the oven', () => {
+  it('a ready side nobody ordered goes onto a plate when tapped (see pizza_plates.test.ts)', () => {
     const k = make();
     k.startSide('garlic_bread');
     k.update(7);
-    expect(k.tapSmallOven(0)).toBe(false);
-    expect(k.smallOven[0]).not.toBeNull();
+    expect(k.tapSmallOven(0)).toBe(true);
+    expect(k.smallOven[0]).toBeNull();
+    expect(k.plates.some((p) => p?.dish === 'garlic_bread')).toBe(true);
   });
   it('fries use basket 0 and wings basket 1, with independent timelines', () => {
     const k = make();

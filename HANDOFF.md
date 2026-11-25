@@ -4,6 +4,11 @@ Item 3 plan: data/choices.json (per restaurant 3 slots, 2 options each, effects 
 save field `choices` (key "restaurant:slot" -> option id); wrap mods at the 10 places mods are set (Game/Taco/Pizza scene create + after shop, ShopScene buys); ShopScene new 'Choices' tab (free to switch).
 Not touched: ads, reopen rewards, coin/XP economy numbers, upgrade prices. Tests: choices.test.ts.
 Steps done so far: DONE for Chef's Choice (choices.json, choices.ts, save field, 10 mods sites, Shop Choices tab, choices.test.ts; suite green 1020). Item 5: NOT added - events already exist (8 shared + taco own); adding shared events failed the Diner Lv10 pace sim and the "diner events untouched" guard, and Midnight Rush pushed the Taco bot close rate over 0.3. Needs owner decision + tuning.
+# IN PROGRESS (2026-11-25) - Pizza Place: ready side from the small oven goes onto the 3 plates, branch fix/pizza-small-oven-tap (from main)
+Owner report: a cooked item in the small oven only served if a customer had ordered it; otherwise tapping did nothing and it burned. Wanted: tap it and it moves to the 3 small plates beside the ice cream machine.
+Plan: state `plates` (3 slots, no burn) + tapTray('small'): ready -> serve if a customer ordered it, else put on a free plate; tapPlate/servePlate; zones plate_0..2 (action 'plate');
+drag from a plate to a customer; PizzaViews draws the dish on its plate; reopen clears plates; tests. Fryer unchanged (offer later). No economy/ads change.
+Steps done so far: DONE. plates state + zones plate_0..2 + view + drag + tutorial hint + tests (pizza_plates.test.ts); full suite green (1015); headless real-tap check OK. Fryer baskets unchanged.
 
 # IN PROGRESS (2026-11-25) - Faster early menu steps (Taco Truck + Pizza Place), branch feature/faster-early-menu (from main)
 Owner ask: early level-ups faster so the same single dish is not cooked many times. Finding: menu step 1 costs 1300 XP (global curve at Lv 15) with only 1 dish on the menu.

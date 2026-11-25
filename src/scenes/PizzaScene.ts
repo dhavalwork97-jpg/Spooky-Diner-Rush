@@ -43,7 +43,7 @@ const TAP_SLOP = 0.025;
 const PIZZA_INTRO_ID = 'pizza_intro_seen';
 
 /** A ready dish being dragged to a customer. `from` says where it comes from, so the model serves the right thing. */
-type DragFrom = { kind: 'board'; index: number } | { kind: 'small' | 'fryer'; index: number } | { kind: 'ice'; index: number };
+type DragFrom = { kind: 'board'; index: number } | { kind: 'small' | 'fryer'; index: number } | { kind: 'ice'; index: number } | { kind: 'plate'; index: number };
 type Drag = { from: DragFrom; img: Phaser.GameObjects.Image; home: { x: number; y: number }; tx: number; ty: number; sx: number; sy: number; moved: boolean; zone: PizzaZone };
 
 /**
@@ -254,6 +254,10 @@ export class PizzaScene extends Phaser.Scene {
         if (e.type === 'burnt') this.toast.show('Burnt! Tap to throw it away');
         break;
       }
+      case 'plated':
+        audio.play('pop');
+        this.toast.show('On the plate. Tap it, or drag it to a customer');
+        break;
       case 'deliver': {
         const at = this.customers.centerOf(e.customer);
         if (at) this.fx.burst(at.x, at.y, 0xffffff, 6, 26, 320);
@@ -557,6 +561,11 @@ export class PizzaScene extends Phaser.Scene {
       const d = t && edible(t.phase) ? s.dishDef(t.dish) : undefined;
       return d ? { from: { kind: 'fryer', index: z.index ?? 0 }, frame: iconFrame(d) } : null;
     }
+    if (z.action === 'plate') {
+      const p = s.plates[z.index ?? 0];
+      const d = p ? s.dishDef(p.dish) : undefined;
+      return d ? { from: { kind: 'plate', index: z.index ?? 0 }, frame: iconFrame(d) } : null;
+    }
     if (z.action === 'ice') {
       const i = s.ice.findIndex((l) => l && l.phase === 'ready');
       const d = i >= 0 ? s.dishes.find((x) => x.kind === 'dessert') : undefined;
@@ -597,6 +606,7 @@ export class PizzaScene extends Phaser.Scene {
     const s = this.state;
     if (from.kind === 'board') return s.serveBoard(from.index, customerId);
     if (from.kind === 'ice') return s.serveIce(from.index, customerId);
+    if (from.kind === 'plate') return s.servePlate(from.index, customerId);
     return s.serveTray(from.kind, from.index, customerId);
   }
 
