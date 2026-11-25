@@ -1,3 +1,10 @@
+# IN PROGRESS (2026-11-25) - Chef's Choice (pick-one perks) + 2 new short events, branch feature/chefs-choice (from main)
+Owner approved ideas 3 and 5. Findings: surprise events ALREADY exist (8 shared in data/events.json + Taco/Pizza own); so item 5 = 2 data-only events (Midnight Rush, Golden Hour).
+Item 3 plan: data/choices.json (per restaurant 3 slots, 2 options each, effects = multipliers on existing Mods keys); src/game/choices.ts (pure: unlock by Lv, pick, applyChoices, clean);
+save field `choices` (key "restaurant:slot" -> option id); wrap mods at the 10 places mods are set (Game/Taco/Pizza scene create + after shop, ShopScene buys); ShopScene new 'Choices' tab (free to switch).
+Not touched: ads, reopen rewards, coin/XP economy numbers, upgrade prices. Tests: choices.test.ts.
+Steps done so far: DONE for Chef's Choice (choices.json, choices.ts, save field, 10 mods sites, Shop Choices tab, choices.test.ts; suite green 1020). Item 5: NOT added - events already exist (8 shared + taco own); adding shared events failed the Diner Lv10 pace sim and the "diner events untouched" guard, and Midnight Rush pushed the Taco bot close rate over 0.3. Needs owner decision + tuning.
+
 # IN PROGRESS (2026-11-25) - Faster early menu steps (Taco Truck + Pizza Place), branch feature/faster-early-menu (from main)
 Owner ask: early level-ups faster so the same single dish is not cooked many times. Finding: menu step 1 costs 1300 XP (global curve at Lv 15) with only 1 dish on the menu.
 Plan: new src/game/menuPace.ts with EARLY_STEP_XP_SCALE [0.25,0.4,0.55,0.7,0.85] (steps 1-5; later steps unchanged); stepXpNeeded (taco) and pizzaStepXpNeeded use it.

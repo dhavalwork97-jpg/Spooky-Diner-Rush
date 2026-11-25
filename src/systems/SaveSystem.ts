@@ -1,3 +1,4 @@
+import { cleanPicks } from '../game/choices';
 import { dayNumber } from '../game/loginBonus';
 import { emptyDailyGoal, type DailyGoalState } from '../game/dailyGoal';
 import { seedMasteryPaid } from '../game/taco/tacoExtras';
@@ -35,6 +36,8 @@ export interface SaveData {
   loginStreak: number;
   /** Three-restaurant daily goal: the day, serves per restaurant and whether the reward was paid. Missing in older saves. */
   dailyGoal: DailyGoalState;
+  /** Chef's Choice perks picked in the Shop: "restaurant:slot" -> option id (see src/game/choices.ts). */
+  choices: Record<string, string>;
   /** The Taco Truck's own upgrades: upgrade id -> tier bought. Separate from `owned` (the diner's). */
   tacoOwned: Record<string, number>;
   /** Times each Taco Truck dish was served: decides when a new dish counts as learned. Saves from before this get every dish older than the current menu step as learned. */
@@ -99,6 +102,7 @@ export function defaultSave(): SaveData {
     lastLoginDay: '',
     loginStreak: 0,
     dailyGoal: emptyDailyGoal(),
+    choices: {},
     tacoOwned: {},
     tacoServed: {},
     tacoLessons: {},
@@ -232,6 +236,7 @@ export function parseSave(raw: string | null): SaveData {
       loginStreak: typeof p.loginStreak === 'number' && Number.isFinite(p.loginStreak) ? Math.min(100000, Math.max(0, Math.floor(p.loginStreak))) : 0,
       dailyGoal: cleanDailyGoal(p.dailyGoal),
       specialDay: typeof p.specialDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.specialDay) ? p.specialDay : '',
+      choices: cleanPicks(p.choices),
       tacoOwned: cleanOwned(p.tacoOwned),
       tacoServed: p.tacoServed === undefined ? seeded.served : cleanOwned(p.tacoServed),
       tacoLessons: p.tacoLessons === undefined ? seeded.lessons : cleanOwned(p.tacoLessons),

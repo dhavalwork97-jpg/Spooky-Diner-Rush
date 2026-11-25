@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { withChoices } from '../game/choices';
 import { DailyGoalPlate } from '../views/DailyGoalPlate';
 import { DailyGoalSystem } from '../systems/DailyGoalSystem';
 import { NO_PROGRESS } from '../game/dailyGoal';
@@ -151,7 +152,7 @@ export class GameScene extends Phaser.Scene {
     this.earnedSeen = 0;
     this.badgeQueue = [];
     this.badgeToastBusy = false;
-    this.state.mods = withDecorPerks(modsFor(this.state.cfg.upgrades.upgrades, save.owned), this.state.cfg.decor.items, save.decor);
+    this.state.mods = withChoices(withDecorPerks(modsFor(this.state.cfg.upgrades.upgrades, save.owned), this.state.cfg.decor.items, save.decor), 'diner', save.choices, this.state.level);
     if (debug) {
       const lv = Number(params.get('level'));
       if (lv >= 1) {
@@ -1316,7 +1317,7 @@ export class GameScene extends Phaser.Scene {
         const lines = [`+${c.coins} coins`];
         if (prize && !SaveSystem.data.decor.includes(prize.id)) {
           SaveSystem.data.decor = [...SaveSystem.data.decor, prize.id];
-          this.state.mods = withDecorPerks(modsFor(this.state.cfg.upgrades.upgrades, SaveSystem.data.owned), this.state.cfg.decor.items, SaveSystem.data.decor);
+          this.state.mods = withChoices(withDecorPerks(modsFor(this.state.cfg.upgrades.upgrades, SaveSystem.data.owned), this.state.cfg.decor.items, SaveSystem.data.decor), 'diner', SaveSystem.data.choices, this.state.level);
           this.syncDecor();
           lines.push(`${prize.name} for the wall!`);
         }

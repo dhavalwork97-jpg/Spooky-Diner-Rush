@@ -1,4 +1,5 @@
 import { pizzaMasteryDue, pizzaMasteryGrid, pizzaMasteryTiers, pizzaPaidAfter } from '../game/pizza/pizzaExtras';
+import { withChoices } from '../game/choices';
 import { DailyGoalPlate } from '../views/DailyGoalPlate';
 import { DailyGoalSystem } from '../systems/DailyGoalSystem';
 import { defaultExtras, localDateKey } from '../game/extras';
@@ -123,7 +124,7 @@ export class PizzaScene extends Phaser.Scene {
     const save = SaveSystem.data;
     this.state = new PizzaKitchenState({ level: save.level, xp: save.xp, coins: save.coins, menuStep: save.pizzaStep, menuXp: save.pizzaXp, pizzaServed: save.pizzaServed });
     // The Pizza Place uses its own upgrades only (the diner's and the truck's shop upgrades do not carry over).
-    this.state.mods = pizzaModsFor(defaultPizzaConfig.upgrades, save.pizzaOwned);
+    this.state.mods = withChoices(pizzaModsFor(defaultPizzaConfig.upgrades, save.pizzaOwned), 'pizza', save.choices, this.state.level);
     this.applyDebugFlags();
     this.dayKey = localDateKey();
     this.state.enableSpecial(this.dayKey, save.pizzaSpecialDay === this.dayKey);
@@ -657,7 +658,7 @@ export class PizzaScene extends Phaser.Scene {
     this.panelOpen = true;
     const onClose = () => {
       this.panelOpen = false;
-      this.state.mods = pizzaModsFor(defaultPizzaConfig.upgrades, SaveSystem.data.pizzaOwned); // a Shop purchase counts straight away
+      this.state.mods = withChoices(pizzaModsFor(defaultPizzaConfig.upgrades, SaveSystem.data.pizzaOwned), 'pizza', SaveSystem.data.choices, this.state.level); // a Shop purchase counts straight away
       this.scene.resume();
     };
     const data: RestaurantSelectData & RecipeBookData & { pizza?: { menuStep: number } } = {

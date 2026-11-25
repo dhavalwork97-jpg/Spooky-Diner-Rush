@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { withChoices } from '../game/choices';
 import { DailyGoalPlate } from '../views/DailyGoalPlate';
 import { DailyGoalSystem } from '../systems/DailyGoalSystem';
 import { startRestaurant } from './restaurantRoute';
@@ -145,7 +146,7 @@ export class TacoScene extends Phaser.Scene {
     const save = SaveSystem.data;
     this.state = new TacoKitchenState({ level: save.level, xp: save.xp, coins: save.coins, menuStep: save.tacoStep, menuXp: save.tacoXp, tacoServed: save.tacoServed });
     // The truck uses its own upgrades only (the diner's shop upgrades do not carry over).
-    this.state.mods = tacoModsFor(this.state.taco.upgrades, save.tacoOwned);
+    this.state.mods = withChoices(tacoModsFor(this.state.taco.upgrades, save.tacoOwned), 'taco', save.choices, this.state.level);
     this.applyDebugFlags();
 
     this.fx = new ParticlePool(this, 140);
@@ -757,7 +758,7 @@ export class TacoScene extends Phaser.Scene {
     this.panelOpen = true;
     const onClose = () => {
       this.panelOpen = false;
-      this.state.mods = tacoModsFor(this.state.taco.upgrades, SaveSystem.data.tacoOwned); // a Shop purchase counts straight away
+      this.state.mods = withChoices(tacoModsFor(this.state.taco.upgrades, SaveSystem.data.tacoOwned), 'taco', SaveSystem.data.choices, this.state.level); // a Shop purchase counts straight away
       this.scene.resume();
     };
     const data: RestaurantSelectData & RecipeBookData & { taco?: { menuStep: number } } = {
