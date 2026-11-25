@@ -67,6 +67,8 @@ export function nextPizzaHint(s: PizzaKitchenState, dishId?: string, p: PizzaCon
   }
 
   if (dish.kind === 'side') {
+    const plated = s.plates.findIndex((pl) => pl?.dish === dish.id);
+    if (plated >= 0) return tap(zoneId(p, 'plate', { index: plated }), 'It is on the plate! Tap it to serve', `plate:${plated}`);
     const i = s.smallOven.findIndex((t) => t?.dish === dish.id);
     if (i >= 0) {
       const t = s.smallOven[i]!;

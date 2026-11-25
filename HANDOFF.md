@@ -1,3 +1,9 @@
+# IN PROGRESS (2026-11-25) - Pizza Place: ready side from the small oven goes onto the 3 plates, branch fix/pizza-small-oven-tap (from main)
+Owner report: a cooked item in the small oven only served if a customer had ordered it; otherwise tapping did nothing and it burned. Wanted: tap it and it moves to the 3 small plates beside the ice cream machine.
+Plan: state `plates` (3 slots, no burn) + tapTray('small'): ready -> serve if a customer ordered it, else put on a free plate; tapPlate/servePlate; zones plate_0..2 (action 'plate');
+drag from a plate to a customer; PizzaViews draws the dish on its plate; reopen clears plates; tests. Fryer unchanged (offer later). No economy/ads change.
+Steps done so far: DONE. plates state + zones plate_0..2 + view + drag + tutorial hint + tests (pizza_plates.test.ts); full suite green (1015); headless real-tap check OK. Fryer baskets unchanged.
+
 # IN PROGRESS (2026-11-25) - Faster early menu steps (Taco Truck + Pizza Place), branch feature/faster-early-menu (from main)
 Owner ask: early level-ups faster so the same single dish is not cooked many times. Finding: menu step 1 costs 1300 XP (global curve at Lv 15) with only 1 dish on the menu.
 Plan: new src/game/menuPace.ts with EARLY_STEP_XP_SCALE [0.25,0.4,0.55,0.7,0.85] (steps 1-5; later steps unchanged); stepXpNeeded (taco) and pizzaStepXpNeeded use it.
