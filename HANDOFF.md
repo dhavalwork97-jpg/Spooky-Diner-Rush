@@ -1,3 +1,13 @@
+# IN PROGRESS (2026-11-25) - Music v2: soft lofi, continuous, louder (branch feature/calm-music, v1 already pushed)
+Owner: v1 'doesnt feel good, too low; wants soft lofi continuous instrumental'.
+Plan: replace calmMusic.ts with src/systems/lofiMusic.ts: pure data (8-bar loop, ~74 bpm swung, jazzy 9th chords) + LofiPlayer class (ctx, out): warm e-piano chords, soft bass, kick/snare/hat from noise, long pads (no gaps), light melody, vinyl crackle loop, lowpass + compressor bus. AudioSystem.startMusic uses it; music gain scale raised (measure with an offline render, target RMS ~4x v1). Still NO files shipped. Also render a preview WAV for the owner (outside the repo).
+Steps done so far: DONE. lofiMusic.ts (data + LofiPlayer), AudioSystem uses it, music gain scale 0.25 -> 0.6, bus gain 2.4. Offline render (Chromium): peak 0.51, RMS 0.065, quietest second 0.04 (no gaps). tests/lofi_music.test.ts replaces calm_music.test.ts; suite green 1031. Preview WAV (outside repo) sent to owner. Not listened to by me. Not merged.
+
+# IN PROGRESS (2026-11-25) - Calm gameplay music, branch feature/calm-music (from main)
+Owner ask: calm music for gameplay. Finding: music already exists (AudioSystem.startMusic = fast 280 ms triangle arpeggio, synthesized, no files, started in all 3 scenes, music button + musicVolume setting exist).
+Plan: NO new asset files (keeps APK/browser size, no licence risk). New pure data src/systems/calmMusic.ts (slow ~60 bpm chord pads + sparse soft melody, 8-bar loop); AudioSystem.startMusic schedules it ahead on the audio clock with soft attack/release; same start/stop/pause/volume/mute hooks. Tests: calmMusic.test.ts (tempo, range, loop) + existing audio tests.
+Steps done so far: DONE. calmMusic.ts (data) + AudioSystem.startMusic/soft/scheduleBar; tests/calm_music.test.ts. Headless Chromium: music schedules with no page errors (not listened to by ear). No new files. To transfer: cherry-pick to release/poki and android branches with owner approval.
+
 # IN PROGRESS (2026-11-25) - Chef's Choice (pick-one perks) + 2 new short events, branch feature/chefs-choice (from main)
 Owner approved ideas 3 and 5. Findings: surprise events ALREADY exist (8 shared in data/events.json + Taco/Pizza own); so item 5 = 2 data-only events (Midnight Rush, Golden Hour).
 Item 3 plan: data/choices.json (per restaurant 3 slots, 2 options each, effects = multipliers on existing Mods keys); src/game/choices.ts (pure: unlock by Lv, pick, applyChoices, clean);

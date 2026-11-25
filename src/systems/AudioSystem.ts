@@ -1,5 +1,6 @@
 import { SaveSystem } from './SaveSystem';
 import { makeThrottle } from './throttle';
+import { BAR, LofiPlayer } from './lofiMusic';
 
 /**
  * All sound is synthesized with WebAudio, no files. The context is created and resumed
@@ -22,7 +23,9 @@ export class AudioSystem {
   private musicGain: GainNode | null = null;
   private fryNode: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
   private musicTimer: number | null = null;
-  private step = 0;
+  private lofi: LofiPlayer | null = null;
+  private musicBar = 0;
+  private musicNext = 0;
 
   /** Call from any pointer or key handler. Safe to call repeatedly. */
   unlock(): void {
@@ -63,7 +66,7 @@ export class AudioSystem {
     if (!this.master || !this.sfxGain || !this.musicGain) return;
     this.master.gain.value = s.muted ? 0 : 1;
     this.sfxGain.gain.value = s.sfxVolume;
-    this.musicGain.gain.value = s.musicVolume * 0.25;
+    this.musicGain.gain.value = s.musicVolume * 0.6;
   }
 
   setMuted(muted: boolean): void {
@@ -148,21 +151,28 @@ export class AudioSystem {
     this.fryNode.gain.gain.setTargetAtTime(Math.min(0.14, level * 0.07), this.ctx.currentTime, 0.1);
   }
 
-  /** Simple looping background music: a four-bar arpeggio, scheduled in small steps. */
+  /** Soft lofi background music (src/systems/lofiMusic.ts): scheduled one bar at a time, just ahead on the audio clock, so it never stops or stutters. */
   startMusic(): void {
     if (!this.ctx || !this.musicGain || this.musicTimer !== null) return;
-    const notes = [262, 330, 392, 330, 294, 370, 440, 370, 262, 330, 392, 523, 349, 440, 523, 440];
+    this.lofi ??= new LofiPlayer(this.ctx, this.musicGain);
+    this.lofi.startCrackle();
+    this.musicBar = 0;
+    this.musicNext = 0;
     this.musicTimer = window.setInterval(() => {
-      if (!this.ctx || this.ctx.state !== 'running') return;
-      const f = notes[this.step++ % notes.length];
-      this.tone(f, 0.28, 'triangle', 0.5, 0, undefined, this.musicGain!);
-      if (this.step % 4 === 1) this.tone(f / 2, 0.5, 'sine', 0.4, 0, undefined, this.musicGain!);
-    }, 280);
+      const ctx = this.ctx;
+      if (!ctx || !this.lofi || ctx.state !== 'running') return;
+      if (this.musicNext < ctx.currentTime) this.musicNext = ctx.currentTime + 0.1; // late (tab was hidden): restart the bar cleanly
+      while (this.musicNext < ctx.currentTime + 2.5) {
+        this.lofi.scheduleBar(this.musicBar++, this.musicNext);
+        this.musicNext += BAR;
+      }
+    }, 500);
   }
 
   stopMusic(): void {
     if (this.musicTimer !== null) window.clearInterval(this.musicTimer);
     this.musicTimer = null;
+    this.lofi?.stop();
   }
 
   pauseAll(): void {
