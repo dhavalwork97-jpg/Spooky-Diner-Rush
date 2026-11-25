@@ -1,3 +1,8 @@
+# IN PROGRESS (2026-11-25) - Calm gameplay music, branch feature/calm-music (from main)
+Owner ask: calm music for gameplay. Finding: music already exists (AudioSystem.startMusic = fast 280 ms triangle arpeggio, synthesized, no files, started in all 3 scenes, music button + musicVolume setting exist).
+Plan: NO new asset files (keeps APK/browser size, no licence risk). New pure data src/systems/calmMusic.ts (slow ~60 bpm chord pads + sparse soft melody, 8-bar loop); AudioSystem.startMusic schedules it ahead on the audio clock with soft attack/release; same start/stop/pause/volume/mute hooks. Tests: calmMusic.test.ts (tempo, range, loop) + existing audio tests.
+Steps done so far: DONE. calmMusic.ts (data) + AudioSystem.startMusic/soft/scheduleBar; tests/calm_music.test.ts. Headless Chromium: music schedules with no page errors (not listened to by ear). No new files. To transfer: cherry-pick to release/poki and android branches with owner approval.
+
 # IN PROGRESS (2026-11-25) - Chef's Choice (pick-one perks) + 2 new short events, branch feature/chefs-choice (from main)
 Owner approved ideas 3 and 5. Findings: surprise events ALREADY exist (8 shared in data/events.json + Taco/Pizza own); so item 5 = 2 data-only events (Midnight Rush, Golden Hour).
 Item 3 plan: data/choices.json (per restaurant 3 slots, 2 options each, effects = multipliers on existing Mods keys); src/game/choices.ts (pure: unlock by Lv, pick, applyChoices, clean);

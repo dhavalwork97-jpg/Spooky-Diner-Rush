@@ -1,5 +1,6 @@
 import { SaveSystem } from './SaveSystem';
 import { makeThrottle } from './throttle';
+import { BAR, BEAT, CHORDS, LOOP_BARS, MELODY } from './calmMusic';
 
 /**
  * All sound is synthesized with WebAudio, no files. The context is created and resumed
@@ -22,7 +23,8 @@ export class AudioSystem {
   private musicGain: GainNode | null = null;
   private fryNode: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
   private musicTimer: number | null = null;
-  private step = 0;
+  private musicBar = 0;
+  private musicNext = 0;
 
   /** Call from any pointer or key handler. Safe to call repeatedly. */
   unlock(): void {
@@ -148,16 +150,44 @@ export class AudioSystem {
     this.fryNode.gain.gain.setTargetAtTime(Math.min(0.14, level * 0.07), this.ctx.currentTime, 0.1);
   }
 
-  /** Simple looping background music: a four-bar arpeggio, scheduled in small steps. */
+  /** Calm looping background music (data in calmMusic.ts): slow soft pads, a low note and a few quiet melody notes, scheduled just ahead on the audio clock. */
   startMusic(): void {
     if (!this.ctx || !this.musicGain || this.musicTimer !== null) return;
-    const notes = [262, 330, 392, 330, 294, 370, 440, 370, 262, 330, 392, 523, 349, 440, 523, 440];
+    this.musicBar = 0;
+    this.musicNext = 0;
     this.musicTimer = window.setInterval(() => {
-      if (!this.ctx || this.ctx.state !== 'running') return;
-      const f = notes[this.step++ % notes.length];
-      this.tone(f, 0.28, 'triangle', 0.5, 0, undefined, this.musicGain!);
-      if (this.step % 4 === 1) this.tone(f / 2, 0.5, 'sine', 0.4, 0, undefined, this.musicGain!);
-    }, 280);
+      const ctx = this.ctx;
+      if (!ctx || !this.musicGain || ctx.state !== 'running') return;
+      if (this.musicNext < ctx.currentTime) this.musicNext = ctx.currentTime + 0.1; // late (tab was hidden): restart the bar cleanly
+      while (this.musicNext < ctx.currentTime + 2) {
+        this.scheduleBar(this.musicBar++ % LOOP_BARS, this.musicNext);
+        this.musicNext += BAR;
+      }
+    }, 500);
+  }
+
+  /** One soft note: slow fade in and out so nothing clicks or startles. */
+  private soft(freq: number, start: number, len: number, vol: number, type: OscillatorType = 'sine'): void {
+    if (!this.ctx || !this.musicGain) return;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, start);
+    const attack = Math.min(0.9, len * 0.4);
+    g.gain.setValueAtTime(0.0001, start);
+    g.gain.exponentialRampToValueAtTime(vol, start + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + len);
+    o.connect(g).connect(this.musicGain);
+    o.start(start);
+    o.stop(start + len + 0.05);
+  }
+
+  private scheduleBar(bar: number, t: number): void {
+    const chord = CHORDS[bar % CHORDS.length];
+    this.soft(chord.bass, t, BAR * 1.05, 0.3);
+    for (const f of chord.pad) this.soft(f, t, BAR * 1.15, 0.12);
+    const line = MELODY[Math.floor(bar / CHORDS.length) % MELODY.length][bar % CHORDS.length];
+    for (const n of line) this.soft(n.freq, t + n.beat * BEAT, n.len * BEAT + 0.6, 0.18, 'triangle');
   }
 
   stopMusic(): void {
