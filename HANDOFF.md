@@ -1,3 +1,6 @@
+# DONE, awaiting owner review (2026-11-26) - Ghost swap: removed blue_yeti, pink_fuzz, mummy_ghost; added lilac_ghost (branch recovery/1.0, M2 = e7e1842)
+Done: art in public/assets/customers/lilac_ghost (calm = curious, upset = tired, angry = angry, happy leave = laughing; 466 KB total vs 4.6 MB before), tools/make_lilac_ghost_art.py, customerMotion.ts, KitchenState (look count 10, unlock Lv 1 and 3), data/assets.json, tests. tsc clean, vitest 1049 passed, build OK. Browser check at Lv 4: calm, tired and angry clips show, same size as the mint ghost, no console errors. NOT seen live: the happy-leave (laughing) clip. Unused supplied sheets (sad, shocked, confused, excited, loving) are not shipped; the originals are in the owner's zip. Next: M3 UI, M4 analytics, M5 perf, M6 regression. No merge to main.
+
 # DONE, awaiting owner review (2026-11-26) - Recovery 1.0 M2: smooth XP + Pizza Place unlock Lv 30 -> 20 (branch recovery/1.0, M1 = 003eded)
 Done: data/xp.json levelXp table Lv 1-15 (src/game/config.ts xpForLevel, validate.ts), data/pizza.json unlockLevel 20, tests (progression smooth-curve tests, xp_validate, pizza_data, xp_pace report). Numbers: docs/RECOVERY_M2_PACE.md. tsc clean, vitest 1053 passed, build OK. Next: owner reviews; M3 UI (recipe book, next unlock, level-complete info), M4 on-device analytics, M5 perf, M6 regression. No merge to main.
 

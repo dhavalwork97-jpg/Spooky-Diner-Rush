@@ -136,15 +136,14 @@ export interface SaveSlice {
 }
 
 /** Number of supplied customer characters (cosmetic). A test keeps this equal to `CUSTOMER_LOOKS` in anim/customerMotion.ts. */
-export const CUSTOMER_LOOK_COUNT = 12;
+export const CUSTOMER_LOOK_COUNT = 10;
 /** First look that can spawn. Looks 0-7 are the people (their art is blank now), 8 on are the ghosts; customers are ghosts only for now (set to 0 to mix people back in). */
 export const CUSTOMER_LOOK_MIN = 8;
 /**
- * The diner Lv at which each look from CUSTOMER_LOOK_MIN on can first walk in, in CUSTOMER_LOOKS order: the mint ghost from the start, then the blue yeti,
- * the pink fuzz and the mummy ghost. They arrive one at a time so the first minutes stay simple and their art (about 70 MB of texture in all) is only
- * fetched once it is needed. A test keeps this the same length as the ghosts in CUSTOMER_LOOKS.
+ * The diner Lv at which each look from CUSTOMER_LOOK_MIN on can first walk in, in CUSTOMER_LOOKS order: the mint ghost from the start, then the lilac ghost
+ * at Lv 3. It arrives later so the first minutes stay simple and its art (about 14 MB of texture, under 0.5 MB of files) is only fetched once it is needed. A test keeps this the same length as the ghosts in CUSTOMER_LOOKS.
  */
-export const LOOK_UNLOCK_LEVELS: readonly number[] = [1, 3, 5, 7];
+export const LOOK_UNLOCK_LEVELS: readonly number[] = [1, 3];
 /** The highest look number that can spawn at this diner Lv. Always at least CUSTOMER_LOOK_MIN. */
 export function maxLookForLevel(level: number): number {
   let max = CUSTOMER_LOOK_MIN;

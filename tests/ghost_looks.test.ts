@@ -5,9 +5,9 @@ import { CUSTOMER_LOOKS, LOOK_ART, PERSONALITIES, type LookArt } from '../src/an
 import { CUSTOMER_LOOK_MIN, LOOK_UNLOCK_LEVELS } from '../src/game/KitchenState';
 import { LOOK_PREFETCH_LEVELS, extraLooksAllowed, loadGhostLooks, lookIsReady, looksToLoad } from '../src/views/ghostArt';
 
-// The blue yeti, pink fuzz and mummy ghost (ghost customers pack, 2026-11-21): art data, lazy loading and the safe fallback.
+// The lilac ghost (ghost emotion sheets, 2026-11-26; it replaced the blue yeti, pink fuzz and mummy ghost): art data, lazy loading and the safe fallback.
 
-const NEW = ['blue_yeti', 'pink_fuzz', 'mummy_ghost'] as const;
+const NEW = ['lilac_ghost'] as const;
 type Meta = { frames: number; columns: number; frameWidth: number; frameHeight: number; fps: number; loop: boolean; bodyTop: number; bodyBottom: number; bodyHeight: number; bodyWidth: number; edgeAlpha: number };
 const meta = import.meta.glob('../public/assets/customers/*/*.anim.json', { eager: true, import: 'default' }) as Record<string, Meta>;
 const webp = import.meta.glob('../public/assets/customers/*/*.webp', { query: '?url', import: 'default' });
@@ -15,7 +15,7 @@ const assets = assetsJson.assets as { key: string; type: string; file: string; f
 const sidecar = (file: string): Meta => meta[`../public/${file.replace('.webp', '.anim.json')}`];
 const clipsOf = (a: LookArt) => ({ calm: a.calm, upset: a.upset, angry: a.angry, happy: a.leaveHappy });
 
-describe('new ghost customers: art data matches the shipped files', () => {
+describe('lilac ghost: art data matches the shipped files', () => {
   for (const name of NEW) {
     it(`${name}: every clip's frames, size, loop, foot line and body size match its sidecar file`, () => {
       const art = LOOK_ART[name]!;
@@ -64,33 +64,31 @@ describe('new ghost customers: art data matches the shipped files', () => {
     });
   }
   it('nothing the new customers need is loaded at boot, and their files stay within the budget', () => {
-    const boot = assets.filter((a) => !a.lazy && /\/(blue_yeti|pink_fuzz|mummy_ghost)\//.test(a.file));
+    const boot = assets.filter((a) => !a.lazy && /\/lilac_ghost\//.test(a.file));
+    expect(assets.some((a) => /\/(blue_yeti|pink_fuzz|mummy_ghost)\//.test(a.file)), 'the removed ghosts are gone from the asset list').toBe(false);
     expect(boot).toEqual([]);
     let total = 0;
     for (const name of NEW) for (const clip of Object.values(clipsOf(LOOK_ART[name]!))) total += statSync(`public/${clip.file}`).size;
-    expect(total / 1048576).toBeLessThan(5); // 4.6 MB as supplied
+    expect(total / 1048576).toBeLessThan(1); // about 0.5 MB for the four clips
   });
-  it('their personalities are sensible: yeti and fuzz stand on the floor, mummy floats without an extra bob', () => {
+  it('its personality is sensible: it floats above the stool with a small extra bob', () => {
     for (const n of NEW) {
       const p = PERSONALITIES[n];
       expect(p.breath).toBeLessThan(0.02);
       expect(p.hearts).toBeGreaterThan(0);
     }
-    expect(PERSONALITIES.blue_yeti.ghost).toBeUndefined();
-    expect(PERSONALITIES.pink_fuzz.ghost).toBeUndefined();
-    expect(PERSONALITIES.mummy_ghost.ghost).toEqual({ hover: 3, bob: 0, bobMs: 2600 });
+    expect(PERSONALITIES.lilac_ghost.ghost).toEqual({ hover: 3, bob: 2, bobMs: 2800 });
   });
 });
 
-describe('new ghost customers: loading schedule', () => {
-  it('nothing extra is due in the first levels, then one look at a time, one Lv before it can appear', () => {
+describe('lilac ghost: loading schedule', () => {
+  it('nothing extra is due in the first levels, then the lilac ghost, one Lv before it can appear (it walks in at Lv 3)', () => {
     expect(LOOK_PREFETCH_LEVELS).toBe(1);
     expect(looksToLoad(1)).toEqual([]); // the first minutes download nothing extra
-    expect(looksToLoad(2)).toEqual(['blue_yeti']); // the yeti walks in at Lv 3
-    expect(looksToLoad(3)).toEqual(['blue_yeti']);
-    expect(looksToLoad(4)).toEqual(['blue_yeti', 'pink_fuzz']);
-    expect(looksToLoad(6)).toEqual(['blue_yeti', 'pink_fuzz', 'mummy_ghost']);
-    expect(looksToLoad(40)).toEqual(['blue_yeti', 'pink_fuzz', 'mummy_ghost']);
+    expect(looksToLoad(2)).toEqual(['lilac_ghost']);
+    expect(looksToLoad(3)).toEqual(['lilac_ghost']);
+    expect(looksToLoad(40)).toEqual(['lilac_ghost']);
+    expect(LOOK_UNLOCK_LEVELS).toEqual([1, 3]);
     // never a look before it is due, and the mint ghost is not in this list (it loads with the game)
     for (let lv = 1; lv <= 12; lv++) for (const n of looksToLoad(lv)) expect(LOOK_UNLOCK_LEVELS[CUSTOMER_LOOKS.indexOf(n as (typeof CUSTOMER_LOOKS)[number]) - CUSTOMER_LOOK_MIN]).toBeLessThanOrEqual(lv + LOOK_PREFETCH_LEVELS);
   });
@@ -122,9 +120,9 @@ function fakeScene(have: string[] = []) {
   };
 }
 
-describe('new ghost customers: loader and fallback', () => {
+describe('lilac ghost: loader and fallback', () => {
   it('lookIsReady is true only when calm, waiting and angry are all in memory', () => {
-    const art = LOOK_ART.blue_yeti!;
+    const art = LOOK_ART.lilac_ghost!;
     expect(lookIsReady(fakeScene().scene, art)).toBe(false);
     expect(lookIsReady(fakeScene([art.calm.key, art.upset.key]).scene, art)).toBe(false);
     expect(lookIsReady(fakeScene([art.calm.key, art.upset.key, art.angry.key]).scene, art)).toBe(true);
@@ -134,9 +132,9 @@ describe('new ghost customers: loader and fallback', () => {
     loadGhostLooks(f.scene, 1);
     expect(f.loaded).toEqual([]);
     expect(f.started()).toBe(0);
-    loadGhostLooks(f.scene, 6);
+    loadGhostLooks(f.scene, 2);
     const keys = f.loaded.map((l) => l.key).sort();
-    expect(keys).toEqual(['blue_yeti_angry', 'blue_yeti_calm', 'blue_yeti_upset', 'mummy_ghost_angry', 'mummy_ghost_calm', 'mummy_ghost_upset', 'pink_fuzz_angry', 'pink_fuzz_calm', 'pink_fuzz_upset']);
+    expect(keys).toEqual(['lilac_ghost_angry', 'lilac_ghost_calm', 'lilac_ghost_upset']);
     expect(f.loaded.some((l) => /_happy$/.test(l.key))).toBe(false); // the happy clip is fetched when a customer needs it
     for (const l of f.loaded) {
       const clip = Object.values(clipsOf(LOOK_ART[l.key.replace(/_(calm|upset|angry)$/, '') as (typeof NEW)[number]]!)).find((c) => c.key === l.key)!;
@@ -150,20 +148,20 @@ describe('new ghost customers: loader and fallback', () => {
     const f = fakeScene();
     loadGhostLooks(f.scene, 8);
     const first = f.loaded.length;
-    expect(first).toBe(9);
+    expect(first).toBe(3);
     loadGhostLooks(f.scene, 9);
     expect(f.loaded.length).toBe(first);
     f.shutdown();
   });
   it('leaving the scene mid-download: clips that did not arrive are asked for again on the next visit, clips that arrived are not', () => {
     const f = fakeScene();
-    loadGhostLooks(f.scene, 4); // yeti and fuzz due
-    expect(f.loaded).toHaveLength(6);
-    f.arrive('blue_yeti_calm', 'blue_yeti_upset', 'blue_yeti_angry'); // the yeti made it, the fuzz did not
+    loadGhostLooks(f.scene, 4); // the lilac ghost is due
+    expect(f.loaded).toHaveLength(3);
+    f.arrive('lilac_ghost_calm'); // the calm clip made it, the other two did not
     f.shutdown();
-    const again = fakeScene(['blue_yeti_calm', 'blue_yeti_upset', 'blue_yeti_angry']); // textures stay in memory between scenes
+    const again = fakeScene(['lilac_ghost_calm']); // textures stay in memory between scenes
     loadGhostLooks(again.scene, 4);
-    expect(again.loaded.map((l) => l.key).sort()).toEqual(['pink_fuzz_angry', 'pink_fuzz_calm', 'pink_fuzz_upset']);
+    expect(again.loaded.map((l) => l.key).sort()).toEqual(['lilac_ghost_angry', 'lilac_ghost_upset']);
     again.shutdown();
   });
   it('a device that reports less than 4 GB of memory keeps the mint ghost only; one that does not report it gets everything', () => {

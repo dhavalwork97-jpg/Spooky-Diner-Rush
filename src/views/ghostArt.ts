@@ -3,8 +3,8 @@ import { CUSTOMER_LOOKS, LOOK_ART, type LookArt } from '../anim/customerMotion';
 import { CUSTOMER_LOOK_MIN, LOOK_UNLOCK_LEVELS } from '../game/KitchenState';
 
 /**
- * Background loading for the ghosts that join the diner after the mint ghost (blue yeti, pink fuzz, mummy ghost). Nothing here runs at boot: the art is
- * fetched while the player is one Lv away from meeting each one, so the first minutes download nothing extra (about 4.6 MB of files and 70 MB of texture
+ * Background loading for the ghosts that join the diner after the mint ghost (the lilac ghost). Nothing here runs at boot: the art is
+ * fetched while the player is one Lv away from meeting each one, so the first minutes download nothing extra (about 0.5 MB of files and 14 MB of texture
  * in all). Only the three looping clips are loaded here; the happy clip is requested by the customer view, like the mint ghost's leave clips.
  * A customer whose art has not arrived is drawn as the mint ghost (see `lookIsReady`), so a slow or failed download never breaks the game.
  */
