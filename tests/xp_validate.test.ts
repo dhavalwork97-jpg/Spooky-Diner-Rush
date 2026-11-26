@@ -26,3 +26,17 @@ describe('validateXp', () => {
     expect(validateXp({ base: 100, perLevel: 80, firstLevelXp: 500 })).toHaveLength(1);
   });
 });
+
+describe('levelXp table', () => {
+  it('accepts a rising list of whole numbers', () => {
+    expect(validateXp({ base: 100, perLevel: 80, levelXp: [100, 220, 250] })).toEqual([]);
+  });
+  it('rejects an empty list, a non-list, bad numbers and any dip or repeat', () => {
+    expect(validateXp({ base: 100, perLevel: 80, levelXp: [] })).toHaveLength(1);
+    expect(validateXp({ base: 100, perLevel: 80, levelXp: 'x' })).toHaveLength(1);
+    expect(validateXp({ base: 100, perLevel: 80, levelXp: [100, 0] })).not.toEqual([]);
+    expect(validateXp({ base: 100, perLevel: 80, levelXp: [100, 90.5] })).not.toEqual([]);
+    expect(validateXp({ base: 100, perLevel: 80, levelXp: [100, 260, 250] })).toHaveLength(1);
+    expect(validateXp({ base: 100, perLevel: 80, levelXp: [100, 100] })).toHaveLength(1);
+  });
+});

@@ -109,12 +109,18 @@ describe('scaling after Lv 20', () => {
 });
 
 describe('xp curve for the later levels', () => {
+  // These tests describe the formula curve (data/xp.json without the levelXp table), which still sets every level after the table.
+  const formula = { ...cfg, xp: { ...cfg.xp, levelXp: undefined } };
   const early = cfg.xp.earlyUntilLevel!;
-  it('keeps rising by a fixed step from the end of the gentle early part on', () => {
-    for (let n = early + 1; n < 40; n++) expect(xpForLevel(cfg, n + 1) - xpForLevel(cfg, n)).toBe(cfg.xp.perLevel);
+  const tableEnd = cfg.xp.levelXp!.length;
+  it('keeps rising by a fixed step once the table ends', () => {
+    for (let n = tableEnd + 1; n < 40; n++) expect(xpForLevel(cfg, n + 1) - xpForLevel(cfg, n)).toBe(cfg.xp.perLevel);
   });
-  it('Lv 2 and every level after the early part keep the original curve', () => {
-    for (const n of [2, early + 1, early + 2, 20, 40]) expect(xpForLevel(cfg, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
+  it('the table ends exactly on the formula curve, so Lv 15 and later (Taco and Pizza menu steps) cost what they always did', () => {
+    for (let n = tableEnd; n <= 40; n++) expect(xpForLevel(cfg, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
+  });
+  it('the formula curve: Lv 2 and every level after the early part keep the original curve', () => {
+    for (const n of [2, early + 1, early + 2, 20, 40]) expect(xpForLevel(formula, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
   });
   it('only the very first level-up is cheaper (firstLevelXp), so it lands inside the first minute', () => {
     expect(cfg.xp.firstLevelXp).toBe(100);
@@ -124,24 +130,51 @@ describe('xp curve for the later levels', () => {
     const fries = cfg.recipes.items.fries.xp;
     expect(Math.ceil(xpForLevel(cfg, 1) / fries)).toBeLessThanOrEqual(5);
   });
-  it('without firstLevelXp Lv 1 keeps the original cost', () => {
-    const plain = { ...cfg, xp: { ...cfg.xp, firstLevelXp: undefined } };
+  it('without firstLevelXp (and the table) Lv 1 keeps the original cost', () => {
+    const plain = { ...formula, xp: { ...formula.xp, firstLevelXp: undefined } };
     expect(xpForLevel(plain, 1)).toBe(cfg.xp.base + cfg.xp.perLevel);
   });
-  it('Lv 3 to the early limit use the gentler slope and never cost more than before', () => {
+  it('the formula curve: Lv 3 to the early limit use the gentler slope and never cost more than before', () => {
     expect(cfg.xp.earlyPerLevel).toBe(50);
     expect(early).toBe(8);
     for (let n = 3; n <= early; n++) {
-      expect(xpForLevel(cfg, n)).toBe(cfg.xp.base + 50 * n);
-      expect(xpForLevel(cfg, n)).toBeLessThan(cfg.xp.base + cfg.xp.perLevel * n);
+      expect(xpForLevel(formula, n)).toBe(cfg.xp.base + 50 * n);
+      expect(xpForLevel(formula, n)).toBeLessThan(cfg.xp.base + cfg.xp.perLevel * n);
     }
-    for (let n = 3; n < early; n++) expect(xpForLevel(cfg, n + 1) - xpForLevel(cfg, n)).toBe(50);
-    // The step back onto the normal curve at Lv 9 is the one visible jump: the catch-up for the 990 XP saved in Lv 3-8.
-    expect(xpForLevel(cfg, early + 1) - xpForLevel(cfg, early)).toBe(cfg.xp.base + cfg.xp.perLevel * (early + 1) - (cfg.xp.base + 50 * early));
   });
-  it('without the early settings the curve is the plain linear one', () => {
-    const plain = { ...cfg, xp: { ...cfg.xp, earlyPerLevel: undefined, earlyUntilLevel: undefined } };
-    for (let n = 1; n < 30; n++) expect(xpForLevel({ ...plain, xp: { ...plain.xp, firstLevelXp: undefined } }, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
+  it('without the early settings or the table the curve is the plain linear one', () => {
+    const plain = { ...cfg, xp: { ...cfg.xp, levelXp: undefined, earlyPerLevel: undefined, earlyUntilLevel: undefined, firstLevelXp: undefined } };
+    for (let n = 1; n < 30; n++) expect(xpForLevel(plain, n)).toBe(cfg.xp.base + cfg.xp.perLevel * n);
+  });
+});
+
+describe('smooth xp curve (Recovery M2)', () => {
+  const costs = Array.from({ length: 40 }, (_, i) => xpForLevel(cfg, i + 1));
+  it('never gets cheaper from one level to the next (no dips)', () => {
+    for (let n = 1; n < costs.length; n++) expect(costs[n], `Lv ${n + 1}`).toBeGreaterThan(costs[n - 1]);
+  });
+  it('no level costs more than 25% extra over the level before it, after the first step (was +64% at Lv 9)', () => {
+    for (let n = 2; n < costs.length; n++) expect(costs[n] / costs[n - 1], `Lv ${n + 1}`).toBeLessThanOrEqual(1.25);
+  });
+  it('the cost rise slows down: the % step never grows by more than 4 points from one level to the next (Lv 3 on)', () => {
+    for (let n = 3; n < costs.length; n++) {
+      const now = costs[n] / costs[n - 1] - 1;
+      const before = costs[n - 1] / costs[n - 2] - 1;
+      expect(now - before, `Lv ${n + 1}`).toBeLessThanOrEqual(0.04);
+    }
+  });
+  it('Lv 1 to 8 keep the cost they had (Lv 2 is 60 XP cheaper, which removes the old dip), so the first minutes feel the same', () => {
+    expect(costs.slice(0, 8)).toEqual([100, 200, 250, 300, 350, 400, 450, 500]);
+  });
+  it('the table saves a little XP overall, never adds any, versus the old curve', () => {
+    const old = { ...cfg, xp: { ...cfg.xp, levelXp: undefined } };
+    let saved = 0;
+    for (let n = 1; n <= 40; n++) {
+      expect(xpForLevel(cfg, n), `Lv ${n}`).toBeLessThanOrEqual(xpForLevel(old, n));
+      saved += xpForLevel(old, n) - xpForLevel(cfg, n);
+    }
+    expect(saved).toBeGreaterThan(0);
+    expect(saved).toBeLessThan(2500);
   });
 });
 

@@ -4,7 +4,7 @@ import type { TacoRamp } from '../taco/tacoConfig';
 import type { PizzaConfig } from './pizzaConfig';
 
 // The Pizza Place's own "menu step": which dishes are on the menu and how busy the shop is. Separate from the global Lv on purpose: someone who buys it at
-// Lv 30 or more still starts at step 1. Global Lv, XP and coins are shared and untouched: the same XP counts for every restaurant.
+// any Lv still starts at step 1. Global Lv, XP and coins are shared and untouched: the same XP counts for every restaurant.
 
 export const MAX_PIZZA_STEP = 10;
 
@@ -39,7 +39,7 @@ export interface PizzaMilestone {
 
 /**
  * Display only, and worked out from the real XP curve so it cannot drift: the same XP fills the Pizza menu bar AND the global Lv bar, so the menu
- * is finished around Lv 35, not Lv 49. Nothing here unlocks anything; recipes unlock by menu step only.
+ * is finished about six Lv after the shop opens (Lv 26 for an Lv 20 opening), not Lv 49. Nothing here unlocks anything; recipes unlock by menu step only.
  */
 export function pizzaMilestones(cfg: GameConfig, p: PizzaConfig): PizzaMilestone[] {
   const out: PizzaMilestone[] = [];

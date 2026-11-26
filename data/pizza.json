@@ -2,7 +2,7 @@
   "restaurant": {
     "id": "pizza_place",
     "name": "Pizza Place",
-    "unlockLevel": 30,
+    "unlockLevel": 20,
     "cost": 3000
   },
   "settings": {

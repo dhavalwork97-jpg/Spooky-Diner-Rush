@@ -25,8 +25,8 @@ describe('data/pizza.json', () => {
     expect(e).toMatch(/before it is on the menu/);
     expect(validatePizza(null)).not.toEqual([]);
   });
-  it('the restaurant is Lv 30 for 3,000 coins and the old Lv 20 coming-soon card is gone', () => {
-    expect(cfg.restaurant).toEqual({ id: 'pizza_place', name: 'Pizza Place', unlockLevel: 30, cost: 3000 });
+  it('the restaurant is Lv 20 for 3,000 coins and the old Lv 20 coming-soon card is gone', () => {
+    expect(cfg.restaurant).toEqual({ id: 'pizza_place', name: 'Pizza Place', unlockLevel: 20, cost: 3000 });
     expect((restaurantMenu.comingSoon as { id: string }[]).some((r) => r.id === 'pizza_place')).toBe(false);
   });
   it('has the ten pizzas and the six extras, joining the menu in the approved order', () => {
@@ -122,9 +122,9 @@ describe('Pizza Lv display (derived from the real XP curve)', () => {
     expect(rows.flatMap((r) => r.dishes).sort()).toEqual(cfg.dishes.map((d) => d.name).sort());
     for (let i = 1; i < rows.length; i++) expect(rows[i].lv).toBeGreaterThanOrEqual(rows[i - 1].lv);
   });
-  it('matches the XP maths: the same XP feeds the menu and the global Lv, so the menu ends well before Lv 49', () => {
-    expect(rows[9].lv).toBeGreaterThanOrEqual(34);
-    expect(rows[9].lv).toBeLessThanOrEqual(36);
+  it('matches the XP maths: the same XP feeds the menu and the global Lv, so the menu ends about 6 Lv after the shop opens (Lv 20), well before Lv 49', () => {
+    expect(rows[9].lv).toBeGreaterThanOrEqual(25);
+    expect(rows[9].lv).toBeLessThanOrEqual(27);
   });
   it('is display only: global Lv cannot skip menu steps', () => {
     expect(unlockedDishes(cfg, 1).map((d) => d.id)).toEqual(['cheese_pizza']);

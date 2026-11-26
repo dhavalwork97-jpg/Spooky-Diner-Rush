@@ -158,6 +158,8 @@ export interface GameConfig {
     earlyUntilLevel?: number;
     /** Optional XP to leave Lv 1 only (the very first level-up). Every other level ignores it. Lets the first level-up land inside the first minute. */
     firstLevelXp?: number;
+    /** Optional explicit XP to leave Lv 1, 2, 3 ... (index 0 is Lv 1). Wins over every formula above for the levels it lists; later levels use the formula. Lets the early curve rise smoothly into the normal one. */
+    levelXp?: number[];
     speedBonusXp: number;
     speedBonusPatienceFraction: number;
     levelUpCoins: { base: number; perLevel: number };
@@ -253,7 +255,8 @@ export const EARLY_XP_FROM_LEVEL = 3;
 
 /** XP needed to leave `level`. The mid-game (Lv 3 to earlyUntilLevel) can be made gentler in data so casual players reach the pizza level sooner. */
 export const xpForLevel = (cfg: GameConfig, level: number): number => {
-  const { base, perLevel, earlyPerLevel, earlyUntilLevel, firstLevelXp } = cfg.xp;
+  const { base, perLevel, earlyPerLevel, earlyUntilLevel, firstLevelXp, levelXp } = cfg.xp;
+  if (levelXp !== undefined && level >= 1 && level <= levelXp.length) return levelXp[level - 1];
   if (level === 1 && firstLevelXp !== undefined) return firstLevelXp;
   if (earlyPerLevel !== undefined && earlyUntilLevel !== undefined && level >= EARLY_XP_FROM_LEVEL && level <= earlyUntilLevel) return base + earlyPerLevel * level;
   return base + perLevel * level;
