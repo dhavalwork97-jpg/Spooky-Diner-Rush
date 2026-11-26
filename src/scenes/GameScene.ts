@@ -27,7 +27,7 @@ import { arcTo, flyCoins } from '../anim/fly';
 import { audio } from '../systems/AudioSystem';
 import { CrazyGames } from '../sdk/crazygames';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
-import { levelDef, type DecorDef, type EventDef } from '../game/config';
+import { isBurgerKind, levelDef, type DecorDef, type EventDef } from '../game/config';
 import { nextHint, tutorialActive } from '../game/tutorial';
 import { hasSavedProgress } from '../game/startup';
 import { LOGIN_FROM_LEVEL, checkLogin, tomorrowReward } from '../game/loginBonus';
@@ -105,6 +105,7 @@ export class GameScene extends Phaser.Scene {
   private introGlow!: IntroGlow;
   private bats!: BatFlyers;
   private decorViews = new Map<string, Phaser.GameObjects.Image>();
+  private prepTray: Phaser.GameObjects.Image | null = null;
   private decorGlows: Phaser.GameObjects.Ellipse[] = [];
   private earnedSeen = 0;
   private badgeQueue: string[] = [];
@@ -167,6 +168,7 @@ export class GameScene extends Phaser.Scene {
     this.state.enableExtras(save.mastery, this.dayKey, save.specialDay === this.dayKey);
 
     this.syncDecor();
+    this.syncPrepTray();
     this.fx = new ParticlePool(this, 140);
     this.atmosphere = new Atmosphere(this, this.layout);
     this.buildZones();
@@ -339,6 +341,18 @@ export class GameScene extends Phaser.Scene {
     });
     registerStationHandler('tomato', () => {
       this.state.tapTopping('tomato');
+      return '';
+    });
+    registerStationHandler('cheese', () => {
+      this.state.tapTopping('cheese');
+      return '';
+    });
+    registerStationHandler('onion', () => {
+      this.state.tapTopping('onion');
+      return '';
+    });
+    registerStationHandler('pickle', () => {
+      this.state.tapTopping('pickle');
       return '';
     });
     registerStationHandler('side_plate', () => '');
@@ -546,7 +560,7 @@ export class GameScene extends Phaser.Scene {
     const slot = this.state.slots[slotIndex];
     if (!slot.item) return null;
     const home = this.slotPos(slotIndex);
-    const v = new ItemView(this, at?.x ?? home.x, at?.y ?? home.y, slot.item.id, slot.item.kind, slotIndex, this.layout.s(slot.item.kind === 'burger' ? 62 : slot.item.kind === 'pizza' ? 112 : slot.item.kind === 'icecream' ? 104 : slot.item.kind === 'drink' ? 100 : 70));
+    const v = new ItemView(this, at?.x ?? home.x, at?.y ?? home.y, slot.item.id, slot.item.kind, slotIndex, this.layout.s(isBurgerKind(slot.item.kind) ? 62 : slot.item.kind === 'pizza' ? 112 : slot.item.kind === 'icecream' ? 104 : slot.item.kind === 'drink' ? 100 : 70));
     v.home = home;
     this.items.set(slotIndex, v);
     return v;
@@ -814,6 +828,7 @@ export class GameScene extends Phaser.Scene {
       }
       case 'levelUp':
         this.prepareDinerArt();
+        this.syncPrepTray();
         this.hud.badgePop();
         this.levelUpCard.show(e.level, e.coins, e.unlocks, titleEarnedAt(this.state.cfg, e.level)?.title);
         this.saveNow();
@@ -864,6 +879,15 @@ export class GameScene extends Phaser.Scene {
     this.chef.setChefVisible(false);
     this.setSelectedSlot(null);
     this.storyCard.show(card, () => this.chef.setChefVisible(true));
+  }
+
+  /** From Lv 10 the toppings tray (cheese, onions, pickles) sits on the Prep station, over the old mixing tray. The three tap zones are cut from this picture (data/restaurants.json). */
+  private syncPrepTray(): void {
+    if (this.prepTray || this.state.level < this.state.cfg.recipes.items.cheeseburger.unlockLevel || !this.textures.exists('prep_toppings_tray')) return;
+    // Centre (0.4065, 0.568) and width 0.0923 of the kitchen picture: sits on the steel plate, covers the old pink tray, leaves the teal bowl above it.
+    const img = this.add.image(this.layout.x(0.4065 * SRC_W), this.layout.y(0.568 * SRC_H), 'prep_toppings_tray').setDepth(60);
+    this.layout.fit(img, 0.0923 * SRC_W);
+    this.prepTray = img;
   }
 
   /** Draw owned decor. Cosmetic images sit above the background and below customers (depth 100). */
@@ -1096,7 +1120,7 @@ export class GameScene extends Phaser.Scene {
       const v = this.items.get(slot.index);
       if (slot.item && !v) {
         const nv = this.makeItem(slot.index);
-        if (nv) slot.item.kind !== 'burger' ? nv.showFries() : nv.syncLayers(slot.item.placed, slot.item.building, false);
+        if (nv) !isBurgerKind(slot.item.kind) ? nv.showFries() : nv.syncLayers(slot.item.placed, slot.item.building, false);
       } else if (!slot.item && v && !v.leaving) this.removeItem(slot.index, false);
     }
     this.atmosphere?.update(delta);

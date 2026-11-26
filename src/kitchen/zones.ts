@@ -15,6 +15,9 @@ export type StationType =
   | 'ice_cream'
   | 'oven'
   | 'dough'
+  | 'cheese'
+  | 'onion'
+  | 'pickle'
   | 'prep'
   | 'trash';
 
@@ -33,6 +36,9 @@ export const STATION_TYPES: readonly StationType[] = [
   'ice_cream',
   'oven',
   'dough',
+  'cheese',
+  'onion',
+  'pickle',
   'prep',
   'trash',
 ];

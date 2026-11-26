@@ -116,7 +116,7 @@
       "width": 400,
       "height": 231,
       "preferFallback": false,
-      "lazy": true
+      "lazy": false
     },
     {
       "key": "onion",
@@ -126,7 +126,7 @@
       "width": 360,
       "height": 199,
       "preferFallback": false,
-      "lazy": true
+      "lazy": false
     },
     {
       "key": "pickle",
@@ -136,7 +136,7 @@
       "width": 360,
       "height": 186,
       "preferFallback": false,
-      "lazy": true
+      "lazy": false
     },
     {
       "key": "nuggets_raw",
@@ -815,6 +815,46 @@
       "type": "image",
       "file": "assets/pizza/background/pizza_thumb.webp",
       "scale": 1,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "cheeseburger_cooked",
+      "type": "image",
+      "file": "assets/art/cheeseburger_cooked.webp",
+      "scale": 0.5,
+      "width": 329,
+      "height": 360,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "garden_burger_cooked",
+      "type": "image",
+      "file": "assets/art/garden_burger_cooked.webp",
+      "scale": 0.5,
+      "width": 357,
+      "height": 360,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "deluxe_burger_cooked",
+      "type": "image",
+      "file": "assets/art/deluxe_burger_cooked.webp",
+      "scale": 0.5,
+      "width": 344,
+      "height": 360,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
+      "key": "prep_toppings_tray",
+      "type": "image",
+      "file": "assets/art/prep_toppings_tray.webp",
+      "scale": 0.5,
+      "width": 540,
+      "height": 308,
       "preferFallback": false,
       "lazy": false
     }

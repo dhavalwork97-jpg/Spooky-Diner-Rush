@@ -1,8 +1,22 @@
 import { KitchenState, type GameEvent } from '../../src/game/KitchenState';
 import { isEdible } from '../../src/game/cook';
-import { defaultConfig, type GameConfig } from '../../src/game/config';
+import { defaultConfig, isBurgerKind, type GameConfig } from '../../src/game/config';
 import { buy, modsFor, type Owned } from '../../src/game/shop';
 import type { Extras } from '../../src/game/extras';
+
+/** Layers a burger build still needs, following the first burger a waiting customer wants that this build can still become. */
+function botNextLayer(s: KitchenState, build: NonNullable<KitchenState['slots'][number]['item']>): string | undefined {
+  const accepts = s.nextLayers(build);
+  for (const c of s.customers) {
+    if (c.mood !== 'waiting') continue;
+    for (let i = 0; i < c.items.length; i++) {
+      if (c.delivered[i] || !isBurgerKind(c.items[i])) continue;
+      const layers = s.cfg.recipes.items[c.items[i]].layers ?? [];
+      if (build.placed.every((p, j) => layers[j] === p) && accepts.includes(layers[build.placed.length])) return layers[build.placed.length];
+    }
+  }
+  return accepts.includes('lettuce') ? 'lettuce' : accepts[0];
+}
 
 /**
  * Bot for the Lv 11-20 balance simulation. `botStep` is the same bot as in `sim.test.ts` (kept as a
@@ -41,8 +55,8 @@ export function botStep(s: KitchenState, prepBun = false): boolean {
     s.customers.filter((c) => c.mood === 'waiting').reduce((n, c) => n + c.items.filter((x, i) => x === k && !c.delivered[i]).length, 0);
   // 4. burger building: toppings, patties, flips
   const build = s.buildingSlots()[0]?.item;
-  const next = build ? s.layers[build.placed.length] : undefined;
-  if (next === 'lettuce' || next === 'tomato') return (s.tapTopping(next), true);
+  const next = build ? botNextLayer(s, build) : undefined;
+  if (next && next !== 'patty' && next !== 'bun_top') return (s.tapTopping(next as Parameters<KitchenState['tapTopping']>[0]), true);
   const flip = s.burners.findIndex((p) => p && p.side === 1 && isEdible(p.phase));
   if (flip >= 0) return (s.tapGrill(flip), true);
   const done = s.burners.findIndex((p) => p && p.side === 2 && isEdible(p.phase));
@@ -52,9 +66,9 @@ export function botStep(s: KitchenState, prepBun = false): boolean {
   if (s.ovens.some((o) => o?.phase === 'burnt')) return (s.tapOven(s.ovens.findIndex((o) => o?.phase === 'burnt')), true);
   // 5. start what is still needed beyond what is already in the pipeline
   const need = (k: 'fries' | 'nuggets' | 'pizza' | 'burger') =>
-    s.customers.filter((c) => c.mood === 'waiting').reduce((n, c) => n + c.items.filter((x, i) => x === k && !c.delivered[i]).length, 0);
+    s.customers.filter((c) => c.mood === 'waiting').reduce((n, c) => n + c.items.filter((x, i) => (k === 'burger' ? isBurgerKind(x) : x === k) && !c.delivered[i]).length, 0);
   const haveOf = (k: 'fries' | 'nuggets') => s.slots.filter((sl) => sl.item?.kind === k).length + s.vats.filter((v) => v?.kind === k).length;
-  const haveBurgers = s.slots.filter((sl) => sl.item?.kind === 'burger').length + s.burners.filter(Boolean).length;
+  const haveBurgers = s.slots.filter((sl) => sl.item && isBurgerKind(sl.item.kind)).length + s.burners.filter(Boolean).length;
   for (const k of ['fries', 'nuggets'] as const) if (need(k) > haveOf(k) && s.vats.some((v) => !v)) return (s.startFry(k), true);
   // A careful player puts the bun down while the patty cooks, so a finished patty always has a burger to land on.
   if (prepBun && s.level >= 2 && !build && s.burners.some(Boolean) && s.slots.filter((sl) => sl.row === 'plate' && sl.item).length < need('burger') && s.slots.some((sl) => sl.row === 'plate' && !sl.item)) return (s.tapBuns(), true);

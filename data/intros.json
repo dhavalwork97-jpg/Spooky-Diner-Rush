@@ -1,10 +1,65 @@
 {
   "cards": [
-    { "id": "lv2_burger", "level": 2, "name": "Burger station", "zones": ["bun_basket", "patty_tray", "lettuce_tray", "tomato_tray"] },
-    { "id": "lv4_nuggets", "level": 4, "name": "Nuggets bin", "zones": ["nuggets_bin"] },
-    { "id": "lv5_pizza", "level": 5, "name": "Pizza oven", "zones": ["dough_bases", "pizza_oven"] },
-    { "id": "lv6_drinks", "level": 6, "name": "Drink dispenser", "zones": ["drink_dispenser"] },
-    { "id": "lv12_icecream", "level": 8, "name": "Ice cream machine", "zones": ["ice_cream_machine"] },
-    { "id": "lv10_prep", "level": 10, "name": "Prep station", "zones": ["prep_station"] }
+    {
+      "id": "lv2_burger",
+      "level": 2,
+      "name": "Burger station",
+      "zones": [
+        "bun_basket",
+        "patty_tray",
+        "lettuce_tray",
+        "tomato_tray"
+      ]
+    },
+    {
+      "id": "lv4_nuggets",
+      "level": 4,
+      "name": "Nuggets bin",
+      "zones": [
+        "nuggets_bin"
+      ]
+    },
+    {
+      "id": "lv5_pizza",
+      "level": 5,
+      "name": "Pizza oven",
+      "zones": [
+        "dough_bases",
+        "pizza_oven"
+      ]
+    },
+    {
+      "id": "lv6_drinks",
+      "level": 6,
+      "name": "Drink dispenser",
+      "zones": [
+        "drink_dispenser"
+      ]
+    },
+    {
+      "id": "lv12_icecream",
+      "level": 8,
+      "name": "Ice cream machine",
+      "zones": [
+        "ice_cream_machine"
+      ]
+    },
+    {
+      "id": "lv10_prep",
+      "level": 10,
+      "name": "Toppings tray",
+      "zones": [
+        "cheese_tray"
+      ]
+    },
+    {
+      "id": "lv12_garden",
+      "level": 12,
+      "name": "Onions and pickles",
+      "zones": [
+        "onion_tray",
+        "pickle_tray"
+      ]
+    }
   ]
 }

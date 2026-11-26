@@ -37,6 +37,9 @@ export const STATION_LABELS: Record<StationType, string> = {
   ice_cream: 'Ice cream',
   oven: 'Pizza oven',
   dough: 'Dough',
+  cheese: 'Cheese',
+  onion: 'Onions',
+  pickle: 'Pickles',
   prep: 'Toppings',
   trash: 'Trash',
 };

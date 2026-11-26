@@ -186,13 +186,19 @@ describe('diner-only late ramp', () => {
   it('makes the diner harder from Lv 11 but leaves the shared table (Taco Truck, Pizza Place) alone', async () => {
     const { defaultConfig, levelDef, dinerLevelDef } = await import('../src/game/config');
     const cfg = defaultConfig;
-    expect(dinerLevelDef(cfg, 10)).toEqual(levelDef(cfg, 10)); // Lv 1-10 unchanged
+    for (let lv = 1; lv <= 9; lv++) expect(dinerLevelDef(cfg, lv)).toEqual(levelDef(cfg, lv)); // Lv 1-9 unchanged
+    const ten = dinerLevelDef(cfg, 10); // Lv 10 only adds the cheeseburger: same seats, gaps and patience
+    expect({ ...ten, items: 0, unlocks: 0 }).toEqual({ ...levelDef(cfg, 10), items: 0, unlocks: 0 });
+    expect(ten.items).toContain('cheeseburger');
     for (const lv of [11, 15, 20, 30]) {
       const d = dinerLevelDef(cfg, lv);
       const s = levelDef(cfg, lv);
       expect(d.patience).toBeLessThan(s.patience);
-      expect(d.items).toEqual(s.items);
+      expect(d.items.filter((k) => !k.endsWith('burger'))).toEqual(s.items.filter((k) => !k.endsWith('burger')));
     }
+    expect(dinerLevelDef(cfg, 10).unlocks.join(' ')).toContain('Cheeseburger');
+    expect(dinerLevelDef(cfg, 11).unlocks.join(' ').toLowerCase()).toContain('four');
+    expect(levelDef(cfg, 11).unlocks).toEqual([]); // the shared table keeps its own texts
     expect(dinerLevelDef(cfg, 11).maxCustomers).toBe(4);
     expect(dinerLevelDef(cfg, 200).patience).toBe(22); // floor
     expect(levelDef(cfg, 15).patience).toBe(33); // shared table untouched

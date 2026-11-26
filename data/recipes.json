@@ -68,6 +68,57 @@
       "xp": 28,
       "readyAfter": 5,
       "burnWindow": 14
+    },
+    "cheeseburger": {
+      "name": "Cheeseburger",
+      "unlockLevel": 10,
+      "price": 36,
+      "xp": 46,
+      "sideSeconds": 4,
+      "burnWindow": 4,
+      "layers": [
+        "bun_bottom",
+        "patty",
+        "cheese",
+        "lettuce",
+        "tomato",
+        "bun_top"
+      ]
+    },
+    "garden_burger": {
+      "name": "Garden burger",
+      "unlockLevel": 12,
+      "price": 40,
+      "xp": 50,
+      "sideSeconds": 4,
+      "burnWindow": 4,
+      "layers": [
+        "bun_bottom",
+        "patty",
+        "onion",
+        "pickle",
+        "lettuce",
+        "tomato",
+        "bun_top"
+      ]
+    },
+    "deluxe_burger": {
+      "name": "Deluxe burger",
+      "unlockLevel": 15,
+      "price": 50,
+      "xp": 60,
+      "sideSeconds": 4,
+      "burnWindow": 4,
+      "layers": [
+        "bun_bottom",
+        "patty",
+        "cheese",
+        "onion",
+        "pickle",
+        "lettuce",
+        "tomato",
+        "bun_top"
+      ]
     }
   }
 }

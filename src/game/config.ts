@@ -13,7 +13,11 @@ import decorJson from '../../data/decor.json';
 import recipebookJson from '../../data/recipebook.json';
 import restaurantMenuJson from '../../data/restaurant_menu.json';
 
-export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger' | 'drink' | 'icecream';
+export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger' | 'cheeseburger' | 'garden_burger' | 'deluxe_burger' | 'drink' | 'icecream';
+
+/** The plain burger and its variants (they share the grill, the buns and the plates). */
+export const BURGER_KINDS: readonly ItemKind[] = ['burger', 'cheeseburger', 'garden_burger', 'deluxe_burger'];
+export const isBurgerKind = (k: ItemKind): boolean => BURGER_KINDS.includes(k);
 
 export interface RecipeSettings {
   plateSlots: number;
@@ -142,7 +146,7 @@ export interface GameConfig {
     afterLast: { patienceStepPerLevel: number; patienceFloor: number; arrivalGapStepPerLevel?: number; arrivalGapFloor?: [number, number] };
     /** Optional diner-only late-game ramp (the Taco Truck and Pizza Place keep using `levels`/`afterLast`). */
     dinerRamp?: {
-      levels: Record<string, { maxCustomers: number; arrivalGap: [number, number]; patience: number }>;
+      levels: Record<string, { maxCustomers: number; arrivalGap: [number, number]; patience: number; items?: ItemKind[]; unlocks?: string[] }>;
       afterLast: { patienceStepPerLevel: number; patienceFloor: number; arrivalGapStepPerLevel?: number; arrivalGapFloor?: [number, number] };
     };
   };
@@ -241,7 +245,7 @@ export function dinerLevelDef(cfg: GameConfig, level: number): LevelDef {
     const step = extra * a.arrivalGapStepPerLevel;
     arrivalGap = [Math.max(a.arrivalGapFloor[0], last.arrivalGap[0] + step), Math.max(a.arrivalGapFloor[1], last.arrivalGap[1] + step)];
   }
-  return { ...base, maxCustomers: last.maxCustomers, patience, arrivalGap };
+  return { ...base, maxCustomers: last.maxCustomers, patience, arrivalGap, ...(last.items ? { items: last.items } : {}) };
 }
 
 /** First level the early curve applies to: Lv 2 stays as tuned; Lv 1 has its own optional value (`firstLevelXp`). */
