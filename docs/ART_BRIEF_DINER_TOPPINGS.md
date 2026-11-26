@@ -17,9 +17,9 @@ All three: 360 x 360 px, one complete burger, side view, same bun as `bun_top.we
 
 - `cheeseburger_cooked`: bun, patty, a cheese slice hanging over the edge, lettuce, tomato.
 - `garden_burger_cooked`: bun, patty, lettuce, tomato, red onion rings and pickle slices (no cheese).
-- `deluxe_burger_cooked`: bun, patty, cheese, lettuce, tomato, onion rings and pickle slices (the tallest burger).
+- `deluxe_burger_cooked`: bun, patty, cheese, lettuce, tomato, onion rings and pickle slices .
 
-They must look different from each other even when tiny: cheese edge for the cheeseburger, purple and green rings for the garden burger, tall stack for the deluxe.
+They must look different from each other even when tiny: cheese edge for the cheeseburger, purple and green rings for the garden burger, every topping for the deluxe.
 
 ## What happens when they arrive
 
