@@ -515,5 +515,99 @@
       2.5,
       4.5
     ]
+  },
+  "dinerRamp": {
+    "note": "Diner only (the Taco Truck and Pizza Place borrow the main table above and are NOT changed). Lv 11-20 replace seats, arrival gap and patience; past the last row the steps below apply.",
+    "levels": {
+      "11": {
+        "maxCustomers": 4,
+        "arrivalGap": [
+          3.2,
+          6.0
+        ],
+        "patience": 33
+      },
+      "12": {
+        "maxCustomers": 4,
+        "arrivalGap": [
+          3.0,
+          5.8
+        ],
+        "patience": 32
+      },
+      "13": {
+        "maxCustomers": 4,
+        "arrivalGap": [
+          3.0,
+          5.6
+        ],
+        "patience": 31
+      },
+      "14": {
+        "maxCustomers": 4,
+        "arrivalGap": [
+          2.9,
+          5.4
+        ],
+        "patience": 30
+      },
+      "15": {
+        "maxCustomers": 4,
+        "arrivalGap": [
+          2.8,
+          5.2
+        ],
+        "patience": 29
+      },
+      "16": {
+        "maxCustomers": 4,
+        "arrivalGap": [
+          2.7,
+          5.0
+        ],
+        "patience": 28
+      },
+      "17": {
+        "maxCustomers": 4,
+        "arrivalGap": [
+          2.6,
+          4.8
+        ],
+        "patience": 27
+      },
+      "18": {
+        "maxCustomers": 4,
+        "arrivalGap": [
+          2.6,
+          4.6
+        ],
+        "patience": 26.5
+      },
+      "19": {
+        "maxCustomers": 4,
+        "arrivalGap": [
+          2.5,
+          4.5
+        ],
+        "patience": 26
+      },
+      "20": {
+        "maxCustomers": 4,
+        "arrivalGap": [
+          2.5,
+          4.4
+        ],
+        "patience": 25
+      }
+    },
+    "afterLast": {
+      "patienceStepPerLevel": -0.5,
+      "patienceFloor": 22,
+      "arrivalGapStepPerLevel": -0.05,
+      "arrivalGapFloor": [
+        2.2,
+        3.8
+      ]
+    }
   }
 }

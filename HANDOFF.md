@@ -14,6 +14,13 @@ Owner ask: calm music for gameplay. Finding: music already exists (AudioSystem.s
 Plan: NO new asset files (keeps APK/browser size, no licence risk). New pure data src/systems/calmMusic.ts (slow ~60 bpm chord pads + sparse soft melody, 8-bar loop); AudioSystem.startMusic schedules it ahead on the audio clock with soft attack/release; same start/stop/pause/volume/mute hooks. Tests: calmMusic.test.ts (tempo, range, loop) + existing audio tests.
 Steps done so far: DONE. calmMusic.ts (data) + AudioSystem.startMusic/soft/scheduleBar; tests/calm_music.test.ts. Headless Chromium: music schedules with no page errors (not listened to by ear). No new files. To transfer: cherry-pick to release/poki and android branches with owner approval.
 
+# IN PROGRESS (2026-11-25) - Diner late-game ramp (Lv 11+), branch feature/diner-late-ramp (from main d5c5011)
+Owner: playing Lv 10+ needs no shop upgrades; wants it more interesting; asked to remove the max customer limit if that helps.
+Findings: diner has only 4 seat positions (SEATS_X in src/views/layout.ts) and a hard cap of 3 items per order (KitchenState.ts:485), so a bigger customer limit or bigger orders need new layout/art = NOT done. Difficulty is flat after Lv 12 (3 seats Lv 10-12, 4 seats from Lv 13, patience 34 -> 31, gaps barely move).
+Bot (no upgrades, fast) closes only 0.2-0.45/min at Lv 6-25.
+Plan (data only, data/progression.json): 4th seat at Lv 11 (was 13); patience and arrival gap shrink faster at Lv 11-20; afterLast steps/floors a bit steeper. No ad/reward/coin/XP change. Check: BALANCE_REPORT bot tables (none vs all upgrades) + full suite.
+Steps done so far: DONE. Ramp is a diner-only overlay (data/progression.json `dinerRamp` + `dinerLevelDef` in config.ts, used by KitchenState.levelInfo) because Taco/Pizza borrow the shared table (first try leaked into the Taco close-rate test). Suite green 1027; build OK. Bot fast, no upgrades, closes/min Lv 11-15 0.23->0.40, Lv 16-20 0.37->0.61; with all upgrades 0.25 / 0.46. Not committed, not merged. To transfer: cherry-pick to release/poki and android branches with owner approval.
+
 # IN PROGRESS (2026-11-25) - Chef's Choice (pick-one perks) + 2 new short events, branch feature/chefs-choice (from main)
 Owner approved ideas 3 and 5. Findings: surprise events ALREADY exist (8 shared in data/events.json + Taco/Pizza own); so item 5 = 2 data-only events (Midnight Rush, Golden Hour).
 Item 3 plan: data/choices.json (per restaurant 3 slots, 2 options each, effects = multipliers on existing Mods keys); src/game/choices.ts (pure: unlock by Lv, pick, applyChoices, clean);

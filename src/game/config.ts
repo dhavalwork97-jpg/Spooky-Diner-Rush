@@ -140,6 +140,11 @@ export interface GameConfig {
   progression: {
     levels: LevelDef[];
     afterLast: { patienceStepPerLevel: number; patienceFloor: number; arrivalGapStepPerLevel?: number; arrivalGapFloor?: [number, number] };
+    /** Optional diner-only late-game ramp (the Taco Truck and Pizza Place keep using `levels`/`afterLast`). */
+    dinerRamp?: {
+      levels: Record<string, { maxCustomers: number; arrivalGap: [number, number]; patience: number }>;
+      afterLast: { patienceStepPerLevel: number; patienceFloor: number; arrivalGapStepPerLevel?: number; arrivalGapFloor?: [number, number] };
+    };
   };
   xp: {
     base: number;
@@ -214,6 +219,29 @@ export function levelDef(cfg: GameConfig, level: number): LevelDef {
     arrivalGap = [Math.max(fLo, last.arrivalGap[0] + step), Math.max(fHi, last.arrivalGap[1] + step)];
   }
   return { ...last, level, patience, arrivalGap, unlocks: [] };
+}
+
+/** The diner's own customer table: `levelDef` with the diner-only late ramp laid over it (no ramp in data = same as `levelDef`). */
+export function dinerLevelDef(cfg: GameConfig, level: number): LevelDef {
+  const base = levelDef(cfg, level);
+  const ramp = cfg.progression.dinerRamp;
+  if (!ramp) return base;
+  const keys = Object.keys(ramp.levels).map(Number).filter((n) => Number.isFinite(n));
+  if (keys.length === 0) return base;
+  const lastKey = Math.max(...keys);
+  const row = ramp.levels[String(level)];
+  if (row) return { ...base, ...row };
+  if (level < lastKey) return base;
+  const last = ramp.levels[String(lastKey)];
+  const extra = level - lastKey;
+  const a = ramp.afterLast;
+  const patience = Math.max(a.patienceFloor, last.patience + extra * a.patienceStepPerLevel);
+  let arrivalGap = last.arrivalGap;
+  if (a.arrivalGapStepPerLevel && a.arrivalGapFloor) {
+    const step = extra * a.arrivalGapStepPerLevel;
+    arrivalGap = [Math.max(a.arrivalGapFloor[0], last.arrivalGap[0] + step), Math.max(a.arrivalGapFloor[1], last.arrivalGap[1] + step)];
+  }
+  return { ...base, maxCustomers: last.maxCustomers, patience, arrivalGap };
 }
 
 /** First level the early curve applies to: Lv 2 stays as tuned; Lv 1 has its own optional value (`firstLevelXp`). */
