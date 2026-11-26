@@ -1,3 +1,9 @@
+# IN PROGRESS (2026-11-26) - Recovery 1.0 (owner brief file 9c7b9787-attachment.txt), branch recovery/1.0 from main 617cec2
+Brief = 6 milestones (M0 audit -> M6 regression); report after each; NO merge/deploy/CrazyGames submission without approval; do not start big code changes before M0 audit is accepted.
+M0 DONE: docs/RECOVERY_AUDIT.md. Findings: only 1 baseline failure (balance_upgrades slow test, 5 s timeout; fixed with explicit 60 s timeout, no check weakened); the 2 assertion failures from CI do not reproduce locally (no CI log access). Taco/Pizza already have own menu tracks + 2-serve intros; diner has no new dish Lv 9-29; catalogue has 26 recipe moments vs 49+ levels so 'new recipe every level' needs a decision; XP Lv 8->9 jumps +64%; no analytics exist.
+WAITING ON OWNER: (1) diner content route after Lv 8, (2) analytics destination, (3) include feature/diner-late-ramp?
+Next: M1 only after answers.
+
 # IN PROGRESS (2026-11-25) - Music v2: soft lofi, continuous, louder (branch feature/calm-music, v1 already pushed)
 Owner: v1 'doesnt feel good, too low; wants soft lofi continuous instrumental'.
 Plan: replace calmMusic.ts with src/systems/lofiMusic.ts: pure data (8-bar loop, ~74 bpm swung, jazzy 9th chords) + LofiPlayer class (ctx, out): warm e-piano chords, soft bass, kick/snare/hat from noise, long pads (no gaps), light melody, vinyl crackle loop, lowpass + compressor bus. AudioSystem.startMusic uses it; music gain scale raised (measure with an offline render, target RMS ~4x v1). Still NO files shipped. Also render a preview WAV for the owner (outside the repo).

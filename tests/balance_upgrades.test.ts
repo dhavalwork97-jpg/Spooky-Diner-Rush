@@ -120,5 +120,5 @@ describe('Burn Guard + Calm Kitchen balance', () => {
       expect(r).toBeLessThan(1);
       expect(r).toBeGreaterThan(0.5);
     }
-  });
+  }, 60_000); // three 30-seed simulations: about 5-6 s, so the default 5 s limit is too short
 });
