@@ -9,6 +9,9 @@ describe('save v2', () => {
     expect(d.decor).toEqual([]);
     expect(d.seenStory).toEqual([]);
     expect(d.lastRestaurant).toBe('burger_diner');
+    expect(d.recipeBookSeenLevel).toBe(1);
+    expect(d.tacoBookSeenStep).toBe(1);
+    expect(d.pizzaBookSeenStep).toBe(1);
   });
 
   it('loads an old v1 save and keeps its progress', () => {
@@ -26,6 +29,9 @@ describe('save v2', () => {
     expect(s.coins).toBe(340);
     expect(s.settings.muted).toBe(true);
     expect(s.settings.reduceMotion).toBe(true);
+    expect(s.recipeBookSeenLevel).toBe(9); // an older save has already seen its existing unlocks
+    expect(s.tacoBookSeenStep).toBe(1);
+    expect(s.pizzaBookSeenStep).toBe(1);
     expect(s.owned).toEqual({});
     expect(s.decor).toEqual([]);
   });
@@ -34,6 +40,10 @@ describe('save v2', () => {
     const a = { ...defaultSave(), owned: { fryer_speed: 2, tips: 1 }, decor: ['plant', 'neon'], seenStory: ['intro'], lastRestaurant: 'burger_diner' };
     const b = parseSave(JSON.stringify(a));
     expect(b).toEqual(a);
+    const seen = parseSave(JSON.stringify({ ...a, recipeBookSeenLevel: 12, tacoBookSeenStep: 4, pizzaBookSeenStep: 6 }));
+    expect(seen.recipeBookSeenLevel).toBe(12);
+    expect(seen.tacoBookSeenStep).toBe(4);
+    expect(seen.pizzaBookSeenStep).toBe(6);
   });
 
   it('drops bad owned entries', () => {
