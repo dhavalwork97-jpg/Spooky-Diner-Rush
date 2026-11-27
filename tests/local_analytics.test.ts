@@ -12,7 +12,7 @@ describe('on-device analytics', () => {
     LocalAnalytics.track('restaurant_entered', 'burger_diner');
     LocalAnalytics.track('level_reached', 12);
     LocalAnalytics.track('menu_step_reached', 'taco:4');
-    LocalAnalytics.tick(1_500);
+    for (let i = 0; i < 6; i++) LocalAnalytics.tick(250);
     LocalAnalytics.endSession();
 
     const data = LocalAnalytics.snapshot();
