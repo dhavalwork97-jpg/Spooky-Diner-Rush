@@ -892,7 +892,8 @@ export class GameScene extends Phaser.Scene {
 
   /** From Lv 10 the toppings tray (cheese, onions, pickles) sits on the Prep station, over the old mixing tray. The three tap zones are cut from this picture (data/restaurants.json). */
   private syncPrepTray(): void {
-    if (this.prepTray || this.state.level < this.state.cfg.recipes.items.cheeseburger.unlockLevel || !this.textures.exists('prep_toppings_tray')) return;
+    // The replacement toppings tray is part of the starting kitchen art, even though its ingredients unlock later.
+    if (this.prepTray || !this.textures.exists('prep_toppings_tray')) return;
     // Centre (0.4065, 0.568) and width 0.0923 of the kitchen picture: sits on the steel plate, covers the old pink tray, leaves the teal bowl above it.
     const img = this.add.image(this.layout.x(0.4065 * SRC_W), this.layout.y(0.568 * SRC_H), 'prep_toppings_tray').setDepth(60);
     this.layout.fit(img, 0.0923 * SRC_W);
@@ -1286,10 +1287,13 @@ export class GameScene extends Phaser.Scene {
     if (this.state.level >= 7) loadDinerArt(this, 'bat');
     if (this.state.level >= 4) loadDinerArt(this, 'decor', () => this.syncDecor()); // the decor art (shop pieces from Lv 5 and the chest prizes)
     if (this.state.level >= 7) loadDinerArt(this, 'badges'); // the regulars' heart and the badge icons
+    // The updated toppings tray replaces the old painted tray from the very first visit.
+    // Load this small background overlay independently; ingredient/recipe art remains deferred until Lv 9.
+    loadLazyImages(this, ['prep_toppings_tray'], () => this.syncPrepTray());
     const burgerVariantUnlock = this.state.cfg.recipes.items.cheeseburger.unlockLevel;
     if (this.state.level >= burgerVariantUnlock - 1) {
       // Fetch the 215 KiB burger-variant art one Lv before it is needed, not during the initial game load.
-      loadLazyImages(this, ['cheese', 'onion', 'pickle', 'cheeseburger_cooked', 'garden_burger_cooked', 'deluxe_burger_cooked', 'prep_toppings_tray'], () => this.syncPrepTray());
+      loadLazyImages(this, ['cheese', 'onion', 'pickle', 'cheeseburger_cooked', 'garden_burger_cooked', 'deluxe_burger_cooked']);
     }
     loadGhostLooks(this, this.state.level); // the lilac ghost (Lv 3), fetched one Lv early
   }
