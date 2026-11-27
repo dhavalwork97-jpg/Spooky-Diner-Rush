@@ -155,14 +155,14 @@ describe('diner burger variants: orders and unlocks', () => {
     expect(lv('pickle_tray')).toBe(cfg.recipes.items.garden_burger.unlockLevel);
     expect(cfg.recipes.items.deluxe_burger.unlockLevel).toBeGreaterThanOrEqual(cfg.recipes.items.garden_burger.unlockLevel);
   });
-  it('every new picture is registered, on disk and loaded eagerly', async () => {
+  it('every new picture is registered, on disk and lazy-loaded before the Lv 10 unlock', async () => {
     const onDisk = Object.keys(import.meta.glob('../public/assets/art/*.webp')).map(f => f.replace('../public/', ''));
     const assets = JSON.parse(readFileSync('data/assets.json', 'utf8'));
     const list = Array.isArray(assets) ? assets : assets.assets;
     for (const key of ['cheeseburger_cooked', 'garden_burger_cooked', 'deluxe_burger_cooked', 'prep_toppings_tray', 'cheese', 'onion', 'pickle']) {
       const a = list.find((x: { key: string }) => x.key === key);
       expect(a, key).toBeTruthy();
-      expect(a.lazy, key).toBe(false);
+      expect(a.lazy, key).toBe(true);
       expect(onDisk, key).toContain(String(a.file).replace(/^\//, ''));
     }
   });
