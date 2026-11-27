@@ -105,7 +105,7 @@ describe('Burn Guard + Calm Kitchen balance', () => {
     const closes = bracketRate(now, 'closes', 6, 20) / bracketRate(old, 'closes', 6, 20);
     expect(closes).toBeGreaterThanOrEqual(0.45);
     expect(closes).toBeLessThan(1);
-  });
+  }, 60_000); // two 30-seed bot simulations exceed Vitest's default timeout in CI
 
   it('pressure keeps rising through the level brackets with both upgrades (average bot)', () => {
     const b = [[6, 10], [11, 15], [16, 20]].map(([a, z]) => bracketRate(average.both, 'closes', a, z));
