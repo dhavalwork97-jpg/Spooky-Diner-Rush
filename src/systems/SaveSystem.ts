@@ -61,6 +61,12 @@ export interface SaveData {
   badges: string[];
   /** Lifetime counters behind the badges (id -> count). Additive; missing in older saves. */
   stats: Record<string, number>;
+  /** Highest global Lv whose new diner recipes the player has seen in the Recipe Book. */
+  recipeBookSeenLevel: number;
+  /** Highest Taco Truck menu step whose new recipes the player has seen in the Recipe Book. */
+  tacoBookSeenStep: number;
+  /** Highest Pizza Place menu step whose new recipes the player has seen in the Recipe Book. */
+  pizzaBookSeenStep: number;
   /** Pizza Place (all additive; missing in older saves). Its menu step (1-10) and the XP towards the next one: separate from Lv, so buying it at Lv 30+ still starts at step 1. */
   pizzaStep: number;
   pizzaXp: number;
@@ -115,6 +121,9 @@ export function defaultSave(): SaveData {
     tacoChests: [],
     badges: [],
     stats: {},
+    recipeBookSeenLevel: 1,
+    tacoBookSeenStep: 1,
+    pizzaBookSeenStep: 1,
     pizzaStep: 1,
     pizzaXp: 0,
     pizzaOwned: {},
@@ -249,6 +258,10 @@ export function parseSave(raw: string | null): SaveData {
       tacoChests: cleanLevels(p.tacoChests),
       badges: cleanIds(p.badges),
       stats: cleanCounts(p.stats),
+      // Older saves start with their current progress already seen; only future unlocks show NEW.
+      recipeBookSeenLevel: p.recipeBookSeenLevel === undefined ? Math.max(1, Math.floor(num(p.level, base.level, 1))) : Math.max(1, Math.floor(num(p.recipeBookSeenLevel, 1, 1))),
+      tacoBookSeenStep: p.tacoBookSeenStep === undefined ? tacoStep : clampStep(num(p.tacoBookSeenStep, tacoStep, 1)),
+      pizzaBookSeenStep: p.pizzaBookSeenStep === undefined ? Math.min(10, Math.max(1, Math.floor(num(p.pizzaStep, 1, 1)))) : Math.min(10, Math.max(1, Math.floor(num(p.pizzaBookSeenStep, 1, 1)))),
       pizzaStep: typeof p.pizzaStep === 'number' && Number.isFinite(p.pizzaStep) ? Math.min(10, Math.max(1, Math.floor(p.pizzaStep))) : 1,
       pizzaXp: num(p.pizzaXp, 0),
       pizzaOwned: cleanOwned(p.pizzaOwned),
