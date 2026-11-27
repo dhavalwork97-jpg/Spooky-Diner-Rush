@@ -11,6 +11,7 @@ import { animGuard, fade, pop, shake } from '../anim/helpers';
 import { ParticlePool } from '../anim/ParticlePool';
 import { Atmosphere } from '../anim/atmosphere';
 import { SaveSystem } from '../systems/SaveSystem';
+import { LocalAnalytics } from '../telemetry/LocalAnalytics';
 import { modsFor } from '../game/shop';
 import { titleEarnedAt } from '../game/career';
 import { localDateKey } from '../game/extras';
@@ -164,6 +165,8 @@ export class GameScene extends Phaser.Scene {
       const sp = Number(params.get('speed'));
       if (sp > 0) this.speed = Math.min(20, sp);
     }
+    LocalAnalytics.startSession(debug || params.has('test') || params.has('testMode'));
+    LocalAnalytics.track('restaurant_entered', this.restaurant.id);
     // Optional extras: Mastery badges and today's Daily Special (burger diner only, where this scene runs).
     this.dayKey = localDateKey();
     this.state.enableExtras(save.mastery, this.dayKey, save.specialDay === this.dayKey);
@@ -828,6 +831,7 @@ export class GameScene extends Phaser.Scene {
         break;
       }
       case 'levelUp':
+        LocalAnalytics.track('level_reached', e.level);
         if (e.level > SaveSystem.data.recipeBookSeenLevel) this.menuButtons.setNewBadge(true);
         this.prepareDinerArt();
         this.syncPrepTray();
@@ -836,6 +840,7 @@ export class GameScene extends Phaser.Scene {
         this.saveNow();
         break;
       case 'closed':
+        LocalAnalytics.track('closed', this.restaurant.id);
         this.endEventFx();
         this.setSelectedSlot(null);
         this.hand.hide();
@@ -851,6 +856,7 @@ export class GameScene extends Phaser.Scene {
         );
         break;
       case 'reopened':
+        LocalAnalytics.track('reopened', this.restaurant.id);
         this.banner.hide();
         this.endEventFx();
         this.items.forEach((v) => v.destroy());
@@ -943,6 +949,7 @@ export class GameScene extends Phaser.Scene {
     this.hand.hide();
     audio.setSizzle(0);
     if (key === 'RecipeBook') {
+      LocalAnalytics.track('recipe_book_opened', this.restaurant.id);
       SaveSystem.data.recipeBookSeenLevel = this.state.level;
       this.menuButtons.setNewBadge(false);
     }
@@ -1102,6 +1109,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update(time: number, delta: number): void {
+    LocalAnalytics.tick(delta);
     if (this.state.coinsEarned !== this.earnedSeen) {
       const gained = this.state.coinsEarned - this.earnedSeen;
       this.earnedSeen = this.state.coinsEarned;
