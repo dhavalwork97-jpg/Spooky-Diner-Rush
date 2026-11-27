@@ -200,7 +200,7 @@ export class GameScene extends Phaser.Scene {
     this.applyLoginBonus();
     this.chefTalk = new ChefTalk(this.state.cfg.chef, makeRng(Date.now()));
     new MuteButton(this);
-    this.menuButtons = new MenuButtons(this, (k: MenuKind) => (k === 'shop' ? this.openShop() : k === 'book' ? this.openRecipeBook() : this.openRestaurants()));
+    this.menuButtons = new MenuButtons(this, (k: MenuKind) => (k === 'shop' ? this.openShop() : k === 'book' ? this.openRecipeBook() : this.openRestaurants()), this.state.level > SaveSystem.data.recipeBookSeenLevel);
 
     this.label = this.add
       .text(0, 0, '', { fontFamily: FONT, fontSize: '24px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 })
@@ -828,6 +828,7 @@ export class GameScene extends Phaser.Scene {
         break;
       }
       case 'levelUp':
+        if (e.level > SaveSystem.data.recipeBookSeenLevel) this.menuButtons.setNewBadge(true);
         this.prepareDinerArt();
         this.syncPrepTray();
         this.hud.badgePop();
@@ -941,6 +942,10 @@ export class GameScene extends Phaser.Scene {
     this.chef.hide();
     this.hand.hide();
     audio.setSizzle(0);
+    if (key === 'RecipeBook') {
+      SaveSystem.data.recipeBookSeenLevel = this.state.level;
+      this.menuButtons.setNewBadge(false);
+    }
     this.saveNow();
     const data: RestaurantSelectData = {
       state: this.state,
