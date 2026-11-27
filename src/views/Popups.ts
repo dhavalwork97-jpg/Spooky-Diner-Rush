@@ -63,8 +63,11 @@ export class LevelUpCard {
   private box: Phaser.GameObjects.Container;
   private title: Phaser.GameObjects.Text;
   private lines: Phaser.GameObjects.Text;
+  /** Small muted lines under the rewards (what comes next, XP to the next Lv). Only the diner passes them. */
+  private hints: Phaser.GameObjects.Text;
+  private bg: Phaser.GameObjects.Graphics;
   private timer?: Phaser.Time.TimerEvent;
-  private queue: { level: number; coins: number; unlocks: string[]; title?: string }[] = [];
+  private queue: { level: number; coins: number; unlocks: string[]; title?: string; hints?: string[] }[] = [];
   private showing = false;
 
   constructor(private scene: Phaser.Scene, private fx: ParticlePool, x: number, y: number, private onDone?: () => void) {
@@ -72,15 +75,16 @@ export class LevelUpCard {
       .text(0, -52, '', { fontFamily: FONT, fontSize: '56px', color: '#F28C28', stroke: '#2B1B17', strokeThickness: 8 })
       .setOrigin(0.5);
     this.lines = scene.add.text(0, 30, '', { fontFamily: FONT, fontSize: '28px', color: '#2B1B17', align: 'center' }).setOrigin(0.5);
+    this.hints = scene.add.text(0, 0, '', { fontFamily: FONT, fontSize: '20px', color: '#7a665e', align: 'center', wordWrap: { width: 380 } }).setOrigin(0.5).setVisible(false);
     this.box = scene.add.container(x, y).setDepth(960).setAlpha(0).setVisible(false);
-    const p = panel(scene, 420, 210);
-    this.box.add([p, this.title, this.lines]);
+    this.bg = panel(scene, 420, 210);
+    this.box.add([this.bg, this.title, this.lines, this.hints]);
     this.box.setSize(420, 210).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.hide());
   }
 
-  /** `title` is the new career title when this level crosses into one. */
-  show(level: number, coins: number, unlocks: string[], title?: string): void {
-    this.queue.push({ level, coins, unlocks, title });
+  /** `title` is the new career title when this level crosses into one. `hints` are optional extra lines under the rewards (the diner's "Next at Lv N" and XP lines). */
+  show(level: number, coins: number, unlocks: string[], title?: string, hints?: string[]): void {
+    this.queue.push({ level, coins, unlocks, title, hints });
     if (!this.showing) this.next();
   }
 
@@ -97,6 +101,7 @@ export class LevelUpCard {
     const unlockLines = item.unlocks.map((u) => `New: ${u}`);
     const titleLine = item.title ? [`New title: ${item.title}`] : [];
     this.lines.setText([...titleLine, ...unlockLines, `+${item.coins} coins`].join('\n'));
+    this.layout(item.hints ?? []);
     this.box.setVisible(true).setAlpha(1).setScale(1);
     this.scene.tweens.killTweensOf(this.box);
     audio.play('levelUp');
@@ -108,6 +113,31 @@ export class LevelUpCard {
     }
     this.timer?.remove();
     this.timer = this.scene.time.delayedCall(2600, () => this.hide());
+  }
+
+  /** Without hints the card keeps its original 420 x 210 look. With hints the panel grows to fit them, around the same centre. */
+  private layout(hints: string[]): void {
+    this.hints.setText(hints.join('\n')).setVisible(hints.length > 0);
+    if (hints.length === 0) {
+      this.title.setY(-52);
+      this.lines.setY(30);
+      this.resize(210);
+      return;
+    }
+    const lh = this.lines.height;
+    const h = Math.max(210, 118 + lh + 14 + this.hints.height + 22);
+    const top = -h / 2;
+    this.title.setY(top + 52);
+    this.lines.setY(top + 108 + lh / 2);
+    this.hints.setY(top + 108 + lh + 14 + this.hints.height / 2);
+    this.resize(h);
+  }
+
+  private resize(h: number): void {
+    this.bg.destroy();
+    this.bg = panel(this.scene, 420, h);
+    this.box.addAt(this.bg, 0);
+    this.box.setSize(420, h);
   }
 
   private hide(): void {

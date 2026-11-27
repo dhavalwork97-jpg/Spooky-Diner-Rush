@@ -50,6 +50,7 @@ import { defaultChests, dueChests, openedAfter } from '../game/chests';
 import { BatFlyers } from '../views/BatViews';
 import { dxKey, hasDinerArt, loadDinerArt } from '../views/dinerArt';
 import { loadGhostLooks } from '../views/ghostArt';
+import { levelUpHints } from '../game/nextUnlock';
 import { defaultBadges, newlyEarned, track, type BadgeEvent } from '../game/badges';
 import { batSchedule } from '../game/spooky';
 import { defaultIntros, dueIntros, introText, seenAfterIntro } from '../game/intros';
@@ -830,7 +831,7 @@ export class GameScene extends Phaser.Scene {
         this.prepareDinerArt();
         this.syncPrepTray();
         this.hud.badgePop();
-        this.levelUpCard.show(e.level, e.coins, e.unlocks, titleEarnedAt(this.state.cfg, e.level)?.title);
+        this.levelUpCard.show(e.level, e.coins, e.unlocks, titleEarnedAt(this.state.cfg, e.level)?.title, levelUpHints(this.state.cfg, e.level));
         this.saveNow();
         break;
       case 'closed':
