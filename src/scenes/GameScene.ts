@@ -12,6 +12,7 @@ import { ParticlePool } from '../anim/ParticlePool';
 import { Atmosphere } from '../anim/atmosphere';
 import { SaveSystem } from '../systems/SaveSystem';
 import { LocalAnalytics } from '../telemetry/LocalAnalytics';
+import { loadLazyImages } from '../views/lazyArt';
 import { modsFor } from '../game/shop';
 import { titleEarnedAt } from '../game/career';
 import { localDateKey } from '../game/extras';
@@ -1285,6 +1286,11 @@ export class GameScene extends Phaser.Scene {
     if (this.state.level >= 7) loadDinerArt(this, 'bat');
     if (this.state.level >= 4) loadDinerArt(this, 'decor', () => this.syncDecor()); // the decor art (shop pieces from Lv 5 and the chest prizes)
     if (this.state.level >= 7) loadDinerArt(this, 'badges'); // the regulars' heart and the badge icons
+    const burgerVariantUnlock = this.state.cfg.recipes.items.cheeseburger.unlockLevel;
+    if (this.state.level >= burgerVariantUnlock - 1) {
+      // Fetch the 215 KiB burger-variant art one Lv before it is needed, not during the initial game load.
+      loadLazyImages(this, ['cheese', 'onion', 'pickle', 'cheeseburger_cooked', 'garden_burger_cooked', 'deluxe_burger_cooked', 'prep_toppings_tray'], () => this.syncPrepTray());
+    }
     loadGhostLooks(this, this.state.level); // the lilac ghost (Lv 3), fetched one Lv early
   }
 
