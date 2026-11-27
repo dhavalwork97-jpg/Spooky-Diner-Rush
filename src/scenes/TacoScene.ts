@@ -25,6 +25,7 @@ import { makeRng } from '../game/rng';
 import { newlyEarned, track, type BadgeEvent } from '../game/badges';
 import { tacoBadges, tacoEvents, tacoHaunted, TACO_BAT_LANE } from '../game/taco/tacoExtras';
 import { SaveSystem } from '../systems/SaveSystem';
+import { LocalAnalytics } from '../telemetry/LocalAnalytics';
 import { CrazyGames } from '../sdk/crazygames';
 import { loadTacoArt, sheetKey, spriteKey, TacoViews } from '../views/TacoViews';
 import { TacoCustomers } from '../views/TacoCustomers';
@@ -145,6 +146,9 @@ export class TacoScene extends Phaser.Scene {
 
     const save = SaveSystem.data;
     this.state = new TacoKitchenState({ level: save.level, xp: save.xp, coins: save.coins, menuStep: save.tacoStep, menuXp: save.tacoXp, tacoServed: save.tacoServed });
+    const analyticsQuery = new URLSearchParams(location.search);
+    LocalAnalytics.startSession(analyticsQuery.has('debug') || analyticsQuery.has('test') || analyticsQuery.has('testMode'));
+    LocalAnalytics.track('restaurant_entered', 'taco_truck');
     // The truck uses its own upgrades only (the diner's shop upgrades do not carry over).
     this.state.mods = withChoices(tacoModsFor(this.state.taco.upgrades, save.tacoOwned), 'taco', save.choices, this.state.level);
     this.applyDebugFlags();
@@ -218,6 +222,7 @@ export class TacoScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number): void {
+    LocalAnalytics.tick(delta);
     const real = Math.min(delta, 100) / 1000;
     if (!this.storyCard.isShowing && !this.adActive) this.state.update(real * this.speed);
     for (const e of this.state.drainEvents()) this.handle(e);
@@ -345,11 +350,13 @@ export class TacoScene extends Phaser.Scene {
         this.toast.show(`Streak bonus +${e.xp} XP`);
         break;
       case 'levelUp':
+        LocalAnalytics.track('level_reached', e.level);
         this.hud.badgePop();
         this.levelUpCard.show(e.level, e.coins, e.unlocks, titleEarnedAt(this.state.cfg, e.level)?.title);
         this.saveNow();
         break;
       case 'menuGrew': {
+        LocalAnalytics.track('menu_step_reached', `taco:${this.state.menuStep}`);
         if (this.state.menuStep > SaveSystem.data.tacoBookSeenStep) this.menuButtons.setNewBadge(true);
         // A menu step often comes with a level-up: wait for that card, so the two never sit on top of each other.
         const msg = `New on the menu: ${e.added.join(', ')}`;
@@ -360,6 +367,7 @@ export class TacoScene extends Phaser.Scene {
         break;
       }
       case 'closed':
+        LocalAnalytics.track('closed', 'taco_truck');
         this.endEventFx();
         this.haunted.setCombo(0, this.state.cfg.combo.maxCombo);
         this.endLesson(false, true);
@@ -378,6 +386,7 @@ export class TacoScene extends Phaser.Scene {
         );
         break;
       case 'reopened':
+        LocalAnalytics.track('reopened', 'taco_truck');
         this.overlay.hide();
         this.banner.hide();
         CrazyGames.gameplayStart();
@@ -756,6 +765,7 @@ export class TacoScene extends Phaser.Scene {
     this.tutorial.hide();
     audio.setSizzle(0);
     if (key === 'RecipeBook') {
+      LocalAnalytics.track('recipe_book_opened', 'taco_truck');
       SaveSystem.data.tacoBookSeenStep = this.state.menuStep;
       this.menuButtons.setNewBadge(false);
     }
