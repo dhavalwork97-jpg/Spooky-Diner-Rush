@@ -116,7 +116,7 @@
       "width": 400,
       "height": 231,
       "preferFallback": false,
-      "lazy": false
+      "lazy": true
     },
     {
       "key": "onion",
@@ -126,7 +126,7 @@
       "width": 360,
       "height": 199,
       "preferFallback": false,
-      "lazy": false
+      "lazy": true
     },
     {
       "key": "pickle",
@@ -136,7 +136,7 @@
       "width": 360,
       "height": 186,
       "preferFallback": false,
-      "lazy": false
+      "lazy": true
     },
     {
       "key": "nuggets_raw",
@@ -706,7 +706,7 @@
       "width": 329,
       "height": 360,
       "preferFallback": false,
-      "lazy": false
+      "lazy": true
     },
     {
       "key": "garden_burger_cooked",
@@ -716,7 +716,7 @@
       "width": 357,
       "height": 360,
       "preferFallback": false,
-      "lazy": false
+      "lazy": true
     },
     {
       "key": "deluxe_burger_cooked",
@@ -726,7 +726,7 @@
       "width": 344,
       "height": 360,
       "preferFallback": false,
-      "lazy": false
+      "lazy": true
     },
     {
       "key": "prep_toppings_tray",
@@ -736,7 +736,7 @@
       "width": 540,
       "height": 308,
       "preferFallback": false,
-      "lazy": false
+      "lazy": true
     },
     {
       "key": "lilac_ghost_calm",
