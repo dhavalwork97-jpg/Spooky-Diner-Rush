@@ -119,6 +119,7 @@ export const LocalAnalytics = {
   /** Call on the first restaurant scene. Debug/test sessions are deliberately excluded. */
   startSession(debugOrTest = false): void {
     load();
+    installListeners(); // keep the local export/reset helper available in debug sessions too
     enabled = !debugOrTest;
     if (!enabled || active) return;
     active = true;
