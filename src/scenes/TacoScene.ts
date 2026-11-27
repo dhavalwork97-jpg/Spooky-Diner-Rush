@@ -11,7 +11,7 @@ import { tacoRecipeEntries, TACO_BOOK_TIPS } from '../game/taco/tacoRecipes';
 import { TACO_TUTORIAL_ID, nextTacoHint, recipeIntro, tutorialDue } from '../game/taco/tacoTutorial';
 import { lessonDone, lessonMode, lessonShown, seedLearned } from '../game/taco/tacoLearning';
 import { tacoModsFor } from '../game/taco/tacoShop';
-import { clampStep } from '../game/taco/tacoMenu';
+import { clampStep, stepXpNeeded } from '../game/taco/tacoMenu';
 import { titleEarnedAt } from '../game/career';
 import type { RestaurantSelectData } from './RestaurantSelectScene';
 import type { BookRow, MasteryBookData, RecipeBookData } from './RecipeBookScene';
@@ -169,7 +169,7 @@ export class TacoScene extends Phaser.Scene {
     this.chestCard = new ChestCard(this, this.fx, LOGICAL_WIDTH / 2, 360, 'chest_open');
     this.prepareExtrasArt();
     new MuteButton(this);
-    this.menuButtons = new MenuButtons(this, (k: MenuKind) => this.openPanel(k === 'shop' ? 'Shop' : k === 'book' ? 'RecipeBook' : 'RestaurantSelect'));
+    this.menuButtons = new MenuButtons(this, (k: MenuKind) => this.openPanel(k === 'shop' ? 'Shop' : k === 'book' ? 'RecipeBook' : 'RestaurantSelect'), this.state.menuStep > SaveSystem.data.tacoBookSeenStep);
     this.tutorial = new TacoTutorialView(this, LOGICAL_WIDTH, LOGICAL_HEIGHT, () => (this.lesson ? this.endLesson(false) : this.finishTutorial('Tutorial skipped. The Recipe Book shows every recipe.')));
     if (new URLSearchParams(location.search).has('debug') && !new URLSearchParams(location.search).has('nozones')) this.drawZones();
 
@@ -350,6 +350,7 @@ export class TacoScene extends Phaser.Scene {
         this.saveNow();
         break;
       case 'menuGrew': {
+        if (this.state.menuStep > SaveSystem.data.tacoBookSeenStep) this.menuButtons.setNewBadge(true);
         // A menu step often comes with a level-up: wait for that card, so the two never sit on top of each other.
         const msg = `New on the menu: ${e.added.join(', ')}`;
         if (this.levelUpCard.isShowing) this.time.delayedCall(2800, () => this.toast.show(msg));
@@ -754,6 +755,10 @@ export class TacoScene extends Phaser.Scene {
     this.cancelDrag();
     this.tutorial.hide();
     audio.setSizzle(0);
+    if (key === 'RecipeBook') {
+      SaveSystem.data.tacoBookSeenStep = this.state.menuStep;
+      this.menuButtons.setNewBadge(false);
+    }
     this.saveNow();
     this.panelOpen = true;
     const onClose = () => {
@@ -770,12 +775,21 @@ export class TacoScene extends Phaser.Scene {
       rows: key === 'RecipeBook' ? this.recipeRows() : undefined,
       mastery: key === 'RecipeBook' ? this.masteryData() : undefined,
       badges: key === 'RecipeBook' ? { defs: tacoBadges, stats: SaveSystem.data.tacoStats, have: SaveSystem.data.tacoBadges } : undefined,
-      tips: key === 'RecipeBook' ? TACO_BOOK_TIPS : undefined,
+      tips: key === 'RecipeBook' ? `${TACO_BOOK_TIPS}\n${this.nextMenuHint()}` : undefined,
     };
     this.scene.launch(key, data);
     // The Taco scene is registered after the panels, so without this they would open underneath it.
     this.scene.bringToTop(key);
     this.scene.pause();
+  }
+
+  /** A short, current target for the Taco Truck's separate menu progression. */
+  private nextMenuHint(): string {
+    const nextStep = this.state.menuStep + 1;
+    if (nextStep > 10) return 'Every Taco Truck recipe is now on the menu.';
+    const next = [...this.state.taco.dishes, ...this.state.taco.drinks].find((d) => d.unlockStep === nextStep);
+    const remaining = Math.max(0, stepXpNeeded(this.state.cfg, this.state.menuStep) - this.state.menuXp);
+    return `${next ? `Next up: ${next.name}. ` : 'More recipes are coming. '}${remaining} XP to the next menu update.`;
   }
 
   /** The Taco Truck's real recipes for the Recipe Book, straight from the kitchen's own data. */
