@@ -134,7 +134,7 @@ export const LocalAnalytics = {
     if (!enabled) return;
     const suffix = safeDetail(detail);
     bump(suffix ? `${metric}:${suffix}` : metric);
-    persist();
+    // Batched by tick() (every ~5 s) and flushed on hide/unload; avoid synchronous writes per delivery.
   },
 
   /** Accumulate foreground gameplay time; cap frame gaps so tab switches do not inflate play time. */
