@@ -1,7 +1,43 @@
-# IN PROGRESS (2026-11-27) - Recovery 1.0 completion pass (ChatGPT, owner-approved)
-Branch: `recovery/1.0`, starting head `28f2d967219f59b7c093fdaa41bfe32b8c59d5c9`.
-Scope: close the explicit M3 follow-ups; implement M4 on-device-only analytics (no network, no third-party tracker); complete M5 with measurements before any optimization; run M6 regression for normal + CrazyGames builds and document every result. Preserve gameplay/economy/SDK behavior unless a test proves a required correction. Do not merge to main, deploy, or submit to CrazyGames.
-Constraints: this session can read/write GitHub through the connector but cannot clone the repository or execute npm/browser/device tests in the local runtime. Any change requiring runtime/browser/phone verification must remain explicitly marked unverified until GitHub Actions or owner device testing confirms it. First enable verification workflow on `recovery/**` so commits can be checked in CI. Do not claim a milestone complete on source inspection alone.
+# STATUS (2026-11-27) - Recovery 1.0 completion pass results
+Branch: `recovery/1.0`. Latest code commit at this status update: `f7473d15fc1d5860a6a783290169e9546d161aa2`. No changes were made to `main`; no merge, deployment, or CrazyGames submission was performed.
+
+## M3 follow-ups
+- Added persistent seen-progress fields for the Diner, Taco Truck and Pizza Place. A NEW marker appears on the Recipe Book button after a new dish/menu unlock and clears when that restaurant's book is opened. Old saves seed the seen markers from existing progress, avoiding false NEW badges.
+- Taco Truck and Pizza Place Recipe Books now show the next menu dish target and XP remaining to the next menu update.
+- Automated tests/builds pass. The badge's visual appearance and Recipe Book paging on a real mobile touch screen still need owner QA.
+
+## M4 on-device analytics
+- Added `src/telemetry/LocalAnalytics.ts` and `docs/LOCAL_ANALYTICS.md`.
+- Stores aggregate counters and foreground active time in browser localStorage only. No network calls, third-party trackers, player identifiers, names, emails, or raw event history.
+- Tracks session starts/ends, active time, restaurant entries, global levels, restaurant menu steps, Recipe Book opens, dish deliveries, completed orders, closures and reopens.
+- Debug/test sessions are excluded; a local console export/reset helper is available as `window.__chefRushAnalytics`.
+- Analytics writes are batched to avoid synchronous storage writes on every delivery.
+
+## M5 measured optimization
+- Added a manifest-based lazy image loader and moved seven burger-variant images (220,380 bytes / 215.2 KiB) from eager to lazy loading.
+- The Diner preloads them at Lv 9, one level before the variants unlock at Lv 10.
+- Eager manifest images fell from 2,671,267 bytes (2.55 MiB) to 2,450,887 bytes (2.34 MiB), an 8.3% reduction in eager image bytes. The total package is not smaller; these images are fetched later.
+- Current build sizes and measurement limitations are recorded in `docs/PERFORMANCE_REPORT.md`.
+- FPS, heap/memory, network waterfall and phone loading measurements remain unverified because no real-device profiling was performed.
+
+## M6 automated regression
+Latest full verification: GitHub Actions run [45927213836](https://github.com/dhavalwork97-jpg/Spooky-Diner-Rush/actions/runs/45927213836), commit `f7473d15fc1d5860a6a783290169e9546d161aa2`.
+- `npm test`: 91 test files passed, 1 skipped; 1,062 tests passed, 3 skipped.
+- `npm run build`: passed.
+- `npm run build:crazygames`: passed.
+- CrazyGames build uploaded as a GitHub Actions artifact only; it was not submitted to CrazyGames.
+
+## Owner QA still required
+- M1 burger visuals: stacked burger appearance, order-bubble icons, level-up card and Recipe Book icons.
+- M3 NEW marker visual check and mobile touch/paging check for the Recipe Book.
+- Ghost swap: verify the lilac ghost's happy-leave/laughing clip in live gameplay.
+- M5: profile load time, FPS and memory on a real phone; confirm Lv 9 preloading makes the Lv 10 art ready without missing visuals.
+- M6: manual normal-build and CrazyGames runtime smoke tests on target browsers/devices.
+- The previously noted Diner content gaps at Lv 13, 17, 18 and 19 remain a content/design decision; no dishes were invented to fill them.
+
+## Environment note
+The owner-provided ZIP enabled local source inspection. A local `npm ci` attempt did not finish in the sandbox, so the successful GitHub Actions run is the authoritative automated test/build result. Browser and physical-device checks were not available here.
+
 
 # DONE, awaiting owner review (2026-11-27) - Recovery 1.0 M3: progression UI (branch recovery/1.0, previous commit a7b6c8c)
 Done: src/game/nextUnlock.ts (nextUnlock, recipeProgress, levelUpHints), diner Recipe Book now paged (5 per page) with 'N more Lv' on locked dishes, orange outline on the next unlock and a summary line; level-up card shows 'Next at Lv N: ...' and 'N XP to Lv M' (panel grows; Taco/Pizza cards unchanged), tests/next_unlock.test.ts. Fixed: the old diner book had no paging, so dishes after the first ~4.5 were unreachable. tsc clean, vitest 1057 passed, build OK. Browser: book pages (Lv 6 and Lv 15) and level-up card (Lv 9, 11, 20, 50) seen. NOT done: 'NEW' badge on the book button (needs a save field), Taco/Pizza next-step hints, mobile touch check of the book paging. Next: M4 on-device analytics, M5 perf (lazy-load the new art), M6 regression. No merge to main.
