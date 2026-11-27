@@ -1287,9 +1287,6 @@ export class GameScene extends Phaser.Scene {
     if (this.state.level >= 7) loadDinerArt(this, 'bat');
     if (this.state.level >= 4) loadDinerArt(this, 'decor', () => this.syncDecor()); // the decor art (shop pieces from Lv 5 and the chest prizes)
     if (this.state.level >= 7) loadDinerArt(this, 'badges'); // the regulars' heart and the badge icons
-    // The updated toppings tray replaces the old painted tray from the very first visit.
-    // Load this small background overlay independently; ingredient/recipe art remains deferred until Lv 9.
-    loadLazyImages(this, ['prep_toppings_tray'], () => this.syncPrepTray());
     const burgerVariantUnlock = this.state.cfg.recipes.items.cheeseburger.unlockLevel;
     if (this.state.level >= burgerVariantUnlock - 1) {
       // Fetch the 215 KiB burger-variant art one Lv before it is needed, not during the initial game load.
