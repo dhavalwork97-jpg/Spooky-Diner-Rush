@@ -736,7 +736,7 @@
       "width": 540,
       "height": 308,
       "preferFallback": false,
-      "lazy": true
+      "lazy": false
     },
     {
       "key": "lilac_ghost_calm",
