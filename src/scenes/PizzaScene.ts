@@ -12,7 +12,7 @@ import { hitTestPizza, tapPizzaZone } from '../game/pizza/pizzaZones';
 import { PIZZA_TUTORIAL_ID, nextPizzaHint, pizzaRecipeIntro, pizzaTutorialDue } from '../game/pizza/pizzaTutorial';
 import { lessonDone, lessonMode, lessonShown, seedPizzaLearned } from '../game/pizza/pizzaLearning';
 import { pizzaModsFor } from '../game/pizza/pizzaShop';
-import { clampPizzaStep, pizzaMilestones } from '../game/pizza/pizzaMenu';
+import { clampPizzaStep, pizzaMilestones, pizzaStepXpNeeded } from '../game/pizza/pizzaMenu';
 import { recipeSteps } from '../game/pizza/pizzaRecipes';
 import { titleEarnedAt } from '../game/career';
 import type { RestaurantSelectData } from './RestaurantSelectScene';
@@ -145,7 +145,7 @@ export class PizzaScene extends Phaser.Scene {
     this.overlay = new Overlay(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     this.storyCard = new StoryCard(this, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     new MuteButton(this);
-    this.menuButtons = new MenuButtons(this, (k: MenuKind) => this.openPanel(k === 'shop' ? 'Shop' : k === 'book' ? 'RecipeBook' : 'RestaurantSelect'));
+    this.menuButtons = new MenuButtons(this, (k: MenuKind) => this.openPanel(k === 'shop' ? 'Shop' : k === 'book' ? 'RecipeBook' : 'RestaurantSelect'), this.state.menuStep > SaveSystem.data.pizzaBookSeenStep);
     this.tutorial = new TacoTutorialView(this, LOGICAL_WIDTH, LOGICAL_HEIGHT, () => (this.lesson ? this.endLesson(false) : this.finishTutorial('Tutorial skipped. The Recipe Book shows every recipe.')));
     if (debug && !q.has('nozones')) this.drawZones();
 
@@ -353,6 +353,7 @@ export class PizzaScene extends Phaser.Scene {
         this.saveNow();
         break;
       case 'menuGrew': {
+        if (this.state.menuStep > SaveSystem.data.pizzaBookSeenStep) this.menuButtons.setNewBadge(true);
         const msg = `New on the menu: ${e.added.join(', ')}`;
         if (this.levelUpCard.isShowing) this.time.delayedCall(2800, () => this.toast.show(msg));
         else this.toast.show(msg);
@@ -664,6 +665,10 @@ export class PizzaScene extends Phaser.Scene {
     this.cancelDrag();
     this.tutorial.hide();
     audio.setSizzle(0);
+    if (key === 'RecipeBook') {
+      SaveSystem.data.pizzaBookSeenStep = this.state.menuStep;
+      this.menuButtons.setNewBadge(false);
+    }
     this.saveNow();
     this.panelOpen = true;
     const onClose = () => {
@@ -679,11 +684,20 @@ export class PizzaScene extends Phaser.Scene {
       onPick: (id: string) => (id === PIZZA_ID ? this.scene.restart() : startRestaurant(this, id)),
       rows: key === 'RecipeBook' ? this.recipeRows() : undefined,
       mastery: key === 'RecipeBook' ? this.masteryData() : undefined,
-      tips: key === 'RecipeBook' ? 'Tap the dough, then a sauce, a cheese and toppings. Tap the pizza to finish it, again to bake it. Take it out when the ring turns green, then drag it to the customer.' : undefined,
+      tips: key === 'RecipeBook' ? `Tap the dough, then a sauce, a cheese and toppings. Tap the pizza to finish it, again to bake it. Take it out when the ring turns green, then drag it to the customer.\n${this.nextMenuHint()}` : undefined,
     };
     this.scene.launch(key, data);
     this.scene.bringToTop(key);
     this.scene.pause();
+  }
+
+  /** A short, current target for the Pizza Place's separate menu progression. */
+  private nextMenuHint(): string {
+    const nextStep = this.state.menuStep + 1;
+    if (nextStep > 10) return 'Every Pizza Place recipe is now on the menu.';
+    const next = this.state.pizza.dishes.find((d) => d.unlockStep === nextStep);
+    const remaining = Math.max(0, pizzaStepXpNeeded(this.state.cfg, this.state.menuStep) - this.state.menuXp);
+    return `${next ? `Next up: ${next.name}. ` : 'More recipes are coming. '}${remaining} XP to the next menu update.`;
   }
 
   /** The Pizza Place's real recipes for the Recipe Book: available, still locked (with the menu step that unlocks them) and the learning state. */
