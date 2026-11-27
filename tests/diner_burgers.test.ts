@@ -159,11 +159,20 @@ describe('diner burger variants: orders and unlocks', () => {
     const onDisk = Object.keys(import.meta.glob('../public/assets/art/*.webp')).map(f => f.replace('../public/', ''));
     const assets = JSON.parse(readFileSync('data/assets.json', 'utf8'));
     const list = Array.isArray(assets) ? assets : assets.assets;
-    for (const key of ['cheeseburger_cooked', 'garden_burger_cooked', 'deluxe_burger_cooked', 'prep_toppings_tray', 'cheese', 'onion', 'pickle']) {
+    for (const key of ['cheeseburger_cooked', 'garden_burger_cooked', 'deluxe_burger_cooked', 'cheese', 'onion', 'pickle']) {
       const a = list.find((x: { key: string }) => x.key === key);
       expect(a, key).toBeTruthy();
       expect(a.lazy, key).toBe(true);
       expect(onDisk, key).toContain(String(a.file).replace(/^\//, ''));
     }
+  });
+  it('the topping tray picture is loaded up front (not lazy) so the tray shows from Lv 1', () => {
+    const onDisk = Object.keys(import.meta.glob('../public/assets/art/*.webp')).map(f => f.replace('../public/', ''));
+    const assets = JSON.parse(readFileSync('data/assets.json', 'utf8'));
+    const list = Array.isArray(assets) ? assets : assets.assets;
+    const a = list.find((x: { key: string }) => x.key === 'prep_toppings_tray');
+    expect(a).toBeTruthy();
+    expect(a.lazy).not.toBe(true);
+    expect(onDisk).toContain(String(a.file).replace(/^\//, ''));
   });
 });
