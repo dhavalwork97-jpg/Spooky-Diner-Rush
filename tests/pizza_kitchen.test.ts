@@ -328,7 +328,7 @@ describe('customers, orders and progress', () => {
         if (k.closed) k.reopen();
       }
     }
-  });
+  }, 60_000); // 40,000 simulated updates across ten menu steps
   it('seats grow 3 -> 5 across the menu steps', () => {
     expect(make(1).levelInfo.maxCustomers).toBe(3);
     expect(make(10).levelInfo.maxCustomers).toBe(5);
