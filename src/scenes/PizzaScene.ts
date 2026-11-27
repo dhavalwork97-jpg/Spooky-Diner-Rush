@@ -19,6 +19,7 @@ import type { RestaurantSelectData } from './RestaurantSelectScene';
 import type { BookRow, MasteryBookData, RecipeBookData } from './RecipeBookScene';
 import { startRestaurant, PIZZA_ID } from './restaurantRoute';
 import { SaveSystem } from '../systems/SaveSystem';
+import { LocalAnalytics } from '../telemetry/LocalAnalytics';
 import { CrazyGames } from '../sdk/crazygames';
 import { iconFrame, loadPizzaArt, PizzaViews } from '../views/PizzaViews';
 import { PizzaTickets } from '../views/PizzaTickets';
@@ -123,6 +124,8 @@ export class PizzaScene extends Phaser.Scene {
 
     const save = SaveSystem.data;
     this.state = new PizzaKitchenState({ level: save.level, xp: save.xp, coins: save.coins, menuStep: save.pizzaStep, menuXp: save.pizzaXp, pizzaServed: save.pizzaServed });
+    LocalAnalytics.startSession(debug || q.has('test') || q.has('testMode'));
+    LocalAnalytics.track('restaurant_entered', 'pizza_place');
     // The Pizza Place uses its own upgrades only (the diner's and the truck's shop upgrades do not carry over).
     this.state.mods = withChoices(pizzaModsFor(defaultPizzaConfig.upgrades, save.pizzaOwned), 'pizza', save.choices, this.state.level);
     this.applyDebugFlags();
@@ -190,6 +193,7 @@ export class PizzaScene extends Phaser.Scene {
 
   override update(_time: number, delta: number): void {
     if (!this.state) return;
+    LocalAnalytics.tick(delta);
     const real = Math.min(delta, 100) / 1000;
     if (!this.storyCard.isShowing && !this.adActive) this.state.update(real * this.speed);
     for (const e of this.state.drainEvents()) this.handle(e);
@@ -348,11 +352,13 @@ export class PizzaScene extends Phaser.Scene {
         this.toast.show(`Streak bonus +${e.xp} XP`);
         break;
       case 'levelUp':
+        LocalAnalytics.track('level_reached', e.level);
         this.hud.badgePop();
         this.levelUpCard.show(e.level, e.coins, e.unlocks, titleEarnedAt(this.state.cfg, e.level)?.title);
         this.saveNow();
         break;
       case 'menuGrew': {
+        LocalAnalytics.track('menu_step_reached', `pizza:${this.state.menuStep}`);
         if (this.state.menuStep > SaveSystem.data.pizzaBookSeenStep) this.menuButtons.setNewBadge(true);
         const msg = `New on the menu: ${e.added.join(', ')}`;
         if (this.levelUpCard.isShowing) this.time.delayedCall(2800, () => this.toast.show(msg));
@@ -361,6 +367,7 @@ export class PizzaScene extends Phaser.Scene {
         break;
       }
       case 'closed':
+        LocalAnalytics.track('closed', 'pizza_place');
         this.endLesson(false, true);
         this.banner.hide();
         audio.setSizzle(0);
@@ -376,6 +383,7 @@ export class PizzaScene extends Phaser.Scene {
         );
         break;
       case 'reopened':
+        LocalAnalytics.track('reopened', 'pizza_place');
         this.overlay.hide();
         this.banner.hide();
         CrazyGames.gameplayStart();
@@ -666,6 +674,7 @@ export class PizzaScene extends Phaser.Scene {
     this.tutorial.hide();
     audio.setSizzle(0);
     if (key === 'RecipeBook') {
+      LocalAnalytics.track('recipe_book_opened', 'pizza_place');
       SaveSystem.data.pizzaBookSeenStep = this.state.menuStep;
       this.menuButtons.setNewBadge(false);
     }
