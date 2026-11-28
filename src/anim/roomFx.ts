@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from '../systems/AudioSystem';
+import { fitVideo } from './videoFit';
 import { nextStormDelay, STORM_FADE, STORM_RETRY, stormAllowed, THUNDER_OFFSET } from './roomFxMath';
 
 const CALM = 'room_calm';
@@ -66,36 +67,10 @@ export class RoomFx {
   private startCalm(): void {
     const a = this.area;
     const v = this.scene.add.video(a.x, a.y, CALM).setOrigin(0, 0).setDepth(D.calm).setName('room_calm');
-    this.fit(v);
+    fitVideo(this.scene, v, this.area, () => this.dead);
     v.setMute(true);
     v.play(true);
     this.calm = v;
-  }
-
-  /** A video has no size until its first frame is ready, so keep trying until the real size is known, then scale it over the room. */
-  private fit(v: Phaser.GameObjects.Video): void {
-    const a = this.area;
-    const apply = (): boolean => {
-      const el = v.video;
-      if (!v.active || !el || el.videoWidth <= 0 || el.videoHeight <= 0) return false;
-      v.setScale(a.width / el.videoWidth, a.height / el.videoHeight);
-      return true;
-    };
-    const again = (): void => {
-      apply();
-      this.scene.time.delayedCall(400, apply); // Phaser swaps in the real-size texture a moment after the first frame
-    };
-    v.once(Phaser.GameObjects.Events.VIDEO_CREATED, again);
-    v.once(Phaser.GameObjects.Events.VIDEO_PLAY, again);
-    const poll = (n: number): void => {
-      if (this.dead || !v.active || n > 50) return;
-      if (apply()) {
-        this.scene.time.delayedCall(400, apply);
-        return;
-      }
-      this.scene.time.delayedCall(100, () => poll(n + 1));
-    };
-    poll(0);
   }
 
   private scheduleStorm(): void {
@@ -121,7 +96,7 @@ export class RoomFx {
   private playStorm(): void {
     const a = this.area;
     const v = this.scene.add.video(a.x, a.y, STORM).setOrigin(0, 0).setDepth(D.storm).setAlpha(0).setName('room_storm');
-    this.fit(v);
+    fitVideo(this.scene, v, this.area, () => this.dead);
     v.setMute(true);
     this.storm = v;
     v.once(Phaser.GameObjects.Events.VIDEO_COMPLETE, () => this.endStorm());

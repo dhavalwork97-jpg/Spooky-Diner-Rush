@@ -38,6 +38,8 @@ import { TacoTutorialView } from '../views/TacoTutorialView';
 import { ParticlePool } from '../anim/ParticlePool';
 import { arcTo, flyCoins } from '../anim/fly';
 import { audio } from '../systems/AudioSystem';
+import { WindowVideo } from '../anim/windowVideo';
+import { TACO_WINDOW } from '../game/taco/tacoWindow';
 import { sfxFor } from '../views/TacoSounds';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 
@@ -86,6 +88,7 @@ type Drag = {
 export class TacoScene extends Phaser.Scene {
   private state!: TacoKitchenState;
   private bg!: BackgroundPlacement;
+  private windowVideo?: WindowVideo;
   private views!: TacoViews;
   private customers!: TacoCustomers;
   private fx!: ParticlePool;
@@ -125,6 +128,7 @@ export class TacoScene extends Phaser.Scene {
     const a = defaultTacoConfig.art;
     this.load.image('taco_back', `${a.folder}/${a.back}.webp`);
     this.load.image('taco_front', `${a.folder}/${a.front}.webp`);
+    this.load.image(TACO_WINDOW.stillKey, TACO_WINDOW.stillFile);
     loadTacoArt(this, defaultTacoConfig);
     this.load.on('loaderror', (file: Phaser.Loader.File) => console.error(`Missing asset: ${file.key} (${file.url})`));
   }
@@ -142,6 +146,8 @@ export class TacoScene extends Phaser.Scene {
     const layer = (key: string, depth: number) =>
       this.add.image(this.bg.x, this.bg.y, key).setOrigin(0, 0).setDisplaySize(this.bg.width, this.bg.height).setDepth(depth).setName(key);
     layer('taco_back', 0);
+    // The night through the glass: a still of the scene, with the looping video over it (still only with reduced motion).
+    this.windowVideo = new WindowVideo(this, this.bg, SaveSystem.reduceMotion());
     layer('taco_front', 20);
 
     const save = SaveSystem.data;
@@ -657,6 +663,7 @@ export class TacoScene extends Phaser.Scene {
   private onTap(p: Phaser.Input.Pointer, over: unknown[]): void {
     audio.unlock();
     audio.startMusic();
+    audio.startAmbience(TACO_WINDOW.ambience);
     if (over.length > 0 || this.adActive || this.panelOpen || this.state.closed || this.overlay.visible || this.storyCard.isShowing) return;
     if (window.innerWidth < 900 && window.innerHeight > window.innerWidth * 1.1) return; // the "rotate your device" screen is up
     const n = logicalToNorm(p.worldX, p.worldY, this.bg);
@@ -864,6 +871,9 @@ export class TacoScene extends Phaser.Scene {
     this.fx.destroy();
     audio.setSizzle(0);
     audio.stopMusic();
+    audio.stopAmbience();
+    this.windowVideo?.destroy();
+    this.windowVideo = undefined;
     CrazyGames.gameplayStop();
   }
 

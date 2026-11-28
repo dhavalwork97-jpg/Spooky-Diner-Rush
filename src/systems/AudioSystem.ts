@@ -178,8 +178,8 @@ export class AudioSystem {
   /** Real recordings (the haunted room's wind bed and thunder), the only sounds that are files. Decoded once, on first use. */
   private clips = new Map<string, AudioBuffer | null>();
   private clipLoading = new Map<string, Promise<AudioBuffer | null>>();
-  private ambience: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
-  private ambienceWanted = false;
+  private ambience: { name: string; src: AudioBufferSourceNode; gain: GainNode } | null = null;
+  private ambienceWanted: string | null = null;
 
   /** Fetch and decode assets/audio/<name>.ogg, falling back to .mp3 where the browser cannot decode Ogg. Never throws; null means no sound. */
   private clip(name: string): Promise<AudioBuffer | null> {
@@ -208,12 +208,13 @@ export class AudioSystem {
   }
 
   /** Quiet looping wind bed for the haunted room. Needs unlock() first; safe to call on every tap. */
-  startAmbience(): void {
-    this.ambienceWanted = true;
+  startAmbience(name = 'ambience_loop'): void {
+    if (this.ambience && this.ambience.name !== name) this.stopAmbience(); // another restaurant's bed was playing
+    this.ambienceWanted = name;
     if (!this.ctx || !this.musicGain || this.ambience) return;
-    void this.clip('ambience_loop').then((buf) => {
+    void this.clip(name).then((buf) => {
       const ctx = this.ctx;
-      if (!buf || !ctx || !this.musicGain || !this.ambienceWanted || this.ambience) return;
+      if (!buf || !ctx || !this.musicGain || this.ambienceWanted !== name || this.ambience) return;
       const src = ctx.createBufferSource();
       src.buffer = buf;
       src.loop = true;
@@ -222,12 +223,12 @@ export class AudioSystem {
       src.connect(gain);
       gain.connect(this.musicGain);
       src.start();
-      this.ambience = { src, gain };
+      this.ambience = { name, src, gain };
     });
   }
 
   stopAmbience(): void {
-    this.ambienceWanted = false;
+    this.ambienceWanted = null;
     if (!this.ambience) return;
     try {
       this.ambience.src.stop();

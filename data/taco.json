@@ -987,110 +987,102 @@
   "cooldown": 60
  },
  "haunted": {
-  "note": "Measured from the final kitchen_street_back.webp (2754x1536); fractions of the art. Used by Full Moon (B4) and combo windows (B6).",
-  "moon": {
-   "x": 0.644,
-   "y": 0.146,
-   "radius": 0.0349
+    "note": "Measured from the window video's still (assets/taco/window/window_still.webp placed by src/game/taco/tacoWindow.ts); fractions of the art (2754x1536). Used by Full Moon (B4) and combo windows (B6).",
+    "moon": {
+      "x": 0.5616,
+      "y": 0.104,
+      "radius": 0.0271
+    },
+    "pumpkins": [
+      {
+        "id": "pumpkin_left",
+        "x": 0.3091,
+        "y": 0.2633,
+        "w": 0.0134,
+        "h": 0.0176
+      },
+      {
+        "id": "pumpkin_mid",
+        "x": 0.4432,
+        "y": 0.2622,
+        "w": 0.0134,
+        "h": 0.0182
+      },
+      {
+        "id": "pumpkin_right",
+        "x": 0.6426,
+        "y": 0.2598,
+        "w": 0.0134,
+        "h": 0.0194
+      },
+      {
+        "id": "pumpkin_far",
+        "x": 0.7201,
+        "y": 0.3098,
+        "w": 0.0093,
+        "h": 0.0147
+      }
+    ],
+    "windows": [
+      {
+        "id": "tower",
+        "x": 0.6304,
+        "y": 0.0995,
+        "w": 0.0025,
+        "h": 0.0065,
+        "tier": 3,
+        "tower": true
+      },
+      {
+        "id": "left_low",
+        "x": 0.608,
+        "y": 0.1541,
+        "w": 0.0036,
+        "h": 0.0114,
+        "tier": 1
+      },
+      {
+        "id": "mid_left",
+        "x": 0.632,
+        "y": 0.1245,
+        "w": 0.0036,
+        "h": 0.0139,
+        "tier": 1
+      },
+      {
+        "id": "mid_a",
+        "x": 0.6409,
+        "y": 0.124,
+        "w": 0.0025,
+        "h": 0.0098,
+        "tier": 2
+      },
+      {
+        "id": "mid_b",
+        "x": 0.6505,
+        "y": 0.1643,
+        "w": 0.0036,
+        "h": 0.0122,
+        "tier": 2
+      },
+      {
+        "id": "right_a",
+        "x": 0.6662,
+        "y": 0.1663,
+        "w": 0.0036,
+        "h": 0.0163,
+        "tier": 2
+      },
+      {
+        "id": "door",
+        "x": 0.6509,
+        "y": 0.2022,
+        "w": 0.0041,
+        "h": 0.0155,
+        "tier": 3
+      }
+    ]
   },
-  "pumpkins": [
-   {
-    "id": "pumpkin_left",
-    "x": 0.3029,
-    "y": 0.3574,
-    "w": 0.04,
-    "h": 0.04
-   },
-   {
-    "id": "pumpkin_mid",
-    "x": 0.4376,
-    "y": 0.3605,
-    "w": 0.026,
-    "h": 0.03
-   },
-   {
-    "id": "pumpkin_right",
-    "x": 0.7313,
-    "y": 0.3544,
-    "w": 0.04,
-    "h": 0.046
-   },
-   {
-    "id": "pumpkin_far",
-    "x": 0.7993,
-    "y": 0.3339,
-    "w": 0.032,
-    "h": 0.04
-   }
-  ],
-  "windows": [
-   {
-    "id": "tower",
-    "x": 0.5034,
-    "y": 0.2139,
-    "w": 0.0025,
-    "h": 0.015,
-    "tier": 3,
-    "tower": true
-   },
-   {
-    "id": "left_low",
-    "x": 0.4715,
-    "y": 0.2732,
-    "w": 0.0054,
-    "h": 0.0163,
-    "tier": 1
-   },
-   {
-    "id": "mid_left",
-    "x": 0.5173,
-    "y": 0.2674,
-    "w": 0.0036,
-    "h": 0.0169,
-    "tier": 1
-   },
-   {
-    "id": "mid_a",
-    "x": 0.5314,
-    "y": 0.2653,
-    "w": 0.0033,
-    "h": 0.0163,
-    "tier": 2
-   },
-   {
-    "id": "mid_b",
-    "x": 0.5355,
-    "y": 0.2658,
-    "w": 0.0033,
-    "h": 0.0169,
-    "tier": 2
-   },
-   {
-    "id": "right_a",
-    "x": 0.5589,
-    "y": 0.2731,
-    "w": 0.0033,
-    "h": 0.0072,
-    "tier": 2
-   },
-   {
-    "id": "door",
-    "x": 0.5609,
-    "y": 0.2878,
-    "w": 0.0084,
-    "h": 0.0195,
-    "tier": 3
-   },
-   {
-    "id": "right_far",
-    "x": 0.6019,
-    "y": 0.2618,
-    "w": 0.0036,
-    "h": 0.0085,
-    "tier": 3
-   }
-  ]
- },
  "mastery": {
   "fromStep": 1,
   "tiers": [
