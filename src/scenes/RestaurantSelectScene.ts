@@ -37,7 +37,7 @@ const TACO_CARD: PlayableRestaurant = {
   cost: defaultTacoConfig.restaurant.cost,
 };
 
-/** The Pizza Place card is built from data/pizza.json the same way (Lv 30, 3,000 coins). */
+/** The Pizza Place card is built from data/pizza.json the same way (Lv 20, 3,000 coins). */
 const PIZZA_CARD: PlayableRestaurant = {
   id: defaultPizzaConfig.restaurant.id,
   name: defaultPizzaConfig.restaurant.name,

@@ -150,6 +150,7 @@ export class PizzaViews {
   private px: number; // logical px per background px
   private ovenBig?: Phaser.GameObjects.Sprite;
   private ovenSmall?: Phaser.GameObjects.Sprite;
+  private plateImgs: (Phaser.GameObjects.Image | undefined)[] = [];
   private fryer: (Phaser.GameObjects.Sprite | undefined)[] = [];
   private fryerSince: { phase: CookPhase | null; at: number }[] = [];
   private ice?: Phaser.GameObjects.Sprite;
@@ -276,6 +277,28 @@ export class PizzaViews {
     this.syncSmallOven(dt, now);
     this.syncFryer(now);
     this.syncIce(now);
+    this.syncPlates();
+  }
+
+  /** The dish standing on each of the three plates. */
+  private syncPlates(): void {
+    this.s.plates.forEach((p, i) => {
+      const shown = this.plateImgs[i];
+      if (!p) {
+        shown?.destroy();
+        this.plateImgs[i] = undefined;
+        return;
+      }
+      if (shown && shown.getData('dish') === p.dish) return;
+      shown?.destroy();
+      const d = this.s.dishDef(p.dish);
+      const at = this.zoneSpot('plate', i);
+      if (!d || !at) return;
+      const pic = iconFrame(d);
+      const img = this.scene.add.image(at.x, at.y - 6, pic.atlas, pic.frame).setDepth(DEPTH_ITEMS).setData('dish', p.dish);
+      img.setScale(Math.min(58 / img.width, 46 / img.height));
+      this.plateImgs[i] = img;
+    });
   }
 
   private syncBoards(now: number): void {
@@ -496,6 +519,8 @@ export class PizzaViews {
   }
 
   destroy(): void {
+    for (const img of this.plateImgs) img?.destroy();
+    this.plateImgs = [];
     for (const p of [...this.boards, ...this.ovenPics]) p.box.destroy();
     for (const r of this.rings.values()) r.destroy();
     this.ovenBig?.destroy();

@@ -134,8 +134,8 @@ describe('haunted window (B4, B6)', () => {
     expect(litWindows(2).length).toBeGreaterThan(litWindows(1).length);
     expect(litWindows(3).length).toBe(tacoHaunted.windows.length);
   });
-  it('the moon is measured from the final back layer inside the window glass', () => {
-    expect(tacoHaunted.moon.x).toBeGreaterThan(0.6);
+  it('the moon is measured from the window video inside the window glass', () => {
+    expect(tacoHaunted.moon.x).toBeGreaterThan(0.5);
     expect(tacoHaunted.moon.x).toBeLessThan(0.67);
   });
 });

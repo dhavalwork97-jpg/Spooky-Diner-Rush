@@ -1,0 +1,93 @@
+{
+ "key": "pan_red_veggies",
+ "image": "pan_red_veggies_sheet.webp",
+ "frameWidth": 279,
+ "frameHeight": 284,
+ "columns": 4,
+ "rows": 6,
+ "frameCount": 22,
+ "frameLabels": [
+  "empty",
+  "raw_0_src1",
+  "raw_1_src2",
+  "raw_2_src3",
+  "raw_3_src4",
+  "raw_4_src5",
+  "raw_5_src6",
+  "raw_6_src7",
+  "mid_0_src8",
+  "mid_1_src9",
+  "mid_2_src10",
+  "mid_3_src11",
+  "mid_4_src12",
+  "mid_5_src13",
+  "mid_6_src14",
+  "mid_7_src15",
+  "cooked_0_src16",
+  "cooked_1_src17",
+  "burnt_0_src22",
+  "burnt_2_src20",
+  "burnt_4_src21",
+  "burnt_7_src23"
+ ],
+ "panBox": {
+  "x": 8,
+  "y": 107,
+  "w": 262,
+  "h": 170
+ },
+ "stir": {
+  "looks": [
+   "raw",
+   "mid",
+   "cooked",
+   "burnt"
+  ],
+  "loop": 8,
+  "fps": 10,
+  "empty": 0,
+  "clips": {
+   "raw": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    7
+   ],
+   "mid": [
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+   ],
+   "cooked": [
+    16,
+    17,
+    12,
+    12,
+    13,
+    13,
+    14,
+    15
+   ],
+   "burnt": [
+    18,
+    18,
+    19,
+    19,
+    20,
+    20,
+    18,
+    21
+   ]
+  }
+ },
+ "note": "Pan and food drawn together; panBox is the pan (bowl and handle) in every frame. Each look in stir.clips is an 8-step stir/toss loop with the same timeline (rest, lift, up, peak, peak, falling, landing, rest); looks cross-fade step for step. Made by tools/make_stir_sheets.py."
+}

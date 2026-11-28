@@ -205,7 +205,9 @@ export class CustomerView {
     c.items.forEach((k, i) => {
       const ix = (i - (n - 1) / 2) * gap;
       this.iconXs.push(ix);
-      const icon = scene.add.image(ix, -bg.displayHeight * 0.5, k === 'burger' ? 'bun_top' : `${k}_cooked`);
+      const iconKey = k === 'burger' ? 'bun_top' : `${k}_cooked`;
+      // The burger-variant icons load in the background; if one is not here yet, show the plain burger instead of a missing-picture box.
+      const icon = scene.add.image(ix, -bg.displayHeight * 0.5, scene.textures.exists(iconKey) ? iconKey : 'bun_top');
       icon.setScale(iconW / icon.width);
       this.bubble.add(icon);
     });

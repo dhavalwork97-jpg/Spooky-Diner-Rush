@@ -38,7 +38,9 @@ export function nextHint(s: KitchenState): Hint {
   }
   if (need === 'burger') {
     const build = s.buildingSlots()[0]?.item;
-    const nextLayer = build ? s.layers[build.placed.length] : undefined;
+    const accepts = build ? s.nextLayers(build) : [];
+    // A plain burger needs lettuce and tomato; the cheese, onions and pickles are for the burgers that unlock later.
+    const nextLayer = accepts.find((l) => l === 'patty' || l === 'lettuce' || l === 'tomato');
     const pattyReady = s.burners.findIndex((p) => p && p.side === 2 && isEdible(p.phase));
     const pattyFlip = s.burners.findIndex((p) => p && p.side === 1 && isEdible(p.phase));
     const cooking = s.burners.some((p) => p);

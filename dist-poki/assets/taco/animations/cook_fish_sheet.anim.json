@@ -1,0 +1,27 @@
+{
+ "key": "cook_fish",
+ "image": "cook_fish_sheet.webp",
+ "frameWidth": 428,
+ "frameHeight": 391,
+ "columns": 4,
+ "rows": 2,
+ "frameCount": 7,
+ "suggestedFps": 6,
+ "frameLabels": [
+  "raw",
+  "sizzling",
+  "browning",
+  "flipping",
+  "cooked_ready",
+  "burnt",
+  "gone_smoke"
+ ],
+ "anchorPx": {
+  "x": 214,
+  "y": 372
+ },
+ "originX": 0.5,
+ "originY": 0.9514,
+ "anchorNote": "Anchor = bottom-centre of the food on the pan (steam rises above).",
+ "note": "Frame 5 = perfectly cooked, 6 = burnt, 7 = removed."
+}

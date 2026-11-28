@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { withChoices } from '../game/choices';
 import { DailyGoalPlate } from '../views/DailyGoalPlate';
 import { DailyGoalSystem } from '../systems/DailyGoalSystem';
 import { NO_PROGRESS } from '../game/dailyGoal';
@@ -10,6 +11,8 @@ import { animGuard, fade, pop, shake } from '../anim/helpers';
 import { ParticlePool } from '../anim/ParticlePool';
 import { Atmosphere } from '../anim/atmosphere';
 import { SaveSystem } from '../systems/SaveSystem';
+import { LocalAnalytics } from '../telemetry/LocalAnalytics';
+import { loadLazyImages } from '../views/lazyArt';
 import { modsFor } from '../game/shop';
 import { titleEarnedAt } from '../game/career';
 import { localDateKey } from '../game/extras';
@@ -24,11 +27,12 @@ import { MenuButtons, type MenuKind } from '../views/MenuButtons';
 import { MuteButton } from '../views/MuteButton';
 import { arcTo, flyCoins } from '../anim/fly';
 import { audio } from '../systems/AudioSystem';
+import { RoomFx } from '../anim/roomFx';
 import { CrazyGames } from '../sdk/crazygames';
 import { ads } from '../ads';
 import { reopenWithAd } from '../game/reopenWithAd';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
-import { levelDef, type DecorDef, type EventDef } from '../game/config';
+import { isBurgerKind, levelDef, type DecorDef, type EventDef } from '../game/config';
 import { nextHint, tutorialActive } from '../game/tutorial';
 import { hasSavedProgress } from '../game/startup';
 import { LOGIN_FROM_LEVEL, checkLogin, tomorrowReward } from '../game/loginBonus';
@@ -51,6 +55,7 @@ import { defaultChests, dueChests, openedAfter } from '../game/chests';
 import { BatFlyers } from '../views/BatViews';
 import { dxKey, hasDinerArt, loadDinerArt } from '../views/dinerArt';
 import { loadGhostLooks } from '../views/ghostArt';
+import { levelUpHints } from '../game/nextUnlock';
 import { defaultBadges, newlyEarned, track, type BadgeEvent } from '../game/badges';
 import { batSchedule } from '../game/spooky';
 import { defaultIntros, dueIntros, introText, seenAfterIntro } from '../game/intros';
@@ -83,6 +88,7 @@ export class GameScene extends Phaser.Scene {
   private label!: Phaser.GameObjects.Text;
   private fx!: ParticlePool;
   private atmosphere?: Atmosphere;
+  private roomFx?: RoomFx;
   private showAll = false;
   private selectedId: string | null = null;
 
@@ -106,6 +112,7 @@ export class GameScene extends Phaser.Scene {
   private introGlow!: IntroGlow;
   private bats!: BatFlyers;
   private decorViews = new Map<string, Phaser.GameObjects.Image>();
+  private prepTray: Phaser.GameObjects.Image | null = null;
   private decorGlows: Phaser.GameObjects.Ellipse[] = [];
   private earnedSeen = 0;
   private badgeQueue: string[] = [];
@@ -140,6 +147,8 @@ export class GameScene extends Phaser.Scene {
     const { width: iw, height: ih } = this.restaurant.backgroundSize;
     this.bg = fitBackground(LOGICAL_WIDTH, LOGICAL_HEIGHT, iw, ih);
     this.layout = new Layout(this.bg);
+    // The haunted room (still, looping video, storms) sits behind the kitchen picture, which is transparent where the room shows.
+    this.roomFx = new RoomFx(this, this.bg, { reduced: SaveSystem.reduceMotion(), isBusy: () => this.paused });
     this.add
       .image(this.bg.x, this.bg.y, this.restaurant.background)
       .setOrigin(0, 0)
@@ -153,7 +162,7 @@ export class GameScene extends Phaser.Scene {
     this.earnedSeen = 0;
     this.badgeQueue = [];
     this.badgeToastBusy = false;
-    this.state.mods = withDecorPerks(modsFor(this.state.cfg.upgrades.upgrades, save.owned), this.state.cfg.decor.items, save.decor);
+    this.state.mods = withChoices(withDecorPerks(modsFor(this.state.cfg.upgrades.upgrades, save.owned), this.state.cfg.decor.items, save.decor), 'diner', save.choices, this.state.level);
     if (debug) {
       const lv = Number(params.get('level'));
       if (lv >= 1) {
@@ -163,11 +172,14 @@ export class GameScene extends Phaser.Scene {
       const sp = Number(params.get('speed'));
       if (sp > 0) this.speed = Math.min(20, sp);
     }
+    LocalAnalytics.startSession(debug || params.has('test') || params.has('testMode'));
+    LocalAnalytics.track('restaurant_entered', this.restaurant.id);
     // Optional extras: Mastery badges and today's Daily Special (burger diner only, where this scene runs).
     this.dayKey = localDateKey();
     this.state.enableExtras(save.mastery, this.dayKey, save.specialDay === this.dayKey);
 
     this.syncDecor();
+    this.syncPrepTray();
     this.fx = new ParticlePool(this, 140);
     this.atmosphere = new Atmosphere(this, this.layout);
     this.buildZones();
@@ -198,7 +210,7 @@ export class GameScene extends Phaser.Scene {
     this.applyLoginBonus();
     this.chefTalk = new ChefTalk(this.state.cfg.chef, makeRng(Date.now()));
     new MuteButton(this);
-    this.menuButtons = new MenuButtons(this, (k: MenuKind) => (k === 'shop' ? this.openShop() : k === 'book' ? this.openRecipeBook() : this.openRestaurants()));
+    this.menuButtons = new MenuButtons(this, (k: MenuKind) => (k === 'shop' ? this.openShop() : k === 'book' ? this.openRecipeBook() : this.openRestaurants()), this.state.level > SaveSystem.data.recipeBookSeenLevel);
 
     this.label = this.add
       .text(0, 0, '', { fontFamily: FONT, fontSize: '24px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 })
@@ -342,6 +354,18 @@ export class GameScene extends Phaser.Scene {
       this.state.tapTopping('tomato');
       return '';
     });
+    registerStationHandler('cheese', () => {
+      this.state.tapTopping('cheese');
+      return '';
+    });
+    registerStationHandler('onion', () => {
+      this.state.tapTopping('onion');
+      return '';
+    });
+    registerStationHandler('pickle', () => {
+      this.state.tapTopping('pickle');
+      return '';
+    });
     registerStationHandler('side_plate', () => '');
     registerStationHandler('trash', () => {
       const slot = this.selectedSlot ?? undefined;
@@ -356,6 +380,7 @@ export class GameScene extends Phaser.Scene {
   private onPointerDown(pointer: Phaser.Input.Pointer, over: unknown[]): void {
     audio.unlock();
     audio.startMusic();
+    audio.startAmbience();
     if (over.length > 0 || this.paused || (window.innerWidth < 900 && window.innerHeight > window.innerWidth * 1.1)) return;
     const n = logicalToNorm(pointer.worldX, pointer.worldY, this.bg);
     const zone = hitTestZone(this.restaurant.zones, n.x, n.y, TOUCH_SLOP);
@@ -547,7 +572,7 @@ export class GameScene extends Phaser.Scene {
     const slot = this.state.slots[slotIndex];
     if (!slot.item) return null;
     const home = this.slotPos(slotIndex);
-    const v = new ItemView(this, at?.x ?? home.x, at?.y ?? home.y, slot.item.id, slot.item.kind, slotIndex, this.layout.s(slot.item.kind === 'burger' ? 62 : slot.item.kind === 'pizza' ? 112 : slot.item.kind === 'icecream' ? 104 : slot.item.kind === 'drink' ? 100 : 70));
+    const v = new ItemView(this, at?.x ?? home.x, at?.y ?? home.y, slot.item.id, slot.item.kind, slotIndex, this.layout.s(isBurgerKind(slot.item.kind) ? 62 : slot.item.kind === 'pizza' ? 112 : slot.item.kind === 'icecream' ? 104 : slot.item.kind === 'drink' ? 100 : 70));
     v.home = home;
     this.items.set(slotIndex, v);
     return v;
@@ -814,12 +839,16 @@ export class GameScene extends Phaser.Scene {
         break;
       }
       case 'levelUp':
+        LocalAnalytics.track('level_reached', e.level);
+        if (e.level > SaveSystem.data.recipeBookSeenLevel) this.menuButtons.setNewBadge(true);
         this.prepareDinerArt();
+        this.syncPrepTray();
         this.hud.badgePop();
-        this.levelUpCard.show(e.level, e.coins, e.unlocks, titleEarnedAt(this.state.cfg, e.level)?.title);
+        this.levelUpCard.show(e.level, e.coins, e.unlocks, titleEarnedAt(this.state.cfg, e.level)?.title, levelUpHints(this.state.cfg, e.level));
         this.saveNow();
         break;
       case 'closed':
+        LocalAnalytics.track('closed', this.restaurant.id);
         this.endEventFx();
         this.setSelectedSlot(null);
         this.hand.hide();
@@ -835,6 +864,7 @@ export class GameScene extends Phaser.Scene {
         );
         break;
       case 'reopened':
+        LocalAnalytics.track('reopened', this.restaurant.id);
         this.banner.hide();
         this.endEventFx();
         this.items.forEach((v) => v.destroy());
@@ -865,6 +895,16 @@ export class GameScene extends Phaser.Scene {
     this.chef.setChefVisible(false);
     this.setSelectedSlot(null);
     this.storyCard.show(card, () => this.chef.setChefVisible(true));
+  }
+
+  /** From Lv 10 the toppings tray (cheese, onions, pickles) sits on the Prep station, over the old mixing tray. The three tap zones are cut from this picture (data/restaurants.json). */
+  private syncPrepTray(): void {
+    // The replacement toppings tray is part of the starting kitchen art, even though its ingredients unlock later.
+    if (this.prepTray || !this.textures.exists('prep_toppings_tray')) return;
+    // Centre (0.4065, 0.568) and width 0.0923 of the kitchen picture: sits on the steel plate, covers the old pink tray, leaves the teal bowl above it.
+    const img = this.add.image(this.layout.x(0.4065 * SRC_W), this.layout.y(0.568 * SRC_H), 'prep_toppings_tray').setDepth(60);
+    this.layout.fit(img, 0.0923 * SRC_W);
+    this.prepTray = img;
   }
 
   /** Draw owned decor. Cosmetic images sit above the background and below customers (depth 100). */
@@ -917,6 +957,11 @@ export class GameScene extends Phaser.Scene {
     this.chef.hide();
     this.hand.hide();
     audio.setSizzle(0);
+    if (key === 'RecipeBook') {
+      LocalAnalytics.track('recipe_book_opened', this.restaurant.id);
+      SaveSystem.data.recipeBookSeenLevel = this.state.level;
+      this.menuButtons.setNewBadge(false);
+    }
     this.saveNow();
     const data: RestaurantSelectData = {
       state: this.state,
@@ -1073,6 +1118,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update(time: number, delta: number): void {
+    LocalAnalytics.tick(delta);
     if (this.state.coinsEarned !== this.earnedSeen) {
       const gained = this.state.coinsEarned - this.earnedSeen;
       this.earnedSeen = this.state.coinsEarned;
@@ -1097,7 +1143,7 @@ export class GameScene extends Phaser.Scene {
       const v = this.items.get(slot.index);
       if (slot.item && !v) {
         const nv = this.makeItem(slot.index);
-        if (nv) slot.item.kind !== 'burger' ? nv.showFries() : nv.syncLayers(slot.item.placed, slot.item.building, false);
+        if (nv) !isBurgerKind(slot.item.kind) ? nv.showFries() : nv.syncLayers(slot.item.placed, slot.item.building, false);
       } else if (!slot.item && v && !v.leaving) this.removeItem(slot.index, false);
     }
     this.atmosphere?.update(delta);
@@ -1251,7 +1297,12 @@ export class GameScene extends Phaser.Scene {
     if (this.state.level >= 7) loadDinerArt(this, 'bat');
     if (this.state.level >= 4) loadDinerArt(this, 'decor', () => this.syncDecor()); // the decor art (shop pieces from Lv 5 and the chest prizes)
     if (this.state.level >= 7) loadDinerArt(this, 'badges'); // the regulars' heart and the badge icons
-    loadGhostLooks(this, this.state.level); // the blue yeti (Lv 3), pink fuzz (Lv 5) and mummy ghost (Lv 7), fetched one Lv early
+    const burgerVariantUnlock = this.state.cfg.recipes.items.cheeseburger.unlockLevel;
+    if (this.state.level >= burgerVariantUnlock - 1) {
+      // Fetch the 215 KiB burger-variant art one Lv before it is needed, not during the initial game load.
+      loadLazyImages(this, ['cheese', 'onion', 'pickle', 'cheeseburger_cooked', 'garden_burger_cooked', 'deluxe_burger_cooked']);
+    }
+    loadGhostLooks(this, this.state.level); // the lilac ghost (Lv 3), fetched one Lv early
   }
 
   /** A spooky event began: change the room's look, or send the bat on its flights. */
@@ -1321,7 +1372,7 @@ export class GameScene extends Phaser.Scene {
         const lines = [`+${c.coins} coins`];
         if (prize && !SaveSystem.data.decor.includes(prize.id)) {
           SaveSystem.data.decor = [...SaveSystem.data.decor, prize.id];
-          this.state.mods = withDecorPerks(modsFor(this.state.cfg.upgrades.upgrades, SaveSystem.data.owned), this.state.cfg.decor.items, SaveSystem.data.decor);
+          this.state.mods = withChoices(withDecorPerks(modsFor(this.state.cfg.upgrades.upgrades, SaveSystem.data.owned), this.state.cfg.decor.items, SaveSystem.data.decor), 'diner', SaveSystem.data.choices, this.state.level);
           this.syncDecor();
           lines.push(`${prize.name} for the wall!`);
         }
@@ -1415,6 +1466,9 @@ export class GameScene extends Phaser.Scene {
     this.views = [];
     audio.setSizzle(0);
     audio.stopMusic();
+    audio.stopAmbience();
+    this.roomFx?.destroy();
+    this.roomFx = undefined;
     CrazyGames.gameplayStop();
   }
 }

@@ -74,17 +74,16 @@ describe('customer art', () => {
   });
   it('keeps the model look count equal to the art count', () => {
     expect(CUSTOMER_LOOK_COUNT).toBe(CUSTOMER_LOOKS.length);
-    expect(CUSTOMER_LOOKS).toHaveLength(12);
+    expect(CUSTOMER_LOOKS).toHaveLength(10);
   });
   it('maps any look number to a character, even out of range', () => {
     expect(lookKey(0)).toBe('kid');
-    expect(lookKey(12)).toBe('kid');
+    expect(lookKey(10)).toBe('kid');
     expect(lookKey(8)).toBe('mint_ghost');
-    expect(lookKey(9)).toBe('blue_yeti');
-    expect(lookKey(11)).toBe('mummy_ghost');
-    expect(lookKey(-1)).toBe('mummy_ghost');
+    expect(lookKey(9)).toBe('lilac_ghost');
+    expect(lookKey(-1)).toBe('lilac_ghost');
     expect(lookIndex(3)).toBe(3);
-    expect(lookIndex(15)).toBe(3);
+    expect(lookIndex(13)).toBe(3);
   });
   it('the model only produces ghost looks, and each new one walks in at its own Lv', () => {
     const seenAt = (level: number): number[] => {
@@ -101,9 +100,7 @@ describe('customer art', () => {
     expect(seenAt(2)).toEqual([8]);
     expect(seenAt(3)).toEqual([8, 9]);
     expect(seenAt(4)).toEqual([8, 9]);
-    expect(seenAt(5)).toEqual([8, 9, 10]);
-    expect(seenAt(7)).toEqual([8, 9, 10, 11]);
-    expect(seenAt(15)).toEqual([8, 9, 10, 11]);
+    expect(seenAt(15)).toEqual([8, 9]);
     for (const l of seenAt(15)) {
       expect(l).toBeGreaterThanOrEqual(CUSTOMER_LOOK_MIN);
       expect(l).toBeLessThan(CUSTOMER_LOOK_COUNT);
@@ -118,8 +115,6 @@ describe('customer art', () => {
     expect(maxLookForLevel(0)).toBe(CUSTOMER_LOOK_MIN);
     expect(maxLookForLevel(1)).toBe(8);
     expect(maxLookForLevel(3)).toBe(9);
-    expect(maxLookForLevel(5)).toBe(10);
-    expect(maxLookForLevel(7)).toBe(11);
     expect(maxLookForLevel(99)).toBe(CUSTOMER_LOOK_COUNT - 1);
   });
   it('the Taco Truck keeps the mint ghost only, even for a player at a high Lv', () => {
@@ -277,21 +272,21 @@ describe('customer motion', () => {
   });
 });
 
-const GHOST_NAMES = ['mint_ghost', 'blue_yeti', 'pink_fuzz', 'mummy_ghost'] as const;
-/** The ghosts that float above the stool; the yeti and the fuzz stand on the floor. */
-const FLOATING = new Set<string>(['mint_ghost', 'mummy_ghost']);
+const GHOST_NAMES = ['mint_ghost', 'lilac_ghost'] as const;
+/** The ghosts that float above the stool (both of them now). */
+const FLOATING = new Set<string>(['mint_ghost', 'lilac_ghost']);
 const mintFiles = import.meta.glob('../public/assets/customers/mint_ghost/*.webp', { query: '?url', import: 'default' });
 const mintMeta = import.meta.glob('../public/assets/customers/mint_ghost/*.anim.json', { eager: true, import: 'default' }) as Record<string, { frames: number; columns: number; frameWidth: number; frameHeight: number; fps: number; loop: boolean; bodyTop: number; bodyBottom: number; bodyHeight: number; bodyWidth: number; edgeAlpha: number }>;
 const oldGhostFiles = import.meta.glob('../public/assets/customers/ghosts/**/*', { query: '?url', import: 'default' });
 
 describe('ghost customers', () => {
-  it('are the last looks; the floating ones are flagged as ghosts, the standing ones and the people are not', () => {
+  it('are the last looks; both are flagged as floating ghosts and the people are not', () => {
     GHOST_NAMES.forEach((n, i) => {
       expect(CUSTOMER_LOOKS[8 + i]).toBe(n);
       expect(isGhost(8 + i), n).toBe(FLOATING.has(n));
       if (FLOATING.has(n)) expect(PERSONALITIES[n].ghost!.hover).toBeGreaterThan(0);
     });
-    expect(PERSONALITIES.mummy_ghost.ghost!.bob).toBe(0); // its footage already bobs
+    expect(PERSONALITIES.lilac_ghost.ghost!.bob).toBeGreaterThan(0); // its footage only sways a little, so it keeps a small extra bob like the mint ghost
     for (let i = 0; i < 8; i++) expect(isGhost(i)).toBe(false);
   });
   it('the old ghosts (cutouts and scare sheets) are gone from the game and the asset list', () => {

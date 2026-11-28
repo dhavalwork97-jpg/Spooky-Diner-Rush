@@ -92,13 +92,31 @@
           "height": 0.1434
         },
         {
-          "id": "prep_station",
-          "station": "prep",
+          "id": "cheese_tray",
+          "station": "cheese",
           "unlockLevel": 10,
-          "x": 0.359,
-          "y": 0.4364,
-          "width": 0.095,
-          "height": 0.1909
+          "x": 0.3605,
+          "y": 0.524,
+          "width": 0.0307,
+          "height": 0.088
+        },
+        {
+          "id": "onion_tray",
+          "station": "onion",
+          "unlockLevel": 12,
+          "x": 0.3912,
+          "y": 0.524,
+          "width": 0.0307,
+          "height": 0.088
+        },
+        {
+          "id": "pickle_tray",
+          "station": "pickle",
+          "unlockLevel": 12,
+          "x": 0.4219,
+          "y": 0.524,
+          "width": 0.0307,
+          "height": 0.088
         },
         {
           "id": "dough_bases",

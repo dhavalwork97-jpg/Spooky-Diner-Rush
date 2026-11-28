@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { withChoices } from '../game/choices';
 import { DailyGoalPlate } from '../views/DailyGoalPlate';
 import { DailyGoalSystem } from '../systems/DailyGoalSystem';
 import { startRestaurant } from './restaurantRoute';
@@ -10,7 +11,7 @@ import { tacoRecipeEntries, TACO_BOOK_TIPS } from '../game/taco/tacoRecipes';
 import { TACO_TUTORIAL_ID, nextTacoHint, recipeIntro, tutorialDue } from '../game/taco/tacoTutorial';
 import { lessonDone, lessonMode, lessonShown, seedLearned } from '../game/taco/tacoLearning';
 import { tacoModsFor } from '../game/taco/tacoShop';
-import { clampStep } from '../game/taco/tacoMenu';
+import { clampStep, stepXpNeeded } from '../game/taco/tacoMenu';
 import { titleEarnedAt } from '../game/career';
 import type { RestaurantSelectData } from './RestaurantSelectScene';
 import type { BookRow, MasteryBookData, RecipeBookData } from './RecipeBookScene';
@@ -24,6 +25,7 @@ import { makeRng } from '../game/rng';
 import { newlyEarned, track, type BadgeEvent } from '../game/badges';
 import { tacoBadges, tacoEvents, tacoHaunted, TACO_BAT_LANE } from '../game/taco/tacoExtras';
 import { SaveSystem } from '../systems/SaveSystem';
+import { LocalAnalytics } from '../telemetry/LocalAnalytics';
 import { CrazyGames } from '../sdk/crazygames';
 import { ads } from '../ads';
 import { reopenWithAd } from '../game/reopenWithAd';
@@ -38,6 +40,8 @@ import { TacoTutorialView } from '../views/TacoTutorialView';
 import { ParticlePool } from '../anim/ParticlePool';
 import { arcTo, flyCoins } from '../anim/fly';
 import { audio } from '../systems/AudioSystem';
+import { WindowVideo } from '../anim/windowVideo';
+import { TACO_WINDOW } from '../game/taco/tacoWindow';
 import { sfxFor } from '../views/TacoSounds';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './BootScene';
 
@@ -86,6 +90,7 @@ type Drag = {
 export class TacoScene extends Phaser.Scene {
   private state!: TacoKitchenState;
   private bg!: BackgroundPlacement;
+  private windowVideo?: WindowVideo;
   private views!: TacoViews;
   private customers!: TacoCustomers;
   private fx!: ParticlePool;
@@ -125,6 +130,7 @@ export class TacoScene extends Phaser.Scene {
     const a = defaultTacoConfig.art;
     this.load.image('taco_back', `${a.folder}/${a.back}.webp`);
     this.load.image('taco_front', `${a.folder}/${a.front}.webp`);
+    this.load.image(TACO_WINDOW.stillKey, TACO_WINDOW.stillFile);
     loadTacoArt(this, defaultTacoConfig);
     this.load.on('loaderror', (file: Phaser.Loader.File) => console.error(`Missing asset: ${file.key} (${file.url})`));
   }
@@ -142,12 +148,17 @@ export class TacoScene extends Phaser.Scene {
     const layer = (key: string, depth: number) =>
       this.add.image(this.bg.x, this.bg.y, key).setOrigin(0, 0).setDisplaySize(this.bg.width, this.bg.height).setDepth(depth).setName(key);
     layer('taco_back', 0);
+    // The night through the glass: a still of the scene, with the looping video over it (still only with reduced motion).
+    this.windowVideo = new WindowVideo(this, this.bg, SaveSystem.reduceMotion());
     layer('taco_front', 20);
 
     const save = SaveSystem.data;
     this.state = new TacoKitchenState({ level: save.level, xp: save.xp, coins: save.coins, menuStep: save.tacoStep, menuXp: save.tacoXp, tacoServed: save.tacoServed });
+    const analyticsQuery = new URLSearchParams(location.search);
+    LocalAnalytics.startSession(analyticsQuery.has('debug') || analyticsQuery.has('test') || analyticsQuery.has('testMode'));
+    LocalAnalytics.track('restaurant_entered', 'taco_truck');
     // The truck uses its own upgrades only (the diner's shop upgrades do not carry over).
-    this.state.mods = tacoModsFor(this.state.taco.upgrades, save.tacoOwned);
+    this.state.mods = withChoices(tacoModsFor(this.state.taco.upgrades, save.tacoOwned), 'taco', save.choices, this.state.level);
     this.applyDebugFlags();
 
     this.fx = new ParticlePool(this, 140);
@@ -170,7 +181,7 @@ export class TacoScene extends Phaser.Scene {
     this.chestCard = new ChestCard(this, this.fx, LOGICAL_WIDTH / 2, 360, 'chest_open');
     this.prepareExtrasArt();
     new MuteButton(this);
-    this.menuButtons = new MenuButtons(this, (k: MenuKind) => this.openPanel(k === 'shop' ? 'Shop' : k === 'book' ? 'RecipeBook' : 'RestaurantSelect'));
+    this.menuButtons = new MenuButtons(this, (k: MenuKind) => this.openPanel(k === 'shop' ? 'Shop' : k === 'book' ? 'RecipeBook' : 'RestaurantSelect'), this.state.menuStep > SaveSystem.data.tacoBookSeenStep);
     this.tutorial = new TacoTutorialView(this, LOGICAL_WIDTH, LOGICAL_HEIGHT, () => (this.lesson ? this.endLesson(false) : this.finishTutorial('Tutorial skipped. The Recipe Book shows every recipe.')));
     if (new URLSearchParams(location.search).has('debug') && !new URLSearchParams(location.search).has('nozones')) this.drawZones();
 
@@ -219,6 +230,7 @@ export class TacoScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number): void {
+    LocalAnalytics.tick(delta);
     const real = Math.min(delta, 100) / 1000;
     if (!this.storyCard.isShowing && !this.adActive) this.state.update(real * this.speed);
     for (const e of this.state.drainEvents()) this.handle(e);
@@ -346,11 +358,14 @@ export class TacoScene extends Phaser.Scene {
         this.toast.show(`Streak bonus +${e.xp} XP`);
         break;
       case 'levelUp':
+        LocalAnalytics.track('level_reached', e.level);
         this.hud.badgePop();
         this.levelUpCard.show(e.level, e.coins, e.unlocks, titleEarnedAt(this.state.cfg, e.level)?.title);
         this.saveNow();
         break;
       case 'menuGrew': {
+        LocalAnalytics.track('menu_step_reached', `taco:${this.state.menuStep}`);
+        if (this.state.menuStep > SaveSystem.data.tacoBookSeenStep) this.menuButtons.setNewBadge(true);
         // A menu step often comes with a level-up: wait for that card, so the two never sit on top of each other.
         const msg = `New on the menu: ${e.added.join(', ')}`;
         if (this.levelUpCard.isShowing) this.time.delayedCall(2800, () => this.toast.show(msg));
@@ -360,6 +375,7 @@ export class TacoScene extends Phaser.Scene {
         break;
       }
       case 'closed':
+        LocalAnalytics.track('closed', 'taco_truck');
         this.endEventFx();
         this.haunted.setCombo(0, this.state.cfg.combo.maxCombo);
         this.endLesson(false, true);
@@ -378,6 +394,7 @@ export class TacoScene extends Phaser.Scene {
         );
         break;
       case 'reopened':
+        LocalAnalytics.track('reopened', 'taco_truck');
         this.overlay.hide();
         this.banner.hide();
         CrazyGames.gameplayStart();
@@ -650,6 +667,7 @@ export class TacoScene extends Phaser.Scene {
   private onTap(p: Phaser.Input.Pointer, over: unknown[]): void {
     audio.unlock();
     audio.startMusic();
+    audio.startAmbience(TACO_WINDOW.ambience);
     if (over.length > 0 || this.adActive || this.panelOpen || this.state.closed || this.overlay.visible || this.storyCard.isShowing) return;
     if (window.innerWidth < 900 && window.innerHeight > window.innerWidth * 1.1) return; // the "rotate your device" screen is up
     const n = logicalToNorm(p.worldX, p.worldY, this.bg);
@@ -757,11 +775,16 @@ export class TacoScene extends Phaser.Scene {
     this.cancelDrag();
     this.tutorial.hide();
     audio.setSizzle(0);
+    if (key === 'RecipeBook') {
+      LocalAnalytics.track('recipe_book_opened', 'taco_truck');
+      SaveSystem.data.tacoBookSeenStep = this.state.menuStep;
+      this.menuButtons.setNewBadge(false);
+    }
     this.saveNow();
     this.panelOpen = true;
     const onClose = () => {
       this.panelOpen = false;
-      this.state.mods = tacoModsFor(this.state.taco.upgrades, SaveSystem.data.tacoOwned); // a Shop purchase counts straight away
+      this.state.mods = withChoices(tacoModsFor(this.state.taco.upgrades, SaveSystem.data.tacoOwned), 'taco', SaveSystem.data.choices, this.state.level); // a Shop purchase counts straight away
       this.scene.resume();
     };
     const data: RestaurantSelectData & RecipeBookData & { taco?: { menuStep: number } } = {
@@ -773,12 +796,21 @@ export class TacoScene extends Phaser.Scene {
       rows: key === 'RecipeBook' ? this.recipeRows() : undefined,
       mastery: key === 'RecipeBook' ? this.masteryData() : undefined,
       badges: key === 'RecipeBook' ? { defs: tacoBadges, stats: SaveSystem.data.tacoStats, have: SaveSystem.data.tacoBadges } : undefined,
-      tips: key === 'RecipeBook' ? TACO_BOOK_TIPS : undefined,
+      tips: key === 'RecipeBook' ? `${TACO_BOOK_TIPS}\n${this.nextMenuHint()}` : undefined,
     };
     this.scene.launch(key, data);
     // The Taco scene is registered after the panels, so without this they would open underneath it.
     this.scene.bringToTop(key);
     this.scene.pause();
+  }
+
+  /** A short, current target for the Taco Truck's separate menu progression. */
+  private nextMenuHint(): string {
+    const nextStep = this.state.menuStep + 1;
+    if (nextStep > 10) return 'Every Taco Truck recipe is now on the menu.';
+    const next = [...this.state.taco.dishes, ...this.state.taco.drinks].find((d) => d.unlockStep === nextStep);
+    const remaining = Math.max(0, stepXpNeeded(this.state.cfg, this.state.menuStep) - this.state.menuXp);
+    return `${next ? `Next up: ${next.name}. ` : 'More recipes are coming. '}${remaining} XP to the next menu update.`;
   }
 
   /** The Taco Truck's real recipes for the Recipe Book, straight from the kitchen's own data. */
@@ -843,6 +875,9 @@ export class TacoScene extends Phaser.Scene {
     this.fx.destroy();
     audio.setSizzle(0);
     audio.stopMusic();
+    audio.stopAmbience();
+    this.windowVideo?.destroy();
+    this.windowVideo = undefined;
     CrazyGames.gameplayStop();
   }
 

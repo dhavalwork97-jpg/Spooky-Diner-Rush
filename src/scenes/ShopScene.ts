@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { pick, pickedOption, slotUnlocked, slotsFor, withChoices, type ChoiceRestaurant } from '../game/choices';
 import { CREAM, INK, LEAF, ORANGE } from '../art/builders';
 import type { KitchenState } from '../game/KitchenState';
 import { titleForLevel } from '../game/career';
@@ -49,7 +50,7 @@ export class ShopScene extends Phaser.Scene {
   private titleText!: Phaser.GameObjects.Text;
   private note!: Phaser.GameObjects.Text;
   private closing = false;
-  private tab: 'upgrades' | 'decor' = 'upgrades';
+  private tab: 'upgrades' | 'decor' | 'choices' = 'upgrades';
   private page = 0;
   private taco: ShopData['taco'];
   private pizza: ShopData['pizza'];
@@ -131,9 +132,9 @@ export class ShopScene extends Phaser.Scene {
     this.coinText.setText(String(s.coins));
 
     // The truck has no Decor tab (decor belongs to the diner's walls), just its upgrades.
-    (this.taco || this.pizza ? (['upgrades'] as const) : (['upgrades', 'decor'] as const)).forEach((t, i) => {
+    (this.taco || this.pizza ? (['upgrades', 'choices'] as const) : (['upgrades', 'decor', 'choices'] as const)).forEach((t, i) => {
       const on = this.tab === t;
-      const label = t === 'upgrades' ? 'Upgrades' : 'Decor';
+      const label = t === 'upgrades' ? 'Upgrades' : t === 'decor' ? 'Decor' : 'Choices';
       this.rows.push(this.makeButton(x0 + 280 + i * 146, 52, label, 140, 60, on ? ORANGE : 0x9aa7b5, () => {
         if (this.tab !== t) {
           this.tab = t;
@@ -145,13 +146,14 @@ export class ShopScene extends Phaser.Scene {
     const pages = Math.max(1, Math.ceil((this.pizza ? defaultPizzaConfig.upgrades.length : s.cfg.upgrades.upgrades.length) / PAGE_SIZE));
     if (this.tab === 'upgrades' && pages > 1) {
       const next = (this.page + 1) % pages;
-      this.rows.push(this.makeButton(x0 + 280 + 2 * 146, 52, this.page + 1 < pages ? 'More' : 'Back', 140, 60, 0x2ba6a0, () => {
+      this.rows.push(this.makeButton(x0 + 280 + 3 * 146, 52, this.page + 1 < pages ? 'More' : 'Back', 140, 60, 0x2ba6a0, () => {
         this.page = next;
         this.refresh();
       }));
     }
 
-    if (this.taco) this.drawTacoRows(x0, this.taco.menuStep);
+    if (this.tab === 'choices') this.drawChoiceRows(x0);
+    else if (this.taco) this.drawTacoRows(x0, this.taco.menuStep);
     else if (this.pizza) this.drawPizzaRows(x0, this.pizza.menuStep);
     else if (this.tab === 'upgrades') this.drawUpgradeRows(x0);
     else this.drawDecorRows(x0);
@@ -249,7 +251,7 @@ export class ShopScene extends Phaser.Scene {
     s.coins = r.coins;
     SaveSystem.data.tacoOwned = r.owned;
     SaveSystem.data.coins = r.coins;
-    s.mods = tacoModsFor(ups, r.owned);
+    s.mods = withChoices(tacoModsFor(ups, r.owned), 'taco', SaveSystem.data.choices, s.level);
     SaveSystem.save();
     audio.play('levelUp');
     this.flash(`${ups.find((u) => u.id === id)?.name ?? id} upgraded!`);
@@ -293,7 +295,7 @@ export class ShopScene extends Phaser.Scene {
     s.coins = r.coins;
     SaveSystem.data.pizzaOwned = r.owned;
     SaveSystem.data.coins = r.coins;
-    s.mods = pizzaModsFor(ups, r.owned);
+    s.mods = withChoices(pizzaModsFor(ups, r.owned), 'pizza', SaveSystem.data.choices, s.level);
     SaveSystem.save();
     audio.play('levelUp');
     this.flash(`${ups.find((u) => u.id === id)?.name ?? id} upgraded!`);
@@ -310,12 +312,65 @@ export class ShopScene extends Phaser.Scene {
     }
     s.coins = r.coins;
     SaveSystem.data.decor = r.decor;
-    s.mods = withDecorPerks(modsFor(s.cfg.upgrades.upgrades, SaveSystem.data.owned), items, r.decor);
+    s.mods = withChoices(withDecorPerks(modsFor(s.cfg.upgrades.upgrades, SaveSystem.data.owned), items, r.decor), 'diner', SaveSystem.data.choices, s.level);
     SaveSystem.data.coins = r.coins;
     SaveSystem.save();
     audio.play('levelUp');
     this.flash(`${items.find((d) => d.id === id)?.name ?? id} is up!`);
     this.refresh();
+  }
+
+  /** Chef's Choice: one row per slot with two perk cards; tap a card to pick it (free, and you can switch at any time). */
+  private drawChoiceRows(x0: number): void {
+    const s = this.state;
+    const rest: ChoiceRestaurant = this.taco ? 'taco' : this.pizza ? 'pizza' : 'diner';
+    const picks = SaveSystem.data.choices;
+    slotsFor(rest).forEach((slot, i) => {
+      const { y, g } = this.rowBase(i, x0);
+      const open = slotUnlocked(slot, s.level);
+      const chosen = pickedOption(rest, slot, picks, s.level);
+      this.rows.push(g, this.add.text(x0 + 40, y + 12, slot.title, { fontFamily: FONT, fontSize: '30px', color: '#2B1B17' }));
+      if (!open) {
+        this.rows.push(this.add.text(x0 + 40, y + 52, `Opens at Lv ${slot.unlockLevel}. Then pick one of two perks.`, { fontFamily: FONT, fontSize: '22px', color: '#5a463e' }));
+        return;
+      }
+      this.rows.push(this.add.text(x0 + 40, y + 52, chosen ? 'Tap the other perk to switch.' : 'Pick one perk.', { fontFamily: FONT, fontSize: '20px', color: '#5a463e' }));
+      slot.options.forEach((o, oi) => {
+        const on = chosen?.id === o.id;
+        const cx = x0 + 440 + oi * 290;
+        const cy = y + (ROW_H - 8) / 2;
+        const card = this.makeButton(cx, cy, '', 270, BTN_H, on ? LEAF : 0x9aa7b5, () => this.tryPick(rest, slot.id, o.id));
+        const name = this.add.text(cx, cy - 22, on ? `${o.name}  ✓` : o.name, { fontFamily: FONT, fontSize: '26px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 5 }).setOrigin(0.5);
+        const desc = this.add.text(cx, cy + 4, o.description, { fontFamily: FONT, fontSize: '16px', color: '#FFF4DC', stroke: '#2B1B17', strokeThickness: 3, wordWrap: { width: 244 }, align: 'center' }).setOrigin(0.5, 0);
+        this.rows.push(card, name, desc);
+      });
+    });
+    this.rows.push(this.add.text(LOGICAL_WIDTH / 2, ROW_TOP + 3 * ROW_H + 14, 'Perks are small boosts that stack with your upgrades. They never cost coins.', { fontFamily: FONT, fontSize: '19px', color: '#5a463e' }).setOrigin(0.5, 0));
+  }
+
+  private tryPick(rest: ChoiceRestaurant, slotId: string, optionId: string): void {
+    const s = this.state;
+    const next = pick(rest, slotId, optionId, SaveSystem.data.choices, s.level);
+    if (!next) {
+      this.flash('That perk is not open yet');
+      return;
+    }
+    SaveSystem.data.choices = next;
+    s.mods = this.modsNow(rest);
+    SaveSystem.save();
+    audio.play('levelUp');
+    this.flash('Perk picked!');
+    this.refresh();
+  }
+
+  /** The mods for this restaurant from what is owned plus the picked perks. */
+  private modsNow(rest: ChoiceRestaurant): typeof this.state.mods {
+    const s = this.state;
+    const d = SaveSystem.data;
+    const choices = d.choices;
+    if (rest === 'taco') return withChoices(tacoModsFor(defaultTacoConfig.upgrades, d.tacoOwned), 'taco', choices, s.level);
+    if (rest === 'pizza') return withChoices(pizzaModsFor(defaultPizzaConfig.upgrades, d.pizzaOwned), 'pizza', choices, s.level);
+    return withChoices(withDecorPerks(modsFor(s.cfg.upgrades.upgrades, d.owned), s.cfg.decor.items, d.decor), 'diner', choices, s.level);
   }
 
   private tryBuy(id: string): void {
@@ -329,7 +384,7 @@ export class ShopScene extends Phaser.Scene {
     s.coins = r.coins;
     SaveSystem.data.owned = r.owned;
     SaveSystem.data.coins = r.coins;
-    s.mods = withDecorPerks(modsFor(ups, r.owned), s.cfg.decor.items, SaveSystem.data.decor);
+    s.mods = withChoices(withDecorPerks(modsFor(ups, r.owned), s.cfg.decor.items, SaveSystem.data.decor), 'diner', SaveSystem.data.choices, s.level);
     SaveSystem.save();
     audio.play('levelUp');
     const name = ups.find((u) => u.id === id)?.name ?? id;

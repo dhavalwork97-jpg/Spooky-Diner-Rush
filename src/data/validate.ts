@@ -284,6 +284,16 @@ export function validateXp(data: unknown): string[] {
     if (!isNum(x.firstLevelXp) || !Number.isInteger(x.firstLevelXp) || x.firstLevelXp <= 0) errors.push('xp.json: firstLevelXp must be a whole number > 0');
     else if (isNum(x.base) && isNum(x.perLevel) && x.firstLevelXp > x.base + x.perLevel) errors.push('xp.json: firstLevelXp must not be more than the normal Lv 1 cost (base + perLevel)');
   }
+  if (x.levelXp !== undefined) {
+    const t = x.levelXp;
+    if (!Array.isArray(t) || t.length === 0) errors.push('xp.json: levelXp must be a non-empty list of numbers');
+    else {
+      t.forEach((v, i) => {
+        if (!isNum(v) || !Number.isInteger(v) || v <= 0) errors.push(`xp.json: levelXp[${i}] (Lv ${i + 1}) must be a whole number > 0`);
+        else if (i > 0 && isNum(t[i - 1]) && v <= (t[i - 1] as number)) errors.push(`xp.json: levelXp[${i}] (Lv ${i + 1}) must cost more than Lv ${i} (no dips)`);
+      });
+    }
+  }
   return errors;
 }
 

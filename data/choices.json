@@ -1,0 +1,100 @@
+{
+  "restaurants": {
+    "diner": {
+      "name": "Spooky Diner",
+      "slots": [
+        {
+          "id": "style",
+          "unlockLevel": 6,
+          "title": "Kitchen style",
+          "options": [
+            { "id": "speedy_hands", "name": "Speedy hands", "description": "Grill and fryer work a little faster.", "effects": { "grillSpeed": 1.1, "fryerSpeed": 1.1 } },
+            { "id": "friendly_service", "name": "Friendly service", "description": "Customers wait longer.", "effects": { "patience": 1.15 } }
+          ]
+        },
+        {
+          "id": "special",
+          "unlockLevel": 12,
+          "title": "House special",
+          "options": [
+            { "id": "tip_magnet", "name": "Tip magnet", "description": "Fast serves earn bigger tips.", "effects": { "tips": 1.25 } },
+            { "id": "forgiving_kitchen", "name": "Forgiving kitchen", "description": "More time before food burns, and burns cost less.", "effects": { "burnWindow": 1.2, "calm": 1.25 } }
+          ]
+        },
+        {
+          "id": "mood",
+          "unlockLevel": 20,
+          "title": "Night mood",
+          "options": [
+            { "id": "hot_oven", "name": "Hot oven", "description": "Pizzas bake faster.", "effects": { "ovenSpeed": 1.15 } },
+            { "id": "cozy_corner", "name": "Cozy corner", "description": "A bit more patience and a bit more tip.", "effects": { "patience": 1.1, "tips": 1.1 } }
+          ]
+        }
+      ]
+    },
+    "taco": {
+      "name": "Taco Truck",
+      "slots": [
+        {
+          "id": "style",
+          "unlockLevel": 16,
+          "title": "Truck style",
+          "options": [
+            { "id": "quick_pour", "name": "Quick pour", "description": "Drinks fill faster.", "effects": { "pourSpeed": 1.2 } },
+            { "id": "calm_line", "name": "Calm line", "description": "Customers wait longer.", "effects": { "patience": 1.15 } }
+          ]
+        },
+        {
+          "id": "special",
+          "unlockLevel": 19,
+          "title": "Street special",
+          "options": [
+            { "id": "tip_jar", "name": "Big tip jar", "description": "Fast serves earn bigger tips.", "effects": { "tips": 1.25 } },
+            { "id": "steady_hands", "name": "Steady hands", "description": "More time before food burns, and burns cost less.", "effects": { "burnWindow": 1.2, "calm": 1.25 } }
+          ]
+        },
+        {
+          "id": "mood",
+          "unlockLevel": 22,
+          "title": "Evening mood",
+          "options": [
+            { "id": "hot_grill", "name": "Hot grill", "description": "Meat cooks faster.", "effects": { "grillSpeed": 1.15 } },
+            { "id": "friendly_chat", "name": "Friendly chat", "description": "A bit more patience and a bit more tip.", "effects": { "patience": 1.1, "tips": 1.1 } }
+          ]
+        }
+      ]
+    },
+    "pizza": {
+      "name": "Pizza Place",
+      "slots": [
+        {
+          "id": "style",
+          "unlockLevel": 31,
+          "title": "Pizzeria style",
+          "options": [
+            { "id": "stone_oven", "name": "Stone oven", "description": "Pizzas bake faster.", "effects": { "ovenSpeed": 1.15 } },
+            { "id": "warm_welcome", "name": "Warm welcome", "description": "Customers wait longer.", "effects": { "patience": 1.15 } }
+          ]
+        },
+        {
+          "id": "special",
+          "unlockLevel": 33,
+          "title": "House special",
+          "options": [
+            { "id": "tip_plate", "name": "Tip plate", "description": "Fast serves earn bigger tips.", "effects": { "tips": 1.25 } },
+            { "id": "careful_baker", "name": "Careful baker", "description": "More time before food burns, and burns cost less.", "effects": { "burnWindow": 1.2, "calm": 1.25 } }
+          ]
+        },
+        {
+          "id": "mood",
+          "unlockLevel": 35,
+          "title": "Night mood",
+          "options": [
+            { "id": "crispy_fryer", "name": "Crispy fryer", "description": "Fried food cooks faster.", "effects": { "fryerSpeed": 1.15 } },
+            { "id": "pizza_party", "name": "Pizza party", "description": "A bit more patience and a bit more tip.", "effects": { "patience": 1.1, "tips": 1.1 } }
+          ]
+        }
+      ]
+    }
+  }
+}

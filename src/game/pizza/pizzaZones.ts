@@ -71,6 +71,9 @@ export function tapPizzaZone(s: PizzaKitchenState, z: PizzaZone): void {
       if (i >= 0) s.tapSmallOven(i);
       return;
     }
+    case 'plate':
+      s.tapPlate(z.index ?? 0);
+      return;
     case 'ice': {
       const ready = s.ice.findIndex((l) => l && l.phase !== 'cooking');
       if (ready >= 0) s.tapIce(ready);

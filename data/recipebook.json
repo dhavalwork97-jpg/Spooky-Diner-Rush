@@ -17,6 +17,33 @@
       ]
     },
     {
+      "id": "cheeseburger",
+      "steps": [
+        "Tap the buns, then the patty tray.",
+        "Flip the patty and put it on the burger.",
+        "Tap the cheese before the lettuce.",
+        "Add lettuce and tomato, then drag it to the customer."
+      ]
+    },
+    {
+      "id": "garden_burger",
+      "steps": [
+        "Tap the buns, then the patty tray.",
+        "Flip the patty and put it on the burger.",
+        "Tap the onions, then the pickles, before the lettuce.",
+        "Add lettuce and tomato, then drag it to the customer."
+      ]
+    },
+    {
+      "id": "deluxe_burger",
+      "steps": [
+        "Tap the buns, then the patty tray.",
+        "Flip the patty and put it on the burger.",
+        "Tap cheese, onions, pickles in that order, before the lettuce.",
+        "Add lettuce and tomato, then drag it to the customer."
+      ]
+    },
+    {
       "id": "nuggets",
       "steps": [
         "Tap the nuggets bin to drop them in a vat.",

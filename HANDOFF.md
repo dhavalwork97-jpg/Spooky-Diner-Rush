@@ -1,3 +1,102 @@
+# STATUS (2026-11-27) - Recovery 1.0 completion pass results
+Branch: `recovery/1.0`. Latest code commit at this status update: `f7473d15fc1d5860a6a783290169e9546d161aa2`. No changes were made to `main`; no merge, deployment, or CrazyGames submission was performed.
+
+## M3 follow-ups
+- Added persistent seen-progress fields for the Diner, Taco Truck and Pizza Place. A NEW marker appears on the Recipe Book button after a new dish/menu unlock and clears when that restaurant's book is opened. Old saves seed the seen markers from existing progress, avoiding false NEW badges.
+- Taco Truck and Pizza Place Recipe Books now show the next menu dish target and XP remaining to the next menu update.
+- Automated tests/builds pass. The badge's visual appearance and Recipe Book paging on a real mobile touch screen still need owner QA.
+
+## M4 on-device analytics
+- Added `src/telemetry/LocalAnalytics.ts` and `docs/LOCAL_ANALYTICS.md`.
+- Stores aggregate counters and foreground active time in browser localStorage only. No network calls, third-party trackers, player identifiers, names, emails, or raw event history.
+- Tracks session starts/ends, active time, restaurant entries, global levels, restaurant menu steps, Recipe Book opens, dish deliveries, completed orders, closures and reopens.
+- Debug/test sessions are excluded; a local console export/reset helper is available as `window.__chefRushAnalytics`.
+- Analytics writes are batched to avoid synchronous storage writes on every delivery.
+
+## M5 measured optimization
+- Added a manifest-based lazy image loader and moved seven burger-variant images (220,380 bytes / 215.2 KiB) from eager to lazy loading.
+- The Diner preloads them at Lv 9, one level before the variants unlock at Lv 10.
+- Eager manifest images fell from 2,671,267 bytes (2.55 MiB) to 2,450,887 bytes (2.34 MiB), an 8.3% reduction in eager image bytes. The total package is not smaller; these images are fetched later.
+- Current build sizes and measurement limitations are recorded in `docs/PERFORMANCE_REPORT.md`.
+- FPS, heap/memory, network waterfall and phone loading measurements remain unverified because no real-device profiling was performed.
+
+## M6 automated regression
+Latest code verification: GitHub Actions run [45927213836](https://github.com/dhavalwork97-jpg/Spooky-Diner-Rush/actions/runs/45927213836), commit `f7473d15fc1d5860a6a783290169e9546d161aa2`.
+- `npm test`: 91 test files passed, 1 skipped; 1,062 tests passed, 3 skipped.
+- `npm run build`: passed.
+- `npm run build:crazygames`: passed.
+- CrazyGames build uploaded as a GitHub Actions artifact only; it was not submitted to CrazyGames.
+
+## Owner QA still required
+- M1 burger visuals: stacked burger appearance, order-bubble icons, level-up card and Recipe Book icons.
+- M3 NEW marker visual check and mobile touch/paging check for the Recipe Book.
+- Ghost swap: verify the lilac ghost's happy-leave/laughing clip in live gameplay.
+- M5: profile load time, FPS and memory on a real phone; confirm Lv 9 preloading makes the Lv 10 art ready without missing visuals.
+- M6: manual normal-build and CrazyGames runtime smoke tests on target browsers/devices.
+- The previously noted Diner content gaps at Lv 13, 17, 18 and 19 remain a content/design decision; no dishes were invented to fill them.
+
+## Environment note
+The owner-provided ZIP enabled local source inspection. A local `npm ci` attempt did not finish in the sandbox, so the successful GitHub Actions run is the authoritative automated test/build result. Browser and physical-device checks were not available here.
+
+
+# DONE, awaiting owner review (2026-11-27) - Recovery 1.0 M3: progression UI (branch recovery/1.0, previous commit a7b6c8c)
+Done: src/game/nextUnlock.ts (nextUnlock, recipeProgress, levelUpHints), diner Recipe Book now paged (5 per page) with 'N more Lv' on locked dishes, orange outline on the next unlock and a summary line; level-up card shows 'Next at Lv N: ...' and 'N XP to Lv M' (panel grows; Taco/Pizza cards unchanged), tests/next_unlock.test.ts. Fixed: the old diner book had no paging, so dishes after the first ~4.5 were unreachable. tsc clean, vitest 1057 passed, build OK. Browser: book pages (Lv 6 and Lv 15) and level-up card (Lv 9, 11, 20, 50) seen. Follow-up completed 2026-11-27: added the persistent NEW badge and Taco/Pizza next-step hints. Mobile touch check of Recipe Book paging remains owner QA. M4, M5 and M6 follow-ups are recorded in the status section above. No merge to main.
+
+# DONE, awaiting owner review (2026-11-26) - Ghost swap: removed blue_yeti, pink_fuzz, mummy_ghost; added lilac_ghost (branch recovery/1.0, M2 = e7e1842)
+Done: art in public/assets/customers/lilac_ghost (calm = curious, upset = tired, angry = angry, happy leave = laughing; 466 KB total vs 4.6 MB before), tools/make_lilac_ghost_art.py, customerMotion.ts, KitchenState (look count 10, unlock Lv 1 and 3), data/assets.json, tests. tsc clean, vitest 1049 passed, build OK. Browser check at Lv 4: calm, tired and angry clips show, same size as the mint ghost, no console errors. NOT seen live: the happy-leave (laughing) clip. Unused supplied sheets (sad, shocked, confused, excited, loving) are not shipped; the originals are in the owner's zip. Next: M3 UI, M4 analytics, M5 perf, M6 regression. No merge to main.
+
+# DONE, awaiting owner review (2026-11-26) - Recovery 1.0 M2: smooth XP + Pizza Place unlock Lv 30 -> 20 (branch recovery/1.0, M1 = 003eded)
+Done: data/xp.json levelXp table Lv 1-15 (src/game/config.ts xpForLevel, validate.ts), data/pizza.json unlockLevel 20, tests (progression smooth-curve tests, xp_validate, pizza_data, xp_pace report). Numbers: docs/RECOVERY_M2_PACE.md. tsc clean, vitest 1053 passed, build OK. Next: owner reviews; M3 UI (recipe book, next unlock, level-complete info), M4 on-device analytics, M5 perf, M6 regression. No merge to main.
+
+# DONE, awaiting owner review (2026-11-26) - Recovery 1.0 M1: diner burger variants (branch recovery/1.0)
+Art from owner (Gemini), keyed from baked-in checkerboard (scipy flood fill) and exported to public/assets/art/: cheeseburger_cooked, garden_burger_cooked, deluxe_burger_cooked (360 px icons), prep_toppings_tray (540x308). Not registered or wired yet. Tray placement test on kitchen_full: centre x .4065 W, y .568 H, width ~.092 W (covers the pink mold, teal bowl stays above as decor).
+Plan: dishes cheeseburger (cheese), garden burger (onion+pickle, no cheese), deluxe (cheese+onion+pickle) built from the existing layer art; Prep station (Lv 10) gets a handler to add cheese/onion/pickle layers; icons in order bubble; unlock Lv 10/12/15 (to confirm with level plan); data in recipes.json; save migration (none expected); tests.
+DESIGN (decided): variants are extra layers placed BEFORE lettuce, tapped like lettuce/tomato: sequences cheeseburger = bun_bottom,patty,cheese,lettuce,tomato,bun_top; garden_burger = ...,patty,onion,pickle,lettuce,tomato,bun_top; deluxe_burger = ...,patty,cheese,onion,pickle,lettuce,tomato,bun_top. Plain burger flow unchanged (auto-closes at tomato). Kind is set when the burger closes. New ItemKinds cheeseburger/garden_burger/deluxe_burger (Lv 10/12/15). Orders: pick from base list, a 'burger' pick re-rolls among unlocked burger-family kinds (burger share of orders stays 1/6). Diner items come from dinerRamp rows (Taco/Pizza borrowed levelDef is NOT changed). Prep zone split into cheese_tray (Lv 10), onion_tray + pickle_tray (Lv 12) over the tray overlay. cheese/onion/pickle art set lazy:false (eager, ~70 KB) + 4 new files registered (~150 KB); lazy loading is an M5 item. Bots in tests/helpers/bot.ts and tests/sim.test.ts must build variants. Also fix: 'Four customers at once' unlock text moves Lv 13 -> Lv 11 (the diner ramp moved the 4th seat).
+Steps done so far: art exported (not committed yet). Coding in this order: config+data, KitchenState, zones+scene+views, recipe book, bots, tests, sims.
+STATUS: M1 code + data + art finished. tsc clean, vitest 1045 passed / 2 skipped, vite build OK. Browser: tray placement checked in screenshots, tray taps reach the real handlers, no page errors. NOT visually verified: the stacked burger look (ItemView.layerY), order-bubble icons, level-up card text, recipe-book icons (scripted click flow too timing-fragile; needs a manual play at Lv 10-15 via /?debug&level=15). Gaps: diner Lv 13, 17, 18, 19 have no new content. Next: owner reviews M1, then M2 (XP smoothing), M3 UI, M4 on-device analytics, M5 perf (lazy-load the new art), M6 regression. No merge to main.
+
+# IN PROGRESS (2026-11-26) - Recovery 1.0 (owner brief file 9c7b9787-attachment.txt), branch recovery/1.0 from main 617cec2
+Brief = 6 milestones (M0 audit -> M6 regression); report after each; NO merge/deploy/CrazyGames submission without approval; do not start big code changes before M0 audit is accepted.
+M0 DONE: docs/RECOVERY_AUDIT.md. Findings: only 1 baseline failure (balance_upgrades slow test, 5 s timeout; fixed with explicit 60 s timeout, no check weakened); the 2 assertion failures from CI do not reproduce locally (no CI log access). Taco/Pizza already have own menu tracks + 2-serve intros; diner has no new dish Lv 9-29; catalogue has 26 recipe moments vs 49+ levels so 'new recipe every level' needs a decision; XP Lv 8->9 jumps +64%; no analytics exist.
+OWNER ANSWERS (2026-11-26): diner = Mix (variants with existing art first, other unlock types on the rest, list needed art); analytics = on-device only; diner-late-ramp = included (merged into recovery/1.0, typecheck OK).
+M1 scouting: finished burger layer art exists (cheese, onion, pickle in public/assets/art, style matches) but NO tray for them in the diner kitchen art: the Prep station zone (Lv 10, label 'Toppings', no handler) shows a teal bowl + pink-filled tray. Burger layers today: bun_bottom, patty, lettuce, tomato, bun_top (data/recipes.json). Dish icons for order bubbles would also be needed. No placeholders allowed (project rule), so new art or a code-built composite must be approved by owner.
+Next: owner picks art route, then build M1.
+
+# IN PROGRESS (2026-11-25) - Music v2: soft lofi, continuous, louder (branch feature/calm-music, v1 already pushed)
+Owner: v1 'doesnt feel good, too low; wants soft lofi continuous instrumental'.
+Plan: replace calmMusic.ts with src/systems/lofiMusic.ts: pure data (8-bar loop, ~74 bpm swung, jazzy 9th chords) + LofiPlayer class (ctx, out): warm e-piano chords, soft bass, kick/snare/hat from noise, long pads (no gaps), light melody, vinyl crackle loop, lowpass + compressor bus. AudioSystem.startMusic uses it; music gain scale raised (measure with an offline render, target RMS ~4x v1). Still NO files shipped. Also render a preview WAV for the owner (outside the repo).
+Steps done so far: DONE. lofiMusic.ts (data + LofiPlayer), AudioSystem uses it, music gain scale 0.25 -> 0.6, bus gain 2.4. Offline render (Chromium): peak 0.51, RMS 0.065, quietest second 0.04 (no gaps). tests/lofi_music.test.ts replaces calm_music.test.ts; suite green 1031. Preview WAV (outside repo) sent to owner. Not listened to by me. Not merged.
+
+# IN PROGRESS (2026-11-25) - Calm gameplay music, branch feature/calm-music (from main)
+Owner ask: calm music for gameplay. Finding: music already exists (AudioSystem.startMusic = fast 280 ms triangle arpeggio, synthesized, no files, started in all 3 scenes, music button + musicVolume setting exist).
+Plan: NO new asset files (keeps APK/browser size, no licence risk). New pure data src/systems/calmMusic.ts (slow ~60 bpm chord pads + sparse soft melody, 8-bar loop); AudioSystem.startMusic schedules it ahead on the audio clock with soft attack/release; same start/stop/pause/volume/mute hooks. Tests: calmMusic.test.ts (tempo, range, loop) + existing audio tests.
+Steps done so far: DONE. calmMusic.ts (data) + AudioSystem.startMusic/soft/scheduleBar; tests/calm_music.test.ts. Headless Chromium: music schedules with no page errors (not listened to by ear). No new files. To transfer: cherry-pick to release/poki and android branches with owner approval.
+
+# IN PROGRESS (2026-11-25) - Diner late-game ramp (Lv 11+), branch feature/diner-late-ramp (from main d5c5011)
+Owner: playing Lv 10+ needs no shop upgrades; wants it more interesting; asked to remove the max customer limit if that helps.
+Findings: diner has only 4 seat positions (SEATS_X in src/views/layout.ts) and a hard cap of 3 items per order (KitchenState.ts:485), so a bigger customer limit or bigger orders need new layout/art = NOT done. Difficulty is flat after Lv 12 (3 seats Lv 10-12, 4 seats from Lv 13, patience 34 -> 31, gaps barely move).
+Bot (no upgrades, fast) closes only 0.2-0.45/min at Lv 6-25.
+Plan (data only, data/progression.json): 4th seat at Lv 11 (was 13); patience and arrival gap shrink faster at Lv 11-20; afterLast steps/floors a bit steeper. No ad/reward/coin/XP change. Check: BALANCE_REPORT bot tables (none vs all upgrades) + full suite.
+Steps done so far: DONE. Ramp is a diner-only overlay (data/progression.json `dinerRamp` + `dinerLevelDef` in config.ts, used by KitchenState.levelInfo) because Taco/Pizza borrow the shared table (first try leaked into the Taco close-rate test). Suite green 1027; build OK. Bot fast, no upgrades, closes/min Lv 11-15 0.23->0.40, Lv 16-20 0.37->0.61; with all upgrades 0.25 / 0.46. Not committed, not merged. To transfer: cherry-pick to release/poki and android branches with owner approval.
+
+# IN PROGRESS (2026-11-25) - Chef's Choice (pick-one perks) + 2 new short events, branch feature/chefs-choice (from main)
+Owner approved ideas 3 and 5. Findings: surprise events ALREADY exist (8 shared in data/events.json + Taco/Pizza own); so item 5 = 2 data-only events (Midnight Rush, Golden Hour).
+Item 3 plan: data/choices.json (per restaurant 3 slots, 2 options each, effects = multipliers on existing Mods keys); src/game/choices.ts (pure: unlock by Lv, pick, applyChoices, clean);
+save field `choices` (key "restaurant:slot" -> option id); wrap mods at the 10 places mods are set (Game/Taco/Pizza scene create + after shop, ShopScene buys); ShopScene new 'Choices' tab (free to switch).
+Not touched: ads, reopen rewards, coin/XP economy numbers, upgrade prices. Tests: choices.test.ts.
+Steps done so far: DONE for Chef's Choice (choices.json, choices.ts, save field, 10 mods sites, Shop Choices tab, choices.test.ts; suite green 1020). Item 5: NOT added - events already exist (8 shared + taco own); adding shared events failed the Diner Lv10 pace sim and the "diner events untouched" guard, and Midnight Rush pushed the Taco bot close rate over 0.3. Needs owner decision + tuning.
+# IN PROGRESS (2026-11-25) - Pizza Place: ready side from the small oven goes onto the 3 plates, branch fix/pizza-small-oven-tap (from main)
+Owner report: a cooked item in the small oven only served if a customer had ordered it; otherwise tapping did nothing and it burned. Wanted: tap it and it moves to the 3 small plates beside the ice cream machine.
+Plan: state `plates` (3 slots, no burn) + tapTray('small'): ready -> serve if a customer ordered it, else put on a free plate; tapPlate/servePlate; zones plate_0..2 (action 'plate');
+drag from a plate to a customer; PizzaViews draws the dish on its plate; reopen clears plates; tests. Fryer unchanged (offer later). No economy/ads change.
+Steps done so far: DONE. plates state + zones plate_0..2 + view + drag + tutorial hint + tests (pizza_plates.test.ts); full suite green (1015); headless real-tap check OK. Fryer baskets unchanged.
+
+# IN PROGRESS (2026-11-25) - Faster early menu steps (Taco Truck + Pizza Place), branch feature/faster-early-menu (from main)
+Owner ask: early level-ups faster so the same single dish is not cooked many times. Finding: menu step 1 costs 1300 XP (global curve at Lv 15) with only 1 dish on the menu.
+Plan: new src/game/menuPace.ts with EARLY_STEP_XP_SCALE [0.25,0.4,0.55,0.7,0.85] (steps 1-5; later steps unchanged); stepXpNeeded (taco) and pizzaStepXpNeeded use it.
+Global Lv/XP/coins curve, diner, ads and rewards are NOT touched. pizzaMilestones is derived so it follows. Tests: new menuPace test; fix any exact-value tests.
+Steps done so far: DONE. menuPace.ts + tests (menu_pace.test.ts), taco_menu test updated; full suite green. Scales [0.3,0.5,0.7,0.85,1] (0.25-0.4 for step 1 failed the Taco bot close-rate test). To transfer: cherry-pick to release/poki, android-two-provider with owner approval.
+
 # STATUS (2026-11-23) - ALL spec parts done on feature/pizza-place (A1-A7, C, B1-B8, D, E, G). Final regression table is at the end of docs/progress.md. Nothing in progress. Not merged to main (needs owner approval).
 
 

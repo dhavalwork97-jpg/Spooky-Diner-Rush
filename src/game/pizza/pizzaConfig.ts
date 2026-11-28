@@ -46,7 +46,7 @@ export interface IngredientDef {
   name: string;
   unlockStep: number;
 }
-export type ZoneAction = 'dough' | 'sauce' | 'cheese' | 'topping' | 'board' | 'oven' | 'small_oven' | 'side' | 'fryer' | 'ice' | 'trash';
+export type ZoneAction = 'dough' | 'sauce' | 'cheese' | 'topping' | 'board' | 'oven' | 'small_oven' | 'plate' | 'side' | 'fryer' | 'ice' | 'trash';
 /** A tap area on the kitchen art, as a 0-1 rectangle of the background image. */
 export interface PizzaZone {
   id: string;

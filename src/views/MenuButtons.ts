@@ -17,8 +17,9 @@ export type MenuKind = 'shop' | 'book' | 'restaurants';
  */
 export class MenuButtons {
   private buttons: Phaser.GameObjects.Container[] = [];
+  private bookBadge?: Phaser.GameObjects.Text;
 
-  constructor(scene: Phaser.Scene, private onPress: (kind: MenuKind) => void) {
+  constructor(scene: Phaser.Scene, private onPress: (kind: MenuKind) => void, hasNewRecipes = false) {
     (['shop', 'book', 'restaurants'] as MenuKind[]).forEach((kind, i) => {
       const g = scene.add.graphics();
       g.fillStyle(0x000000, 0.2).fillCircle(0, 4, R);
@@ -27,6 +28,10 @@ export class MenuButtons {
       const icon = scene.add.graphics();
       this.drawIcon(icon, kind);
       const c = scene.add.container(XS[i], Y, [g, icon]).setDepth(DEPTH).setSize(HIT, HIT).setInteractive({ useHandCursor: true });
+      if (kind === 'book') {
+        this.bookBadge = scene.add.text(19, -22, 'NEW', { fontFamily: 'system-ui, sans-serif', fontSize: '13px', fontStyle: 'bold', color: '#FFF4DC', backgroundColor: '#D94B35', padding: { x: 5, y: 3 }, stroke: '#2B1B17', strokeThickness: 2 }).setOrigin(0.5).setVisible(hasNewRecipes);
+        c.add(this.bookBadge);
+      }
       c.setName(`menu_${kind}`);
       c.on('pointerdown', () => !SaveSystem.reduceMotion() && c.setScale(0.92));
       c.on('pointerout', () => c.setScale(1));
@@ -37,6 +42,11 @@ export class MenuButtons {
       });
       this.buttons.push(c);
     });
+  }
+
+  /** Update the Recipe Book's NEW marker when a fresh dish or menu step unlocks. */
+  setNewBadge(visible: boolean): void {
+    this.bookBadge?.setVisible(visible);
   }
 
   private drawIcon(g: Phaser.GameObjects.Graphics, kind: MenuKind): void {

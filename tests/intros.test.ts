@@ -8,7 +8,7 @@ const zones = (restaurantsJson as { restaurants: RestaurantDef[] }).restaurants.
 
 describe('station intro cards: data', () => {
   it('the shipped cards match the diner zones exactly', () => expect(validateIntros(defaultIntros, zones)).toEqual([]));
-  it('cards exist for Lv 2, 4, 5, 6, 8 and 10', () => expect(defaultIntros.map((c) => c.level)).toEqual([2, 4, 5, 6, 8, 10]));
+  it('cards exist for Lv 2, 4, 5, 6, 8, 10 and 12', () => expect(defaultIntros.map((c) => c.level)).toEqual([2, 4, 5, 6, 8, 10, 12]));
   it('every station that unlocks after Lv 1 is in exactly one card', () => {
     const late = zones.filter((z) => z.unlockLevel > 1).map((z) => z.id).sort();
     expect(defaultIntros.flatMap((c) => c.zones).sort()).toEqual(late);
@@ -55,7 +55,7 @@ describe('station intro cards: saves', () => {
   it('a save that has the field keeps it (cleaned) and later unlocks still show', () => {
     const s = parseSave(JSON.stringify({ level: 12, seenIntros: ['lv2_burger', 7, 'lv2_burger', ''] }));
     expect(s.seenIntros).toEqual(['lv2_burger']);
-    expect(dueIntros(defaultIntros, 12, s.seenIntros).length).toBe(5);
+    expect(dueIntros(defaultIntros, 12, s.seenIntros).length).toBe(6);
   });
   it('a brand new Lv 1 player has nothing seeded', () => expect(parseSave(JSON.stringify({ level: 1 })).seenIntros).toEqual([]));
 });

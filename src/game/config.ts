@@ -13,7 +13,11 @@ import decorJson from '../../data/decor.json';
 import recipebookJson from '../../data/recipebook.json';
 import restaurantMenuJson from '../../data/restaurant_menu.json';
 
-export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger' | 'drink' | 'icecream';
+export type ItemKind = 'fries' | 'nuggets' | 'pizza' | 'burger' | 'cheeseburger' | 'garden_burger' | 'deluxe_burger' | 'drink' | 'icecream';
+
+/** The plain burger and its variants (they share the grill, the buns and the plates). */
+export const BURGER_KINDS: readonly ItemKind[] = ['burger', 'cheeseburger', 'garden_burger', 'deluxe_burger'];
+export const isBurgerKind = (k: ItemKind): boolean => BURGER_KINDS.includes(k);
 
 export interface RecipeSettings {
   plateSlots: number;
@@ -140,6 +144,11 @@ export interface GameConfig {
   progression: {
     levels: LevelDef[];
     afterLast: { patienceStepPerLevel: number; patienceFloor: number; arrivalGapStepPerLevel?: number; arrivalGapFloor?: [number, number] };
+    /** Optional diner-only late-game ramp (the Taco Truck and Pizza Place keep using `levels`/`afterLast`). */
+    dinerRamp?: {
+      levels: Record<string, { maxCustomers: number; arrivalGap: [number, number]; patience: number; items?: ItemKind[]; unlocks?: string[] }>;
+      afterLast: { patienceStepPerLevel: number; patienceFloor: number; arrivalGapStepPerLevel?: number; arrivalGapFloor?: [number, number] };
+    };
   };
   xp: {
     base: number;
@@ -149,6 +158,8 @@ export interface GameConfig {
     earlyUntilLevel?: number;
     /** Optional XP to leave Lv 1 only (the very first level-up). Every other level ignores it. Lets the first level-up land inside the first minute. */
     firstLevelXp?: number;
+    /** Optional explicit XP to leave Lv 1, 2, 3 ... (index 0 is Lv 1). Wins over every formula above for the levels it lists; later levels use the formula. Lets the early curve rise smoothly into the normal one. */
+    levelXp?: number[];
     speedBonusXp: number;
     speedBonusPatienceFraction: number;
     levelUpCoins: { base: number; perLevel: number };
@@ -216,12 +227,36 @@ export function levelDef(cfg: GameConfig, level: number): LevelDef {
   return { ...last, level, patience, arrivalGap, unlocks: [] };
 }
 
+/** The diner's own customer table: `levelDef` with the diner-only late ramp laid over it (no ramp in data = same as `levelDef`). */
+export function dinerLevelDef(cfg: GameConfig, level: number): LevelDef {
+  const base = levelDef(cfg, level);
+  const ramp = cfg.progression.dinerRamp;
+  if (!ramp) return base;
+  const keys = Object.keys(ramp.levels).map(Number).filter((n) => Number.isFinite(n));
+  if (keys.length === 0) return base;
+  const lastKey = Math.max(...keys);
+  const row = ramp.levels[String(level)];
+  if (row) return { ...base, ...row };
+  if (level < lastKey) return base;
+  const last = ramp.levels[String(lastKey)];
+  const extra = level - lastKey;
+  const a = ramp.afterLast;
+  const patience = Math.max(a.patienceFloor, last.patience + extra * a.patienceStepPerLevel);
+  let arrivalGap = last.arrivalGap;
+  if (a.arrivalGapStepPerLevel && a.arrivalGapFloor) {
+    const step = extra * a.arrivalGapStepPerLevel;
+    arrivalGap = [Math.max(a.arrivalGapFloor[0], last.arrivalGap[0] + step), Math.max(a.arrivalGapFloor[1], last.arrivalGap[1] + step)];
+  }
+  return { ...base, maxCustomers: last.maxCustomers, patience, arrivalGap, ...(last.items ? { items: last.items } : {}) };
+}
+
 /** First level the early curve applies to: Lv 2 stays as tuned; Lv 1 has its own optional value (`firstLevelXp`). */
 export const EARLY_XP_FROM_LEVEL = 3;
 
 /** XP needed to leave `level`. The mid-game (Lv 3 to earlyUntilLevel) can be made gentler in data so casual players reach the pizza level sooner. */
 export const xpForLevel = (cfg: GameConfig, level: number): number => {
-  const { base, perLevel, earlyPerLevel, earlyUntilLevel, firstLevelXp } = cfg.xp;
+  const { base, perLevel, earlyPerLevel, earlyUntilLevel, firstLevelXp, levelXp } = cfg.xp;
+  if (levelXp !== undefined && level >= 1 && level <= levelXp.length) return levelXp[level - 1];
   if (level === 1 && firstLevelXp !== undefined) return firstLevelXp;
   if (earlyPerLevel !== undefined && earlyUntilLevel !== undefined && level >= EARLY_XP_FROM_LEVEL && level <= earlyUntilLevel) return base + earlyPerLevel * level;
   return base + perLevel * level;

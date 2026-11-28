@@ -1,5 +1,5 @@
 import { advanceCook, burnWindowFor, cookPhase, isEdible, type CookPhase } from './cook';
-import { defaultConfig, levelDef, xpForLevel, type EventDef, type FriedKind, type GameConfig, type ItemKind } from './config';
+import { BURGER_KINDS, defaultConfig, dinerLevelDef, isBurgerKind, xpForLevel, type EventDef, type FriedKind, type GameConfig, type ItemKind } from './config';
 import { makeRng, randInt, randRange, type Rng } from './rng';
 import { dailySpecialFor, defaultExtras, tiersEarned, type Extras } from './extras';
 import { batBagCoins } from './spooky';
@@ -136,15 +136,14 @@ export interface SaveSlice {
 }
 
 /** Number of supplied customer characters (cosmetic). A test keeps this equal to `CUSTOMER_LOOKS` in anim/customerMotion.ts. */
-export const CUSTOMER_LOOK_COUNT = 12;
+export const CUSTOMER_LOOK_COUNT = 10;
 /** First look that can spawn. Looks 0-7 are the people (their art is blank now), 8 on are the ghosts; customers are ghosts only for now (set to 0 to mix people back in). */
 export const CUSTOMER_LOOK_MIN = 8;
 /**
- * The diner Lv at which each look from CUSTOMER_LOOK_MIN on can first walk in, in CUSTOMER_LOOKS order: the mint ghost from the start, then the blue yeti,
- * the pink fuzz and the mummy ghost. They arrive one at a time so the first minutes stay simple and their art (about 70 MB of texture in all) is only
- * fetched once it is needed. A test keeps this the same length as the ghosts in CUSTOMER_LOOKS.
+ * The diner Lv at which each look from CUSTOMER_LOOK_MIN on can first walk in, in CUSTOMER_LOOKS order: the mint ghost from the start, then the lilac ghost
+ * at Lv 3. It arrives later so the first minutes stay simple and its art (about 14 MB of texture, under 0.5 MB of files) is only fetched once it is needed. A test keeps this the same length as the ghosts in CUSTOMER_LOOKS.
  */
-export const LOOK_UNLOCK_LEVELS: readonly number[] = [1, 3, 5, 7];
+export const LOOK_UNLOCK_LEVELS: readonly number[] = [1, 3];
 /** The highest look number that can spawn at this diner Lv. Always at least CUSTOMER_LOOK_MIN. */
 export function maxLookForLevel(level: number): number {
   let max = CUSTOMER_LOOK_MIN;
@@ -161,6 +160,9 @@ const LAYER_LABEL: Record<string, string> = {
   bun_bottom: 'the bun',
   patty: 'a patty',
   lettuce: 'lettuce',
+  cheese: 'cheese',
+  onion: 'onions',
+  pickle: 'pickles',
   tomato: 'tomato',
   bun_top: 'the top bun',
 };
@@ -256,7 +258,7 @@ export class KitchenState {
     return xpForLevel(this.cfg, this.level);
   }
   get levelInfo() {
-    return levelDef(this.cfg, this.level);
+    return dinerLevelDef(this.cfg, this.level);
   }
   get layers(): string[] {
     return this.cfg.recipes.items.burger.layers ?? [];
@@ -280,8 +282,17 @@ export class KitchenState {
   private freeSlot(row: SlotRow): Slot | undefined {
     return this.slots.find((s) => s.row === row && s.item === null);
   }
-  private nextLayer(item: SlotItem): string | undefined {
-    return this.layers[item.placed.length];
+  /** Burgers the player can make right now: the plain one and every variant already unlocked. */
+  private burgerDefs(): { kind: ItemKind; layers: string[] }[] {
+    return BURGER_KINDS.filter((k) => this.level >= this.cfg.recipes.items[k].unlockLevel).map((k) => ({ kind: k, layers: this.cfg.recipes.items[k].layers ?? [] }));
+  }
+  /** Burgers this build can still turn into (the layers placed so far match the start of their recipe). */
+  private candidates(item: SlotItem): { kind: ItemKind; layers: string[] }[] {
+    return this.burgerDefs().filter((d) => item.placed.every((p, i) => d.layers[i] === p));
+  }
+  /** Layers this build accepts next (for example after the patty: cheese, onions, pickles or lettuce, depending on what is unlocked). */
+  nextLayers(item: SlotItem): string[] {
+    return [...new Set(this.candidates(item).map((d) => d.layers[item.placed.length]).filter((l): l is string => !!l))];
   }
   /** Burgers that still need layers, oldest first. */
   buildingSlots(): Slot[] {
@@ -487,7 +498,19 @@ export class KitchenState {
     for (let i = 0; i < size; i++) {
       // The first burger is guaranteed soon after it unlocks so the tutorial can teach it.
       const wantBurger = this.level >= 2 && this.burgersServed === 0 && i === 0;
-      items.push(wantBurger ? 'burger' : info.items[randInt(this.rng, 0, info.items.length - 1)]);
+      if (wantBurger) {
+        items.push('burger');
+        continue;
+      }
+      // The burger variants (cheeseburger and so on) share the plain burger's slice of the menu, so adding them never floods the grill:
+      // the first draw is over the base menu, and only a burger draw is spread over the burgers that are unlocked.
+      const pool = info.items.filter((k) => k === 'burger' || !isBurgerKind(k));
+      let pick = pool[randInt(this.rng, 0, pool.length - 1)];
+      if (pick === 'burger') {
+        const family = info.items.filter(isBurgerKind);
+        if (family.length > 1) pick = family[randInt(this.rng, 0, family.length - 1)];
+      }
+      items.push(pick);
     }
     // Daily Special: swap in today's order once it is due. This happens after every random draw above, so the random sequence is unchanged.
     const special = this.extrasOn && this.specialQueued && this.special !== null && !this.special.done;
@@ -654,7 +677,7 @@ export class KitchenState {
       return;
     }
     // Second side is done: the patty goes onto a burger that is waiting for it.
-    const build = this.buildingSlots().find((s) => this.nextLayer(s.item!) === 'patty');
+    const build = this.buildingSlots().find((s) => this.nextLayers(s.item!).includes('patty'));
     if (!build) {
       return this.invalid(this.buildingSlots().length === 0 ? 'Tap the buns first' : this.waitingMessage());
     }
@@ -673,12 +696,12 @@ export class KitchenState {
     this.emit({ type: 'buildStart', slot: slot.index });
   }
 
-  tapTopping(layer: 'lettuce' | 'tomato'): void {
+  tapTopping(layer: 'lettuce' | 'tomato' | 'cheese' | 'onion' | 'pickle'): void {
     if (this.closed) return;
     if (this.level < this.cfg.recipes.items.burger.unlockLevel) return this.invalid('Burgers unlock at Lv 2');
     const builds = this.buildingSlots();
     if (builds.length === 0) return this.invalid('Tap the buns first');
-    const build = builds.find((s) => this.nextLayer(s.item!) === layer);
+    const build = builds.find((s) => this.nextLayers(s.item!).includes(layer));
     if (!build) return this.invalid(this.waitingMessage());
     this.addLayer(build, layer);
   }
@@ -686,8 +709,8 @@ export class KitchenState {
   /** What the oldest unfinished burger is waiting for, for the "wrong order" popup. */
   private waitingMessage(): string {
     const first = this.buildingSlots()[0]?.item;
-    const next = first ? this.nextLayer(first) : undefined;
-    return next ? `Add ${LAYER_LABEL[next] ?? next} first` : 'Nothing to add';
+    const next = first ? this.nextLayers(first).filter((l) => l !== 'bun_top') : [];
+    return next.length ? `Add ${next.map((l) => LAYER_LABEL[l] ?? l).join(' or ')} first` : 'Nothing to add';
   }
 
   private addLayer(slot: Slot, layer: string, burner?: number): void {
@@ -695,9 +718,11 @@ export class KitchenState {
     item.placed.push(layer);
     this.emit({ type: 'layerAdded', slot: slot.index, layer, burner });
     // The top bun closes the burger as soon as everything under it is in place.
-    if (this.nextLayer(item) === 'bun_top') {
+    const done = this.candidates(item).find((d) => d.layers[item.placed.length] === 'bun_top');
+    if (done) {
       item.placed.push('bun_top');
       item.building = false;
+      item.kind = done.kind; // the toppings decide which burger this is
       this.emit({ type: 'burgerDone', slot: slot.index });
     }
   }
@@ -738,7 +763,7 @@ export class KitchenState {
     slot.item = null;
     c.delivered[need] = true;
     this.emit({ type: 'deliver', customer: c.id, slot: slotIndex, itemIndex: need });
-    if (item.kind === 'burger') this.burgersServed++;
+    if (isBurgerKind(item.kind)) this.burgersServed++;
     if (c.delivered.every(Boolean)) this.completeOrder(c);
     return true;
   }

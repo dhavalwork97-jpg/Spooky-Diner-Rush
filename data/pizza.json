@@ -2,7 +2,7 @@
   "restaurant": {
     "id": "pizza_place",
     "name": "Pizza Place",
-    "unlockLevel": 30,
+    "unlockLevel": 20,
     "cost": 3000
   },
   "settings": {
@@ -1118,6 +1118,33 @@
       "y": 0.7236,
       "width": 0.0513,
       "height": 0.0875
+    },
+    {
+      "id": "plate_0",
+      "action": "plate",
+      "index": 0,
+      "x": 0.839,
+      "y": 0.7364,
+      "width": 0.0525,
+      "height": 0.043
+    },
+    {
+      "id": "plate_1",
+      "action": "plate",
+      "index": 1,
+      "x": 0.7859,
+      "y": 0.7808,
+      "width": 0.05,
+      "height": 0.0645
+    },
+    {
+      "id": "plate_2",
+      "action": "plate",
+      "index": 2,
+      "x": 0.8568,
+      "y": 0.7908,
+      "width": 0.052,
+      "height": 0.0745
     },
     {
       "id": "ice_cream_machine",

@@ -1,6 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { KitchenState } from '../src/game/KitchenState';
+import { isBurgerKind } from '../src/game/config';
 import { isEdible } from '../src/game/cook';
+
+/** Layers a burger build still needs, following the first burger a waiting customer wants that this build can still become. */
+function botNextLayer(s: KitchenState, build: NonNullable<KitchenState['slots'][number]['item']>): string | undefined {
+  const accepts = s.nextLayers(build);
+  for (const c of s.customers) {
+    if (c.mood !== 'waiting') continue;
+    for (let i = 0; i < c.items.length; i++) {
+      if (c.delivered[i] || !isBurgerKind(c.items[i])) continue;
+      const layers = s.cfg.recipes.items[c.items[i]].layers ?? [];
+      if (build.placed.every((p, j) => layers[j] === p) && accepts.includes(layers[build.placed.length])) return layers[build.placed.length];
+    }
+  }
+  return accepts.includes('lettuce') ? 'lettuce' : accepts[0];
+}
 
 /**
  * A simple bot that plays through the model API, one action per `reaction` seconds.
@@ -24,8 +39,8 @@ function botStep(s: KitchenState): boolean {
   if (readyVat >= 0 && s.slots.some((sl) => sl.row === 'side' && !sl.item)) return (s.tapFryer(readyVat), true);
   // 4. burger building: toppings, patties, flips
   const build = s.buildingSlots()[0]?.item;
-  const next = build ? s.layers[build.placed.length] : undefined;
-  if (next === 'lettuce' || next === 'tomato') return (s.tapTopping(next), true);
+  const next = build ? botNextLayer(s, build) : undefined;
+  if (next && next !== 'patty' && next !== 'bun_top') return (s.tapTopping(next as Parameters<KitchenState['tapTopping']>[0]), true);
   const flip = s.burners.findIndex((p) => p && p.side === 1 && isEdible(p.phase));
   if (flip >= 0) return (s.tapGrill(flip), true);
   const done = s.burners.findIndex((p) => p && p.side === 2 && isEdible(p.phase));
@@ -35,9 +50,9 @@ function botStep(s: KitchenState): boolean {
   if (s.ovens.some((o) => o?.phase === 'burnt')) return (s.tapOven(s.ovens.findIndex((o) => o?.phase === 'burnt')), true);
   // 5. start what is still needed beyond what is already in the pipeline
   const need = (k: 'fries' | 'nuggets' | 'pizza' | 'burger') =>
-    s.customers.filter((c) => c.mood === 'waiting').reduce((n, c) => n + c.items.filter((x, i) => x === k && !c.delivered[i]).length, 0);
+    s.customers.filter((c) => c.mood === 'waiting').reduce((n, c) => n + c.items.filter((x, i) => (k === 'burger' ? isBurgerKind(x) : x === k) && !c.delivered[i]).length, 0);
   const haveOf = (k: 'fries' | 'nuggets') => s.slots.filter((sl) => sl.item?.kind === k).length + s.vats.filter((v) => v?.kind === k).length;
-  const haveBurgers = s.slots.filter((sl) => sl.item?.kind === 'burger').length + s.burners.filter(Boolean).length;
+  const haveBurgers = s.slots.filter((sl) => sl.item && isBurgerKind(sl.item.kind)).length + s.burners.filter(Boolean).length;
   for (const k of ['fries', 'nuggets'] as const) if (need(k) > haveOf(k) && s.vats.some((v) => !v)) return (s.startFry(k), true);
   if (s.level >= 2 && need('burger') > haveBurgers && s.burners.some((p) => !p)) return (s.startPatty(), true);
   if (need('pizza') > s.slots.filter((sl) => sl.item?.kind === 'pizza').length + s.ovens.filter(Boolean).length && s.ovens.some((o) => !o)) return (s.startPizza(), true);

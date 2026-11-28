@@ -1,5 +1,6 @@
 import { SaveSystem } from './SaveSystem';
 import { makeThrottle } from './throttle';
+import { BAR, LofiPlayer } from './lofiMusic';
 
 /**
  * All sound is synthesized with WebAudio, no files. The context is created and resumed
@@ -22,7 +23,9 @@ export class AudioSystem {
   private musicGain: GainNode | null = null;
   private fryNode: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
   private musicTimer: number | null = null;
-  private step = 0;
+  private lofi: LofiPlayer | null = null;
+  private musicBar = 0;
+  private musicNext = 0;
 
   /** Call from any pointer or key handler. Safe to call repeatedly. */
   unlock(): void {
@@ -69,7 +72,7 @@ export class AudioSystem {
     if (!this.master || !this.sfxGain || !this.musicGain) return;
     this.master.gain.value = s.muted ? 0 : 1;
     this.sfxGain.gain.value = s.sfxVolume;
-    this.musicGain.gain.value = s.musicVolume * 0.25;
+    this.musicGain.gain.value = s.musicVolume * 0.6;
   }
 
   setMuted(muted: boolean): void {
@@ -154,21 +157,119 @@ export class AudioSystem {
     this.fryNode.gain.gain.setTargetAtTime(Math.min(0.14, level * 0.07), this.ctx.currentTime, 0.1);
   }
 
-  /** Simple looping background music: a four-bar arpeggio, scheduled in small steps. */
+  /** Soft lofi background music (src/systems/lofiMusic.ts): scheduled one bar at a time, just ahead on the audio clock, so it never stops or stutters. */
   startMusic(): void {
     if (!this.ctx || !this.musicGain || this.musicTimer !== null) return;
-    const notes = [262, 330, 392, 330, 294, 370, 440, 370, 262, 330, 392, 523, 349, 440, 523, 440];
+    this.lofi ??= new LofiPlayer(this.ctx, this.musicGain);
+    this.lofi.startCrackle();
+    this.musicBar = 0;
+    this.musicNext = 0;
     this.musicTimer = window.setInterval(() => {
-      if (!this.ctx || this.ctx.state !== 'running') return;
-      const f = notes[this.step++ % notes.length];
-      this.tone(f, 0.28, 'triangle', 0.5, 0, undefined, this.musicGain!);
-      if (this.step % 4 === 1) this.tone(f / 2, 0.5, 'sine', 0.4, 0, undefined, this.musicGain!);
-    }, 280);
+      const ctx = this.ctx;
+      if (!ctx || !this.lofi || ctx.state !== 'running') return;
+      if (this.musicNext < ctx.currentTime) this.musicNext = ctx.currentTime + 0.1; // late (tab was hidden): restart the bar cleanly
+      while (this.musicNext < ctx.currentTime + 2.5) {
+        this.lofi.scheduleBar(this.musicBar++, this.musicNext);
+        this.musicNext += BAR;
+      }
+    }, 500);
   }
 
   stopMusic(): void {
     if (this.musicTimer !== null) window.clearInterval(this.musicTimer);
     this.musicTimer = null;
+    this.lofi?.stop();
+  }
+
+  /** Real recordings (the haunted room's wind bed and thunder), the only sounds that are files. Decoded once, on first use. */
+  private clips = new Map<string, AudioBuffer | null>();
+  private clipLoading = new Map<string, Promise<AudioBuffer | null>>();
+  private ambience: { name: string; src: AudioBufferSourceNode; gain: GainNode } | null = null;
+  private ambienceWanted: string | null = null;
+
+  /** Fetch and decode assets/audio/<name>.ogg, falling back to .mp3 where the browser cannot decode Ogg. Never throws; null means no sound. */
+  private clip(name: string): Promise<AudioBuffer | null> {
+    const cached = this.clips.get(name);
+    if (cached !== undefined) return Promise.resolve(cached);
+    const pending = this.clipLoading.get(name);
+    if (pending) return pending;
+    const ctx = this.ctx;
+    if (!ctx) return Promise.resolve(null);
+    const load = async (ext: string): Promise<AudioBuffer> => {
+      const res = await fetch(`assets/audio/${name}.${ext}`);
+      if (!res.ok) throw new Error(`${name}.${ext}: ${res.status}`);
+      return ctx.decodeAudioData(await res.arrayBuffer());
+    };
+    const p = load('ogg')
+      .catch(() => load('mp3'))
+      .then((b) => b as AudioBuffer | null)
+      .catch(() => null)
+      .then((b) => {
+        this.clips.set(name, b);
+        this.clipLoading.delete(name);
+        return b;
+      });
+    this.clipLoading.set(name, p);
+    return p;
+  }
+
+  /** Quiet looping wind bed for the haunted room. Needs unlock() first; safe to call on every tap. */
+  startAmbience(name = 'ambience_loop'): void {
+    if (this.ambience && this.ambience.name !== name) this.stopAmbience(); // another restaurant's bed was playing
+    this.ambienceWanted = name;
+    if (!this.ctx || !this.musicGain || this.ambience) return;
+    void this.clip(name).then((buf) => {
+      const ctx = this.ctx;
+      if (!buf || !ctx || !this.musicGain || this.ambienceWanted !== name || this.ambience) return;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      const gain = ctx.createGain();
+      gain.gain.value = 0.55;
+      src.connect(gain);
+      gain.connect(this.musicGain);
+      src.start();
+      this.ambience = { name, src, gain };
+    });
+  }
+
+  stopAmbience(): void {
+    this.ambienceWanted = null;
+    if (!this.ambience) return;
+    try {
+      this.ambience.src.stop();
+    } catch {
+      /* already stopped */
+    }
+    this.ambience.src.disconnect();
+    this.ambience.gain.disconnect();
+    this.ambience = null;
+  }
+
+  /** One rolling thunder clap (about 5 s). Silent until the clip has loaded; the first call only starts the download. */
+  playThunder(): void {
+    if (!this.ctx || !this.sfxGain) return;
+    const buf = this.clips.get('thunder');
+    if (!buf) {
+      void this.clip('thunder');
+      return;
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const gain = this.ctx.createGain();
+    gain.gain.value = 0.7;
+    src.connect(gain);
+    gain.connect(this.sfxGain);
+    src.start();
+    src.onended = () => {
+      src.disconnect();
+      gain.disconnect();
+    };
+  }
+
+  /** Start downloading the thunder early so the first storm is not silent. */
+  preloadThunder(): void {
+    if (this.ctx) void this.clip('thunder');
   }
 
   pauseAll(): void {

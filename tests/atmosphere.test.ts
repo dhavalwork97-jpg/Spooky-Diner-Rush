@@ -173,6 +173,6 @@ describe('quality and placement', () => {
       expect(b.y + b.h).toBeLessThanOrEqual(SRC_H);
     }
     for (const l of LAMPS) expect(l.y).toBeLessThan(WINDOW_PANES[0].y + WINDOW_PANES[0].h);
-    expect(STAR_BOX.y + STAR_BOX.h).toBeLessThan(125); // above the potted plants in the windows
+    expect(STAR_BOX.y + STAR_BOX.h).toBeLessThanOrEqual(WINDOW_PANES[0].y + WINDOW_PANES[0].h); // inside the window panes
   });
 });

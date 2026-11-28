@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { CREAM, INK } from '../art/builders';
 import type { GameConfig, ItemKind } from '../game/config';
 import { recipeEntries } from '../game/recipebook';
+import { levelsToGo, recipeProgress } from '../game/nextUnlock';
 import { defaultExtras, masteryProgress } from '../game/extras';
 import { audio } from '../systems/AudioSystem';
 import { SaveSystem } from '../systems/SaveSystem';
@@ -16,6 +17,11 @@ export interface BookRow {
   stats: string;
   steps: string[];
   locked: boolean;
+  /** Optional small third line under `stats` (the diner: "3 more Lv" on a locked dish, the quick-serve badge progress on an open one). */
+  note?: string;
+  noteColor?: string;
+  /** The dish that unlocks next: drawn with an orange outline. */
+  highlight?: boolean;
 }
 
 /** One dish of a mastery grid (the Taco Truck's). */
@@ -60,11 +66,9 @@ const PAGED_ROW_TOP = 108;
 
 const FONT = 'Fredoka, "Baloo 2", system-ui, sans-serif';
 const PANEL_W = 1040;
-const ROW_H = 130;
-const ROW_TOP = 100;
 
 /** Icon texture per menu item (supplied art where it exists, code-drawn otherwise). */
-const ICON: Record<ItemKind, string> = { fries: 'fries_cooked', burger: 'icon_burger', nuggets: 'nuggets_cooked', pizza: 'pizza_cooked', drink: 'drink_cooked', icecream: 'icecream_cooked' };
+const ICON: Record<ItemKind, string> = { fries: 'fries_cooked', burger: 'icon_burger', cheeseburger: 'cheeseburger_cooked', garden_burger: 'garden_burger_cooked', deluxe_burger: 'deluxe_burger_cooked', nuggets: 'nuggets_cooked', pizza: 'pizza_cooked', drink: 'drink_cooked', icecream: 'icecream_cooked' };
 
 /** The Recipe Book: how each menu item is made, with locked items shown as "Lv N". Read-only. */
 export class RecipeBookScene extends Phaser.Scene {
@@ -93,7 +97,7 @@ export class RecipeBookScene extends Phaser.Scene {
     this.cfg = data.state.cfg;
     this.level = data.state.level;
     this.extraRows = data.rows;
-    this.tips = data.tips ?? '';
+    this.tips = data.tips ?? (data.rows ? '' : this.dinerSummary());
     this.mastery = data.mastery;
     this.badgeData = data.badges;
     this.pagedShown = [];
@@ -118,25 +122,7 @@ export class RecipeBookScene extends Phaser.Scene {
     if (!this.extraRows || this.mastery || this.badgeData) this.buildTabs(x0);
     const mark = this.children.length;
     if (this.extraRows) this.pagedRows(x0, this.extraRows);
-    else recipeEntries(this.cfg, this.level).forEach((e, i) => {
-      const y = ROW_TOP + i * ROW_H;
-      const row = this.add.graphics();
-      row.fillStyle(e.locked ? 0xe6dcc4 : i % 2 ? 0xf3e3bd : 0xfaedd0, 1).fillRoundedRect(x0 + 20, y, PANEL_W - 40, ROW_H - 8, 16);
-      row.lineStyle(3, INK, 0.6).strokeRoundedRect(x0 + 20, y, PANEL_W - 40, ROW_H - 8, 16);
-      const icon = this.add.image(x0 + 90, y + (ROW_H - 8) / 2, ICON[e.id]);
-      icon.setScale(84 / Math.max(icon.width, icon.height));
-      if (e.locked) icon.setTint(0x777777).setAlpha(0.7);
-      this.add.text(x0 + 160, y + 14, e.name, { fontFamily: FONT, fontSize: '32px', color: '#2B1B17' });
-      const stats = e.locked ? `Unlocks at Lv ${e.unlockLevel}` : `${e.price} coins  ·  ${e.xp} XP`;
-      this.add.text(x0 + 160, y + 56, stats, { fontFamily: FONT, fontSize: '22px', color: '#5a463e' });
-      if (!e.locked && this.level >= defaultExtras.mastery.fromLevel) {
-        const p = masteryProgress(defaultExtras, SaveSystem.data.mastery[e.id] ?? 0);
-        const line = p.next ? `${p.badge ? `${p.badge} badge  ·  ` : ''}${p.next.remaining} more quick serves for ${p.next.name}` : 'Gold badge';
-        this.add.text(x0 + 160, y + 88, line, { fontFamily: FONT, fontSize: '18px', color: p.badge ? '#B8730F' : '#7a665e' });
-      }
-      const how = e.locked ? '' : e.steps.map((s, n) => `${n + 1}. ${s}`).join('\n');
-      this.add.text(x0 + 470, y + 12, how, { fontFamily: FONT, fontSize: '20px', color: '#2B1B17', lineSpacing: 4, wordWrap: { width: PANEL_W - 470 - 50 + 20 } });
-    });
+    else this.pagedRows(x0, this.dinerRows());
     this.recipeObjs = this.children.list.slice(mark);
 
     const bg = this.add.graphics();
@@ -280,12 +266,15 @@ export class RecipeBookScene extends Phaser.Scene {
         const y = PAGED_ROW_TOP + i * PAGED_ROW_H;
         const row = this.add.graphics();
         row.fillStyle(e.locked ? 0xe6dcc4 : i % 2 ? 0xf3e3bd : 0xfaedd0, 1).fillRoundedRect(x0 + 20, y, PANEL_W - 40, PAGED_ROW_H - 8, 16);
-        row.lineStyle(3, INK, 0.6).strokeRoundedRect(x0 + 20, y, PANEL_W - 40, PAGED_ROW_H - 8, 16);
+        if (e.highlight) row.lineStyle(5, 0xf28c28, 1).strokeRoundedRect(x0 + 20, y, PANEL_W - 40, PAGED_ROW_H - 8, 16);
+        else row.lineStyle(3, INK, 0.6).strokeRoundedRect(x0 + 20, y, PANEL_W - 40, PAGED_ROW_H - 8, 16);
         const icon = this.add.image(x0 + 80, y + (PAGED_ROW_H - 8) / 2, e.icon.key, e.icon.frame);
         icon.setScale(70 / Math.max(icon.width, icon.height));
         if (e.locked) icon.setTint(0x777777).setAlpha(0.7);
-        const name = this.add.text(x0 + 130, y + 12, e.name, { fontFamily: FONT, fontSize: '28px', color: '#2B1B17' });
-        const stats = this.add.text(x0 + 130, y + 50, e.stats, { fontFamily: FONT, fontSize: '20px', color: '#5a463e' });
+        // A row with a note has three lines, so its name and stats sit a little higher; rows without one keep their original positions.
+        const name = this.add.text(x0 + 130, y + (e.note ? 6 : 12), e.name, { fontFamily: FONT, fontSize: '28px', color: '#2B1B17' });
+        const stats = this.add.text(x0 + 130, y + (e.note ? 40 : 50), e.stats, { fontFamily: FONT, fontSize: '20px', color: '#5a463e' });
+        if (e.note) shown.push(this.add.text(x0 + 130, y + 63, e.note, { fontFamily: FONT, fontSize: '16px', color: e.noteColor ?? '#7a665e' }));
         const how = e.locked ? '' : e.steps.map((t, n) => `${n + 1}. ${t}`).join('   ');
         const steps = this.add.text(x0 + 400, y + 10, how, { fontFamily: FONT, fontSize: '17px', color: '#2B1B17', lineSpacing: 3, wordWrap: { width: PANEL_W - 400 - 40 } });
         shown.push(row, icon, name, stats, steps);
@@ -309,6 +298,37 @@ export class RecipeBookScene extends Phaser.Scene {
       nav('Next >', x0 + PANEL_W - 140, 1);
     }
     draw();
+  }
+
+  /** The diner's dishes as paged rows (5 to a page): open ones show price, XP and steps; locked ones show their Lv and how far away it is. */
+  private dinerRows(): BookRow[] {
+    const next = recipeProgress(this.cfg, this.level).next;
+    return recipeEntries(this.cfg, this.level).map((e) => {
+      const row: BookRow = {
+        name: e.name,
+        icon: { key: ICON[e.id] },
+        stats: e.locked ? `Unlocks at Lv ${e.unlockLevel}` : `${e.price} coins  ·  ${e.xp} XP`,
+        steps: e.steps,
+        locked: e.locked,
+      };
+      if (e.locked) {
+        row.note = e.id === next?.id ? `Next unlock  ·  ${levelsToGo(e.unlockLevel - this.level)}` : levelsToGo(e.unlockLevel - this.level);
+        row.noteColor = e.id === next?.id ? '#B8730F' : '#7a665e';
+        row.highlight = e.id === next?.id;
+      } else if (this.level >= defaultExtras.mastery.fromLevel) {
+        const p = masteryProgress(defaultExtras, SaveSystem.data.mastery[e.id] ?? 0);
+        row.note = p.next ? `${p.badge ? `${p.badge} badge  ·  ` : ''}${p.next.remaining} more quick serves for ${p.next.name}` : 'Gold badge';
+        row.noteColor = p.badge ? '#B8730F' : '#7a665e';
+      }
+      return row;
+    });
+  }
+
+  /** "Unlocked 6 of 9 dishes  ·  Next: Cheeseburger at Lv 10", or all open. */
+  private dinerSummary(): string {
+    const p = recipeProgress(this.cfg, this.level);
+    const head = `Unlocked ${p.unlocked} of ${p.total} dishes`;
+    return p.next ? `${head}  ·  Next: ${p.next.name} at Lv ${p.next.unlockLevel}` : `${head}  ·  every dish is open`;
   }
 
   private close(): void {

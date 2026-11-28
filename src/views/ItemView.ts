@@ -6,6 +6,18 @@ import { audio } from '../systems/AudioSystem';
 
 /** Vertical offset (in units of item width) of each burger layer, bottom to top. */
 const LAYER_Y: Record<string, number> = { bun_bottom: 0.14, patty: 0.05, lettuce: -0.04, tomato: -0.12, bun_top: -0.22 };
+/** How far each layer sits above the one under it. Reproduces LAYER_Y for the plain burger; the thin toppings add a little height each. */
+const LAYER_STEP: Record<string, number> = { patty: 0.09, cheese: 0.04, onion: 0.05, pickle: 0.05, lettuce: 0.09, tomato: 0.08, bun_top: 0.1 };
+const BURGER_BASE_Y = 0.14;
+
+/** Vertical offset of the layer at `index` (in units of item width). */
+function layerY(placed: string[], index: number): number {
+  const layer = placed[index];
+  if (index === 0 || !(layer in LAYER_STEP)) return LAYER_Y[layer] ?? 0;
+  let y = BURGER_BASE_Y;
+  for (let i = 1; i <= index; i++) y -= LAYER_STEP[placed[i]] ?? 0.09;
+  return y;
+}
 
 /**
  * A finished (or building) item resting on a plate. Draggable.
@@ -65,7 +77,7 @@ export class ItemView extends Phaser.GameObjects.Container {
   syncLayers(placed: string[], building: boolean, animate: boolean): void {
     for (let i = this.drawn; i < placed.length; i++) {
       const layer = placed[i];
-      const toY = (LAYER_Y[layer] ?? 0) * this.itemW;
+      const toY = layerY(placed, i) * this.itemW;
       const im = this.img(layer === 'patty' ? 'patty_cooked' : layer, toY);
       this.art.add(im);
       if (animate) {
