@@ -9,6 +9,14 @@
       "lazy": false
     },
     {
+      "key": "room_still",
+      "type": "image",
+      "file": "assets/art/room_still.webp",
+      "scale": 1,
+      "preferFallback": false,
+      "lazy": false
+    },
+    {
       "key": "fries_raw",
       "type": "image",
       "file": "assets/art/fries_raw.webp",

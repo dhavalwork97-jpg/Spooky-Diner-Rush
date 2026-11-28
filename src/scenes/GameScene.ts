@@ -27,6 +27,7 @@ import { MenuButtons, type MenuKind } from '../views/MenuButtons';
 import { MuteButton } from '../views/MuteButton';
 import { arcTo, flyCoins } from '../anim/fly';
 import { audio } from '../systems/AudioSystem';
+import { RoomFx } from '../anim/roomFx';
 import { CrazyGames } from '../sdk/crazygames';
 import { KitchenState, type GameEvent } from '../game/KitchenState';
 import { isBurgerKind, levelDef, type DecorDef, type EventDef } from '../game/config';
@@ -85,6 +86,7 @@ export class GameScene extends Phaser.Scene {
   private label!: Phaser.GameObjects.Text;
   private fx!: ParticlePool;
   private atmosphere?: Atmosphere;
+  private roomFx?: RoomFx;
   private showAll = false;
   private selectedId: string | null = null;
 
@@ -143,6 +145,8 @@ export class GameScene extends Phaser.Scene {
     const { width: iw, height: ih } = this.restaurant.backgroundSize;
     this.bg = fitBackground(LOGICAL_WIDTH, LOGICAL_HEIGHT, iw, ih);
     this.layout = new Layout(this.bg);
+    // The haunted room (still, looping video, storms) sits behind the kitchen picture, which is transparent where the room shows.
+    this.roomFx = new RoomFx(this, this.bg, { reduced: SaveSystem.reduceMotion(), isBusy: () => this.paused });
     this.add
       .image(this.bg.x, this.bg.y, this.restaurant.background)
       .setOrigin(0, 0)
@@ -374,6 +378,7 @@ export class GameScene extends Phaser.Scene {
   private onPointerDown(pointer: Phaser.Input.Pointer, over: unknown[]): void {
     audio.unlock();
     audio.startMusic();
+    audio.startAmbience();
     if (over.length > 0 || this.paused || (window.innerWidth < 900 && window.innerHeight > window.innerWidth * 1.1)) return;
     const n = logicalToNorm(pointer.worldX, pointer.worldY, this.bg);
     const zone = hitTestZone(this.restaurant.zones, n.x, n.y, TOUCH_SLOP);
@@ -1446,6 +1451,9 @@ export class GameScene extends Phaser.Scene {
     this.views = [];
     audio.setSizzle(0);
     audio.stopMusic();
+    audio.stopAmbience();
+    this.roomFx?.destroy();
+    this.roomFx = undefined;
     CrazyGames.gameplayStop();
   }
 }

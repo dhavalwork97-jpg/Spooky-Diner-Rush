@@ -12,15 +12,15 @@ import { randRange, type Rng } from '../game/rng';
  */
 export const NIGHT_GRADE = 0xf2f1ff;
 /** Colour multiplied over the window glass: deep blue-purple night sky. */
-export const NIGHT_SKY = 0x3c40a0;
+export const NIGHT_SKY = 0xc4ccf0;
 /** How far the grade sits in the depth order: above the background, decor and painted machines, below customers. */
 export const GRADE_DEPTH = 249;
 /** Gradient stops: fraction of the picture height and the multiply colour there. */
 export const GRADE_STOPS: [number, string][] = [
-  [0, '#6f74b6'],
-  [0.2, '#8a90cf'],
-  [0.3, '#a6b0e6'],
-  [0.42, '#d6dcff'],
+  [0, '#9a9ed6'],
+  [0.2, '#b0b6e2'],
+  [0.3, '#c4ccef'],
+  [0.42, '#dde2ff'],
   [0.55, '#f2f1ff'],
   [1, '#f6f4ff'],
 ];
@@ -34,18 +34,18 @@ export interface BoxPx {
 
 /** The three window panes of the painted kitchen. */
 export const WINDOW_PANES: BoxPx[] = [
-  { x: 391, y: 44, w: 267, h: 133 },
-  { x: 680, y: 44, w: 344, h: 133 },
-  { x: 1047, y: 44, w: 311, h: 133 },
+  { x: 491, y: 185, w: 209, h: 103 },
+  { x: 714, y: 185, w: 274, h: 103 },
+  { x: 1000, y: 185, w: 247, h: 103 },
 ];
 /** Sky pinpoints stay above the plants that stand in the windows. */
-export const STAR_BOX: BoxPx = { x: 400, y: 52, w: 950, h: 62 };
-export const MOON = { x: 1110, y: 100, r: 23 };
+export const STAR_BOX: BoxPx = { x: 495, y: 190, w: 750, h: 70 };
+export const MOON = { x: 1058, y: 228, r: 28 };
 /** The two painted pendant lamps (where the light comes out under each shade), plus one extra lamp the code draws. */
 export const LAMPS: { x: number; y: number; glow: number; drawn: boolean }[] = [
-  { x: 483, y: 70, glow: 300, drawn: false },
-  { x: 749, y: 58, glow: 280, drawn: true },
-  { x: 1179, y: 70, glow: 300, drawn: false },
+  { x: 562, y: 200, glow: 300, drawn: false },
+  { x: 769, y: 181, glow: 280, drawn: false },
+  { x: 1105, y: 191, glow: 300, drawn: false },
 ];
 /** The strip of floor between the stools and the counters: fog never leaves it. */
 export const FLOOR: BoxPx = { x: 340, y: 318, w: 1240, h: 56 };

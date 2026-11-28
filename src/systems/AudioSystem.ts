@@ -175,6 +175,96 @@ export class AudioSystem {
     this.lofi?.stop();
   }
 
+  /** Real recordings (the haunted room's wind bed and thunder), the only sounds that are files. Decoded once, on first use. */
+  private clips = new Map<string, AudioBuffer | null>();
+  private clipLoading = new Map<string, Promise<AudioBuffer | null>>();
+  private ambience: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
+  private ambienceWanted = false;
+
+  /** Fetch and decode assets/audio/<name>.ogg, falling back to .mp3 where the browser cannot decode Ogg. Never throws; null means no sound. */
+  private clip(name: string): Promise<AudioBuffer | null> {
+    const cached = this.clips.get(name);
+    if (cached !== undefined) return Promise.resolve(cached);
+    const pending = this.clipLoading.get(name);
+    if (pending) return pending;
+    const ctx = this.ctx;
+    if (!ctx) return Promise.resolve(null);
+    const load = async (ext: string): Promise<AudioBuffer> => {
+      const res = await fetch(`assets/audio/${name}.${ext}`);
+      if (!res.ok) throw new Error(`${name}.${ext}: ${res.status}`);
+      return ctx.decodeAudioData(await res.arrayBuffer());
+    };
+    const p = load('ogg')
+      .catch(() => load('mp3'))
+      .then((b) => b as AudioBuffer | null)
+      .catch(() => null)
+      .then((b) => {
+        this.clips.set(name, b);
+        this.clipLoading.delete(name);
+        return b;
+      });
+    this.clipLoading.set(name, p);
+    return p;
+  }
+
+  /** Quiet looping wind bed for the haunted room. Needs unlock() first; safe to call on every tap. */
+  startAmbience(): void {
+    this.ambienceWanted = true;
+    if (!this.ctx || !this.musicGain || this.ambience) return;
+    void this.clip('ambience_loop').then((buf) => {
+      const ctx = this.ctx;
+      if (!buf || !ctx || !this.musicGain || !this.ambienceWanted || this.ambience) return;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      const gain = ctx.createGain();
+      gain.gain.value = 0.55;
+      src.connect(gain);
+      gain.connect(this.musicGain);
+      src.start();
+      this.ambience = { src, gain };
+    });
+  }
+
+  stopAmbience(): void {
+    this.ambienceWanted = false;
+    if (!this.ambience) return;
+    try {
+      this.ambience.src.stop();
+    } catch {
+      /* already stopped */
+    }
+    this.ambience.src.disconnect();
+    this.ambience.gain.disconnect();
+    this.ambience = null;
+  }
+
+  /** One rolling thunder clap (about 5 s). Silent until the clip has loaded; the first call only starts the download. */
+  playThunder(): void {
+    if (!this.ctx || !this.sfxGain) return;
+    const buf = this.clips.get('thunder');
+    if (!buf) {
+      void this.clip('thunder');
+      return;
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const gain = this.ctx.createGain();
+    gain.gain.value = 0.7;
+    src.connect(gain);
+    gain.connect(this.sfxGain);
+    src.start();
+    src.onended = () => {
+      src.disconnect();
+      gain.disconnect();
+    };
+  }
+
+  /** Start downloading the thunder early so the first storm is not silent. */
+  preloadThunder(): void {
+    if (this.ctx) void this.clip('thunder');
+  }
+
   pauseAll(): void {
     this.heldByGame = true;
     this.setSizzle(0);

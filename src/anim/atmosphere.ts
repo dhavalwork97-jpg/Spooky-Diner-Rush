@@ -219,8 +219,7 @@ export class Atmosphere {
       this.scene.add.image(L.x(MOON.x - 90), L.y(MOON.y + 40), GLOW).setTint(0x8fb4ff).setBlendMode(Phaser.BlendModes.ADD).setDepth(D.moon - 0.4).setAlpha(0),
     );
     this.moonWash.setDisplaySize(L.s(MOON.r * 38), L.s(MOON.r * 20));
-    const moon = this.add(this.scene.add.image(L.x(MOON.x), L.y(MOON.y), MOON_TEX).setDepth(D.moon));
-    moon.setDisplaySize(L.s(MOON.r * 2 * (128 / 84)), L.s(MOON.r * 2 * (128 / 84)));
+    // The new room paints its own moon; only the glow is drawn over it.
 
     const rng = makeRng(77); // fixed, so the sky is the same every visit
     for (let i = 0; i < this.quality.pinpoints; i++) {
